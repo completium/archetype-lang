@@ -133,8 +133,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       end
   in
 
-  let process_enum ?annotation (id : lident) =
-    let e_opt : M.enum option = M.Utils.get_enum_opt model (unloc id) in
+  let process_enum ?annotation (id : mident) =
+    let e_opt : M.enum option = M.Utils.get_enum_opt model (M.unloc_mident id) in
     match e_opt with
     | Some e when  List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values -> begin
         let lt = List.map (fun (x : M.enum_item) : T.type_ ->
@@ -443,7 +443,7 @@ let to_ir (model : M.model) : T.ir =
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
         | Trecord rn -> begin
-            let r = M.Utils.get_record model (unloc rn) in
+            let r = M.Utils.get_record model (M.unloc_mident rn) in
             match r.pos with
             | Pnode [] -> to_one_data data
             | _ -> begin
@@ -535,7 +535,7 @@ let to_ir (model : M.model) : T.ir =
       let fn = M.unloc_mident fn in
       match M.get_ntype e.type_ with
       | M.Trecord rn -> begin
-          let rn = unloc rn in
+          let rn = M.unloc_mident rn in
           let pos = M.Utils.get_record_pos model rn fn in
           List.fold_left (fun accu (i, s) -> access_tuple s i accu) (f e) pos
         end
@@ -608,7 +608,7 @@ let to_ir (model : M.model) : T.ir =
         let id = M.unloc_mident id in
         let rn =
           match M.get_ntype t with
-          | M.Trecord rn -> unloc rn
+          | M.Trecord rn -> M.unloc_mident rn
           | _ -> assert false
         in
         let ru = make_ru rn (M.unloc_mident fn) v in
@@ -942,7 +942,7 @@ let to_ir (model : M.model) : T.ir =
       let t = mtt.type_ in
       let rn =
         match M.get_ntype t with
-        | M.Trecord rn -> unloc rn
+        | M.Trecord rn -> M.unloc_mident rn
         | _ -> assert false
       in
       let ru = List.fold_left (fun (ru : T.ruitem option) (fn, v) -> Some (make_ru ?ru rn fn v)) None l in

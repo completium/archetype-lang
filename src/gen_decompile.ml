@@ -1459,8 +1459,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match M.get_ntype t with
-    | Tasset id                  -> A.tref (unloc id)
-    | Tenum id                   -> A.tref (unloc id)
+    | Tasset id                  -> A.tref (M.unloc_mident id)
+    | Tenum id                   -> A.tref (M.unloc_mident id)
     | Tstate                     -> assert false
     | Tbuiltin Bunit             -> A.tunit
     | Tbuiltin Bbool             -> A.tbool
@@ -1501,8 +1501,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbig_map (kt, vt)          -> A.mk_tbig_map (f kt) (f vt)
     | Titerable_big_map (kt, vt) -> A.mk_titerable_big_map (f kt) (f vt)
     | Tor (lt, rt)               -> A.mk_tor (f lt) (f rt)
-    | Trecord id                 -> A.tref (unloc id)
-    | Tevent id                  -> A.tref (unloc id)
+    | Trecord id                 -> A.tref (M.unloc_mident id)
+    | Tevent id                  -> A.tref (M.unloc_mident id)
     | Tlambda _                  -> assert false
     | Tunit                      -> A.tunit
     | Tstorage                   -> assert false

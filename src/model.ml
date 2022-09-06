@@ -72,8 +72,8 @@ type trtyp =
 [@@deriving show {with_path = false}]
 
 type ntype =
-  | Tasset of lident
-  | Tenum of lident
+  | Tasset of mident
+  | Tenum of mident
   | Tstate
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
@@ -85,8 +85,8 @@ type ntype =
   | Tbig_map of type_ * type_
   | Titerable_big_map of type_ * type_
   | Tor of type_ * type_
-  | Trecord of lident
-  | Tevent of lident
+  | Trecord of mident
+  | Tevent of mident
   | Tlambda of type_ * type_
   | Tunit
   | Tstorage
@@ -1194,9 +1194,9 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate, Tnone, Dnone )) ((Tenum (dumloc "state")), None)
+let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate, Tnone, Dnone )) ((Tenum (mk_mident (dumloc "state"))), None)
 
-let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
+let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum (mk_mident e)))
 let mk_state_value id = mk_enum_value id (dumloc "state")
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
@@ -1333,8 +1333,8 @@ let rec cmp_ntype
     (t2 : ntype)
   : bool =
   match t1, t2 with
-  | Tasset i1, Tasset i2                                   -> cmp_lident i1 i2
-  | Tenum i1, Tenum i2                                     -> cmp_lident i1 i2
+  | Tasset i1, Tasset i2                                   -> cmp_mident i1 i2
+  | Tenum i1, Tenum i2                                     -> cmp_mident i1 i2
   | Tstate, Tstate                                         -> true
   | Tbuiltin b1, Tbuiltin b2                               -> cmp_btyp b1 b2
   | Tcontainer (t1, c1), Tcontainer (t2, c2)               -> cmp_type t1 t2 && cmp_container c1 c2
@@ -1346,8 +1346,8 @@ let rec cmp_ntype
   | Tbig_map (k1, v1), Tbig_map (k2, v2)                   -> cmp_type k1 k2 && cmp_type v1 v2
   | Titerable_big_map (k1, v1), Titerable_big_map (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
   | Tor (l1, r1), Tor (l2, r2)                             -> cmp_type l1 l2 && cmp_type r1 r2
-  | Trecord i1, Trecord i2                                 -> cmp_lident i1 i2
-  | Tevent e1, Tevent e2                                   -> cmp_lident e1 e2
+  | Trecord i1, Trecord i2                                 -> cmp_mident i1 i2
+  | Tevent e1, Tevent e2                                   -> cmp_mident e1 e2
   | Tlambda (a1, r1), Tlambda (a2, r2)                     -> cmp_type a1 a2 && cmp_type r1 r2
   | Tunit, Tunit                                           -> true
   | Tstorage, Tstorage                                     -> true
@@ -4509,12 +4509,12 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
 
 let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
   let h k (id : mident) = (fst id, {(snd id) with pldesc=(f k (snd id).pldesc)}) in
-  let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
+  (* let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in *)
   let rec for_type (t : type_) : type_ =
     let for_ntype (nt : ntype) : ntype =
       match nt with
-      | Tasset id                -> Tasset (g KIassetname id)
-      | Tenum id                 -> Tenum (g KIenumname id)
+      | Tasset id                -> Tasset (h KIassetname id)
+      | Tenum id                 -> Tenum (h KIenumname id)
       | Tstate                   -> nt
       | Tbuiltin _               -> nt
       | Tcontainer (a, c)        -> Tcontainer (for_type a, c)
@@ -4526,8 +4526,8 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Tbig_map (k, v)          -> Tbig_map (k, for_type v)
       | Titerable_big_map (k, v) -> Titerable_big_map (k, for_type v)
       | Tor (l, r)               -> Tor (for_type l, for_type r)
-      | Trecord id               -> Trecord (g KIrecordname id)
-      | Tevent id                -> Tevent (g KIrecordname id)
+      | Trecord id               -> Trecord (h KIrecordname id)
+      | Tevent id                -> Tevent (h KIrecordname id)
       | Tlambda (a, r)           -> Tlambda (for_type a, for_type r)
       | Tunit                    -> nt
       | Tstorage                 -> nt
@@ -4734,8 +4734,8 @@ end = struct
 
   let type_to_asset t =
     match get_ntype t with
-    | Tasset n -> n |> unloc
-    | Tcontainer ((Tasset n, _), _) -> n |> unloc
+    | Tasset n -> n |> unloc_mident
+    | Tcontainer ((Tasset n, _), _) -> n |> unloc_mident
     | _ -> emit_error NotanAssetType
 
   let get_asset_type (t : mterm) : ident = type_to_asset t.type_
@@ -4843,7 +4843,7 @@ end = struct
 
   let dest_container t =
     match get_ntype t with
-    | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> unloc p
+    | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> unloc_mident p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
@@ -4879,7 +4879,7 @@ end = struct
     in
     let ot = seek_original_type () in
     match get_ntype ot with
-    | Tcontainer ((Tasset an, _), c) -> (unloc an, c)
+    | Tcontainer ((Tasset an, _), c) -> (unloc_mident an, c)
     | _ -> assert false
 
   let get_container_assets model asset : ident list =
@@ -5170,7 +5170,7 @@ end = struct
       begin
         let l, an = deloc (snd an) in
         let idparam = mk_mident (mkloc l (an ^ "_values")) in
-        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (dumloc "myasset")))))
+        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (mk_mident (dumloc "myasset"))))))
       end
     | _ -> None
 
@@ -5698,7 +5698,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (dumloc an)), Collection)))
+    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (mk_mident (dumloc an))), Collection)))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
@@ -6043,7 +6043,7 @@ end = struct
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with
     | {node = (Masset l); type_ = (Tasset an, _) } ->
-      let an = unloc an in
+      let an = unloc_mident an in
       let asset : asset = get_asset model an in
       let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
       let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc_mident ai.name, x)) asset.values l in
@@ -6061,7 +6061,7 @@ end = struct
     let asset = get_asset model asset_name in
     List.fold_left (fun accu (x : asset_item) ->
         match get_ntype x.original_type with
-        | Tcontainer ((Tasset an, _), Partition) -> (unloc_mident x.name, unloc an)::accu
+        | Tcontainer ((Tasset an, _), Partition) -> (unloc_mident x.name, unloc_mident an)::accu
         | _ -> accu
       ) [] asset.values
 

@@ -28,7 +28,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mset (asset_name, _, _, _) ->
         [APIAsset (Set asset_name)]
       | Mupdate (asset_name, _, l) ->
-        [APIAsset (Update (asset_name, List.map (fun (x, y, z) -> (unloc x, y, z)) l))]
+        [APIAsset (Update (asset_name, List.map (fun (x, y, z) -> (unloc_mident x, y, z)) l))]
       | Maddasset (asset_name, _) ->
         [APIAsset (Add asset_name)]
       | Maddfield (asset_name, field_name, _, _) ->
@@ -54,8 +54,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
           match get_ntype t with
-          | Tcontainer ((Tasset aan, _), Aggregate) -> unloc aan, []
-          | Tcontainer ((Tasset aan, _), Partition) -> unloc aan, [APIAsset (Remove (unloc aan))]
+          | Tcontainer ((Tasset aan, _), Aggregate) -> unloc_mident aan, []
+          | Tcontainer ((Tasset aan, _), Partition) -> unloc_mident aan, [APIAsset (Remove (unloc_mident aan))]
           | _ -> assert false
         in
         [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l
