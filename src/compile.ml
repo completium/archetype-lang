@@ -525,7 +525,7 @@ let show_contract_interface input : string =
     |> parse
     |> compile_model
     (* transformations *)
-    |> process_metadata
+    (* |> process_metadata *)
   in
   let low_model = toolchain model in
 
