@@ -136,16 +136,16 @@ let remove_add_update ?(isformula = false) (model : model) : model =
     match mt.node with
     | Maddupdate (an, c, k, l) ->
       begin
-        let type_asset = tasset (dumloc an) in
+        let type_asset = tasset (mk_mident (dumloc an)) in
         let is_put =
           let asset = Utils.get_asset model an in
           let fields_ref =
             asset.values
             |> List.remove_if (fun (x : asset_item) -> x.shadow || Option.is_some x.default)
-            |> List.map (fun (x : asset_item) -> unloc x.name)
+            |> List.map (fun (x : asset_item) -> unloc_mident x.name)
           in
 
-          let fields_actual = List.map (fun (id,_,_) -> unloc id) l in
+          let fields_actual = List.map (fun (id,_,_) -> unloc_mident id) l in
 
           let is_all = List.for_all (fun (f : ident) -> List.exists (String.equal f) fields_ref) fields_actual in
 
@@ -156,10 +156,10 @@ let remove_add_update ?(isformula = false) (model : model) : model =
         let mk_asset (an, k, l) =
           let dummy_mterm = mk_mterm (Mseq []) tunit in
           let asset = Utils.get_asset model an in
-          let lref : (Ident.ident * (assignment_operator * mterm * Location.t)) list = List.map (fun (x, y, z) -> (unloc x, (y, z, loc x))) l in
+          let lref : (Ident.ident * (assignment_operator * mterm * Location.t)) list = List.map (fun (x, y, z) -> (unloc_mident x, (y, z, loc_mident x))) l in
           let l = List.map (
               fun (f : asset_item) ->
-                let f_name = (unloc f.name) in
+                let f_name = (unloc_mident f.name) in
                 if List.exists (String.equal f_name) asset.keys
                 then k
                 else
@@ -197,25 +197,25 @@ let remove_add_update ?(isformula = false) (model : model) : model =
           let cond = mk_mterm (
               match c with
               | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a), t, d) ->
-                let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c, t, d), k)
+                let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc_mident andat, unloc_mident fn, c, t, d), k)
               | CKcoll _ -> Mcontains (an, c, k)
               | _ -> assert false) tunit
           in
           match c with
-          | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
+          | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc_mident dan) (unloc_mident dfn) -> begin
               let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
               let fail_ = failc (Invalid (mk_tuple [mk_string fail_msg_KEY_NOT_FOUND; k])) in
-              let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
+              let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc_mident dan, ckcol, dk, kft, kfd), k)) tbool in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
-              let add = mk_mterm (Maddfield (unloc dan, unloc dfn, dk, asset)) tunit in
+              let add = mk_mterm (Maddfield (unloc_mident dan, unloc_mident dfn, dk, asset)) tunit in
               let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
               r
             end
           | _ -> begin
               let add = mk_mterm (
                   match c with
-                  | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+                  | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc_mident an, unloc_mident fn, k, asset)
                   | CKcoll _ -> Mputsingleasset (an, asset)
                   | _ -> assert false) tunit in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
@@ -234,7 +234,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
 let remove_container_op_in_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     let is_field_container asset (fn, _, _) =
-      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+      let f = List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) (unloc_mident fn)) asset.values in
       match get_ntype f.original_type with
       | Tcontainer _ -> true
       | _ -> false
@@ -247,10 +247,10 @@ let remove_container_op_in_update (model : model) : model =
     | Mupdate (an, k, l) when with_container an l -> begin
         let asset = Model.Utils.get_asset model an in
         let newl, instrs =
-          List.fold_right (fun (fn, op, v : lident * assignment_operator * mterm) (accu_l, accu_instrs) ->
+          List.fold_right (fun (fn, op, v : mident * assignment_operator * mterm) (accu_l, accu_instrs) ->
               if is_field_container asset (fn, op, v)
               then begin
-                let fn = unloc fn in
+                let fn = unloc_mident fn in
                 let process ?(with_remove=false) kind =
                   let fnode = begin
                     match kind with
@@ -295,7 +295,7 @@ let remove_container_op_in_update (model : model) : model =
 let remove_container_op_in_update_exec (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     let is_basic_container asset (fn, _, _) =
-      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+      let f = List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) (unloc_mident fn)) asset.values in
       match get_ntype f.original_type with
       | Tset _ | Tmap _ -> true
       | _ -> false
@@ -308,13 +308,13 @@ let remove_container_op_in_update_exec (model : model) : model =
     | Mupdate (an, k, l) when with_basic_container an l -> begin
         let asset = Model.Utils.get_asset model an in
         let newl, instrs =
-          List.fold_right (fun (fn, op, v : lident * assignment_operator * mterm) (accu_l, accu_instrs) ->
+          List.fold_right (fun (fn, op, v : mident * assignment_operator * mterm) (accu_l, accu_instrs) ->
               let def_value = ((fn, op, v)::accu_l, accu_instrs) in
               if is_basic_container asset (fn, op, v)
               then begin
                 let a, tty =
-                  let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
-                  mk_mterm (Mdotassetfield (dumloc an, k, f.name)) f.original_type,
+                  let f = List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) (unloc_mident fn)) asset.values in
+                  mk_mterm (Mdotassetfield (mk_mident (dumloc an), k, f.name)) f.original_type,
                   match get_ntype f.original_type with
                   | Tset ty       -> `Set ty
                   | Tmap (kt, vt) -> `Map (kt, vt)
@@ -373,14 +373,14 @@ let remove_empty_update (model : model) : model =
   map_mterm_model aux model
 
 let build_col_asset (an : ident) =
-  let dan = dumloc an in
+  let dan = mk_mident (dumloc an) in
   let type_asset = Tasset dan in
   let type_col = tcollection dan in
   let type_view = tview dan in
   let col : mterm  = mk_mterm (Mvar (dan, Vstorecol, Tnone, Dnone)) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
-let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll (Tnone, Dnone), v)) (tasset (dumloc an))
+let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll (Tnone, Dnone), v)) (tasset (mk_mident (dumloc an)))
 
 (* myasset.update k {f1 = v1; f2 = v2}
 
@@ -398,9 +398,9 @@ let replace_update_by_set (model : model) : model =
 
         (* let _, t = Utils.get_asset_key model an in *)
 
-        let type_asset = tasset (dumloc an) in
+        let type_asset = tasset (mk_mident (dumloc an)) in
 
-        let var_name = dumloc (an ^ "_") in
+        let var_name = mk_mident (dumloc (an ^ "_")) in
         let var_mterm : mterm = mk_mterm (Mvar (var_name, Vlocal, Tnone, Dnone)) type_asset in
 
         (* let key_name = "k_" in *)
@@ -408,12 +408,12 @@ let replace_update_by_set (model : model) : model =
         (* let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in *)
         let key_mterm : mterm = k in
 
-        let set_mterm : mterm = mk_mterm (Mset (an, List.map (fun (id, _, _) -> unloc id) l, key_mterm, var_mterm)) tunit in
+        let set_mterm : mterm = mk_mterm (Mset (an, List.map (fun (id, _, _) -> unloc_mident id) l, key_mterm, var_mterm)) tunit in
 
-        let lref : (Ident.ident * (assignment_operator * mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) l in
+        let lref : (Ident.ident * (assignment_operator * mterm)) list = List.map (fun (x, y, z) -> (unloc_mident x, (y, z))) l in
         let lassetitems =
           List.fold_left (fun accu (x : asset_item) ->
-              let v = List.assoc_opt (unloc x.name) lref in
+              let v = List.assoc_opt (unloc_mident x.name) lref in
               let type_ = x.type_ in
               let var = mk_mterm (Mdot (var_mterm, x.name)) type_ in
               match v with
@@ -491,13 +491,13 @@ let extend_loop_iter (model : model) : model =
   let map_invariant_iter () =
     let rec internal_map_inv_iter (ctx : ctx_model) (t : mterm) : mterm =
       let mk_term const =
-        let loop_id = Tools.Option.get ctx.invariant_id |> unloc in
+        let loop_id = Tools.Option.get ctx.invariant_id |> unloc_mident in
         if List.mem_assoc loop_id for_colls then
           let coll : iter_container_kind = List.assoc loop_id for_colls in
           let f t = match get_ntype t with | Tcontainer ((Tasset an, _), _) -> an | _ -> assert false in
           let tcoll =
             match coll with
-            | ICKcoll an         -> tview (dumloc an)
+            | ICKcoll an         -> tview (mk_mident (dumloc an))
             | ICKview c          -> tview (f c.type_)
             | ICKfield (_, _, c) -> tview (f c.type_)
             | ICKset  c  -> c.type_
@@ -510,8 +510,8 @@ let extend_loop_iter (model : model) : model =
         else
           t in
       match t.node with
-      | Mvar (v, Vlocal, _, _) when cmp_lident v (dumloc "toiterate") -> mk_term `Toiterate
-      | Mvar (v, Vlocal, _, _) when cmp_lident v (dumloc "iterated") -> mk_term `Iterated
+      | Mvar (v, Vlocal, _, _) when cmp_ident (unloc_mident v) "toiterate" -> mk_term `Toiterate
+      | Mvar (v, Vlocal, _, _) when cmp_ident (unloc_mident v) "iterated" -> mk_term `Iterated
       | _ -> map_mterm (internal_map_inv_iter ctx) t in
     map_mterm_model internal_map_inv_iter model in
   map_invariant_iter ()
@@ -6586,7 +6586,7 @@ let remove_import_mterm (model : model) =
     match mt.node with
     | Mimportcallview (t, a, b, c) -> begin
         let cv = mk_mterm (Mcallview (t, f a, b, f c)) (toption mt.type_) in
-        let v = dumloc "_v" in
+        let v = mk_mident (dumloc "_v") in
         mk_mterm (Mmatchoption (cv, v, mk_mvar v mt.type_, failg (mk_tuple [mk_string "VIEW_NOT_FOUND"; mk_string (unloc b)]))) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt

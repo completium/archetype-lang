@@ -999,6 +999,9 @@ let mk_mident ?(namespace = []) id : mident =
 let unloc_mident (id : mident) : ident =
   unloc (snd id)
 
+let loc_mident (id : mident) : Location.t =
+  loc (snd id)
+
 let mk_pattern ?(loc = Location.dummy) node : pattern =
   { node; loc}
 
