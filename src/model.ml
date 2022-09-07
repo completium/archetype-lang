@@ -1002,6 +1002,9 @@ let unloc_mident (id : mident) : ident =
 let loc_mident (id : mident) : Location.t =
   loc (snd id)
 
+let deloc_mident (id : mident) : Location.t * ident =
+  deloc (snd id)
+
 let mk_pattern ?(loc = Location.dummy) node : pattern =
   { node; loc}
 

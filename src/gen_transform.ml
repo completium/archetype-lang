@@ -520,12 +520,12 @@ let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
     begin
-      let storage_id = dumloc "_s" in
+      let storage_id = mk_mident (dumloc "_s") in
       let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
         match mt.node with
-        | Mvar (a, Vstorevar, d, t) when String.equal (unloc a) (unloc i.id) ->
+        | Mvar (a, Vstorevar, d, t) when String.equal (unloc_mident a) (unloc_mident i.id) ->
           mk_mterm (Mvar (storage_id, Vlocal, d, t)) mt.type_
-        | Massign (op, t, Avar a, v) when String.equal (unloc a) (unloc i.id) ->
+        | Massign (op, t, Avar a, v) when String.equal (unloc_mident a) (unloc_mident i.id) ->
           let vv = map_mterm (aux ctx) v in
           mk_mterm (Massign (op, t, Avar storage_id, vv)) mt.type_
         | _ -> map_mterm (aux ctx) mt
@@ -573,8 +573,8 @@ let check_containers_asset (model : model) : model =
     | Tcontainer _ -> true
     | _ -> false
   in
-  let is_asset_with_container (an : lident) : bool =
-    let an = unloc an in
+  let is_asset_with_container (an : mident) : bool =
+    let an = unloc_mident an in
     let a = Utils.get_asset model an in
     List.exists (fun (item : asset_item) -> is_container item.type_) a.values
   in
@@ -582,7 +582,7 @@ let check_containers_asset (model : model) : model =
     List.fold_left (fun accu (a : asset) ->
         List.fold_left (fun accu (item : asset_item) ->
             match get_ntype item.type_ with
-            | Tcontainer ((Tasset an, _), _) when is_asset_with_container an -> (unloc a.name, unloc item.name, unloc an, item.loc)::accu
+            | Tcontainer ((Tasset an, _), _) when is_asset_with_container an -> (unloc_mident a.name, unloc_mident item.name, unloc_mident an, item.loc)::accu
             | _ -> accu
           ) accu a.values
       ) [] assets
@@ -602,7 +602,7 @@ let check_empty_container_on_asset_default_value (model : model) : model =
     List.fold_left (fun accu (a : asset) ->
         List.fold_left (fun accu (item : asset_item) ->
             match get_ntype item.type_, item.default with
-            | Tcontainer ((Tasset an, _), c), Some dv when not (is_emtpy_container dv) -> (unloc an, unloc a.name, c, dv.loc)::accu
+            | Tcontainer ((Tasset an, _), c), Some dv when not (is_emtpy_container dv) -> (unloc_mident an, unloc_mident a.name, c, dv.loc)::accu
             | _ -> accu
           ) accu a.values
       ) [] assets
@@ -618,13 +618,13 @@ let check_asset_key (model : model) : model =
        match d with
        | Dasset dasset -> begin
            List.iter (fun s ->
-               if List.exists (String.equal (unloc s)) dasset.keys
-               then errors := ((loc s), NoSortOnKeyWithMultiKey (unloc s))::!errors
+               if List.exists (String.equal (unloc_mident s)) dasset.keys
+               then errors := ((loc_mident s), NoSortOnKeyWithMultiKey (unloc_mident s))::!errors
              ) dasset.sort;
            try
-             let field = List.find (fun (x : asset_item) -> List.exists (String.equal (unloc x.name)) dasset.keys) dasset.values in
+             let field = List.find (fun (x : asset_item) -> List.exists (String.equal (unloc_mident x.name)) dasset.keys) dasset.values in
              match field.default with
-             | Some dv -> errors := (dv.loc, DefaultValueOnKeyAsset (unloc dasset.name))::!errors
+             | Some dv -> errors := (dv.loc, DefaultValueOnKeyAsset (unloc_mident dasset.name))::!errors
              | _ -> ()
            with Not_found -> assert false
          end
@@ -743,7 +743,7 @@ let check_init_partition_in_asset (model : model) : model =
         | Dasset da ->
           List.fold_left (fun accu (ai : asset_item) ->
               match ai.type_ with
-              | Tcontainer ((Tasset an, _), Partition), _ -> (unloc an)::accu
+              | Tcontainer ((Tasset an, _), Partition), _ -> (unloc_mident an)::accu
               | _ -> accu
             ) [] da.values
         | _ -> []
@@ -753,7 +753,7 @@ let check_init_partition_in_asset (model : model) : model =
   let errors : (Location.t * error_desc) list =
     List.map (function
         | Dasset da -> begin
-            let an : ident = unloc da.name in
+            let an : ident = unloc_mident da.name in
             let init : mterm list = da.init in
             if
               List.exists (String.equal an) an_partition &&
@@ -793,11 +793,11 @@ let check_duplicated_keys_in_asset (model : model) : model =
     let dasset = Utils.get_asset model an in
     let asset : asset = Model.Utils.get_asset model an in
     let asset_keys = dasset.keys in
-    let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+    let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc_mident ai.name, x)) asset.values l in
     let value_key_opt =
       match List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd with
       | {node = Mvar (id, _, _, _); _} -> begin
-          let const = Model.Utils.get_vars model |> List.find_opt (fun (x : var) -> cmp_ident (unloc id) (unloc x.name)) in
+          let const = Model.Utils.get_vars model |> List.find_opt (fun (x : var) -> cmp_ident (unloc_mident id) (unloc_mident x.name)) in
           match const with
           | Some c -> c.default
           | None -> None
@@ -819,7 +819,7 @@ let check_duplicated_keys_in_asset (model : model) : model =
     (fun d ->
        match d with
        | Dasset dasset -> begin
-           let an = unloc dasset.name in
+           let an = unloc_mident dasset.name in
            List.iter (fun (value_asset : mterm) ->
                match value_asset.node with
                | Masset l -> begin
@@ -831,7 +831,7 @@ let check_duplicated_keys_in_asset (model : model) : model =
                            | Massets ll -> begin
                                List.iter (fun (x : mterm) ->
                                    match x.node with
-                                   | Masset lll -> check_asset_key (unloc aan) lll
+                                   | Masset lll -> check_asset_key (unloc_mident aan) lll
                                    | _ -> ()
                                  ) ll
                              end
@@ -854,7 +854,7 @@ let prune_properties (model : model) : model =
     let _is_inv, uses =
       (match Model.Utils.retrieve_property model fp_id with
        | PstorageInvariant _ -> true, []
-       | Ppostcondition (p, _f_id) -> false, List.map unloc p.uses
+       | Ppostcondition (p, _f_id) -> false, List.map unloc_mident p.uses
        | _ -> false, [])
     in
 
@@ -864,7 +864,7 @@ let prune_properties (model : model) : model =
           model.functions
           |> List.map (fun (x : function__) -> x.node)
           |> List.map ((function | Entry fs -> fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> fs))
-          |> List.map (fun (x : function_struct) -> unloc x.name) in
+          |> List.map (fun (x : function_struct) -> unloc_mident x.name) in
         let add l x = if List.mem x l then l else x::l in
         List.fold_left (fun accu _p_id ->
             match Model.Utils.retrieve_property model fp_id with
@@ -895,7 +895,7 @@ let prune_properties (model : model) : model =
           let ll =
             l
             |> List.map aux
-            |> List.filter (fun (x : mterm) -> match x.node with | Mlabel id -> remain_id (unloc id) | _ -> true)
+            |> List.filter (fun (x : mterm) -> match x.node with | Mlabel id -> remain_id (unloc_mident id) | _ -> true)
           in
           { mt with node = Mseq ll }
         | _ -> map_mterm aux mt
@@ -903,12 +903,12 @@ let prune_properties (model : model) : model =
       aux mt
     in
     let prune_decl = function
-      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) r.invariants }
+      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc_mident (x.label))) r.invariants }
       | Denum e ->
         begin
           let values = List.map (
               fun (x : enum_item) ->
-                {x with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) x.invariants }
+                {x with invariants = List.filter (fun (x : label_term) -> remain_id (unloc_mident (x.label))) x.invariants }
             ) e.values in
           Denum { e with values = values; }
         end
@@ -916,7 +916,7 @@ let prune_properties (model : model) : model =
     in
     let prune_specs (spec : specification) : specification =
       { spec with
-        postconditions = List.filter (fun (x : postcondition) -> remain_id (unloc x.name)) spec.postconditions
+        postconditions = List.filter (fun (x : postcondition) -> remain_id (unloc_mident x.name)) spec.postconditions
       } in
     let prune_function__ (f : function__) : function__ =
       let prune_function_node (fn : function_node) : function_node =
@@ -936,7 +936,7 @@ let prune_properties (model : model) : model =
       { sec with
         items = List.filter (fun (x : security_item) -> remain_id (unloc x.label)) sec.items
       } in
-    let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
+    let f1 = (fun (fs : function_struct) -> remain_function (unloc_mident fs.name)) in
     let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Getter (fs, _) | View (fs, _, _)| Function (fs, _) -> fs) in
     { model with
       api_verif = api_verifs;
@@ -969,7 +969,7 @@ let move_partition_init_asset (model : model) : model =
                             List.fold_left2 (fun (map, fields) (ai : asset_item) (fv : mterm) ->
                                 match fv.node, ai.type_ with
                                 | Massets l, (Tcontainer ((Tasset aan, _), Partition), _) -> begin
-                                    let aan = unloc aan in
+                                    let aan = unloc_mident aan in
                                     let _, kt = Utils.get_asset_key model aan in
                                     let extract_key (mt : mterm)=
                                       match mt.node with
@@ -1002,7 +1002,7 @@ let move_partition_init_asset (model : model) : model =
   let add_assets (map, model : (mterm list) MapString.t * model) : model =
     let f (d : decl_node) : decl_node =
       match d with
-      | Dasset a when MapString.mem (unloc a.name) map -> Dasset { a with init = a.init @ (MapString.find (unloc a.name) map )}
+      | Dasset a when MapString.mem (unloc_mident a.name) map -> Dasset { a with init = a.init @ (MapString.find (unloc_mident a.name) map )}
       | _ -> d
     in
     { model with
@@ -1088,7 +1088,7 @@ let assign_loop_label (model : model) : model =
             begin
               let col =
                 match c with
-                | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (tcollection (dumloc an))
+                | ICKcoll an -> mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol, Tnone, Dnone)) (tcollection (mk_mident (dumloc an)))
                 | ICKview c
                 | ICKfield (_, _, c)
                 | ICKset  c
@@ -1122,10 +1122,10 @@ let assign_loop_label (model : model) : model =
     let prefix =
       "loop_" ^
       (match ctx.fs, ctx.spec_id, ctx.label, ctx.invariant_id with
-       | Some fs, _, _, _ -> unloc fs.name
+       | Some fs, _, _, _ -> unloc_mident fs.name
        | _, Some a, _, _
        | _, _, Some a, _
-       | _, _, _, Some a  -> unloc a
+       | _, _, _, Some a  -> unloc_mident a
        | _ -> assert false)
       ^ "_"
     in
@@ -1178,12 +1178,12 @@ let remove_enum000 (model : model) : model =
   let process_decls decls =
     let process_enum (enum : enum) =
       let mk_const id i =
-        let id_loc, id_v = deloc id in
-        let ty_v = unloc enum.name in
+        let id_loc, id_v = deloc_mident id in
+        let ty_v = unloc_mident enum.name in
         let name = mk_enum_ident ty_v id_v in
         Dvar (
           mk_var
-            (dumloc name)
+            (mk_mident (dumloc name))
             tint
             tint
             VKconstant
@@ -1397,7 +1397,7 @@ let remove_enum (model : model) : model =
   in
 
   let process_asset_state (model : model) : model =
-    let get_state_lident an = dumloc ("state_" ^ an) in
+    let get_state_mident an = mk_mident (dumloc ("state_" ^ an)) in
 
     let map = ref MapString.empty in
 
@@ -1407,12 +1407,12 @@ let remove_enum (model : model) : model =
         | Some id ->
           begin
             let enum    = Utils.get_enum model (unloc id) in
-            let name    = get_state_lident (unloc a.name) in
-            let typ     = tenum id in
+            let name    = get_state_mident (unloc_mident a.name) in
+            let typ     = tenum (mk_mident id) in
             let e_val   = enum.initial in
             let default = mk_enum_value e_val id in
 
-            map := MapString.add (unloc a.name) default !map;
+            map := MapString.add (unloc_mident a.name) default !map;
             let item = mk_asset_item name typ typ ~default:default in
             let init_items = List.map (fun (x : mterm) ->
                 match x.node with
@@ -1432,16 +1432,16 @@ let remove_enum (model : model) : model =
     let rec aux ctx (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Mvar (an, Vassetstate k, _, _), _ -> begin
-          let an = unloc an in
-          let i = get_state_lident an in
-          mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
+          let an = unloc_mident an in
+          let i = get_state_mident an in
+          mk_mterm (Mdotassetfield (mk_mident (dumloc an), k, i)) mt.type_
         end
       | Massign (op, _, Aassetstate (an, k), v), _ ->
-        let i = get_state_lident an in
+        let i = get_state_mident an in
         mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
 
-      | Masset l, (Tasset an, _) when MapString.mem (unloc an) !map ->
-        let default : mterm = MapString.find (unloc an) !map in
+      | Masset l, (Tasset an, _) when MapString.mem (unloc_mident an) !map ->
+        let default : mterm = MapString.find (unloc_mident an) !map in
         let l = List.map (aux ctx) l in
         {mt with node = Masset (l @ [default]) }
 
@@ -1470,7 +1470,7 @@ let remove_enum (model : model) : model =
         then tint
         else begin
           let f = mk_args_type in
-          let l = List.map (fun (x : enum_item) -> f x.name x.args) e.values in
+          let l = List.map (fun (x : enum_item) -> f (snd x.name) x.args) e.values in
           match List.rev l with
           | []        -> assert false
           | [a]       -> a
@@ -1482,7 +1482,7 @@ let remove_enum (model : model) : model =
         then
           begin
             List.fold_lefti (fun i accu (x : enum_item) ->
-                MapString.add (unloc x.name) (fun _ -> mk_int i) accu)
+                MapString.add (unloc_mident x.name) (fun _ -> mk_int i) accu)
               MapString.empty e.values
           end
         else begin
@@ -1494,7 +1494,7 @@ let remove_enum (model : model) : model =
             | _ -> mk_tuple xs
           in
           let values = e.values in
-          let l = List.map (fun (x : enum_item) -> f x.name x.args) values in
+          let l = List.map (fun (x : enum_item) -> f (snd x.name) x.args) values in
           List.fold_lefti (fun i accu (x : enum_item) ->
               let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
               let remove_last l =
@@ -1512,7 +1512,7 @@ let remove_enum (model : model) : model =
                   let lt = mk_or l1 in
                   (fun xs -> fr l0 (mk_left (lt) (g xs)))
               in
-              MapString.add (unloc x.name) f accu
+              MapString.add (unloc_mident x.name) f accu
             ) MapString.empty values
         end
       in
@@ -1532,10 +1532,10 @@ let remove_enum (model : model) : model =
                 let map : mterm MapString.t =
                   List.fold_lefti
                     (fun i accu (x : enum_item) ->
-                       MapString.add (unloc x.name) (mk_int i) accu)
+                       MapString.add (unloc_mident x.name) (mk_int i) accu)
                     MapString.empty e.values
                 in
-                let ivar = dumloc "_tmp" in
+                let ivar = mk_mident (dumloc "_tmp") in
                 let mvar : mterm = mk_mvar ivar tint in
                 let mk_cond (id : ident) = mk_mterm (Mequal (tint, MapString.find id map, mvar)) tbool in
                 let mk_if (id : ident) (v : mterm) (accu : mterm) : mterm =
@@ -1547,7 +1547,7 @@ let remove_enum (model : model) : model =
                   List.fold_left (fun accu (p, v: pattern * mterm) ->
                       match p.node with
                       | Pwild -> assert false
-                      | Pconst (id, _) -> mk_if (unloc id) v accu)
+                      | Pconst (id, _) -> mk_if (unloc_mident id) v accu)
                     init lps
                 in
                 mk_letin ivar ev v
@@ -1558,18 +1558,18 @@ let remove_enum (model : model) : model =
           let seek_value (enum_item : enum_item) =
             let v = List.fold_lefti (fun idx accu (p, v : pattern * mterm)  ->
                 match p.node with
-                | Pconst (i, args) when String.equal (unloc i) (unloc enum_item.name) -> Some (args, v, idx)
+                | Pconst (i, args) when String.equal (unloc_mident i) (unloc_mident enum_item.name) -> Some (args, v, idx)
                 | _ -> accu) None ps
             in
-            let id_var_or = dumloc ("_var_or") in
+            let id_var_or = mk_mident (dumloc ("_var_or")) in
             match v, dvopt with
             | Some ([], v, _), _  -> id_var_or, v
-            | Some ([a], v, _), _ -> a, v
+            | Some ([a], v, _), _ -> mk_mident a, v
             | Some (l, v, _), _ -> begin
                 let ts : type_ list =  enum_item.args in
                 let var = mk_mvar id_var_or (ttuple ts) in
-                let l2 : (int * lident) list = List.mapi (fun (i : int) (x : lident) -> i, x) l in
-                let v = List.fold_right (fun (i, x : int * lident) (accu : mterm) -> accu |> mk_letin x (mk_tupleaccess i var)) l2 v in
+                let l2 : (int * mident) list = List.mapi (fun (i : int) (x : lident) -> i, mk_mident x) l in
+                let v = List.fold_right (fun (i, x : int * mident) (accu : mterm) -> accu |> mk_letin x (mk_tupleaccess i var)) l2 v in
                 id_var_or, v
               end
             | _, Some v        -> id_var_or, v
@@ -1607,14 +1607,14 @@ let remove_enum (model : model) : model =
     List.fold_left (fun accu x ->
         match x with
         | Denum e -> begin
-            match unloc e.name with
+            match unloc_mident e.name with
             | "state" -> List.fold_left (fun accu x -> MapString.add x (mk_enum_info e) accu) accu ["state"; "$state"]
-            | _       -> MapString.add (unloc e.name) (mk_enum_info e) accu
+            | _       -> MapString.add (unloc_mident e.name) (mk_enum_info e) accu
           end
         | _ -> accu) MapString.empty model.decls
   in
 
-  let get_enum_id_opt t = match get_ntype t with | Tstate -> Some "$state" | Tenum eid -> Some (unloc eid) | _ -> None in
+  let get_enum_id_opt t = match get_ntype t with | Tstate -> Some "$state" | Tenum eid -> Some (unloc_mident eid) | _ -> None in
   let get_enum_id t     = t |> get_enum_id_opt |> Option.get in
   let is_tenum t        = t |> get_enum_id_opt |> Option.is_some in
 
@@ -1628,7 +1628,7 @@ let remove_enum (model : model) : model =
       match get_ntype t with
       | Tstate -> tint
       | Tenum id -> begin
-          let info : enum_info = get_info (unloc id) in
+          let info : enum_info = get_info (unloc_mident id) in
           info.type_
         end
       | _ -> map_type aux t
@@ -1639,7 +1639,7 @@ let remove_enum (model : model) : model =
   let for_mterm (mt : mterm) : mterm =
     let rec aux (mt : mterm) =
       let state = "_state" in
-      let dstate = dumloc state in
+      let dstate = mk_mident (dumloc state) in
       let for_matchwith rt (e : mterm) ps : mterm =
         let eid = get_enum_id e.type_ in
         let info : enum_info = get_info eid in
@@ -1653,7 +1653,7 @@ let remove_enum (model : model) : model =
       | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
           let info : enum_info = get_info eid in
-          let f = MapString.find (unloc id) info.fitems in
+          let f = MapString.find (unloc_mident id) info.fitems in
           f args
         end
       | Mmatchwith     (e, ps) when is_tenum (e.type_) -> for_matchwith None e ps
@@ -1667,7 +1667,7 @@ let remove_enum (model : model) : model =
     let lll = List.fold_left (fun accu x -> begin
           match x with
           | Denum e -> begin
-              let ename : string = unloc e.name in
+              let ename : string = unloc_mident e.name in
               let te = for_type (tenum (e.name)) in
               ODEnum (mk_odel_enum ename te)::accu
             end
@@ -1681,11 +1681,11 @@ let remove_enum (model : model) : model =
     let decls =
       List.fold_right (fun x accu ->
           match x with
-          | Denum ({name = {pldesc = "state"}} as e) ->
+          | Denum ({name = (_, {pldesc = "state"})} as e) ->
             let initial = e.initial in
             let info : enum_info = get_info "state" in
-            let dv = (MapString.find (unloc initial) info.fitems) [] in
-            (Dvar (mk_var (dumloc "_state") tint tint VKvariable ~default:dv ))::accu
+            let dv = (MapString.find (unloc_mident initial) info.fitems) [] in
+            (Dvar (mk_var (mk_mident (dumloc "_state")) tint tint VKvariable ~default:dv ))::accu
           | Denum _ -> accu
           | x -> x::accu
         ) model.decls []
@@ -1954,8 +1954,8 @@ let remove_rational (model : model) : model =
       in
 
       let do_fun op (lhs : mterm) (rhs : mterm) : mterm =
-        let id_lhs = dumloc "_lhs" in
-        let id_rhs = dumloc "_rhs" in
+        let id_lhs = mk_mident (dumloc "_lhs") in
+        let id_rhs = mk_mident (dumloc "_rhs") in
         let vlhs = mk_mvar id_lhs trat in
         let vrhs = mk_mvar id_rhs trat in
         let lhs = lhs |> aux |> to_rat in
@@ -1999,15 +1999,15 @@ let remove_rational_update (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm=
     match mt.node with
     | Mupdate (an, k, l) -> begin
-        let l : (lident * assignment_operator * mterm) list = List.map (
-            fun (fn, op, v) : (lident * assignment_operator * mterm) ->
+        let l : (mident * assignment_operator * mterm) list = List.map (
+            fun (fn, op, v) : (mident * assignment_operator * mterm) ->
               let v : mterm = v in
               match get_ntype v.type_ with
               | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> begin
 
                   let get_val id : mterm =
-                    let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
-                    let node = Mdotassetfield(dumloc an, k, id) in
+                    let _, ts, _ = Utils.get_asset_field model (an, unloc_mident id) in
+                    let node = Mdotassetfield(mk_mident (dumloc an), k, id) in
                     mk_mterm node ts
                   in
 
@@ -2182,7 +2182,7 @@ let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Massign (op, _, Aasset (an, fn, key), v) ->
-      let an = unloc an in
+      let an = unloc_mident an in
       let l = [(fn, op, v)] in
       mk_mterm (Mupdate (an, key, l)) tunit
 
@@ -2194,7 +2194,7 @@ let eval_variable_initial_value (model : model) : model =
   let map_value : (ident * mterm) list =
     List.fold_left (fun accu x ->
         match x with
-        | Dvar v when Option.is_some v.default -> (unloc v.name, Option.get v.default)::accu
+        | Dvar v when Option.is_some v.default -> (unloc_mident v.name, Option.get v.default)::accu
         | _ -> accu
       ) [] model.decls in
   { model with
@@ -2221,7 +2221,7 @@ let add_explicit_sort (model : model) : model =
       match mt.node with
       | Mvar (_, Vstorecol, _, _) -> true
 
-      | Mvar (id, Vlocal, _, _) -> not (List.exists (fun a -> String.equal a (unloc id)) env)
+      | Mvar (id, Vlocal, _, _) -> not (List.exists (fun a -> String.equal a (unloc_mident id)) env)
 
       (* asset api *)
       | Mselect (_, CKview c, _, _, _) -> is_implicit_sort env c
@@ -2240,14 +2240,14 @@ let add_explicit_sort (model : model) : model =
     in
     let extract_asset_name (c : mterm) =
       match get_ntype c.type_ with
-      | Tcontainer ((Tasset an, _), _) -> unloc an
+      | Tcontainer ((Tasset an, _), _) -> unloc_mident an
       | _ -> assert false
     in
     match mt.node with
     | Mletin ([id], v, Some (Tcontainer ((Tasset an, _), c), _), body, o) ->
       let env =
         match is_sorted body with
-        | true -> (unloc id)::env
+        | true -> (unloc_mident id)::env
         | _ -> env
       in
       let body = aux env ctx body in
@@ -2428,10 +2428,10 @@ let replace_ident_model_val (model : model) : model =
    Model.map_mterm_model aux model *)
 
 let merge_update (model : model) : model =
-  let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
+  let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc_mident ref) (unloc_mident id))) false l in
   let replace l (ref_id, ref_op, ref_v) =
     List.fold_right (fun (id, op, v) accu ->
-        if (String.equal (unloc ref_id) (unloc id))
+        if (String.equal (unloc_mident ref_id) (unloc_mident id))
         then (id, ref_op, ref_v)::accu
         else (id, op, v)::accu
       ) l [] in
@@ -2698,7 +2698,7 @@ let replace_dotassetfield_by_dot (model : model) : model =
     | Mdotassetfield (an, k, fn) ->
       begin
         let k = aux ctx k in
-        let get = build_get (unloc an) k in
+        let get = build_get (unloc_mident an) k in
         mk_mterm (Mdot (get, fn)) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt
@@ -2706,11 +2706,11 @@ let replace_dotassetfield_by_dot (model : model) : model =
   Model.map_mterm_model aux model
 
 let remove_fun_dotasset (model : model) : model =
-  let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
+  let extract_fun_dotasset (mt: mterm) : mterm * (mident * mterm) list =
     let cpt : int ref = ref 0 in
     let prefix = "tmp_" in
 
-    let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+    let rec efd_aux (accu : (mident * mterm) list) (mt : mterm) : mterm * (mident * mterm) list =
       let is_fun (mt : mterm) : bool =
         match mt.node with
         | Mget _ | Mnth _-> true
@@ -2722,9 +2722,9 @@ let remove_fun_dotasset (model : model) : model =
           let l, accu = efd_aux accu l in
           let var_id = prefix ^ string_of_int (!cpt) in
           cpt := !cpt + 1;
-          let var = mk_mterm (Mvar (dumloc var_id, Vlocal, Tnone, Dnone)) l.type_ in
+          let var = mk_mterm (Mvar (mk_mident (dumloc var_id), Vlocal, Tnone, Dnone)) l.type_ in
           let nmt = mk_mterm (Mdot (var, r)) mt.type_ in
-          nmt, accu @ [(dumloc var_id, l)]
+          nmt, accu @ [(mk_mident (dumloc var_id), l)]
         end
       | _ ->
         let g (x : mterm__node) : mterm = { mt with node = x; } in
@@ -2735,8 +2735,8 @@ let remove_fun_dotasset (model : model) : model =
   extract_term_from_instruction extract_fun_dotasset model
 
 let remove_letin_from_expr (model : model) : model =
-  let aux (mt: mterm) : mterm * (lident * mterm) list =
-    let rec f (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+  let aux (mt: mterm) : mterm * (mident * mterm) list =
+    let rec f (accu : (mident * mterm) list) (mt : mterm) : mterm * (mident * mterm) list =
       match mt.node with
       | Mletin ([i], a, _, b, None) ->
         let b, accu = f accu b in
@@ -2762,7 +2762,7 @@ let process_internal_string (model : model) : model =
   Model.map_mterm_model aux model
 
 let build_col (an : ident) =
-  let dan = dumloc an in
+  let dan = mk_mident (dumloc an) in
   let type_col = tcollection dan in
   let type_view = tview dan in
   let col : mterm  = mk_mterm (Mvar (dan, Vstorecol, Tnone, Dnone)) type_col in
@@ -3042,13 +3042,13 @@ let split_key_values (model : model) : model =
         let asset : asset = Model.Utils.get_asset model asset_name in
         let asset_keys = asset.keys in
 
-        let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+        let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc_mident ai.name, x)) asset.values l in
 
         List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd,
         { asset_value with
           node = Masset (List.map (fun (x : mterm) ->
               match x with
-              | { type_ = (Tcontainer ((Tasset an, _), c), _); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in (mktype (Tcontainer (k, c))) }
+              | { type_ = (Tcontainer ((Tasset an, _), c), _); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc_mident an) |> snd in (mktype (Tcontainer (k, c))) }
               | _ -> x) l)
         }
       end
@@ -3059,18 +3059,18 @@ let split_key_values (model : model) : model =
     List.fold_right (fun x accu ->
         match x.model_type with
         | MTasset an ->
-          let an = dumloc an in
-          let asset = Utils.get_asset model (unloc an) in
-          let _k, t = Utils.get_asset_key model (unloc an) in
+          let an = mk_mident (dumloc an) in
+          let asset = Utils.get_asset model (unloc_mident an) in
+          let _k, t = Utils.get_asset_key model (unloc_mident an) in
           let type_asset = (match asset.map_kind with | MKIterableBigMap -> titerable_big_map | MKBigMap -> tbig_map | MKMap -> tmap) t (tasset an) in
           let default =
             match x.default.node with
-            | Massets l -> mk_mterm (Mlitmap (asset.map_kind, List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
+            | Massets l -> mk_mterm (Mlitmap (asset.map_kind, List.map (fun x -> get_asset_assoc_key_value (unloc_mident an) x) l)) type_asset
             | _ -> assert false
           in
           let asset_assets =
-            mk_storage_item (dumloc (asset_assets (unloc an)))
-              (MTasset (unloc an))
+            mk_storage_item (mk_mident (dumloc (asset_assets (unloc_mident an))))
+              (MTasset (unloc_mident an))
               type_asset
               default
               ~loc:x.loc
@@ -3085,7 +3085,7 @@ let split_key_values (model : model) : model =
     | Mcast ((Tcontainer ((Tasset _, _), _), _), (Tcontainer ((Tasset _, _), _), _), v), _ -> aux ctx v
     | Massets l, (Tcontainer ((Tasset an, _), _), _) ->
       let l = List.map (aux ctx) l in
-      mk_mterm (Mlitset l) (tset ((Utils.get_asset_key model (unloc an) |> snd)))
+      mk_mterm (Mlitset l) (tset ((Utils.get_asset_key model (unloc_mident an) |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
 
@@ -3098,8 +3098,8 @@ let replace_for_to_iter (model : model) : model =
   let extract_asset (col : iter_container_kind) =
     match col with
     | ICKcoll an -> an
-    | ICKview {type_ = (Tcontainer ((Tasset an, _), _), _)} -> unloc an
-    | ICKfield (_, _, {type_ = (Tcontainer ((Tasset an, _), _), _)}) -> unloc an
+    | ICKview {type_ = (Tcontainer ((Tasset an, _), _), _)} -> unloc_mident an
+    | ICKfield (_, _, {type_ = (Tcontainer ((Tasset an, _), _), _)}) -> unloc_mident an
     | _ -> assert false
   in
 
@@ -3107,13 +3107,13 @@ let replace_for_to_iter (model : model) : model =
     let process ids col t body lbl =
       let nbody = aux ctx body in
       let idx_id = "_i_" ^ lbl in
-      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal, Tnone, Dnone)) tint in
+      let idx = mk_mterm (Mvar (mk_mident (dumloc idx_id), Vlocal, Tnone, Dnone)) tint in
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
       let letin = mk_mterm (Mletin (ids, nth, Some t, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mlistlength (t, col)) tint in
       let strict = false in
-      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl, strict) in
+      let iter = Miter (mk_mident (dumloc idx_id), bound_min, bound_max, letin, Some lbl, strict) in
       mk_mterm iter mt.type_
     in
     match mt.node with
@@ -3139,7 +3139,7 @@ let replace_for_to_iter (model : model) : model =
     | Mfor (FIsimple id, col, body, Some lbl) ->
       let nbody = aux ctx body in
       let an = extract_asset col in
-      let type_asset = tasset (dumloc an) in
+      let type_asset = tasset (mk_mident (dumloc an)) in
       let ck =
         begin match col with
           | ICKcoll _ -> CKcoll (Tnone, Dnone)
@@ -3148,13 +3148,13 @@ let replace_for_to_iter (model : model) : model =
           | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
-      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal, Tnone, Dnone)) tint in
+      let idx = mk_mterm (Mvar (mk_mident (dumloc idx_id), Vlocal, Tnone, Dnone)) tint in
       let nth = mk_mterm (Mnth(an, ck, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mcount (an, ck)) tint in
       let nat = false in
-      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl, nat) in
+      let iter = Miter (mk_mident (dumloc idx_id), bound_min, bound_max, letin, Some lbl, nat) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
@@ -3165,13 +3165,13 @@ let remove_duplicate_key (model : model) : model =
     match mt.node, get_ntype mt.type_ with
     | Masset l, Tasset an ->
       begin
-        let an = unloc an in
+        let an = unloc_mident an in
         let k, _ = Utils.get_asset_key model an in
         let l =
           Utils.get_labeled_value_from model an l
           |> List.filter (fun (lbl, _) -> not (String.equal lbl k))
         in
-        mk_mterm (Mlitrecord l) (tasset (dumloc (an)))
+        mk_mterm (Mlitrecord l) (tasset (mk_mident (dumloc (an))))
       end
     | _ -> mt
   in
@@ -3210,7 +3210,7 @@ let remove_duplicate_key (model : model) : model =
                   | Tmap _ -> tmap, MKMap
                   | _ -> assert false
                 in
-                let t = mkm kt (tasset (dumloc (unloc an))) in
+                let t = mkm kt (tasset an) in
                 let mt = mk_mterm (Mlitmap (mkmm, List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
               | _ -> x.default, x.typ
@@ -3259,13 +3259,13 @@ let extract_item_collection_from_add_asset (model : model) : model =
          | Tcontainer ((Tasset ann, _), Partition), Massets l when not (List.is_empty l) ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
-             let assets = [unloc ai.name, unloc ann, l] in
+             let assets = [unloc_mident ai.name, unloc_mident ann, l] in
              (mas::add_fields, assets @ items)
            end
          | Tcontainer ((Tasset ann, _), Aggregate), Mlitlist l when not (List.is_empty l) ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
-             let assets = [unloc ai.name, unloc ann, l] in
+             let assets = [unloc_mident ai.name, unloc_mident ann, l] in
              (mas::add_fields, assets @ items)
            end
          | _ -> (mt::add_fields, items))
@@ -3276,7 +3276,7 @@ let extract_item_collection_from_add_asset (model : model) : model =
       match mt.node with
       | Maddasset (an, { node = (Masset l); type_ = (Tasset _, _); _}) ->
         begin
-          let dan = dumloc an in
+          let dan = mk_mident (dumloc an) in
           let add_fields, labeled_assets = extract_item_collection_from_add_asset an l in
           if List.is_empty labeled_assets
           then mt
@@ -3343,7 +3343,7 @@ let replace_instr_verif (model : model) : model =
 
 let rename_shadow_variable (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
-    let fun_id =  match f__.node with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> unloc fs.name in
+    let fun_id =  match f__.node with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> unloc_mident fs.name in
     let for_specification spec : specification =
       let map_ids = ref MapString.empty in
       let rename_variables spec : specification =
@@ -3352,24 +3352,24 @@ let rename_shadow_variable (model : model) : model =
               { x with
                 decl =
                   let id, t, dv = x.decl in
-                  let id = unloc id in
+                  let id = unloc_mident id in
                   let newid = id ^ "_" ^ fun_id in
                   map_ids := MapString.add id newid !map_ids;
-                  dumloc newid, t, dv
+                  mk_mident (dumloc newid), t, dv
               }) spec.variables
         }
       in
       let for_mterm _ctx mt : mterm =
         let rec aux (mt : mterm) : mterm =
           match mt.node with
-          | Massign (op, t, Avar id, b) when MapString.mem (unloc id) !map_ids -> begin
+          | Massign (op, t, Avar id, b) when MapString.mem (unloc_mident id) !map_ids -> begin
               let newb = aux b in
-              let newid : ident = MapString.find (unloc id) !map_ids in
-              { mt with node = Massign (op, t, Avarstore (dumloc newid), newb) }
+              let newid : ident = MapString.find (unloc_mident id) !map_ids in
+              { mt with node = Massign (op, t, Avarstore (mk_mident (dumloc newid)), newb) }
             end
-          | Mvar (id, Vlocal, t, d) when MapString.mem(unloc id) !map_ids -> begin
-              let newid : ident = MapString.find (unloc id) !map_ids in
-              { mt with node = Mvar (dumloc newid, Vstorevar, t, d) }
+          | Mvar (id, Vlocal, t, d) when MapString.mem(unloc_mident id) !map_ids -> begin
+              let newid : ident = MapString.find (unloc_mident id) !map_ids in
+              { mt with node = Mvar (mk_mident (dumloc newid), Vstorevar, t, d) }
             end
           | _ -> map_mterm aux mt
         in
@@ -3391,14 +3391,14 @@ let concat_shadown_effect_to_exec (model : model) : model =
   let set_storage_ident = ref SetString.empty in
   List.iter (fun (si : storage_item) ->
       match si.model_type with
-      | MTvar -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident
+      | MTvar -> set_storage_ident := SetString.add (unloc_mident si.id) !set_storage_ident
       | _ -> ()
     ) model.storage;
   let for_mterm _ctx (x : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
-      | Mvar (id, _, t, d) when SetString.mem (unloc id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar, t, d)}
-      | Massign (op, t, Avar id, v) when SetString.mem (unloc id) !set_storage_ident  -> begin
+      | Mvar (id, _, t, d) when SetString.mem (unloc_mident id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar, t, d)}
+      | Massign (op, t, Avar id, v) when SetString.mem (unloc_mident id) !set_storage_ident  -> begin
           let nv = aux v in
           { mt with node = (Massign (op, t, Avarstore id, nv)) }
         end
