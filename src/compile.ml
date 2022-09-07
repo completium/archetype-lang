@@ -513,7 +513,7 @@ let with_parameters input : string =
       (
         Printer_tools.pp_list ", " (fun fmt (p : Model.parameter) ->
             Format.fprintf fmt "%a : %a"
-              Printer_tools.pp_id p.name
+              Printer_tools.pp_mid p.name
               Printer_model.pp_type p.typ
           )) parameters
 
@@ -546,7 +546,7 @@ let with_parameters input : string =
     let ty = Format.asprintf "%a" Printer_michelson.pp_type (Gen_michelson.to_type m p.typ) in
     let dv : string option = None in (* Option.map (fun x -> Format.asprintf "%a" Printer_michelson.pp_data (Gen_michelson.to_data x)) p.default in *)
     {
-      name  = Location.unloc p.name;
+      name  = Model.unloc_mident p.name;
       type_ = ty;
       const = p.const;
       default_value = dv;

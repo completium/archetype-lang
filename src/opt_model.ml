@@ -12,7 +12,7 @@ let build_entries (model : model) : model =
   let rec split (code : mterm) : (mterm * mterm) option = match code.node with | Mseq [a] -> split a | Minstrmatchor (_a, _b, c, _d, e) -> Some (c, e) | _ -> None in
   let process_arg t =
     match t with
-    | _ -> [dumloc "arg", t, None]
+    | _ -> [mk_mident (dumloc "arg"), t, None]
   in
   let rec process (pty, code : type_ * mterm) =
     match pty with
@@ -21,13 +21,13 @@ let build_entries (model : model) : model =
         | Some (c1, c2) -> process (o1, c1) @ process (o2, c2)
         | None -> assert false
       end
-    | _, Some annot -> [Some annot, pty, code]
-    | _, _ -> [Some (dumloc "default"), pty, code]
+    | _, Some annot -> [Some (mk_mident annot), pty, code]
+    | _, _ -> [Some (mk_mident (dumloc "default")), pty, code]
   in
   Option.fold (fun model p ->
       let l = process p in
       let ps = List.mapi (fun k (name, pty, code) ->
-          let name = match name with | Some x -> x | None -> dumloc (Format.asprintf "entry_%i" k) in
+          let name = match name with | Some x -> x | None -> mk_mident (dumloc (Format.asprintf "entry_%i" k)) in
           mk_function (Entry (mk_function_struct ~args:(process_arg pty) name code))
         ) l in
       { model with functions = ps }) model p
@@ -35,7 +35,7 @@ let build_entries (model : model) : model =
 let remove_operations_nil (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Massign(ValueAssign, _, Avar {pldesc = "ops"}, { node = (Mlitlist []) }) -> seq []
+    | Massign(ValueAssign, _, Avar (_, {pldesc = "ops"}), { node = (Mlitlist []) }) -> seq []
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
