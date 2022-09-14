@@ -3240,10 +3240,12 @@ let remove_assign_operator (model : model) : model =
       let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Aasset (an, fn, k), v)) mt.type_
     | Massign (op, t, Arecord (lv, rn, fn), v) ->
-      let v = process_assign_op op t lv v in
+      let lhs = mk_mterm (Mdot (lv, fn)) v.type_ in
+      let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Arecord (lv, rn, fn), v)) mt.type_
     | Massign (op, t, Atuple (lv, i, l), v) ->
-      let v = process_assign_op op t lv v in
+      let lhs = mk_tupleaccess i lv in
+      let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Atuple (lv, i, l), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in

@@ -1,0 +1,6 @@
+archetype assign_add_tuple
+
+entry exec () {
+  var z : (nat * nat * nat) = (0, 0, 0);
+  z[0] += 2
+}

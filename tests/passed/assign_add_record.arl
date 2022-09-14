@@ -1,0 +1,11 @@
+archetype assign_add_record
+
+record r {
+    a: string;
+    c: nat = 0;
+}
+
+entry exec () {
+  var z : r = {""; 0};
+  z.c += 2
+}
