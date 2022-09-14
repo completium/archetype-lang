@@ -106,7 +106,7 @@ type decl_entrypoint = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-type decl_getter = {
+type decl_fun_ret = {
   name: string;
   args: argument list;
   return: type_;
@@ -126,7 +126,8 @@ type contract_interface = {
   types: decl_type;
   storage: decl_storage list;
   entrypoints: decl_entrypoint list;
-  getters: decl_getter list;
+  getters: decl_fun_ret list;
+  views: decl_fun_ret list;
   errors: error_struct list;
 }
 [@@deriving yojson, show {with_path = false}]
@@ -170,7 +171,7 @@ let mk_argument name type_ : argument =
 let mk_entrypoint name args : decl_entrypoint =
   { name; args }
 
-let mk_getter name args return : decl_getter =
+let mk_decl_fun_ret name args return : decl_fun_ret =
   { name; args; return }
 
 let mk_parameter name type_ const default : parameter =
@@ -179,8 +180,8 @@ let mk_parameter name type_ const default : parameter =
 let mk_error_struct ?(args = []) kind expr : error_struct =
   { kind; args; expr }
 
-let mk_contract_interface name parameters types storage entrypoints getters errors : contract_interface =
-  { name; parameters; types; storage; entrypoints; getters; errors }
+let mk_contract_interface name parameters types storage entrypoints getters views errors : contract_interface =
+  { name; parameters; types; storage; entrypoints; getters; views; errors }
 
 let rec for_type (t : M.type_) : type_ =
   match M.get_ntype t with
@@ -349,8 +350,11 @@ let for_storage (d : M.decl_node) accu =
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (unloc fs.name) (List.map for_argument fs.args)
 
-let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
-  mk_getter (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
+let for_getter (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
+  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
+
+let for_view (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
+  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
 
 let for_errors (model : M.model) : error_struct list =
   let mterm_to_micheline (mt : M.mterm) : micheline option =
@@ -402,8 +406,9 @@ let model_to_contract_interface (model : M.model) (low_model : M.model) : contra
   let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
+  let views = List.map for_view (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = for_errors model in
-  mk_contract_interface (unloc model.name) parameters types storage entrypoints getters errors
+  mk_contract_interface (unloc model.name) parameters types storage entrypoints getters views errors
 
 let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =
   let ci = model_to_contract_interface model low_model in
