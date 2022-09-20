@@ -717,6 +717,7 @@ type error_desc =
   | InvalidForIdentSimple
   | InvalidFormula
   | InvalidInstruction
+  | InvalidKeyFieldInAssetValueType
   | InvalidLValue
   | InvalidMapType
   | InvalidMethodInExec
@@ -966,6 +967,7 @@ let pp_error_desc fmt e =
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
+  | InvalidKeyFieldInAssetValueType    -> pp "Key field asset is not in asset_value type"
   | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
@@ -3567,6 +3569,8 @@ let rec for_xexpr
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty; fd_ghost = ghost } ->
+                if List.exists (fun v -> String.equal (unloc x) (unloc v)) asset.as_pk then
+                  Env.emit_error env (loc x, InvalidKeyFieldInAssetValueType);
                 if ghost && not (is_form_kind mode.em_kind) then
                   Env.emit_error env (loc x, InvalidShadowFieldAccess);
                 mk_sp (Some fty) (A.Pdot (e, x))
@@ -3617,6 +3621,8 @@ let rec for_xexpr
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty; fd_ghost = ghost } ->
+                if List.exists (fun v -> String.equal (unloc x) (unloc v)) asset.as_pk then
+                  Env.emit_error env (loc x, InvalidKeyFieldInAssetValueType);
                 if ghost && not (is_form_kind mode.em_kind) then
                   Env.emit_error env (loc x, InvalidShadowFieldAccess);
                 mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))

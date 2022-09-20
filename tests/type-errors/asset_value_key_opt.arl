@@ -1,0 +1,15 @@
+archetype asset_value_key_opt
+
+asset myasset {
+  k : nat;
+  v : nat;
+  u : string;
+}
+
+variable n : option<nat> = none
+
+// variable v : int = 0
+
+entry exec (i : asset_value<myasset>) {
+  n := i?.k;
+}

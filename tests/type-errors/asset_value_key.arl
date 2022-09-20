@@ -1,0 +1,15 @@
+archetype asset_value_key
+
+asset myasset {
+  k : nat;
+  v : nat;
+  u : string;
+}
+
+variable n : nat = 0
+
+// variable v : int = 0
+
+entry exec (i : asset_value<myasset>) {
+  n := i.k;
+}
