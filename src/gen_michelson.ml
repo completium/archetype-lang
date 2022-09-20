@@ -700,23 +700,10 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
-    (* | Memit (e, value) ->
-       let zerotz : M.mterm = M.mk_tez 0 in
-       let data : M.mterm =
-        let type_ = to_type model (M.tevent e) in
-        let typ = Format.asprintf "%a" Printer_michelson.pp_type type_ in
-        M.mk_pack (M.mk_tuple [M.mk_string (unloc e); M.mk_string typ; value])
-       in
-       let entry : M.mterm =
-        let addr : M.mterm = M.mk_address !Options.opt_event_well_address in
-        let entry_name = dumloc "%event" in
-        let error_msg = Some (M.mk_string "BAD_EVENT_CONTRACT") in
-        M.mk_entrypoint M.tbytes entry_name addr error_msg
-       in
-
-       let op = T.Iterop (Ttransfer_tokens, f zerotz, f data, f entry) in
-       T.Iassign (operations, T.Ibinop (Bcons, op, vops)) *)
-    | Memit _                       -> T.iskip
+    | Memit (e, value)  -> begin
+        let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (unloc e))), f value) in
+        T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
+      end
 
     (* entrypoint *)
 

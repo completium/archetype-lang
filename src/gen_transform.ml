@@ -6145,7 +6145,7 @@ let patch_fa2 (model : model) : model =
     functions = List.map for_function__ model.functions;
   }
 
-let process_event (model : model) : model =
+(* let process_event (model : model) : model =
   let rec aux ctx (mt : mterm) =
     match mt.node with
     | Memit (e, value) -> begin
@@ -6170,7 +6170,7 @@ let process_event (model : model) : model =
       end
     | _ -> map_mterm (aux ctx) mt
   in
-  map_mterm_model aux model
+  map_mterm_model aux model *)
 
 let remove_iterable_big_map (model : model) : model =
   let process_type ?(id : lident option) (t : type_) : type_ =
