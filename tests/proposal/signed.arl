@@ -1,0 +1,18 @@
+archetype signed
+
+asset signer { addr : address; has_signed : boolean = false }
+
+states =
+| ToBeSigned<nat> initial with ToBeSigned(0)
+| Signed
+
+transition sign() {
+  called by signer
+  from ToBeSigned(n)
+  to ToBeSigned(n+1) when { n < nb_required_signers }
+  to Signed when { n = nb_required_signers }
+  fail if { f0 : signer[caller].has_signed }
+  effect {
+    signer[caller].has_signed := true
+  }
+}
