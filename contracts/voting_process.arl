@@ -74,7 +74,7 @@ transition bury () {
     done;
     for b in ballot do
       if (ballot[b].nbvotes = nbvotesMax)
-      then winner.add({ winvalue = ballot[b].value })
+      then winner.add({ winvalue = b })
     done
   }
 }

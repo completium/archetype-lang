@@ -174,13 +174,12 @@ function compute_expected (d : date) : tez {
     for : redeemloop e in early do
       if early[e].redemption <= d
       then ( (* is there early redemption ? *)
-        var ee = early[e].eobservation;
-        if     fixing[ee].bac >= early[e].trigger * bac_initial
-           and fixing[ee].sg  >= early[e].trigger * sg_initial
-           and fixing[ee].ubs >= early[e].trigger * ubs_initial
+        if     fixing[e].bac >= early[e].trigger * bac_initial
+           and fixing[e].sg  >= early[e].trigger * sg_initial
+           and fixing[e].ubs >= early[e].trigger * ubs_initial
         then (
            expected += early[e].value * nominal;
-           redeem_date := early[e].eobservation;
+           redeem_date := e;
            terminated := true
         ))
     done;
@@ -202,12 +201,11 @@ function compute_expected (d : date) : tez {
     (* expected interests *)
     var exp_interests = 0tz;
     for : interestloop i in interest do
-      if interest[i].iobservation <= redeem_date and interest[i].payment <= d
+      if i <= redeem_date and interest[i].payment <= d
       then (
-        var ii = interest[i].iobservation;
-        if     fixing[ii].bac >= interest[i].barrier * bac_initial
-           and fixing[ii].sg  >= interest[i].barrier * sg_initial
-           and fixing[ii].ubs >= interest[i].barrier * ubs_initial
+        if     fixing[i].bac >= interest[i].barrier * bac_initial
+           and fixing[i].sg  >= interest[i].barrier * sg_initial
+           and fixing[i].ubs >= interest[i].barrier * ubs_initial
         then exp_interests := interest[i].rate * nominal
       )
     done;

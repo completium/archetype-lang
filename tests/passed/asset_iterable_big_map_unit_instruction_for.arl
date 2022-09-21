@@ -12,7 +12,7 @@ variable counter : nat = 0
 
 entry exec () {
   for k in my_asset do
-    counter += my_asset[k].id
+    counter += k
   done;
   do_require(counter = 3, "ko")
 }

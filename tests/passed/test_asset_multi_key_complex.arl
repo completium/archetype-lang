@@ -15,12 +15,5 @@ entry exec () {
   do_require(val, "ko");
   my_asset.update((0, "mystr_0"), { v = false});
 
-  var k0 = my_asset[(0, "mystr_0")].i;
-  var k1 = my_asset[(0, "mystr_0")].s;
-
-  do_require(k0 = 0, "ko");
-  do_require(k1 = "mystr_0", "ko");
-
   var v0 = my_asset.select(the.s <> "");
-
 }

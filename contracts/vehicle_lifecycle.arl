@@ -67,7 +67,7 @@ transition assign_owner () on (ok : asset_key<order>) {
   to Owner_assigned
   with effect {
     (* set vehicle state *)
-    vehicle[vehicledetail[order[ok].details].idv].vstate := Active;
+    vehicle[order[ok].details].vstate := Active;
   }
 }
 

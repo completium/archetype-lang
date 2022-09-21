@@ -9,16 +9,11 @@ asset my_asset to iterable_big_map {
 }
 
 entry exec () {
-  var my_asset_id = "id0";
-
   my_asset.add({ id = 3 });
   my_asset.remove(3);
 
   // my_asset.update(my_asset_id, {value += 2});
   // my_asset.add_update(my_asset_id, {value += 3});
-
-  var val : nat = my_asset[0].id;
-  do_require(val = 0, "ko");
 
   var b = my_asset.contains(1);
   do_require(b, "ko");
@@ -28,7 +23,7 @@ entry exec () {
 
   var counter = 0;
   for k in my_asset do
-    counter += my_asset[k].id
+    counter += k
   done;
   do_require(counter = 3, "ko")
 }

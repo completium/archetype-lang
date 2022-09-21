@@ -28,7 +28,7 @@ entry create_sig (i : string, s : list<address>, d : int) {
 function get_signatures(spid : string) : list<address * int> {
    var l : list<address * int> = [];
    for s in sig_spec[spid].signatures do
-      l := prepend(l, (sig[s].signatory, sig[s].value));
+      l := prepend(l, (s[1], sig[s].value));
    done;
    return l
 }
