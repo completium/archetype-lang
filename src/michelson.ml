@@ -1776,32 +1776,32 @@ end = struct
     let parameters = m.parameters in
     mk_micheline ~parameters ~views [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
-  let is_storable (t : type_) =
+  let rec is_storable (t : type_) =
     match t.node with
     | Taddress                -> true
-    | Tbig_map   (_k, _v)     -> true
+    | Tbig_map   _            -> true
     | Tbool                   -> true
     | Tbytes                  -> true
     | Tchain_id               -> true
-    | Tcontract  _t           -> false
+    | Tcontract  _            -> false
     | Tint                    -> true
     | Tkey                    -> true
     | Tkey_hash               -> true
-    | Tlambda    (_a, _r)     -> true
-    | Tlist      _t           -> true
-    | Tmap       (_k, _v)     -> true
+    | Tlambda    _            -> true
+    | Tlist      t            -> is_storable t
+    | Tmap       (k, v)       -> is_storable k && is_storable v
     | Tmutez                  -> true
     | Tnat                    -> true
     | Toperation              -> false
-    | Toption    _t           -> true
-    | Tor        (_l, _r)     -> true
-    | Tpair      (_l, _r)     -> true
-    | Tset       _t           -> true
+    | Toption    t            -> is_storable t
+    | Tor        (l, r)       -> is_storable l && is_storable r
+    | Tpair      (l, r)       -> is_storable l && is_storable r
+    | Tset       t            -> is_storable t
     | Tsignature              -> true
     | Tstring                 -> true
     | Ttimestamp              -> true
     | Tunit                   -> true
-    | Tticket       _t        -> true
+    | Tticket       t         -> is_storable t
     | Tsapling_state       _n -> true
     | Tsapling_transaction _n -> true
     | Tbls12_381_g1           -> true
