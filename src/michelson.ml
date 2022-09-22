@@ -1420,6 +1420,7 @@ module Utils : sig
   val type_to_micheline : type_-> obj_micheline
   val code_to_micheline : code -> obj_micheline
   val to_micheline : michelson -> data -> micheline
+  val is_storable : type_ -> bool
 
 end = struct
 
@@ -1775,6 +1776,40 @@ end = struct
     let parameters = m.parameters in
     mk_micheline ~parameters ~views [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
+  let is_storable (t : type_) =
+    match t.node with
+    | Taddress                -> true
+    | Tbig_map   (_k, _v)     -> true
+    | Tbool                   -> true
+    | Tbytes                  -> true
+    | Tchain_id               -> true
+    | Tcontract  _t           -> false
+    | Tint                    -> true
+    | Tkey                    -> true
+    | Tkey_hash               -> true
+    | Tlambda    (_a, _r)     -> true
+    | Tlist      _t           -> true
+    | Tmap       (_k, _v)     -> true
+    | Tmutez                  -> true
+    | Tnat                    -> true
+    | Toperation              -> false
+    | Toption    _t           -> true
+    | Tor        (_l, _r)     -> true
+    | Tpair      (_l, _r)     -> true
+    | Tset       _t           -> true
+    | Tsignature              -> true
+    | Tstring                 -> true
+    | Ttimestamp              -> true
+    | Tunit                   -> true
+    | Tticket       _t        -> true
+    | Tsapling_state       _n -> true
+    | Tsapling_transaction _n -> true
+    | Tbls12_381_g1           -> true
+    | Tbls12_381_g2           -> true
+    | Tbls12_381_fr           -> true
+    | Tnever                  -> true
+    | Tchest                  -> true
+    | Tchest_key              -> true
 end
 
 (***)

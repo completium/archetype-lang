@@ -106,10 +106,17 @@ type decl_entrypoint = {
 }
 [@@deriving yojson, show {with_path = false}]
 
+type type_micheline = {
+  value: micheline;
+  is_storable: bool;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type decl_fun_ret = {
   name: string;
   args: argument list;
   return: type_;
+  return_michelson: type_micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -171,8 +178,11 @@ let mk_argument name type_ : argument =
 let mk_entrypoint name args : decl_entrypoint =
   { name; args }
 
-let mk_decl_fun_ret name args return : decl_fun_ret =
-  { name; args; return }
+let mk_type_micheline value is_storable : type_micheline =
+  { value; is_storable }
+
+let mk_decl_fun_ret name args return return_michelson : decl_fun_ret =
+  { name; args; return; return_michelson }
 
 let mk_parameter name type_ const default : parameter =
   { name; type_; const; default }
@@ -265,7 +275,7 @@ let to_micheline (obj : T.obj_micheline) : micheline =
   aux obj
 
 let to_michelson_type (model : M.model) (type_michelson : M.type_) : micheline =
-  let type_michelson = Gen_michelson.to_type model type_michelson  in
+  let type_michelson = Gen_michelson.to_type model type_michelson in
   let obj = T.Utils.type_to_micheline type_michelson in
   to_micheline obj
 
@@ -350,11 +360,15 @@ let for_storage (d : M.decl_node) accu =
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (unloc fs.name) (List.map for_argument fs.args)
 
-let for_getter (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
-  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
+let for_decl_ret model (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
+  let ty = Gen_michelson.to_type model rt in
+  let value = to_micheline (T.Utils.type_to_micheline ty) in
+  let is_storable = T.Utils.is_storable ty in
+  let tm = mk_type_micheline value is_storable in
+  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt) tm
 
-let for_view (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
-  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
+let for_getter = for_decl_ret
+let for_view = for_decl_ret
 
 let for_errors (model : M.model) : error_struct list =
   let mterm_to_micheline (mt : M.mterm) : micheline option =
@@ -405,8 +419,8 @@ let model_to_contract_interface (model : M.model) (low_model : M.model) : contra
   let types = for_decl_type model low_model model.decls in
   let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
-  let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
-  let views = List.map for_view (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
+  let getters = List.map (for_getter model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
+  let views = List.map (for_view model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = for_errors model in
   mk_contract_interface (unloc model.name) parameters types storage entrypoints getters views errors
 
