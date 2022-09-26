@@ -200,8 +200,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
 
 let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   let f = to_simple_data model in
-  let dolist (l : M.mterm list) = List.fold_right (fun x accu -> match accu with | Some l -> (match f x with | Some v -> Some (v::l) | None -> None) | None -> None) l None in
-  let dolist2 (l : (M.mterm * M.mterm) list) = List.fold_right (fun (x, y) accu -> match accu with | Some l -> (match f x, f y with | Some v, Some w -> Some ((v, w)::l) | _ -> None) | None -> None) l None in
+  let dolist (l : M.mterm list) = List.fold_right (fun x accu -> match accu with | Some l -> (match f x with | Some v -> Some (v::l) | None -> None) | None -> None) l (Some []) in
+  let dolist2 (l : (M.mterm * M.mterm) list) = List.fold_right (fun (x, y) accu -> match accu with | Some l -> (match f x, f y with | Some v, Some w -> Some ((v, w)::l) | _ -> None) | None -> None) l (Some []) in
   match mt.node with
   | Munit                      -> Some (T.Dunit)
   | Mbool      true            -> Some (T.Dtrue)
