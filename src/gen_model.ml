@@ -33,7 +33,7 @@ let bailout = fun () -> raise (Error.Stop 5)
 type env = {
   formula: bool;
   asset_name: ident option;
-  function_p: (M.lident * (M.lident * M.type_ * M.mterm option) list) option
+  function_p: (M.mident * (M.mident * M.type_ * M.mterm option) list) option
 }
 [@@deriving show {with_path = false}]
 
@@ -80,10 +80,10 @@ let to_model (ast : A.ast) : M.model =
   let rec type_to_type (t : A.type_) : M.type_ =
     let f = function
       | A.Tnamed _                        -> assert false
-      | A.Tasset id                       -> M.Tasset id
-      | A.Trecord id                      -> M.Trecord id
-      | A.Tenum id                        -> M.Tenum id
-      | A.Tevent id                       -> M.Tevent id
+      | A.Tasset id                       -> M.Tasset (M.mk_mident id)
+      | A.Trecord id                      -> M.Trecord (M.mk_mident id)
+      | A.Tenum id                        -> M.Tenum (M.mk_mident id)
+      | A.Tevent id                       -> M.Tevent (M.mk_mident id)
       | A.Tbuiltin b                      -> M.Tbuiltin (vtyp_to_btyp b)
       | A.Tcontainer (t, Collection)      -> M.Tcontainer (type_to_type t, Collection)
       | A.Tcontainer (t, Aggregate)       -> M.Tcontainer (type_to_type t, Aggregate)
@@ -123,7 +123,7 @@ let to_model (ast : A.ast) : M.model =
 
   let to_pattern_node (n : A.lident A.pattern_node) : M.pattern_node =
     match n with
-    | A.Mconst (id, xs) -> M.Pconst (id, xs)
+    | A.Mconst (id, xs) -> M.Pconst (M.mk_mident id, xs)
     | A.Mwild -> M.Pwild
   in
 
@@ -181,7 +181,7 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_asset_name_from_type (t : M.type_) : ident =
     match M.get_ntype t with
-    | M.Tcontainer ((Tasset asset_name, _), _) -> unloc asset_name
+    | M.Tcontainer ((Tasset asset_name, _), _) -> M.unloc_mident asset_name
     | _ -> assert false
   in
 
@@ -232,15 +232,15 @@ let to_model (ast : A.ast) : M.model =
 
   let to_ck (env : env) (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
-    | M.Mdotassetfield (an, _k, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
-    | M.Mdot ({type_ = (Tasset an, _)}, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
-    | M.Mvar (v, Vdefinition, _, _), _ -> M.CKdef (unloc v)
+    | M.Mdotassetfield (an, _k, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (M.unloc_mident an, M.unloc_mident fn, fp, Tnone, Dnone)
+    | M.Mdot ({type_ = (Tasset an, _)}, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (M.unloc_mident an, M.unloc_mident fn, fp, Tnone, Dnone)
+    | M.Mvar (v, Vdefinition, _, _), _ -> M.CKdef (M.unloc_mident v)
     | M.Mvar (fn, _, t, d), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> begin
         let an = match env.asset_name with
           | Some v -> v
           | None -> assert false
         in
-        M.CKfield (an, unloc fn, fp, t, d)
+        M.CKfield (an, M.unloc_mident fn, fp, t, d)
       end
     | M.Mvar (_, _, t, d), (Tcontainer ((Tasset _, _), Collection), _) -> M.CKcoll (t, d)
     | _, (Tcontainer ((Tasset _, _), Collection), _) -> M.CKcoll (Tnone, Dnone)
@@ -249,7 +249,7 @@ let to_model (ast : A.ast) : M.model =
 
   let is_param env id =
     match env.function_p with
-    | Some (_, l) -> l |> List.map proj3_1 |> List.exists (fun x -> String.equal (unloc id) (unloc x))
+    | Some (_, l) -> l |> List.map proj3_1 |> List.exists (fun x -> String.equal (M.unloc_mident id) (M.unloc_mident x))
     | _ -> false
   in
 
@@ -282,11 +282,11 @@ let to_model (ast : A.ast) : M.model =
       match pterm.node with
       | A.Pif (c, t, e)                     -> M.Mexprif        (f c, f t, f e)
       | A.Pmatchwith (m, l)                 -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, id, f ve, f ne)
-      | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
-      | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
-      | A.Pfold (x, i, e)                   -> M.Mfold          (f x, i, f e)
-      | A.Pmap (x, i, e)                    -> M.Mmap           (f x, i, f e)
+      | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, M.mk_mident id, f ve, f ne)
+      | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, M.mk_mident lid, f le, M.mk_mident rid, f re)
+      | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, f hte, f ee)
+      | A.Pfold (x, i, e)                   -> M.Mfold          (f x, M.mk_mident i, f e)
+      | A.Pmap (x, i, e)                    -> M.Mmap           (f x, M.mk_mident i, f e)
       | A.Plogical (A.And, l, r)            -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)             -> M.Mor            (f l, f r)
       | A.Plogical (A.Xor, l, r)            -> M.Mxor           (f l, f r)
@@ -316,7 +316,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin
-          let record_name =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> unloc name | _ -> assert false in
+          let record_name =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> M.unloc_mident name | _ -> assert false in
           let ids, k =
             List.fold_left (fun accu (x : A.lident A.decl_) ->
                 match x with
@@ -333,21 +333,21 @@ let to_model (ast : A.ast) : M.model =
         end
       | A.Precord l                         -> M.Masset         (List.map f l)
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
-      | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([id], f init, Option.map type_to_type typ, f body, Option.map f o)
-      | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([i], Option.map type_to_type t, f v, c)
+      | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([M.mk_mident id], f init, Option.map type_to_type typ, f body, Option.map f o)
+      | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([M.mk_mident  i], Option.map type_to_type t, f v, c)
 
       (* enum value *)
-      | A.Pvar (_b, _vs, id) when A.Utils.is_enum_value ast id      -> M.Menumval (id, [], A.Utils.get_enum_values ast id |> Option.get |> unloc)
-      | A.Pcall (_, Cid id, [], args) when A.Utils.is_enum_value ast id -> M.Menumval (id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, A.Utils.get_enum_values ast id |> Option.get |> unloc)
+      | A.Pvar (_b, _vs, id) when A.Utils.is_enum_value ast id      -> M.Menumval (M.mk_mident id, [], A.Utils.get_enum_values ast id |> Option.get |> unloc)
+      | A.Pcall (_, Cid id, [], args) when A.Utils.is_enum_value ast id -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, A.Utils.get_enum_values ast id |> Option.get |> unloc)
 
 
-      | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (dumloc "", Vstate, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when is_param env id              -> M.Mvar (id, Vparam, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> M.Mvar (id, Vstorevar, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (id, Vstorecol, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (id, Vdefinition, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_parameter ast id  -> M.Mvar (id, Vparameter, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id)                                   -> M.Mvar (id, Vlocal, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (M.mk_mident (dumloc ""), Vstate, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when is_param env (M.mk_mident id)-> M.Mvar (M.mk_mident id, Vparam, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> M.Mvar (M.mk_mident id, Vstorevar, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (M.mk_mident id, Vstorecol, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (M.mk_mident id, Vdefinition, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_parameter ast id  -> M.Mvar (M.mk_mident id, Vparameter, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id)                                   -> M.Mvar (M.mk_mident id, Vlocal, to_temp b, to_delta vs)
       | A.Parray l                             ->
         begin
           let l = List.map f l in
@@ -377,19 +377,19 @@ let to_model (ast : A.ast) : M.model =
           | {node = Pcall (Some a, Cconst Cget, [], [AExpr k])} -> begin
               let b = f a in
               match M.get_ntype b.type_ with
-              | M.Tcontainer ((Tasset an, _), Collection) -> M.Mdotassetfield (an, f k, id)
-              | _ -> M.Mdot (f e, id)
+              | M.Tcontainer ((Tasset an, _), Collection) -> M.Mdotassetfield (an, f k, M.mk_mident id)
+              | _ -> M.Mdot (f e, M.mk_mident id)
             end
 
           | _ ->
             (* handle dot contract too *)
-            M.Mdot (f e, id)
+            M.Mdot (f e, M.mk_mident id)
         end
       (* | A.Pquestion (e, id, edv) -> assert false *)
 
-      | A.Pquestiondot (e, id) -> M.Mquestionoption (f e, id)
+      | A.Pquestiondot (e, id) -> M.Mquestionoption (f e, M.mk_mident id)
 
-      | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate, Tnone, Dnone)
+      | A.Pconst Cstate                        -> M.Mvar(M.mk_mident (dumloc ""), Vstate, Tnone, Dnone)
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
       | A.Pconst Ccaller                       -> M.Mcaller
@@ -411,7 +411,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Psome a                              -> M.Msome (f a)
       | A.Pleft (t, x)                         -> M.Mleft (type_to_type t, f x)
       | A.Pright (t, x)                        -> M.Mright (type_to_type t, f x)
-      | A.Plambda (rt, id, at, e)              -> M.Mlambda (type_to_type rt, id, type_to_type at, f e)
+      | A.Plambda (rt, id, at, e)              -> M.Mlambda (type_to_type rt, M.mk_mident id, type_to_type at, f e)
       | A.Pcast (src, dst, v)                  -> begin
           let v = f v in
           match src, dst, v with
@@ -435,10 +435,10 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTbytes,  A.Tbuiltin VTchest_key,    { node = Mbytes v; _}  -> M.Mchest_key v
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
-      | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, type_to_type typ, Option.map f coll, f term)
-      | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, type_to_type typ, Option.map f coll, f term)
+      | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (M.mk_mident i, type_to_type typ, Option.map f coll, f term)
+      | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (M.mk_mident i, type_to_type typ, Option.map f coll, f term)
 
-      | A.Pself id -> M.Mself id
+      | A.Pself id -> M.Mself (M.mk_mident id)
 
       | A.Pternary (c, a, b) -> begin
           let c = f c in
@@ -838,7 +838,7 @@ let to_model (ast : A.ast) : M.model =
         M.Mkeytoaddress (fx)
 
       | A.Pcall (_, A.Cid id, _, args) ->
-        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
+        M.Mapp (M.mk_mident id, List.map (fun x -> term_arg_to_expr f x) args)
 
       | A.Pcall (None, A.Cconst A.Cgreedyand, [], [AExpr a; AExpr b]) ->
         let fa = f a in
@@ -933,7 +933,7 @@ let to_model (ast : A.ast) : M.model =
         M.Mmakeoperation (fa, fb, fc)
 
       | A.Pcall (None, A.Cconst (A.Cmakeevent), [ty], [AIdent id; AExpr a]) ->
-        M.Mmakeevent (type_to_type ty, id, f a)
+        M.Mmakeevent (type_to_type ty, M.mk_mident id, f a)
 
       (* Lambda *)
 
@@ -960,28 +960,28 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (None, A.Cconst A.CgetEntrypoint, [t], [AIdent id; AExpr arg]) ->
         let arg = f arg in
         let t = type_to_type t in
-        M.Mgetentrypoint (t, id, arg)
+        M.Mgetentrypoint (t, M.mk_mident id, arg)
 
       | A.Pcall (None, A.Cconst A.CrequireEntrypoint, [t], [AIdent id; AExpr arg; AExpr err]) ->
         let arg = f arg in
         let err = f err in
         let t = type_to_type t in
-        let ma = M.mk_mterm (M.Mgetentrypoint (t, id, arg)) (M.toption (M.tcontract t)) in
+        let ma = M.mk_mterm (M.Mgetentrypoint (t, M.mk_mident id, arg)) (M.toption (M.tcontract t)) in
         let idv = dumloc "_v" in
-        let s = M.mk_mvar idv (M.tcontract t) in
-        M.Mmatchoption(ma, idv, s, M.failg err)
+        let s = M.mk_mvar (M.mk_mident idv) (M.tcontract t) in
+        M.Mmatchoption(ma, M.mk_mident idv, s, M.failg err)
 
       | A.Pcall (None, A.Cconst A.CcallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
         let addr = f addr in
         let arg = f arg in
         let t = type_to_type t in
-        M.Mcallview (t, addr, id, arg)
+        M.Mcallview (t, addr, M.mk_mident id, arg)
 
       | A.Pcall (None, A.Cconst A.CimportCallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
         let addr = f addr in
         let arg = f arg in
         let t = type_to_type t in
-        M.Mimportcallview (t, addr, id, arg)
+        M.Mimportcallview (t, addr, M.mk_mident id, arg)
 
       (* Fail *)
 
@@ -1000,13 +1000,13 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let to_label_lterm (env : env) (x : A.lident A.label_term) : M.label_term =
-    M.mk_label_term (to_mterm { env with formula = true } x.term) (Option.get x.label) ~loc:x.loc
+    M.mk_label_term (to_mterm { env with formula = true } x.term) (M.mk_mident (Option.get x.label)) ~loc:x.loc
   in
 
 
   let extract_asset_name (pterm : M.mterm) : Ident.ident =
     match pterm with
-    | {type_ = (Tcontainer ((Tasset asset_name, _), _), _); _ } -> unloc asset_name
+    | {type_ = (Tcontainer ((Tasset asset_name, _), _), _); _ } -> M.unloc_mident asset_name
     | _ -> assert false
   in
 
@@ -1018,18 +1018,18 @@ let to_model (ast : A.ast) : M.model =
   let process_var (env : env) (v : A.lident A.variable) : M.decl_node =
     let t : M.type_ = type_to_type (Option.get v.decl.typ) in
     let invariants = List.map (fun x -> to_label_lterm env x) v.invs in
-    let var : M.var = M.mk_var v.decl.name t t (to_variable_kind v.kind) ?default:(Option.map (to_mterm env) v.decl.default) ~invariants:invariants ~loc:v.loc in
+    let var : M.var = M.mk_var (M.mk_mident v.decl.name) t t (to_variable_kind v.kind) ?default:(Option.map (to_mterm env) v.decl.default) ~invariants:invariants ~loc:v.loc in
     M.Dvar var
   in
 
   let process_enum (env : env) (e : A.enum) : M.decl_node =
     let values = List.map (fun (x : A.lident A.enum_item_struct) ->
         let id : M.lident = x.name in
-        M.mk_enum_item id ~args:(List.map type_to_type x.args) ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
+        M.mk_enum_item (M.mk_mident id) ~args:(List.map type_to_type x.args) ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
       ) e.items in
     let initial : A.lident option = List.fold_left (fun accu (x : A.lident A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
     (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)
-    let enum = M.mk_enum (A.Utils.get_enum_name e) (Option.get initial) ~values:values in
+    let enum = M.mk_enum (M.mk_mident (A.Utils.get_enum_name e)) (M.mk_mident (Option.get initial)) ~values:values in
     M.Denum enum
   in
 
@@ -1038,11 +1038,11 @@ let to_model (ast : A.ast) : M.model =
     let values = List.map (fun (x : A.lident A.decl_gen) ->
         let typ = Option.get (Option.map type_to_type x.typ) in
         let default = Option.map (to_mterm env) x.default in
-        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
+        M.mk_asset_item (M.mk_mident x.name) typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
-    let mk_asset an l = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
+    let mk_asset an l : M.mterm = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
     let mp = match a.map_kind with | A.MKMap -> M.MKMap | A.MKBigMap -> M.MKBigMap | A.MKIterableBigMap -> M.MKIterableBigMap in
-    let r : M.asset = M.mk_asset a.name ~keys:(List.map unloc (a.keys)) ~values:values ~sort:a.sort ~map_kind:mp ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
+    let r : M.asset = M.mk_asset (M.mk_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset (M.mk_mident a.name)) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 
@@ -1079,9 +1079,9 @@ let to_model (ast : A.ast) : M.model =
     let fs : M.record_field list =
       List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.get (Option.map type_to_type x.typ) in
-          M.mk_record_field x.name typ ~loc:x.loc) r.fields
+          M.mk_record_field (M.mk_mident x.name) typ ~loc:x.loc) r.fields
     in
-    M.mk_record r.name ~fields:fs ~pos ~loc:r.loc
+    M.mk_record (M.mk_mident r.name) ~fields:fs ~pos ~loc:r.loc
   in
 
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =
@@ -1109,33 +1109,33 @@ let to_model (ast : A.ast) : M.model =
             | _, M.Tmap  _
             | _, M.Tbig_map  _
             | _, M.Titerable_big_map  _ -> M.ICKmap x
-            | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (unloc an)
-            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
+            | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (M.unloc_mident an)
+            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (M.unloc_mident an, M.unloc_mident fn, x)
             | _ -> M.ICKview x
           in
           let i =
             match i with
-            | A.FIsimple x      -> M.FIsimple x
-            | A.FIdouble (x, y) -> M.FIdouble (x, y)
+            | A.FIsimple x      -> M.FIsimple (M.mk_mident x)
+            | A.FIdouble (x, y) -> M.FIdouble (M.mk_mident x, M.mk_mident y)
           in
           M.Mfor (i, ncol, g body, instr.label)
         end
-      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label, false)
+      | A.Iiter (i, a, b, body)   -> M.Miter (M.mk_mident i, f a, f b, g body, instr.label, false)
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
-      | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
-      | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([i], Option.map type_to_type v.type_, f v, c) (* TODO *)
-      | A.Ideclvaropt (i, v, fa, c)-> M.Mdeclvaropt ([i], Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
+      | A.Iletin (i, init, cont)  -> M.Mletin ([M.mk_mident i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
+      | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([M.mk_mident i], Option.map type_to_type v.type_, f v, c) (* TODO *)
+      | A.Ideclvaropt (i, v, fa, c)-> M.Mdeclvaropt ([M.mk_mident i], Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-      | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, id, g ve, g ne)
-      | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, lid, g le, rid, g re)
-      | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, hid, tid, g hte, g ee)
+      | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, M.mk_mident id, g ve, g ne)
+      | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, M.mk_mident lid, g le, M.mk_mident rid, g re)
+      | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, g hte, g ee)
       | A.Iassign (op, t, lv, e, fa) -> begin
           let to_ak (lv : A.lvalue) =
             match lv with
-            | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar x)
-            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(f o, rn, fn) | _ -> M.Aasset (rn, fn, f o))
-            | `Asset (an, k, fn) -> M.Aasset (an, fn, f k)
+            | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar (M.mk_mident x))
+            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(f o, M.mk_mident rn, M.mk_mident fn) | _ -> M.Aasset (M.mk_mident rn, M.mk_mident fn, f o))
+            | `Asset (an, k, fn) -> M.Aasset (M.mk_mident an, M.mk_mident fn, f k)
             | `Tuple (lv, i, l) -> M.Atuple (f lv, i, l)
           in
           let e = f e in
@@ -1165,13 +1165,13 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Mtransfer tr
         end
-      | A.Iemit (e, v) -> M.Memit (e, f v)
+      | A.Iemit (e, v) -> M.Memit (M.mk_mident e, f v)
       | A.Ireturn e -> M.Mreturn (f e)
-      | A.Ilabel  i -> M.Mlabel i
+      | A.Ilabel  i -> M.Mlabel (M.mk_mident i)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
 
-      | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
+      | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 
       | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
         M.Mfail (Invalid (f p))
@@ -1180,8 +1180,8 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Maddasset (unloc asset_name, fq)
-          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc fn, k, fq)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Maddasset (M.unloc_mident asset_name, fq)
+          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (M.unloc_mident asset_name, M.unloc_mident fn, k, fq)
           | _ -> assert false
         )
 
@@ -1189,7 +1189,7 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputsingleasset (unloc asset_name, fq)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputsingleasset (M.unloc_mident asset_name, fq)
           | _ -> assert false
         )
 
@@ -1198,7 +1198,7 @@ let to_model (ast : A.ast) : M.model =
           let fk = f k in
           let fv = f v in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputasset (unloc asset_name, fk, fv)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputasset (M.unloc_mident asset_name, fk, fv)
           | _ -> assert false
         )
 
@@ -1206,16 +1206,16 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mremoveasset (unloc asset_name, fq)
-          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc fn, k, fq)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mremoveasset (M.unloc_mident asset_name, fq)
+          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (M.unloc_mident asset_name, M.unloc_mident fn, k, fq)
           | _ -> assert false
         )
 
       | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
           let fp = f p in
           match fp with
-          | {node = M.Mdotassetfield (an , k, fn); _}       -> M.Mremoveall (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone))
-          | {type_ = (M.Tcontainer ((Tasset an, _), _), _)} -> M.Mremoveall (unloc an, to_ck env fp)
+          | {node = M.Mdotassetfield (an , k, fn); _}       -> M.Mremoveall (M.unloc_mident an, CKfield (M.unloc_mident an, M.unloc_mident fn, k, Tnone, Dnone))
+          | {type_ = (M.Tcontainer ((Tasset an, _), _), _)} -> M.Mremoveall (M.unloc_mident an, to_ck env fp)
           | _ -> assert false
         )
 
@@ -1225,8 +1225,8 @@ let to_model (ast : A.ast) : M.model =
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, type_to_type y)::l1, (f z)::l2)) l ([], []) in
         begin
           match fp.node, M.get_ntype fp.type_ with
-          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone), lambda_args, lambda_body, args)
-          | _, Tcontainer ((Tasset an, _), _)  -> M.Mremoveif (unloc an, CKcoll (Tnone, Dnone), lambda_args, lambda_body, args)
+          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (M.unloc_mident an, CKfield (M.unloc_mident an, M.unloc_mident fn, k, Tnone, Dnone), lambda_args, lambda_body, args)
+          | _, Tcontainer ((Tasset an, _), _)  -> M.Mremoveif (M.unloc_mident an, CKcoll (Tnone, Dnone), lambda_args, lambda_body, args)
           | _ -> assert false
         end
 
@@ -1234,8 +1234,8 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           begin
             match fp.node, M.get_ntype fp.type_ with
-            | Mdotassetfield (an, k, fn), _ -> M.Mclear (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone))
-            | _, Tcontainer ((Tasset an, _), _)  -> M.Mclear (unloc an, to_ck env fp)
+            | Mdotassetfield (an, k, fn), _ -> M.Mclear (M.unloc_mident an, CKfield (M.unloc_mident an, M.unloc_mident fn, k, Tnone, Dnone))
+            | _, Tcontainer ((Tasset an, _), _)  -> M.Mclear (M.unloc_mident an, to_ck env fp)
             | _ -> assert false
           end
         )
@@ -1246,7 +1246,7 @@ let to_model (ast : A.ast) : M.model =
           let fv = f v in
           begin
             match fp.node, M.get_ntype fp.type_ with
-            | _, Tcontainer ((Tasset an, _), _)  -> M.Mputremove (unloc an, to_ck env fp, fk, fv)
+            | _, Tcontainer ((Tasset an, _), _)  -> M.Mputremove (M.unloc_mident an, to_ck env fp, fk, fv)
             | _ -> assert false
           end
         )
@@ -1258,11 +1258,11 @@ let to_model (ast : A.ast) : M.model =
         in
         let fp = f p in
         let fk = f k in
-        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let fe = List.map (fun (id, op, c) -> (M.mk_mident id, to_op op, f c)) e in
         begin
           match fp.node, M.get_ntype fp.type_ with
-          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fk, fe)
-          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Maddupdate (unloc an, CKcoll (Tnone, Dnone), fk, fe)
+          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Maddupdate (M.unloc_mident an, CKfield (M.unloc_mident an, M.unloc_mident fn, fp, Tnone, Dnone), fk, fe)
+          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Maddupdate (M.unloc_mident an, CKcoll (Tnone, Dnone), fk, fe)
           | _ -> assert false
         end
 
@@ -1273,7 +1273,7 @@ let to_model (ast : A.ast) : M.model =
         in
         let fp = f p in
         let fk = f k in
-        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let fe = List.map (fun (id, op, c) -> (M.mk_mident id, to_op op, f c)) e in
         let asset_name = extract_asset_name fp in
         M.Mupdate (asset_name, fk, fe)
 
@@ -1283,12 +1283,12 @@ let to_model (ast : A.ast) : M.model =
           | _ -> emit_error (instr.loc, CannotConvertToAssignOperator); bailout ()
         in
         let fp = f p in
-        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let fe = List.map (fun (id, op, c) -> (M.mk_mident id, to_op op, f c)) e in
         begin
           match fp.node, M.get_ntype fp.type_ with
-          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Mupdateall (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fe)
-          | _, Tcontainer ((Tasset an, _), View) -> M.Mupdateall (unloc an, CKview fp, fe)
-          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Mupdateall (unloc an, CKcoll (Tnone, Dnone), fe)
+          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Mupdateall (M.unloc_mident an, CKfield (M.unloc_mident an, M.unloc_mident fn, fp, Tnone, Dnone), fe)
+          | _, Tcontainer ((Tasset an, _), View) -> M.Mupdateall (M.unloc_mident an, CKview fp, fe)
+          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Mupdateall (M.unloc_mident an, CKcoll (Tnone, Dnone), fe)
           | _ -> assert false
         end
 
@@ -1306,38 +1306,38 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let to_predicate (env : env) (p : A.lident A.predicate) : M.predicate =
-    M.mk_predicate p.name (to_mterm { env with formula = true } p.body) ~args:(List.map (fun (id, type_) -> (id, type_to_type type_)) p.args) ~loc:p.loc
+    M.mk_predicate (M.mk_mident p.name) (to_mterm { env with formula = true } p.body) ~args:(List.map (fun (id, type_) -> (M.mk_mident id, type_to_type type_)) p.args) ~loc:p.loc
   in
 
   let to_definition (env : env) (d : A.lident A.definition ): M.definition =
     let env = { env with formula = true } in
-    M.mk_definition d.name (type_to_type d.typ) d.var (to_mterm env d.body) ~loc:d.loc
+    M.mk_definition (M.mk_mident d.name) (type_to_type d.typ) (M.mk_mident d.var) (to_mterm env d.body) ~loc:d.loc
   in
 
   let to_fail (env : env) (p : A.lident A.fail) : M.fail =
-    M.mk_fail p.label p.fid p.arg (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
+    M.mk_fail (M.mk_mident p.label) (Option.map M.mk_mident p.fid) (M.mk_mident p.arg) (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
   in
 
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =
     M.mk_variable
-      ((fun (arg : A.lident A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
-          (arg.name, type_to_type (Option.get arg.typ), Option.map (to_mterm env) arg.default)) v.decl)
+      ((fun (arg : A.lident A.decl_gen) : (M.mident * M.type_ * M.mterm option) ->
+          (M.mk_mident arg.name, type_to_type (Option.get arg.typ), Option.map (to_mterm env) arg.default)) v.decl)
       (to_variable_kind v.kind)
       ~loc:v.loc
   in
 
   let to_invariant (env : env) (i : A.lident A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map (to_mterm { env with formula = true }) i.formulas)
+    M.mk_invariant (M.mk_mident i.label) ~formulas:(List.map (to_mterm { env with formula = true }) i.formulas)
   in
 
   let to_postcondition (env : env) (s : A.lident A.postcondition) : M.postcondition  =
-    M.mk_postcondition s.name Post (to_mterm { env with formula = true } s.formula)
-      ~invariants:(List.map (to_invariant env) s.invariants) ~uses:s.uses
+    M.mk_postcondition (M.mk_mident s.name) Post (to_mterm { env with formula = true } s.formula)
+      ~invariants:(List.map (to_invariant env) s.invariants) ~uses:(List.map M.mk_mident s.uses)
   in
 
   let to_assert (env : env) (s : A.lident A.assert_) : M.postcondition  =
-    M.mk_postcondition s.name Assert (to_mterm env s.formula)
-      ~invariants:(List.map (to_invariant env) s.invariants) ~uses:s.uses
+    M.mk_postcondition (M.mk_mident s.name) Assert (to_mterm env s.formula)
+      ~invariants:(List.map (to_invariant env) s.invariants) ~uses:(List.map M.mk_mident s.uses)
   in
 
   let to_specification (env : env) (v : A.lident A.specification) : M.specification =
@@ -1347,7 +1347,7 @@ let to_model (ast : A.ast) : M.model =
     let theorems       = List.map (to_label_lterm env) v.theorems    in
     let fails          = List.map (to_fail env)        v.fails in
     let variables      = List.map (fun x -> to_variable env x) v.variables in
-    let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm env x) l)) v.invariants in
+    let invariants     = List.map (fun (a, l) -> (M.mk_mident a, List.map (fun x -> to_label_lterm env x) l)) v.invariants in
     let effects        = Option.map_dfl (fun x -> [to_instruction env x]) [] v.effect in
     let postconditions = List.map (to_postcondition env) v.specs @ List.map (to_assert env) v.asserts in
     M.mk_specification
@@ -1422,8 +1422,8 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let process_function (env : env) (function_ : A.function_) : M.function__ =
-    let name  = function_.name in
-    let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
+    let name  = M.mk_mident function_.name in
+    let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
     let env   = {env with function_p = Some (name, args); } in
     let body  = to_instruction env function_.body in
     let loc   = function_.loc in
@@ -1503,7 +1503,7 @@ let to_model (ast : A.ast) : M.model =
     let process_state_is env (body : M.mterm) : M.mterm =
       match transaction.state_is with
       | Some (id, o) -> begin
-          let var     = M.mk_state_value id in
+          let var     = M.mk_state_value (M.mk_mident id) in
           let state   = M.mk_state_var () in
           let c       = M.mk_mterm (M.Mnequal (M.tstate, var, state)) (M.tbool) ~loc:(loc id) in
           let cond_if =
@@ -1537,8 +1537,8 @@ let to_model (ast : A.ast) : M.model =
         let fa    : M.mterm option = Option.map (to_mterm env) x.error in
         let node =
           match fa with
-          | Some fa -> M.Mdeclvaropt([id], Some value.type_, value, Some fa, true)
-          | None    -> M.Mdeclvar   ([id], Some value.type_, value, true)
+          | Some fa -> M.Mdeclvaropt([M.mk_mident id], Some value.type_, value, Some fa, true)
+          | None    -> M.Mdeclvar   ([M.mk_mident id], Some value.type_, value, true)
         in
         let term  = M.mk_mterm node M.tunit in
         add_seq term body
@@ -1570,8 +1570,8 @@ let to_model (ast : A.ast) : M.model =
     in
 
     let process_body_args env : M.argument list * M.mterm * env =
-      let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
-      let env   = {env with function_p = Some (transaction.name, args); } in
+      let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let env   = {env with function_p = Some (M.mk_mident transaction.name, args); } in
       let empty : M.mterm = M.mk_mterm (M.Mseq []) M.tunit in
       match transaction.transition, transaction.effect with
       | None, None ->
@@ -1589,22 +1589,22 @@ let to_model (ast : A.ast) : M.model =
         in
         let args =
           match p_on with
-          | Some (ki, kt, _an, _) -> args @ [(ki, kt, None)]
+          | Some (ki, kt, _an, _) -> args @ [(M.mk_mident ki, kt, None)]
           | None -> args
         in
-        let env = {env with function_p = Some (transaction.name, args); } in
+        let env = {env with function_p = Some (M.mk_mident transaction.name, args); } in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
-                   let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
-                   let et = match M.get_ntype enum_type with | M.Tenum id -> unloc id | _ -> assert false in
-                   let v : M.mterm = M.mk_mterm (M.Menumval (id, [], et)) enum_type ~loc:(Location.loc id) in
+                   let k : M.mterm = build_mvar env (M.mk_mident key_ident) key_type ~loc:(Location.loc key_ident) in
+                   let et = match M.get_ntype enum_type with | M.Tenum id -> M.unloc_mident id | _ -> assert false in
+                   let v : M.mterm = M.mk_mterm (M.Menumval (M.mk_mident id, [], et)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
                    (* let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in *)
-                   let v : M.mterm = M.mk_mterm (Menumval (id, [], "state")) (M.tenum (dumloc "state")) ~loc:(Location.loc id) in
+                   let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], "state")) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
@@ -1625,7 +1625,7 @@ let to_model (ast : A.ast) : M.model =
             begin
               let rec compute_patterns (a : A.sexpr) : M.pattern list =
                 match a.node with
-                | Sref id -> [M.mk_pattern (M.Pconst (id, []))]
+                | Sref id -> [M.mk_pattern (M.Pconst (M.mk_mident id, []))]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> emit_error (a.loc, AnyNotAuthorizedInTransitionTo); bailout ()
               in
@@ -1638,9 +1638,9 @@ let to_model (ast : A.ast) : M.model =
               let w =
                 match p_on with
                 | Some (ki, kt, an, et) ->
-                  let k : M.mterm = build_mvar env ki kt ~loc:(Location.loc ki) in
-                  M.mk_mterm (M.Mvar (dumloc an, Vassetstate k, Tnone, Dnone)) et
-                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate, Tnone, Dnone)) M.tstate
+                  let k : M.mterm = build_mvar env (M.mk_mident ki) kt ~loc:(Location.loc ki) in
+                  M.mk_mterm (M.Mvar (M.mk_mident (dumloc an), Vassetstate k, Tnone, Dnone)) et
+                | _ -> M.mk_mterm (M.Mvar(M.mk_mident (dumloc ""), Vstate, Tnone, Dnone)) M.tstate
               in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) M.tunit
             end
@@ -1662,12 +1662,12 @@ let to_model (ast : A.ast) : M.model =
     let loc   = transaction.loc in
     let spec : M.specification option = Option.map (to_specification env) transaction.specification in
 
-    process_fun_gen transaction.name args body loc spec (fun x -> M.Entry x)
+    process_fun_gen (M.mk_mident transaction.name) args body loc spec (fun x -> M.Entry x)
   in
 
   let process_parameter env (p : A.lident A.parameter) : M.parameter =
     {
-      name    = p.name;
+      name    = M.mk_mident p.name;
       typ     = type_to_type p.typ;
       default = Option.map (to_mterm env) p.default;
       value   = Option.map (to_mterm env) p.value;

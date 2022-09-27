@@ -1,4 +1,4 @@
-open Location
+(* open Location *)
 open Model
 
 exception Anomaly of string
@@ -17,14 +17,14 @@ let generate_storage (model : model) : model =
     let typ_ = tcollection asset_name in
     mk_storage_item
       asset_name
-      (MTasset (unloc asset_name))
+      (MTasset (unloc_mident asset_name))
       typ_
       (mk_mterm (Massets asset.init) typ_)
   in
 
   let state_to_storage_items (e : enum) : storage_item list =
     match e with
-    | _ when String.equal (unloc e.name) "state" ->
+    | _ when String.equal (unloc_mident e.name) "state" ->
       begin
         let iv = e.initial in
         let dv = mk_mterm (Mvar (iv, Vlocal, Tnone, Dnone)) tstate in
@@ -57,7 +57,7 @@ let generate_storage (model : model) : model =
       | Tlist _                  -> mk_mterm (Mlitlist []) ty
       | Toption _                -> mk_mterm (Mnone) ty
       | Tasset v
-      | Tenum v                  -> emit_error (NoInitExprFor (unloc v))
+      | Tenum v                  -> emit_error (NoInitExprFor (unloc_mident v))
       | Ttuple _                 -> emit_error (NoInitExprFor "tuple")
       | Tset _                   -> mk_mterm   (Mlitset []) ty
       | Tmap (_, _)              -> mk_mterm   (Mlitmap (MKMap, [])) ty
@@ -111,12 +111,12 @@ let generate_storage (model : model) : model =
   let process_mterm (model : model) : model =
     let rec aux c (mt : mterm) : mterm =
       match mt.node with
-      | Massign (op, t, Avar id, v) when Model.Utils.is_field_storage model (unloc id) ->
+      | Massign (op, t, Avar id, v) when Model.Utils.is_field_storage model (unloc_mident id) ->
         begin
           let vv = aux c v in
           mk_mterm (Massign (op, t, Avarstore id, vv)) tunit
         end
-      | Mvar (id, Vlocal, t, d) when Model.Utils.is_field_storage model (unloc id) ->
+      | Mvar (id, Vlocal, t, d) when Model.Utils.is_field_storage model (unloc_mident id) ->
         mk_mterm (Mvar (id, Vstorevar, t, d)) mt.type_
       | _ -> map_mterm (aux c) mt
     in

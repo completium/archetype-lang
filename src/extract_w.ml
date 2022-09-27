@@ -345,13 +345,13 @@ let extract (m : M.model) (w3s : why3session) =
     List.fold_left (fun accu (postcondition : M.postcondition) ->
         let kind =
           match fname with
-          | Some fname -> KentryPostcond (fname, unloc postcondition.name)
+          | Some fname -> KentryPostcond (fname, M.unloc_mident postcondition.name)
           | None -> assert false
         in
 
 
         let formula = Some "" in
-        let label = unloc postcondition.name in
+        let label = M.unloc_mident postcondition.name in
         let res = compute_res w3s label kind in
         let item = mk_item label kind formula res in
         item::accu
@@ -381,10 +381,10 @@ let extract (m : M.model) (w3s : why3session) =
 
   let for_decl accu (d : M.decl_node) =
     let for_dvar accu (v : M.var) =
-      let kind = Kvariable (unloc v.name) in
+      let kind = Kvariable (M.unloc_mident v.name) in
       List.fold_left (fun accu (x : M.label_term) ->
           let formula = Some "" in
-          let label = unloc x.label in
+          let label = M.unloc_mident x.label in
           let res = compute_res w3s label kind in
           let item = mk_item label kind formula res in
           item::accu
@@ -402,10 +402,10 @@ let extract (m : M.model) (w3s : why3session) =
     let spec = function__.spec in
     let fname =
       match function__.node with
-      | Entry  fn        -> unloc fn.name
-      | Function (fn, _) -> unloc fn.name
-      | Getter (fn, _)   -> unloc fn.name
-      | View (fn, _, _)  -> unloc fn.name
+      | Entry  fn        -> M.unloc_mident fn.name
+      | Function (fn, _) -> M.unloc_mident fn.name
+      | Getter (fn, _)   -> M.unloc_mident fn.name
+      | View (fn, _, _)  -> M.unloc_mident fn.name
     in
     match spec with
     | Some spec -> for_specification ~fname accu spec

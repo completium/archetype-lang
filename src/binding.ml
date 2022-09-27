@@ -82,7 +82,7 @@ let compute_type (model : model) (r : record) =
   let mty =
     match r.fields with
     | [] -> T.tunit
-    | [ f ] -> {mty with annotation = Some ("%" ^ (unloc f.name))}
+    | [ f ] -> {mty with annotation = Some ("%" ^ (unloc_mident f.name))}
     | _ -> mty
   in
   let ty = T.mk_type (T.Tpair(mkt, mty)) in
@@ -120,30 +120,30 @@ import { registerEvent%a } from '@completium/event-well-crank';%a
   let pp_event fmt (ie : input_event) =
     let pp_interface fmt _ =
       let pp_field fmt (f : record_field) =
-        Format.fprintf fmt "%a : %a" pp_id f.name (to_type Type) f.type_
+        Format.fprintf fmt "%a : %a" pp_mid f.name (to_type Type) f.type_
       in
       Format.fprintf fmt "export interface %a extends WellEvent {@\n  @[%a@]@\n}"
-        pp_id ie.r.name
+        pp_mid ie.r.name
         (pp_list ",@\n" pp_field) ie.r.fields
     in
     let pp_is_function fmt =
       Format.fprintf fmt "const is_%a = (t%a) => {@\n  return t === '%a'@\n}"
-        pp_id ie.r.name
+        pp_mid ie.r.name
         (pp_language pp_none pp_str) " : string"
-        pp_id ie.r.name
+        pp_mid ie.r.name
     in
     let pp_handle_function fmt =
       let pp_field fmt (f : record_field) =
-        Format.fprintf fmt "%a : %a" pp_id f.name (to_type (Init ("event." ^ unloc f.name))) f.type_
+        Format.fprintf fmt "%a : %a" pp_mid f.name (to_type (Init ("event." ^ unloc_mident f.name))) f.type_
       in
       let pp_f fmt (l : record_field list) =
         if List.length l = 1
-        then let f = List.nth l 0 in Format.fprintf fmt "%a : %a" pp_id f.name (to_type (Init ("event"))) f.type_
+        then let f = List.nth l 0 in Format.fprintf fmt "%a : %a" pp_mid f.name (to_type (Init ("event"))) f.type_
         else (pp_list ",@\n" pp_field) fmt l
       in
       Format.fprintf fmt "const handle_%a = (handler%a) => (event%a, data%a) => {@\n  handler({@[%a@]}, data)@\n}"
-        pp_id ie.r.name
-        (pp_language pp_none pp_str) (" : WellEventProcessor<" ^ (unloc ie.r.name) ^ ">")
+        pp_mid ie.r.name
+        (pp_language pp_none pp_str) (" : WellEventProcessor<" ^ (unloc_mident ie.r.name) ^ ">")
         (pp_language pp_none pp_str) " : any"
         (pp_language pp_none pp_str) " ?: WellEventData"
         pp_f ie.r.fields
@@ -152,15 +152,15 @@ import { registerEvent%a } from '@completium/event-well-crank';%a
       Format.fprintf fmt "export function register_%a(source%a, handler%a) {
   registerEvent({ source: source, filter: is_%a, process: handle_%a(handler) })
 }"
-        pp_id ie.r.name
+        pp_mid ie.r.name
         (pp_language pp_none pp_str) " : string"
-        (pp_language pp_none pp_str) (" : WellEventProcessor<" ^ (unloc ie.r.name) ^ ">")
-        pp_id ie.r.name
-        pp_id ie.r.name
+        (pp_language pp_none pp_str) (" : WellEventProcessor<" ^ (unloc_mident ie.r.name) ^ ">")
+        pp_mid ie.r.name
+        pp_mid ie.r.name
     in
     let pp_newline fmt _ = Format.fprintf fmt "@\n@\n" in
 
-    Format.fprintf fmt "/* Event: %a */" pp_id ie.r.name;
+    Format.fprintf fmt "/* Event: %a */" pp_mid ie.r.name;
     pp_newline fmt ();
     (pp_language (pp_none fmt) (pp_interface fmt)) ();
     (pp_language (pp_none fmt) (pp_newline fmt)) ();

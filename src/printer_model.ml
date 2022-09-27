@@ -46,11 +46,11 @@ let rec pp_type fmt t =
   let pp_ntype fmt nt =
     match nt with
     | Tasset an ->
-      Format.fprintf fmt "%a" pp_id an
+      Format.fprintf fmt "%a" pp_mid an
     | Tstate ->
       Format.fprintf fmt "state"
     | Tenum en ->
-      Format.fprintf fmt "%a" pp_id en
+      Format.fprintf fmt "%a" pp_mid en
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a<%a>"
@@ -85,9 +85,9 @@ let rec pp_type fmt t =
         pp_type l
         pp_type r
     | Trecord id ->
-      Format.fprintf fmt "%a" pp_id id
+      Format.fprintf fmt "%a" pp_mid id
     | Tevent id ->
-      Format.fprintf fmt "%a" pp_id id
+      Format.fprintf fmt "%a" pp_mid id
     | Tlambda (a, r) ->
       Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
@@ -124,8 +124,8 @@ let pp_operator fmt op =
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
-  | Pconst (i, []) -> pp_id fmt i
-  | Pconst (i, xs) -> Format.fprintf fmt "%a (%a)" pp_id i (pp_list ", " pp_id) xs
+  | Pconst (i, []) -> pp_mid fmt i
+  | Pconst (i, xs) -> Format.fprintf fmt "%a (%a)" pp_mid i (pp_list ", " pp_id) xs
   | Pwild -> pp_str fmt "_"
 
 let pp_sort_kind fmt = function
@@ -177,10 +177,10 @@ let pp_transfer_kind f fmt = function
   | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
 
 let pp_assign_kind f fmt = function
-  | Avar k                -> pp_id fmt k
-  | Avarstore l           -> Format.fprintf fmt "s.%a" pp_id l
-  | Aasset (an, fn, k)    -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
-  | Arecord (lv, _rn, fn) -> Format.fprintf fmt "%a.%a" f lv pp_id fn
+  | Avar k                -> pp_mid fmt k
+  | Avarstore l           -> Format.fprintf fmt "s.%a" pp_mid l
+  | Aasset (an, fn, k)    -> Format.fprintf fmt "%a[%a].%a" pp_mid an f k pp_mid fn
+  | Arecord (lv, _rn, fn) -> Format.fprintf fmt "%a.%a" f lv pp_mid fn
   | Atuple (lv, n, l)     -> Format.fprintf fmt "%a[%d/%d]" f lv n l
   | Astate                -> Format.fprintf fmt "state"
   | Aassetstate (an, k)   -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
@@ -193,7 +193,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mletin (ids, a, t, b, o) ->
       Format.fprintf fmt "let %a%a = %a in@\n%a%a"
-        (pp_list ", " pp_id) ids
+        (pp_list ", " pp_mid) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f a
         f b
@@ -202,14 +202,14 @@ let pp_mterm fmt (mt : mterm) =
     | Mdeclvar (ids, t, v, c) ->
       Format.fprintf fmt "%s %a%a = %a"
         (if c then "const" else "var")
-        (pp_list ", " pp_id) ids
+        (pp_list ", " pp_mid) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f v
 
     | Mdeclvaropt (ids, t, v, fa, c) ->
       Format.fprintf fmt "%s %a%a ?= %a%a"
         (if c then "const" else "var")
-        (pp_list ", " pp_id) ids
+        (pp_list ", " pp_mid) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f v
         (pp_option (fun fmt x -> Format.fprintf fmt " : %a" f x)) fa
@@ -217,7 +217,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mapp (e, args) ->
       let pp fmt (e, args) =
         Format.fprintf fmt "%a (%a)"
-          pp_id e
+          pp_mid e
           (pp_list ", " f) args
       in
       pp fmt (e, args)
@@ -227,28 +227,28 @@ let pp_mterm fmt (mt : mterm) =
 
     | Massign (op, _, Avar k, v) ->
       Format.fprintf fmt "%a %a %a"
-        pp_id k
+        pp_mid k
         pp_operator op
         f v
 
     | Massign (op, _, Avarstore l, r) ->
       Format.fprintf fmt "s.%a %a %a"
-        pp_id l
+        pp_mid l
         pp_operator op
         f r
 
     | Massign (op, _, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
-        pp_id an
+        pp_mid an
         f k
-        pp_id fn
+        pp_mid fn
         pp_operator op
         f v
 
     | Massign (op, _, Arecord (lv, _rn, fn), v) ->
       Format.fprintf fmt "%a.%a %a %a"
         f lv
-        pp_id fn
+        pp_mid fn
         pp_operator op
         f v
 
@@ -304,7 +304,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, i, ve, ne) =
         Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]@\nend"
           f x
-          pp_id i
+          pp_mid i
           f ve
           f ne
       in
@@ -314,9 +314,9 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, lid, le, rid, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
-          pp_id lid
+          pp_mid lid
           f le
-          pp_id rid
+          pp_mid rid
           f re
       in
       pp fmt (x, lid, le, rid, re)
@@ -325,8 +325,8 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, hid, tid, hte, ee) =
         Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
-          pp_id hid
-          pp_id tid
+          pp_mid hid
+          pp_mid tid
           f hte
           f ee
       in
@@ -335,14 +335,14 @@ let pp_mterm fmt (mt : mterm) =
     | Mfor (i, c, b, l) ->
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
-        (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
+        (fun fmt i -> match i with FIsimple x -> pp_mid fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_mid x pp_mid y) i
         (pp_iter_container_kind f) c
         f b
 
     | Miter (i, a, b, c, l, s) ->
       Format.fprintf fmt "iter %a%a from %a to %a%s do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
-        pp_id i
+        pp_mid i
         f a
         f b
         (if s then " (excluded)" else "")
@@ -368,11 +368,11 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mlabel i ->
       Format.fprintf fmt "label %a"
-        pp_id i
+        pp_mid i
 
     | Mmark (i, x) ->
       Format.fprintf fmt "label %a in@\n@[%a@]"
-        pp_id i
+        pp_mid i
         f x
 
 
@@ -406,7 +406,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Memit (e, x) ->
       Format.fprintf fmt "emit<%a>(%a)"
-        pp_id e
+        pp_mid e
         f x
 
 
@@ -415,26 +415,26 @@ let pp_mterm fmt (mt : mterm) =
     | Mgetentrypoint (t, a, s) ->
       Format.fprintf fmt "get_entrypoint<%a>(%a, %a)"
         pp_type t
-        pp_id a
+        pp_mid a
         f s
 
     | Mcallview (t, a, b, c) ->
       Format.fprintf fmt "call_view<%a>(%a, %a, %a)"
         pp_type t
         f a
-        pp_id b
+        pp_mid b
         f c
 
     | Mimportcallview (t, a, b, c) ->
       Format.fprintf fmt "import_call_view<%a>(%a, %a, %a)"
         pp_type t
         f a
-        pp_id b
+        pp_mid b
         f c
 
     | Mself id ->
       Format.fprintf fmt "self.%a"
-        pp_id id
+        pp_mid id
 
 
     (* operation *)
@@ -451,7 +451,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mmakeevent (t, id, a) ->
       Format.fprintf fmt "make_event<%a>(%a, %a)"
         pp_type t
-        pp_id id
+        pp_mid id
         f a
 
     | Mcreatecontract (_ms, d, a, si) ->
@@ -519,7 +519,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, i, ve, ne) =
         Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
-          pp_id i
+          pp_mid i
           f ve
           f ne
       in
@@ -529,9 +529,9 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, lid, le, rid, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
-          pp_id lid
+          pp_mid lid
           f le
-          pp_id rid
+          pp_mid rid
           f re
       in
       pp fmt (x, lid, le, rid, re)
@@ -540,8 +540,8 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, hid, tid, hte, ee) =
         Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
-          pp_id hid
-          pp_id tid
+          pp_mid hid
+          pp_mid tid
           f hte
           f ee
       in
@@ -563,7 +563,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, id, e) =
         Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
           f x
-          pp_id id
+          pp_mid id
           f e
       in
       pp fmt (x, id, e)
@@ -572,7 +572,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (x, id, e) =
         Format.fprintf fmt "map (%a, %a -> (@[%a@]))"
           f x
-          pp_id id
+          pp_mid id
           f e
       in
       pp fmt (x, id, e)
@@ -654,7 +654,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (rt, id, at, e) =
         Format.fprintf fmt "lambda<%a>((%a : %a) -> @[%a@])"
           pp_type rt
-          pp_id id
+          pp_mid id
           pp_type at
           f e
       in
@@ -666,18 +666,18 @@ let pp_mterm fmt (mt : mterm) =
     | Mdot (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
-        pp_id i
+        pp_mid i
 
     | Mdotassetfield (an, k, fn) ->
       Format.fprintf fmt "%a[%a].%a"
-        pp_id an
+        pp_mid an
         f k
-        pp_id fn
+        pp_mid fn
 
     | Mquestionoption (a, fn) ->
       Format.fprintf fmt "%a?.%a"
         f a
-        pp_id fn
+        pp_mid fn
 
 
     (* comparison operators *)
@@ -993,7 +993,7 @@ let pp_mterm fmt (mt : mterm) =
         Format.fprintf fmt "update_%a (%a, {%a})"
           pp_str an
           f k
-          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
+          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_mid id pp_operator op f v)) l
       in
       pp fmt (an, k, l)
 
@@ -1002,7 +1002,7 @@ let pp_mterm fmt (mt : mterm) =
         Format.fprintf fmt "update_all_%a (%a, {%a})"
           (pp_container_kind f) c
           pp_str an
-          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
+          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_mid id pp_operator op f v)) l
       in
       pp fmt (an, c, l)
 
@@ -1012,7 +1012,7 @@ let pp_mterm fmt (mt : mterm) =
           pp_str an
           (pp_container_kind f) c
           f k
-          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
+          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_mid id pp_operator op f v)) l
       in
       pp fmt (an, c, k, l)
 
@@ -1194,8 +1194,8 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
         f a
-        pp_id ix
-        pp_id ia
+        pp_mid ix
+        pp_mid ia
         f b
 
 
@@ -1247,8 +1247,8 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
         f a
-        pp_id ix
-        pp_id ia
+        pp_mid ix
+        pp_mid ia
         f b
 
 
@@ -1308,9 +1308,9 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
         f a
-        pp_id ia
-        pp_id ik
-        pp_id iv
+        pp_mid ia
+        pp_mid ik
+        pp_mid iv
         f b
 
 
@@ -1518,21 +1518,21 @@ let pp_mterm fmt (mt : mterm) =
 
     (* variable *)
 
-    | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (Location.unloc an) f k
-    | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Vfield, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (unloc_mident an) f k
+    | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_mid v
+    | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
+    | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
+    | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
+    | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
+    | Mvar(v, Vfield, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
     | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
     | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
-    | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
     | Menumval (id, args, _e)        -> begin
         match args with
-        | [] -> Format.fprintf fmt "%a" pp_id id
+        | [] -> Format.fprintf fmt "%a" pp_mid id
         | _  -> Format.fprintf fmt "%a (%a)"
-                  pp_id id
+                  pp_mid id
                   (pp_list ", " f) args
       end
 
@@ -1644,26 +1644,26 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mforall (i, t, None, e) ->
       Format.fprintf fmt "forall (%a : %a), %a"
-        pp_id i
+        pp_mid i
         pp_type t
         f e
 
     | Mforall (i, t, Some s, e) ->
       Format.fprintf fmt "forall (%a : %a) in %a, %a"
-        pp_id i
+        pp_mid i
         pp_type t
         f s
         f e
 
     | Mexists (i, t, None, e) ->
       Format.fprintf fmt "exists (%a : %a), %a"
-        pp_id i
+        pp_mid i
         pp_type t
         f e
 
     | Mexists (i, t, Some s, e) ->
       Format.fprintf fmt "exists (%a : %a) in %a, %a"
-        pp_id i
+        pp_mid i
         pp_type t
         f s
         f e
@@ -1765,7 +1765,7 @@ let pp_mterm fmt (mt : mterm) =
 
 let pp_label_term fmt (lt : label_term) =
   Format.fprintf fmt "%a : %a"
-    pp_id lt.label
+    pp_mid lt.label
     pp_mterm lt.term
 
 let pp_ck fmt = function
@@ -1846,14 +1846,14 @@ let pp_api_items fmt l =
 
 let pp_var fmt (var : var) =
   Format.fprintf fmt "%a : %a%a%a"
-    pp_id var.name
+    pp_mid var.name
     pp_type var.type_
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
     (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
 let pp_enum_item fmt (ei : enum_item) =
   Format.fprintf fmt "| %a%a%a"
-    pp_id ei.name
+    pp_mid ei.name
     (fun fmt l ->
        if List.is_empty l
        then ()
@@ -1866,12 +1866,12 @@ let pp_enum_item fmt (ei : enum_item) =
 
 let pp_enum fmt (enum : enum) =
   Format.fprintf fmt "enum %a =@\n@[<v 2>  %a@]@\n"
-    pp_id enum.name
+    pp_mid enum.name
     (pp_list "@\n" pp_enum_item) enum.values
 
 let pp_asset_item fmt (item : asset_item) =
   Format.fprintf fmt "%a : %a%a;"
-    pp_id item.name
+    pp_mid item.name
     pp_type item.type_
     (pp_option (fun fmt -> Format.fprintf fmt " = %a" pp_mterm)) item.default
 
@@ -1884,9 +1884,9 @@ let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
   Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a%a@\n"
-    pp_id asset.name
+    pp_mid asset.name
     (pp_list " " pp_str) asset.keys
-    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_id) xs)) asset.sort
+    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_mid) xs)) asset.sort
     pp_map_kind asset.map_kind
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
@@ -1897,7 +1897,7 @@ let pp_asset fmt (asset : asset) =
 let pp_record fmt (r : record) =
   let pp_record_field fmt (rf : record_field) =
     Format.fprintf fmt "%a : %a;"
-      pp_id rf.name
+      pp_mid rf.name
       pp_type rf.type_
   in
   let rec pp_pos fmt pos =
@@ -1908,7 +1908,7 @@ let pp_record fmt (r : record) =
          | Pnode l  -> (pp_list ", " pp_pos)   fmt l) pos
   in
   Format.fprintf fmt "record %a {@\n  @[%a@]@\n}%a@\n"
-    pp_id r.name
+    pp_mid r.name
     (pp_list "@\n" pp_record_field) r.fields
     (fun fmt x ->
        match x with
@@ -1924,7 +1924,7 @@ let pp_decl fmt = function
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"
-    pp_id si.id
+    pp_mid si.id
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
 
@@ -1939,27 +1939,27 @@ let pp_invariant fmt (inv : invariant) =
   Format.fprintf fmt "invariant %a {@\n\
                       @[<v 2>  %a@]@\n\
                       }"
-    pp_id inv.label
+    pp_mid inv.label
     (pp_list "@\n" pp_mterm) inv.formulas
 
 let pp_invariants fmt is =
   (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
 
 let pp_use fmt u =
-  (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
+  (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_mid))) fmt u
 
 let pp_postcondition fmt (postcondition : postcondition) =
   Format.fprintf fmt "%s %a {@\n  @[%a@]%a%a@\n}@\n"
     (match postcondition.mode with | Post -> "postcondition" | Assert -> "assert" )
-    pp_id postcondition.name
+    pp_mid postcondition.name
     pp_mterm postcondition.formula
     pp_invariants postcondition.invariants
     pp_use postcondition.uses
 
 let pp_assert_ fmt (s : assert_) =
   Format.fprintf fmt "assert %a on %a {@\n  @[%a@]%a%a@\n}@\n"
-    pp_id s.name
-    pp_id s.label
+    pp_mid s.name
+    pp_mid s.label
     pp_mterm s.formula
     pp_invariants s.invariants
     pp_use s.uses
@@ -1967,21 +1967,21 @@ let pp_assert_ fmt (s : assert_) =
 let pp_specification fmt (v : specification) =
   let pp_predicate fmt (p : predicate) =
     Format.fprintf fmt "predicate %a (%a) {@\n  @[%a@]@\n}@\n"
-      pp_id p.name
-      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_type typ)) p.args
+      pp_mid p.name
+      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_mid id pp_type typ)) p.args
       pp_mterm p.body
   in
   let pp_definitions fmt (d : definition) =
     Format.fprintf fmt "definition %a {@\n  @[%a : %a |@\n  %a @]@\n}@\n"
-      pp_id d.name
-      pp_id d.var
+      pp_mid d.name
+      pp_mid d.var
       pp_type d.typ
       pp_mterm d.body
   in
   let pp_fail fmt (f : fail) =
     Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];"
-      pp_id f.label
-      pp_id f.arg
+      pp_mid f.label
+      pp_mid f.arg
       pp_type f.atype
       pp_mterm f.formula
   in
@@ -1990,7 +1990,7 @@ let pp_specification fmt (v : specification) =
     let id, type_, dv = v.decl in
     Format.fprintf fmt "%a %a : %a%a@\n"
       pp_variable_kind v.kind
-      pp_id id
+      pp_mid id
       pp_type type_
       (pp_option (pp_prefix " = " pp_mterm)) dv
   in
@@ -2128,7 +2128,7 @@ let pp_security fmt (s : security) =
 
 let pp_argument fmt ((id, t, dv) : argument) =
   Format.fprintf fmt "%a : %a%a"
-    pp_id id
+    pp_mid id
     pp_type t
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) dv
 
@@ -2142,7 +2142,7 @@ let pp_function fmt f =
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"
     pp_str k
-    pp_id fs.name
+    pp_mid fs.name
     (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
     (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
     (pp_option pp_specification) f.spec
@@ -2154,7 +2154,7 @@ let pp_parameters fmt = function
       fun fmt (param : parameter) ->
         Format.fprintf fmt "%a%a : %a%a"
           (pp_do_if param.const (fun fmt _ -> pp_str fmt "const ")) ()
-          pp_id param.name
+          pp_mid param.name
           pp_type param.typ
           (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) param.default)) params
 

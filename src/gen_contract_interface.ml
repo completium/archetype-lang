@@ -195,65 +195,65 @@ let mk_contract_interface name parameters types storage entrypoints getters view
 
 let rec for_type (t : M.type_) : type_ =
   match M.get_ntype t with
-  | Tasset id                      -> mk_type "asset"              (Some (unloc id)) []
-  | Tenum id                       -> mk_type "enum"               (Some (unloc id)) []
-  | Tstate                         -> mk_type "state"               None             []
-  | Tbuiltin Bunit                 -> mk_type "unit"                None             []
-  | Tbuiltin Bbool                 -> mk_type "bool"                None             []
-  | Tbuiltin Bint                  -> mk_type "int"                 None             []
-  | Tbuiltin Brational             -> mk_type "rational"            None             []
-  | Tbuiltin Bdate                 -> mk_type "date"                None             []
-  | Tbuiltin Bduration             -> mk_type "duration"            None             []
-  | Tbuiltin Btimestamp            -> mk_type "timestamp"           None             []
-  | Tbuiltin Bstring               -> mk_type "string"              None             []
-  | Tbuiltin Baddress              -> mk_type "address"             None             []
-  | Tbuiltin Bcurrency             -> mk_type "currency"            None             []
-  | Tbuiltin Bsignature            -> mk_type "signature"           None             []
-  | Tbuiltin Bkey                  -> mk_type "key"                 None             []
-  | Tbuiltin Bkeyhash              -> mk_type "keyHash"             None             []
-  | Tbuiltin Bbytes                -> mk_type "bytes"               None             []
-  | Tbuiltin Bnat                  -> mk_type "nat"                 None             []
-  | Tbuiltin Bchainid              -> mk_type "chain_id"            None             []
-  | Tbuiltin Bbls12_381_fr         -> mk_type "bls12_381_fr"        None             []
-  | Tbuiltin Bbls12_381_g1         -> mk_type "bls12_381_g1"        None             []
-  | Tbuiltin Bbls12_381_g2         -> mk_type "bls12_381_g2"        None             []
-  | Tbuiltin Bnever                -> mk_type "never"               None             []
-  | Tbuiltin Bchest                -> mk_type "chest"               None             []
-  | Tbuiltin Bchest_key            -> mk_type "chest_key"           None             []
-  | Tcontainer (t, Collection)     -> mk_type "collection"          None             [for_type t]
-  | Tcontainer (t, Aggregate)      -> mk_type "aggregate"           None             [for_type t]
-  | Tcontainer (t, Partition)      -> mk_type "partition"           None             [for_type t]
-  | Tcontainer (t, AssetContainer) -> mk_type "asset_container"     None             [for_type t]
-  | Tcontainer (t, AssetKey)       -> mk_type "asset_key"           None             [for_type t]
-  | Tcontainer (t, AssetValue)     -> mk_type "asset_value"         None             [for_type t]
-  | Tcontainer (t, View)           -> mk_type "asset_view"          None             [for_type t]
-  | Tlist t                        -> mk_type "list"                None             [for_type t]
-  | Toption t                      -> mk_type "option"              None             [for_type t]
-  | Ttuple tl                      -> mk_type "tuple"               None             (List.map for_type tl)
-  | Tset t                         -> mk_type "set"                 None             [for_type t]
-  | Tmap (kt, vt)                  -> mk_type "map"                 None             [for_type kt; for_type vt]
-  | Tbig_map (kt, vt)              -> mk_type "big_map"             None             [for_type kt; for_type vt]
-  | Titerable_big_map (kt, vt)     -> mk_type "iterable_big_map"    None             [for_type kt; for_type vt]
-  | Tor (lt, rt)                   -> mk_type "or"                  None             [for_type lt; for_type rt]
-  | Trecord id                     -> mk_type "record"             (Some (unloc id)) []
-  | Tevent id                      -> mk_type "event"              (Some (unloc id)) []
-  | Tlambda (at, rt)               -> mk_type "lambda"              None             [for_type at; for_type rt]
-  | Tunit                          -> mk_type "unit"                None             []
-  | Toperation                     -> mk_type "operation"           None             []
-  | Tcontract t                    -> mk_type "contract"            None             [for_type t]
-  | Tticket t                      -> mk_type "ticket"              None             [for_type t]
-  | Tsapling_state _n              -> mk_type "sapling_state"       None             []
-  | Tsapling_transaction _n        -> mk_type "sapling_transaction" None             []
+  | Tasset id                      -> mk_type "asset"              (Some (M.unloc_mident id)) []
+  | Tenum id                       -> mk_type "enum"               (Some (M.unloc_mident id)) []
+  | Tstate                         -> mk_type "state"               None                      []
+  | Tbuiltin Bunit                 -> mk_type "unit"                None                      []
+  | Tbuiltin Bbool                 -> mk_type "bool"                None                      []
+  | Tbuiltin Bint                  -> mk_type "int"                 None                      []
+  | Tbuiltin Brational             -> mk_type "rational"            None                      []
+  | Tbuiltin Bdate                 -> mk_type "date"                None                      []
+  | Tbuiltin Bduration             -> mk_type "duration"            None                      []
+  | Tbuiltin Btimestamp            -> mk_type "timestamp"           None                      []
+  | Tbuiltin Bstring               -> mk_type "string"              None                      []
+  | Tbuiltin Baddress              -> mk_type "address"             None                      []
+  | Tbuiltin Bcurrency             -> mk_type "currency"            None                      []
+  | Tbuiltin Bsignature            -> mk_type "signature"           None                      []
+  | Tbuiltin Bkey                  -> mk_type "key"                 None                      []
+  | Tbuiltin Bkeyhash              -> mk_type "keyHash"             None                      []
+  | Tbuiltin Bbytes                -> mk_type "bytes"               None                      []
+  | Tbuiltin Bnat                  -> mk_type "nat"                 None                      []
+  | Tbuiltin Bchainid              -> mk_type "chain_id"            None                      []
+  | Tbuiltin Bbls12_381_fr         -> mk_type "bls12_381_fr"        None                      []
+  | Tbuiltin Bbls12_381_g1         -> mk_type "bls12_381_g1"        None                      []
+  | Tbuiltin Bbls12_381_g2         -> mk_type "bls12_381_g2"        None                      []
+  | Tbuiltin Bnever                -> mk_type "never"               None                      []
+  | Tbuiltin Bchest                -> mk_type "chest"               None                      []
+  | Tbuiltin Bchest_key            -> mk_type "chest_key"           None                      []
+  | Tcontainer (t, Collection)     -> mk_type "collection"          None                      [for_type t]
+  | Tcontainer (t, Aggregate)      -> mk_type "aggregate"           None                      [for_type t]
+  | Tcontainer (t, Partition)      -> mk_type "partition"           None                      [for_type t]
+  | Tcontainer (t, AssetContainer) -> mk_type "asset_container"     None                      [for_type t]
+  | Tcontainer (t, AssetKey)       -> mk_type "asset_key"           None                      [for_type t]
+  | Tcontainer (t, AssetValue)     -> mk_type "asset_value"         None                      [for_type t]
+  | Tcontainer (t, View)           -> mk_type "asset_view"          None                      [for_type t]
+  | Tlist t                        -> mk_type "list"                None                      [for_type t]
+  | Toption t                      -> mk_type "option"              None                      [for_type t]
+  | Ttuple tl                      -> mk_type "tuple"               None                      (List.map for_type tl)
+  | Tset t                         -> mk_type "set"                 None                      [for_type t]
+  | Tmap (kt, vt)                  -> mk_type "map"                 None                      [for_type kt; for_type vt]
+  | Tbig_map (kt, vt)              -> mk_type "big_map"             None                      [for_type kt; for_type vt]
+  | Titerable_big_map (kt, vt)     -> mk_type "iterable_big_map"    None                      [for_type kt; for_type vt]
+  | Tor (lt, rt)                   -> mk_type "or"                  None                      [for_type lt; for_type rt]
+  | Trecord id                     -> mk_type "record"             (Some (M.unloc_mident id)) []
+  | Tevent id                      -> mk_type "event"              (Some (M.unloc_mident id)) []
+  | Tlambda (at, rt)               -> mk_type "lambda"              None                      [for_type at; for_type rt]
+  | Tunit                          -> mk_type "unit"                None                      []
+  | Toperation                     -> mk_type "operation"           None                      []
+  | Tcontract t                    -> mk_type "contract"            None                      [for_type t]
+  | Tticket t                      -> mk_type "ticket"              None                      [for_type t]
+  | Tsapling_state _n              -> mk_type "sapling_state"       None                      []
+  | Tsapling_transaction _n        -> mk_type "sapling_transaction" None                      []
   | Tstorage                       -> assert false
   | Tprog _                        -> assert false
   | Tvset _                        -> assert false
   | Ttrace _                       -> assert false
 
 let for_parameter (p : M.parameter) : parameter =
-  mk_parameter (unloc p.name) (for_type p.typ) p.const None
+  mk_parameter (M.unloc_mident p.name) (for_type p.typ) p.const None
 
 let for_argument (a: M.argument) : argument =
-  mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
+  mk_argument (M.unloc_mident (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
 let mk_prim p args annots = { prim = Some p; int = None;   bytes = None;  string = None;   args = args; annots = annots; array = []; var_id = None; var_type = None }
 let mk_string v           = { prim = None;   int = None;   bytes = None;  string = Some v; args = [];   annots = [];     array = []; var_id = None; var_type = None }
@@ -280,16 +280,16 @@ let to_michelson_type (model : M.model) (type_michelson : M.type_) : micheline =
   to_micheline obj
 
 let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (assets, enums, records, events) =
-  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
-  let for_record_field (x : M.record_field) = mk_decl_record_field (unloc x.name) (for_type x.type_) in
-  let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
+  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (M.unloc_mident x.name) (for_type x.type_) (List.exists (String.equal (M.unloc_mident x.name)) asset.keys) in
+  let for_record_field (x : M.record_field) = mk_decl_record_field (M.unloc_mident x.name) (for_type x.type_) in
+  let for_enum_item (x : M.enum_item)       = mk_decl_constructor (M.unloc_mident x.name) (List.map for_type x.args) in
   let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
   let ft x = to_michelson_type low_model x in
   let for_asset  (asset  : M.asset)  : decl_asset =
     let odasset : M.odel_asset = List.fold_left (fun accu x ->
         match x with
-        | M.ODAsset x when String.equal x.name (unloc asset.name)-> Some x
+        | M.ODAsset x when String.equal x.name (M.unloc_mident asset.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let key_type =
@@ -299,7 +299,7 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
       | []    -> assert false
       | [_]   -> ft odasset.key_type
       | ks    -> begin
-          let kts = List.map (fun x -> let _, ty, _ = M.Utils.get_asset_field model (unloc an, x) in f ty ("%" ^ x)) ks in
+          let kts = List.map (fun x -> let _, ty, _ = M.Utils.get_asset_field model (M.unloc_mident an, x) in f ty ("%" ^ x)) ks in
           match List.rev kts with
           | [] -> assert false
           | f::t ->
@@ -316,25 +316,25 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
       | _ -> ft ct
     in
     let value_type     = ft odasset.value_type in
-    mk_decl_asset (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
+    mk_decl_asset (M.unloc_mident asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
   in
 
   let for_enum (enum : M.enum) : decl_enum   =
     let odasset : M.odel_enum = List.fold_left (fun accu x ->
         match x with
-        | M.ODEnum x when String.equal x.name (unloc enum.name)-> Some x
+        | M.ODEnum x when String.equal x.name (M.unloc_mident enum.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let michelson_type = ft odasset.current_type in
-    mk_decl_enum (unloc enum.name) (List.map for_enum_item enum.values) michelson_type
+    mk_decl_enum (M.unloc_mident enum.name) (List.map for_enum_item enum.values) michelson_type
   in
 
   let for_record (record : M.record) : decl_record =
     let type_michelson = to_michelson_type model (M.trecord record.name) in
-    mk_decl_record (unloc record.name) (List.map for_record_field record.fields) type_michelson
+    mk_decl_record (M.unloc_mident record.name) (List.map for_record_field record.fields) type_michelson
   in
 
-  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
+  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (M.unloc_mident event.name)  (List.map for_record_field event.fields) in
 
   match d with
   | Dvar _       -> (assets, enums, records, events)
@@ -348,8 +348,8 @@ let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list
   mk_decl_type assets enums records events
 
 let for_storage (d : M.decl_node) accu =
-  let for_var (var : M.var) : decl_storage = mk_storage (unloc var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
-  let for_asset (asset : M.asset) : decl_storage = mk_storage (unloc asset.name) (mk_type "asset" (Some (unloc asset.name)) []) false in
+  let for_var (var : M.var) : decl_storage = mk_storage (M.unloc_mident var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
+  let for_asset (asset : M.asset) : decl_storage = mk_storage (M.unloc_mident asset.name) (mk_type "asset" (Some (M.unloc_mident asset.name)) []) false in
   match d with
   | Dvar var     -> (for_var var)::accu
   | Denum _      -> accu
@@ -358,7 +358,7 @@ let for_storage (d : M.decl_node) accu =
   | Devent _     -> accu
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
-  mk_entrypoint (unloc fs.name) (List.map for_argument fs.args)
+  mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
 
 let for_decl_ret model (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
   let ty = Gen_michelson.to_type model rt in
@@ -388,7 +388,7 @@ let for_errors (model : M.model) : error_struct list =
     in
 
     match mt.node with
-    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (unloc id) with | Some v -> f v | None -> None)
+    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (M.unloc_mident id) with | Some v -> f v | None -> None)
     | _ -> f mt
   in
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in
