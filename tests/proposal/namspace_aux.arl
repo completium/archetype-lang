@@ -1,0 +1,8 @@
+archetype namspace_aux
+
+variable n : nat = 0
+
+record r {
+  a : nat;
+  b : string
+}

@@ -1,0 +1,8 @@
+archetype a
+
+import aux from "./test/proposal/namespace.arl"
+
+entry exec() {
+  const a = aux::n;
+ const r = aux::{a = 0; b = "mystr"}
+}
