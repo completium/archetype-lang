@@ -365,7 +365,7 @@ let for_decl_ret model (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
   let value = to_micheline (T.Utils.type_to_micheline ty) in
   let is_storable = T.Utils.is_storable ty in
   let tm = mk_type_micheline value is_storable in
-  mk_decl_fun_ret (unloc fs.name) (List.map for_argument fs.args) (for_type rt) tm
+  mk_decl_fun_ret (M.unloc_mident fs.name) (List.map for_argument fs.args) (for_type rt) tm
 
 let for_getter = for_decl_ret
 let for_view = for_decl_ret

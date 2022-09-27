@@ -701,7 +701,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
     | Memit (e, value)  -> begin
-        let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (unloc e))), f value) in
+        let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e))), f value) in
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
 
