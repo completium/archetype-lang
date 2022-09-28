@@ -136,7 +136,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   let process_enum ?annotation (id : mident) =
     let e_opt : M.enum option = M.Utils.get_enum_opt model (M.unloc_mident id) in
     match e_opt with
-    | Some e when  List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values -> begin
+    | Some e when not (List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values) -> begin
         let lt = List.map (fun (x : M.enum_item) : T.type_ ->
             T.mk_type ~annotation:(mk_fannot (M.unloc_mident x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
           ) e.values
