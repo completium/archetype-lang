@@ -210,7 +210,7 @@ let rec for_type (t : M.type_) : type_ =
   | Tbuiltin Bcurrency             -> mk_type "currency"            None                      []
   | Tbuiltin Bsignature            -> mk_type "signature"           None                      []
   | Tbuiltin Bkey                  -> mk_type "key"                 None                      []
-  | Tbuiltin Bkeyhash              -> mk_type "keyHash"             None                      []
+  | Tbuiltin Bkeyhash              -> mk_type "key_hash"            None                      []
   | Tbuiltin Bbytes                -> mk_type "bytes"               None                      []
   | Tbuiltin Bnat                  -> mk_type "nat"                 None                      []
   | Tbuiltin Bchainid              -> mk_type "chain_id"            None                      []
