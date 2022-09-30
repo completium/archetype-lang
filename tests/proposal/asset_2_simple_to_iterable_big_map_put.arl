@@ -1,4 +1,4 @@
-archetype asset_2_simple_to_iterable_big_map
+archetype asset_2_simple_to_iterable_big_map_put
 
 asset my_asset {
   k: string;

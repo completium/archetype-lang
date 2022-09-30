@@ -1,0 +1,13 @@
+archetype asset_2_simple_to_iterable_big_map_remove
+
+asset my_asset {
+  k: string;
+  a : nat;
+  ibm: iterable_big_map<address, nat>;
+} initialized with {
+  {"k"; 0 ; []}
+}
+
+entry exec() {
+  my_asset["k"].ibm.remove(caller);
+}
