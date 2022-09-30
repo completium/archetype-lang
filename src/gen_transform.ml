@@ -6415,6 +6415,20 @@ let remove_iterable_big_map (model : model) : model =
           end
         | _ -> x
       end
+    | Drecord record -> begin
+        Drecord { record with
+                  fields = List.map (fun (field : record_field) ->
+                      (match field.type_ with
+                       | (Titerable_big_map (_k, _v), _) -> begin
+                           let name = mk_mident (dumloc ("%" ^ (unloc_mident field.name))) in
+                           { field with
+                             type_ = process_type field.type_ ~id:name
+                           }
+                         end
+                       | _ -> field)
+                    ) record.fields
+                }
+      end
     | _ -> x
   in
   let model =

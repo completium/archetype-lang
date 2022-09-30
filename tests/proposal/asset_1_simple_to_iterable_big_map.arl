@@ -1,0 +1,12 @@
+archetype asset_1_simple_to_iterable_big_map
+
+asset my_asset {
+  k: string;
+  ibm: iterable_big_map<address, nat>;
+} initialized with {
+  {"k" ; []}
+}
+
+entry exec() {
+  my_asset["k"].ibm.put(caller, 2);
+}
