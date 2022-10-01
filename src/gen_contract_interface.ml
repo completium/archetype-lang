@@ -360,11 +360,15 @@ let for_storage (d : M.decl_node) accu =
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
 
-let for_decl_ret model (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
-  let ty = Gen_michelson.to_type model rt in
+let tz_type_to_type_micheline ty =
   let value = to_micheline (T.Utils.type_to_micheline ty) in
   let is_storable = T.Utils.is_storable ty in
   let tm = mk_type_micheline value is_storable in
+  tm
+
+let for_decl_ret model (fs, rt : M.function_struct * M.type_) : decl_fun_ret =
+  let ty = Gen_michelson.to_type model rt in
+  let tm = tz_type_to_type_micheline ty in
   mk_decl_fun_ret (M.unloc_mident fs.name) (List.map for_argument fs.args) (for_type rt) tm
 
 let for_getter = for_decl_ret
@@ -426,4 +430,107 @@ let model_to_contract_interface (model : M.model) (low_model : M.model) : contra
 
 let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =
   let ci = model_to_contract_interface model low_model in
+  Format.asprintf "%s\n" (Yojson.Safe.to_string (contract_interface_to_yojson ci))
+
+let rec tz_type_to_type_ (ty : T.type_) : type_=
+  let f = tz_type_to_type_ in
+  match ty.node with
+  | Taddress                -> mk_type "address"             ty.annotation []
+  | Tbig_map (k, v)         -> mk_type "big_map"             ty.annotation [f k; f v]
+  | Tbool                   -> mk_type "bool"                ty.annotation []
+  | Tbytes                  -> mk_type "bytes"               ty.annotation []
+  | Tchain_id               -> mk_type "chain_id"            ty.annotation []
+  | Tcontract t             -> mk_type "contract"            ty.annotation [f t]
+  | Tint                    -> mk_type "int"                 ty.annotation []
+  | Tkey                    -> mk_type "key"                 ty.annotation []
+  | Tkey_hash               -> mk_type "key_hash"            ty.annotation []
+  | Tlambda (a, r)          -> mk_type "lambda"              ty.annotation [f a; f r]
+  | Tlist t                 -> mk_type "list"                ty.annotation [f t]
+  | Tmap (k, v)             -> mk_type "map"                 ty.annotation [f k; f v]
+  | Tmutez                  -> mk_type "mutez"               ty.annotation []
+  | Tnat                    -> mk_type "nat"                 ty.annotation []
+  | Toperation              -> mk_type "operation"           ty.annotation []
+  | Toption t               -> mk_type "option"              ty.annotation [f t]
+  | Tor (l, r)              -> mk_type "or"                  ty.annotation [f l; f r]
+  | Tpair (l, r)            -> mk_type "pair"                ty.annotation [f l; f r]
+  | Tset t                  -> mk_type "set"                 ty.annotation [f t]
+  | Tsignature              -> mk_type "signature"           ty.annotation []
+  | Tstring                 -> mk_type "string"              ty.annotation []
+  | Ttimestamp              -> mk_type "timestamp"           ty.annotation []
+  | Tunit                   -> mk_type "unit"                ty.annotation []
+  | Tticket t               -> mk_type "ticket"              ty.annotation [f t]
+  | Tsapling_transaction _n -> mk_type "sapling_transaction" ty.annotation []
+  | Tsapling_state _n       -> mk_type "sapling_state"       ty.annotation []
+  | Tbls12_381_g1           -> mk_type "bls12_381_g1"        ty.annotation []
+  | Tbls12_381_g2           -> mk_type "bls12_381_g2"        ty.annotation []
+  | Tbls12_381_fr           -> mk_type "bls12_381_fr"        ty.annotation []
+  | Tnever                  -> mk_type "never"               ty.annotation []
+  | Tchest                  -> mk_type "chest"               ty.annotation []
+  | Tchest_key              -> mk_type "chest_key"           ty.annotation []
+
+let tz_type_to_args (ty : T.type_) : argument list=
+  match ty with
+  | {node = T.Tunit} -> []
+  | ty -> [mk_argument "_" (tz_type_to_type_ ty) ]
+
+let remove_percent str = if String.length str > 1 && String.get str 0 = '%' then String.sub str 1 (String.length str - 1) else str
+
+let extract_storage (storage : T.type_) : decl_storage list =
+  let split (obj : T.type_) : (string * T.type_) list =
+    let rec aux (obj : T.type_) : (string * T.type_) list =
+      match obj with
+      | {annotation = Some a} -> [a, obj]
+      | {node = T.Tpair (p, r); _ } -> begin
+          let p = aux p in
+          let r = aux r in
+          if List.length p > 0 && List.length r > 0
+          then p @ r
+          else ["_", obj]
+        end
+      | _ -> []
+    in
+
+    match obj with
+    | {node = T.Tpair _ } when List.length (aux obj) > 0 -> aux obj
+    | {annotation = Some _} -> aux obj
+    | _ -> ["%default", obj]
+  in
+  split storage
+  |> List.map (fun (id, ty) -> mk_storage (remove_percent id) (tz_type_to_type_ ty) false)
+
+let extract_entypoint (parameter : T.type_) : decl_entrypoint list =
+  let split (obj : T.type_) : (string * T.type_) list =
+    let rec aux (obj : T.type_) : (string * T.type_) list =
+      match obj with
+      | {node = T.Tor (p, r); _ } -> [aux p; aux r] |> List.flatten
+      | {annotation = Some a} -> [a, obj]
+      | _ -> []
+    in
+
+    match obj with
+    | {node = T.Tor _ } -> aux obj
+    | {annotation = Some _} -> aux obj
+    | _ -> ["%default", obj]
+  in
+  split parameter
+  |> List.map (fun (id, ty) -> mk_entrypoint (remove_percent id) (tz_type_to_args ty))
+
+let tz_to_contract_interface (tz, env : T.michelson * Gen_decompile.env) : contract_interface =
+  let parameters = [] in
+  let types = mk_decl_type [] [] [] [] in
+  let storage = extract_storage tz.storage in
+  let entrypoints = extract_entypoint tz.parameter in
+  let getters = [] in
+  let views = List.map (fun (v : T.view_struct) ->
+      let name = v.id in
+      let args = tz_type_to_args v.param in
+      let ret  = tz_type_to_type_ v.ret in
+      let return_michelson = tz_type_to_type_micheline v.ret in
+      mk_decl_fun_ret name args ret return_michelson
+    ) tz.views in
+  let errors = [] in
+  mk_contract_interface env.name parameters types storage entrypoints getters views errors
+
+let tz_to_contract_interface_json (tz, env : T.michelson * Gen_decompile.env) : string =
+  let ci = tz_to_contract_interface (tz, env) in
   Format.asprintf "%s\n" (Yojson.Safe.to_string (contract_interface_to_yojson ci))

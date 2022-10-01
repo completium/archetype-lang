@@ -73,6 +73,7 @@ let opt_with_parameters = ref false
 let opt_show_entries = ref false
 let opt_out = ref ""
 let opt_contract_interface = ref false
+let opt_contract_interface_michelson = ref false
 
 let opt_property_focused = ref ""
 

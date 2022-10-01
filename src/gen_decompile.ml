@@ -325,7 +325,11 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
     let storage   = l |> seek "storage"   |> get_arg |> to_type in
     let parameter = l |> seek "parameter" |> get_arg |> to_type in
     let code      = l |> seek "code"      |> get_arg |> to_code in
-    T.mk_michelson storage parameter (Michelson.Utils.flat code)
+    let views     = List.fold_right (fun x accu ->
+        match x with
+        | T.Oprim ({prim = "view"; args = [T.Ostring (id); param; ret; body]}) -> T.mk_view_struct id (to_type param) (to_type ret) (to_code body)::accu
+        | _ -> accu) l [] in
+    T.mk_michelson storage parameter (Michelson.Utils.flat code) ~views
   in
   ff input, env
 

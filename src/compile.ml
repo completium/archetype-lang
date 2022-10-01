@@ -529,6 +529,15 @@ let show_contract_interface input : string =
 
   Gen_contract_interface.model_to_contract_interface_json model low_model
 
+let show_contract_interface_michelson input : string =
+  let tze =
+    input
+    |> parse_micheline
+    |> to_michelson
+    (* |> tycheck_michelson *)
+  in
+  Gen_contract_interface.tz_to_contract_interface_json tze
+
 (* -------------------------------------------------------------------- *)
 
 type parameter = {
