@@ -132,6 +132,7 @@ type contract_interface = {
   parameters: parameter list;
   types: decl_type;
   storage: decl_storage list;
+  storage_type: type_micheline option;
   entrypoints: decl_entrypoint list;
   getters: decl_fun_ret list;
   views: decl_fun_ret list;
@@ -190,8 +191,8 @@ let mk_parameter name type_ const default : parameter =
 let mk_error_struct ?(args = []) kind expr : error_struct =
   { kind; args; expr }
 
-let mk_contract_interface name parameters types storage entrypoints getters views errors : contract_interface =
-  { name; parameters; types; storage; entrypoints; getters; views; errors }
+let mk_contract_interface ?storage_type name parameters types storage entrypoints getters views errors : contract_interface =
+  { name; parameters; types; storage; storage_type; entrypoints; getters; views; errors }
 
 let rec for_type (t : M.type_) : type_ =
   match M.get_ntype t with
@@ -529,7 +530,8 @@ let tz_to_contract_interface (tz, env : T.michelson * Gen_decompile.env) : contr
       mk_decl_fun_ret name args ret return_michelson
     ) tz.views in
   let errors = [] in
-  mk_contract_interface env.name parameters types storage entrypoints getters views errors
+  let storage_type = tz_type_to_type_micheline tz.storage in
+  mk_contract_interface env.name parameters types storage entrypoints getters views errors ~storage_type
 
 let tz_to_contract_interface_json (tz, env : T.michelson * Gen_decompile.env) : string =
   let ci = tz_to_contract_interface (tz, env) in
