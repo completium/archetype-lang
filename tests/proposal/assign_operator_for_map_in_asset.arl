@@ -1,0 +1,18 @@
+archetype assign_operator_for_map_in_asset
+
+asset tokens {
+  symbol: string;
+  name: string;
+  ledger: iterable_big_map<address, nat >;
+}
+
+entry xfer(sym: string, %from : address, %to : address, amount : nat) {
+  no transfer
+  require {
+    r: (tokens[sym].ledger[%from] ? the : 0) > amount otherwise "INSUFFICIENT_TOKENS"
+  }
+  effect {
+    tokens[sym].ledger[%from] -= amount;
+    tokens[sym].ledger[%to] += 2 * amount;
+  }
+}
