@@ -82,6 +82,7 @@ type decl_enum = {
 type decl_event = {
   name: string;
   fields: decl_record_field list;
+  type_michelson: micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -164,10 +165,10 @@ let mk_decl_constructor name types : decl_constructor =
 let mk_decl_enum name constructors type_michelson : decl_enum =
   { name; constructors; type_michelson }
 
-let mk_decl_event name fields : decl_event =
-  { name; fields }
+let mk_decl_event name fields type_michelson : decl_event =
+  { name; fields; type_michelson }
 
-let mk_decl_type assets enums records events =
+let mk_decl_type assets enums records events  =
   { assets; enums; records; events }
 
 let mk_storage name type_ const : decl_storage =
@@ -335,7 +336,10 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
     mk_decl_record (M.unloc_mident record.name) (List.map for_record_field record.fields) type_michelson
   in
 
-  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (M.unloc_mident event.name)  (List.map for_record_field event.fields) in
+  let for_event  (event  : M.record) : decl_event =
+    let type_michelson = to_michelson_type model (M.tevent event.name) in
+    mk_decl_event  (M.unloc_mident event.name)  (List.map for_record_field event.fields) type_michelson
+  in
 
   match d with
   | Dvar _       -> (assets, enums, records, events)
