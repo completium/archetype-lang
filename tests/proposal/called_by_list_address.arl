@@ -1,0 +1,10 @@
+archetype called_by_list_address
+
+variable my_list : list<address> = []
+
+entry exec () {
+   called by my_list
+   effect {
+     ()
+   }
+}

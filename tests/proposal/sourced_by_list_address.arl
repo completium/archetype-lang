@@ -1,0 +1,10 @@
+archetype sourced_by_list_address
+
+variable my_list : list<address> = []
+
+entry exec () {
+   sourced by my_list
+   effect {
+     ()
+   }
+}

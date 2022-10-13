@@ -1,0 +1,10 @@
+archetype sourced_by_set_address
+
+variable my_set : set<address> = []
+
+entry exec () {
+   sourced by my_set
+   effect {
+     ()
+   }
+}
