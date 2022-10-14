@@ -117,6 +117,7 @@ let main () : unit =
       "--show-contract-interface", Arg.Set Options.opt_contract_interface, " Show contract interface";
       "--show-contract-interface-michelson", Arg.Set Options.opt_contract_interface_michelson, " Show contract interface from michelson";
       "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
+      "--event-well-address", Arg.String (fun s -> Options.opt_event_well_address := Some s), " Deprecated";
       "--debug", Arg.Set Options.debug, " Debug";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
