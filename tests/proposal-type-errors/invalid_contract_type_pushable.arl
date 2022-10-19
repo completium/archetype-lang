@@ -1,0 +1,6 @@
+archetype invalid_contract_type_pushable
+
+entry exec(c : contract<unit>) {
+  var a = c
+}
+
