@@ -28,6 +28,7 @@ type parameter = {
   type_: type_  [@key "type"];
   const: bool;
   default: micheline option;
+  path: int list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -98,6 +99,7 @@ type decl_storage = {
   name: string;
   type_: type_  [@key "type"];
   const: bool;
+  path: int list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -171,8 +173,8 @@ let mk_decl_event name fields type_michelson : decl_event =
 let mk_decl_type assets enums records events  =
   { assets; enums; records; events }
 
-let mk_storage name type_ const : decl_storage =
-  { name; type_; const }
+let mk_storage name type_ const path : decl_storage =
+  { name; type_; const; path }
 
 let mk_argument name type_ : argument =
   { name; type_ }
@@ -186,8 +188,8 @@ let mk_type_micheline value is_storable : type_micheline =
 let mk_decl_fun_ret name args return return_michelson : decl_fun_ret =
   { name; args; return; return_michelson }
 
-let mk_parameter name type_ const default : parameter =
-  { name; type_; const; default }
+let mk_parameter name type_ path const default : parameter =
+  { name; type_; path; const; default }
 
 let mk_error_struct ?(args = []) kind expr : error_struct =
   { kind; args; expr }
@@ -251,8 +253,42 @@ let rec for_type (t : M.type_) : type_ =
   | Tvset _                        -> assert false
   | Ttrace _                       -> assert false
 
-let for_parameter (p : M.parameter) : parameter =
-  mk_parameter (M.unloc_mident p.name) (for_type p.typ) p.const None
+type preprocess_obj = {
+  params: M.parameter list;
+  var_decls: M.decl_node list;
+  size : int;
+}
+
+let get_var_decls_size (model : M.model) : preprocess_obj =
+  let params = model.parameters |> List.filter (fun (x : M.parameter) -> not x.const) in
+  let var_decls = model.decls |> List.filter (function | M.Dvar var when (match var.kind with | M.VKconstant -> false | _ -> true) -> true | M.Dasset _ -> true | _ -> false) in
+  let s_param = params |> List.length in
+  let s_decls = var_decls |> List.length in
+  let size = s_param + s_decls in
+  {params; var_decls; size}
+
+let compute_path idx size : int list =
+  if size = 1
+  then []
+  else begin
+    let rec aux accu i =
+      if i = 0
+      then accu @ (if size - idx = 1 then [] else [0])
+      else aux (1::accu) (i - 1)
+    in
+    aux [] idx
+  end
+
+let for_parameters (po : preprocess_obj) (ps : M.parameter list) : parameter list =
+  let _, res =
+  List.fold_left (
+   fun ((i, accu) : int * parameter list) (p : M.parameter) -> begin
+    let path = if p.const then [] else compute_path i po.size in
+    let param = mk_parameter (M.unloc_mident p.name) (for_type p.typ) path p.const None in
+    (i + (if p.const then 0 else 1), param::accu)
+   end) (0, []) ps
+  in
+  List.rev res
 
 let for_argument (a: M.argument) : argument =
   mk_argument (M.unloc_mident (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
@@ -352,15 +388,24 @@ let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list
   let assets, enums, records, events = List.fold_right (for_decl_type model low_model) ds ([], [], [], []) in
   mk_decl_type assets enums records events
 
-let for_storage (d : M.decl_node) accu =
-  let for_var (var : M.var) : decl_storage = mk_storage (M.unloc_mident var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
-  let for_asset (asset : M.asset) : decl_storage = mk_storage (M.unloc_mident asset.name) (mk_type "asset" (Some (M.unloc_mident asset.name)) []) false in
+let for_decl_node (d : M.decl_node) path accu : decl_storage list =
+  let for_var (var : M.var) : decl_storage = mk_storage (M.unloc_mident var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) path in
+  let for_asset (asset : M.asset) : decl_storage = mk_storage (M.unloc_mident asset.name) (mk_type "asset" (Some (M.unloc_mident asset.name)) []) false path in
   match d with
   | Dvar var     -> (for_var var)::accu
   | Denum _      -> accu
   | Dasset asset -> (for_asset asset)::accu
   | Drecord _    -> accu
   | Devent _     -> accu
+
+let for_storage (_model : M.model) (po : preprocess_obj) =
+  let (_, res) : int * decl_storage list = List.fold_left
+      (fun (i, accu) (x : M.decl_node) ->
+         let path : int list = compute_path i po.size in
+         let accu : decl_storage list = for_decl_node x path accu in
+         (i + 1, accu)
+      ) (List.length po.params, []) po.var_decls in
+  List.rev res
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
@@ -424,9 +469,10 @@ let for_errors (model : M.model) : error_struct list =
   M.fold_model aux model []
 
 let model_to_contract_interface (model : M.model) (low_model : M.model) : contract_interface =
-  let parameters = List.map for_parameter model.parameters in
+  let po = get_var_decls_size model in
+  let parameters = for_parameters po model.parameters in
   let types = for_decl_type model low_model model.decls in
-  let storage = List.fold_right for_storage model.decls [] in
+  let storage = for_storage model po in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map (for_getter model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let views = List.map (for_view model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
@@ -481,16 +527,17 @@ let tz_type_to_args (ty : T.type_) : argument list=
 let remove_percent str = if String.length str > 1 && String.get str 0 = '%' then String.sub str 1 (String.length str - 1) else str
 
 let extract_storage (storage : T.type_) : decl_storage list =
-  let split (obj : T.type_) : (string * T.type_) list =
-    let rec aux (obj : T.type_) : (string * T.type_) list =
+  let split (obj : T.type_) : (string * T.type_ * int list) list =
+    let rec aux (obj : T.type_) : (string * T.type_ * int list) list =
+      let path : int list = [] in (* TODO: handle path *)
       match obj with
-      | {annotation = Some a} -> [a, obj]
+      | {annotation = Some a} -> [a, obj, path]
       | {node = T.Tpair (p, r); _ } -> begin
           let p = aux p in
           let r = aux r in
           if List.length p > 0 && List.length r > 0
           then p @ r
-          else ["_", obj]
+          else ["_", obj, path]
         end
       | _ -> []
     in
@@ -498,10 +545,10 @@ let extract_storage (storage : T.type_) : decl_storage list =
     match obj with
     | {node = T.Tpair _ } when List.length (aux obj) > 0 -> aux obj
     | {annotation = Some _} -> aux obj
-    | _ -> ["%default", obj]
+    | _ -> ["%default", obj, []]
   in
   split storage
-  |> List.map (fun (id, ty) -> mk_storage (remove_percent id) (tz_type_to_type_ ty) false)
+  |> List.map (fun (id, ty, path) -> mk_storage (remove_percent id) (tz_type_to_type_ ty) false path)
 
 let extract_entypoint (parameter : T.type_) : decl_entrypoint list =
   let split (obj : T.type_) : (string * T.type_) list =
