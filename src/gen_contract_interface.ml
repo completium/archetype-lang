@@ -135,7 +135,7 @@ type contract_interface = {
   parameters: parameter list;
   types: decl_type;
   storage: decl_storage list;
-  storage_type: type_micheline option;
+  storage_type: type_micheline;
   entrypoints: decl_entrypoint list;
   getters: decl_fun_ret list;
   views: decl_fun_ret list;
@@ -194,7 +194,7 @@ let mk_parameter name type_ path const default : parameter =
 let mk_error_struct ?(args = []) kind expr : error_struct =
   { kind; args; expr }
 
-let mk_contract_interface ?storage_type name parameters types storage entrypoints getters views errors : contract_interface =
+let mk_contract_interface name parameters types storage storage_type entrypoints getters views errors : contract_interface =
   { name; parameters; types; storage; storage_type; entrypoints; getters; views; errors }
 
 let rec for_type (t : M.type_) : type_ =
@@ -257,6 +257,7 @@ type preprocess_obj = {
   params: M.parameter list;
   var_decls: M.decl_node list;
   size : int;
+  with_state: bool;
 }
 
 let get_var_decls_size (model : M.model) : preprocess_obj =
@@ -264,13 +265,15 @@ let get_var_decls_size (model : M.model) : preprocess_obj =
   let var_decls = model.decls |> List.filter (function | M.Dvar var when (match var.kind with | M.VKconstant -> false | _ -> true) -> true | M.Dasset _ -> true | _ -> false) in
   let s_param = params |> List.length in
   let s_decls = var_decls |> List.length in
-  let size = s_param + s_decls in
-  {params; var_decls; size}
+  let with_state = List.fold_left (fun accu x -> accu || (match x with | M.Denum ({name = (_, {pldesc = "state"})}) -> true | _ -> false) ) false model.decls in
+  let size = s_param + s_decls + (if with_state then 1 else 0) in
+  {params; var_decls; size; with_state}
 
 let compute_path idx size : int list =
   if size = 1
   then []
-  else begin
+  else
+  begin
     let rec aux accu i =
       if i = 0
       then accu @ (if size - idx = 1 then [] else [0])
@@ -280,13 +283,14 @@ let compute_path idx size : int list =
   end
 
 let for_parameters (po : preprocess_obj) (ps : M.parameter list) : parameter list =
+  let start = if po.with_state then 1 else 0 in
   let _, res =
   List.fold_left (
    fun ((i, accu) : int * parameter list) (p : M.parameter) -> begin
     let path = if p.const then [] else compute_path i po.size in
     let param = mk_parameter (M.unloc_mident p.name) (for_type p.typ) path p.const None in
     (i + (if p.const then 0 else 1), param::accu)
-   end) (0, []) ps
+   end) (start, []) ps
   in
   List.rev res
 
@@ -399,13 +403,17 @@ let for_decl_node (d : M.decl_node) path accu : decl_storage list =
   | Devent _     -> accu
 
 let for_storage (_model : M.model) (po : preprocess_obj) =
+  let start = List.length po.params + if po.with_state then 1 else 0 in
   let (_, res) : int * decl_storage list = List.fold_left
       (fun (i, accu) (x : M.decl_node) ->
          let path : int list = compute_path i po.size in
          let accu : decl_storage list = for_decl_node x path accu in
          (i + 1, accu)
-      ) (List.length po.params, []) po.var_decls in
-  List.rev res
+      ) (start, []) po.var_decls in
+  let res = List.rev res in
+  if po.with_state
+  then (mk_storage "_state" (mk_type "int" None []) false (compute_path 0 po.size))::res
+  else res
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
@@ -468,19 +476,20 @@ let for_errors (model : M.model) : error_struct list =
   in
   M.fold_model aux model []
 
-let model_to_contract_interface (model : M.model) (low_model : M.model) : contract_interface =
+let model_to_contract_interface (model : M.model) (low_model : M.model) (tz : T.michelson) : contract_interface =
   let po = get_var_decls_size model in
   let parameters = for_parameters po model.parameters in
   let types = for_decl_type model low_model model.decls in
   let storage = for_storage model po in
+  let storage_type =tz_type_to_type_micheline tz.storage in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map (for_getter model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let views = List.map (for_view model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = for_errors model in
-  mk_contract_interface (unloc model.name) parameters types storage entrypoints getters views errors
+  mk_contract_interface (unloc model.name) parameters types storage storage_type entrypoints getters views errors
 
-let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =
-  let ci = model_to_contract_interface model low_model in
+let model_to_contract_interface_json (model : M.model) (low_model : M.model) (tz : T.michelson) : string =
+  let ci = model_to_contract_interface model low_model tz in
   Format.asprintf "%s\n" (Yojson.Safe.to_string (contract_interface_to_yojson ci))
 
 let rec tz_type_to_type_ (ty : T.type_) : type_=
@@ -582,7 +591,7 @@ let tz_to_contract_interface (tz, env : T.michelson * Gen_decompile.env) : contr
     ) tz.views in
   let errors = [] in
   let storage_type = tz_type_to_type_micheline tz.storage in
-  mk_contract_interface env.name parameters types storage entrypoints getters views errors ~storage_type
+  mk_contract_interface env.name parameters types storage storage_type entrypoints getters views errors
 
 let tz_to_contract_interface_json (tz, env : T.michelson * Gen_decompile.env) : string =
   let ci = tz_to_contract_interface (tz, env) in

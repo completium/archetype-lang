@@ -526,8 +526,9 @@ let show_contract_interface input : string =
     (* |> process_metadata *)
   in
   let low_model = toolchain model in
+  let tz = low_model |> Gen_michelson.to_ir |> Gen_michelson.to_michelson in
 
-  Gen_contract_interface.model_to_contract_interface_json model low_model
+  Gen_contract_interface.model_to_contract_interface_json model low_model tz
 
 let show_contract_interface_michelson input : string =
   let tze =
@@ -580,7 +581,8 @@ let contract_interface input : string =
     |> compile_model
   in
   let low_model = toolchain model in
-  Gen_contract_interface.model_to_contract_interface_json model low_model
+  let tz = low_model |> Gen_michelson.to_ir |> Gen_michelson.to_michelson in
+  Gen_contract_interface.model_to_contract_interface_json model low_model tz
 
 (* -------------------------------------------------------------------- *)
 
