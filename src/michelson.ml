@@ -1526,34 +1526,35 @@ end = struct
     aux c
 
   let rec type_to_micheline (t : type_) : obj_micheline =
+    let f = type_to_micheline in
     let prim, args =
       match t.node with
       | Taddress               -> "address", []
-      | Tbig_map (k, v)        -> "big_map", [k; v]
+      | Tbig_map (k, v)        -> "big_map", [f k; f v]
       | Tbool                  -> "bool", []
       | Tbytes                 -> "bytes", []
       | Tchain_id              -> "chain_id", []
-      | Tcontract t            -> "contract", [t]
+      | Tcontract t            -> "contract", [f t]
       | Tint                   -> "int", []
       | Tkey                   -> "key", []
       | Tkey_hash              -> "key_hash", []
-      | Tlambda (a, r)         -> "lambda", [a; r]
-      | Tlist t                -> "list", [t]
-      | Tmap (k, v)            -> "map", [k; v]
+      | Tlambda (a, r)         -> "lambda", [f a; f r]
+      | Tlist t                -> "list", [f t]
+      | Tmap (k, v)            -> "map", [f k; f v]
       | Tmutez                 -> "mutez", []
       | Tnat                   -> "nat", []
       | Toperation             -> "operation", []
-      | Toption t              -> "option", [t]
-      | Tor (l, r)             -> "or", [l; r]
-      | Tpair (l, r)           -> "pair", [l; r]
-      | Tset t                 -> "set", [t]
+      | Toption t              -> "option", [f t]
+      | Tor (l, r)             -> "or", [f l; f r]
+      | Tpair (l, r)           -> "pair", [f l; f r]
+      | Tset t                 -> "set", [f t]
       | Tsignature             -> "signature", []
       | Tstring                -> "string", []
       | Ttimestamp             -> "timestamp", []
       | Tunit                  -> "unit", []
-      | Tticket t              -> "ticket", [t]
-      | Tsapling_transaction n -> Format.asprintf "sapling_transaction(%i)" n, []
-      | Tsapling_state n       -> Format.asprintf "sapling_state(%i)" n, []
+      | Tticket t              -> "ticket", [f t]
+      | Tsapling_transaction n -> Format.asprintf "sapling_transaction", [Oint (string_of_int n)]
+      | Tsapling_state n       -> Format.asprintf "sapling_state", [Oint (string_of_int n)]
       | Tbls12_381_g1          -> "bls12_381_g1", []
       | Tbls12_381_g2          -> "bls12_381_g2", []
       | Tbls12_381_fr          -> "bls12_381_fr", []
@@ -1561,7 +1562,7 @@ end = struct
       | Tchest                 -> "chest", []
       | Tchest_key             -> "chest_key", []
     in
-    let args = if List.is_empty args then None else Some (List.map type_to_micheline args) in
+    let args = if List.is_empty args then None else Some args in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
     let prim = mk_prim ?args ?annots prim in
     Oprim prim
