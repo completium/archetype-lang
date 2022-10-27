@@ -273,15 +273,15 @@ let get_var_decls_size (model : M.model) : preprocess_obj =
 let compute_path idx size : int list =
   if size = 1
   then []
-  else
-  begin
+  else [idx]
+  (* begin
     let rec aux accu i =
       if i = 0
       then accu @ (if size - idx = 1 then [] else [0])
       else aux (1::accu) (i - 1)
     in
     aux [] idx
-  end
+  end *)
 
 let for_parameters (po : preprocess_obj) (ps : M.parameter list) : parameter list =
   let start = if po.with_state then 1 else 0 in
