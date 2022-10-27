@@ -174,7 +174,7 @@ let fail_if  = "fail" blank+ "if"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
-let tz_tx_rollup_l2_address = "tz" ('4' | "r1" ) ['0'-'9' 'a'-'z' 'A'-'Z']+
+let tz_tx_rollup_l2_address = "tz4" ['0'-'9' 'a'-'z' 'A'-'Z']+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -188,7 +188,7 @@ rule token = parse
   | "with" blank+ "metadata" { WITH_METADATA }
 
   | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
-  | tz_tx_rollup_l2_address as a  { TX_ROLLUP_L2_ADDRESS a }
+  | tz_tx_rollup_l2_address as a  { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid tx_rollup_l2_address: %s" a); TX_ROLLUP_L2_ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> (if (String.length id > 254) then lex_error lexbuf "Invalid identifier size, must be less than 255 charaters"; IDENT id) }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
