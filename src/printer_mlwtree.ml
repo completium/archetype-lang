@@ -131,6 +131,7 @@ let pp_type fmt typ =
       | Tystring      -> "arstring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
+      | Tytx_rollup_l2_address -> "tx_rollup_l2_address"
       | Tytez         -> "tez"
       | Tybytes       -> "bytes"
       | Tychainid     -> "chain_id"

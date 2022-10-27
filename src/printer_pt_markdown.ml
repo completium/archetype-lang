@@ -9,19 +9,20 @@ let cmp_lident i1 i2 : bool = String.equal (unloc i1) (unloc i2)
 
 let pp_literal fmt (l : literal) =
   match l with
-  | Lint      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lnat      n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
-  | Ldecimal  n -> Format.fprintf fmt "%s" n
-  | Ltz       n -> Format.fprintf fmt "%stz"  n
-  | Lmtz      n -> Format.fprintf fmt "%smtz" n
-  | Lutz      n -> Format.fprintf fmt "%sutz" n
-  | Laddress  a -> Format.fprintf fmt "%s" a
-  | Lstring   s -> Format.fprintf fmt "\"%s\"" s
-  | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
-  | Lduration d -> Format.fprintf fmt "%s" d
-  | Ldate     d -> Format.fprintf fmt "%s" d
-  | Lbytes    s -> Format.fprintf fmt "0x%s" s
-  | Lpercent  n -> Format.fprintf fmt "%s%%" n
+  | Lint                  n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lnat                  n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
+  | Ldecimal              n -> Format.fprintf fmt "%s" n
+  | Ltz                   n -> Format.fprintf fmt "%stz"  n
+  | Lmtz                  n -> Format.fprintf fmt "%smtz" n
+  | Lutz                  n -> Format.fprintf fmt "%sutz" n
+  | Laddress              a -> Format.fprintf fmt "%s" a
+  | Ltx_rollup_l2_address a -> Format.fprintf fmt "%s" a
+  | Lstring               s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool                 b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lduration             d -> Format.fprintf fmt "%s" d
+  | Ldate                 d -> Format.fprintf fmt "%s" d
+  | Lbytes                s -> Format.fprintf fmt "0x%s" s
+  | Lpercent              n -> Format.fprintf fmt "%s%%" n
 
 let pp_expr fmt e =
   match unloc e with

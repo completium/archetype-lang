@@ -869,22 +869,23 @@ and pp_else fmt (e : expr option) =
 
 and pp_literal fmt lit =
   match lit with
-  | Lint      n -> Format.fprintf fmt "%si" (Big_int.string_of_big_int n)
-  | Lnat      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Ldecimal  n -> Format.fprintf fmt "%s" n
+  | Lint                  n -> Format.fprintf fmt "%si" (Big_int.string_of_big_int n)
+  | Lnat                  n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Ldecimal              n -> Format.fprintf fmt "%s" n
   (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
                           (Big_int.string_of_big_int n) *)
-  | Ltz       n -> Format.fprintf fmt "%stz"  n
-  | Lmtz      n -> Format.fprintf fmt "%smtz" n
-  | Lutz      n -> Format.fprintf fmt "%sutz" n
-  | Laddress  a -> Format.fprintf fmt "@%s" a
-  | Lstring   s -> Format.fprintf fmt "\"%s\"" s
-  | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
-  | Lduration d -> Format.fprintf fmt "%s" d
-  | Ldate     d -> Format.fprintf fmt "%s" d
-  | Lbytes    s -> Format.fprintf fmt "0x%s" s
-  | Lpercent  n -> Format.fprintf fmt "%s%%" n
+  | Ltz                   n -> Format.fprintf fmt "%stz"  n
+  | Lmtz                  n -> Format.fprintf fmt "%smtz" n
+  | Lutz                  n -> Format.fprintf fmt "%sutz" n
+  | Laddress              a -> Format.fprintf fmt "@%s" a
+  | Ltx_rollup_l2_address a -> Format.fprintf fmt "%s" a
+  | Lstring               s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool                 b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lduration             d -> Format.fprintf fmt "%s" d
+  | Ldate                 d -> Format.fprintf fmt "%s" d
+  | Lbytes                s -> Format.fprintf fmt "0x%s" s
+  | Lpercent              n -> Format.fprintf fmt "%s%%" n
 
 and pp_ident_ident fmt a =
   match a with

@@ -37,6 +37,7 @@ let pp_vtyp fmt = function
   | VTnever        -> Format.fprintf fmt "never"
   | VTchest        -> Format.fprintf fmt "chest"
   | VTchest_key    -> Format.fprintf fmt "chest_key"
+  | VTtx_rollup_l2_address -> Format.fprintf fmt "tx_rollup_l2_address"
 
 let pp_container fmt = function
   | Collection     -> Format.fprintf fmt "collection"
@@ -125,17 +126,18 @@ let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
 
 let pp_bval fmt (bval : bval) =
   let pp_node fmt = function
-    | BVint v           -> Format.fprintf fmt "%ai" pp_big_int v
-    | BVnat v           -> pp_big_int fmt v
-    | BVbool v          -> pp_str fmt (if v then "true" else "false")
-    | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
-    | BVdate v          -> Core.pp_date fmt v
-    | BVstring s        -> Format.fprintf fmt "\"%s\"" s
-    | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
-    | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
-    | BVduration v      -> Core.pp_duration_for_printer fmt v
-    | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
-    | BVunit            -> Format.fprintf fmt "Unit"
+    | BVint v                  -> Format.fprintf fmt "%ai" pp_big_int v
+    | BVnat v                  -> pp_big_int fmt v
+    | BVbool v                 -> pp_str fmt (if v then "true" else "false")
+    | BVrational (n, d)        -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
+    | BVdate v                 -> Core.pp_date fmt v
+    | BVstring s               -> Format.fprintf fmt "\"%s\"" s
+    | BVcurrency (c, v)        -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
+    | BVaddress v              -> Format.fprintf fmt "@@%a" pp_str v
+    | BVtx_rollup_l2_address v -> Format.fprintf fmt "@@%a" pp_str v
+    | BVduration v             -> Core.pp_duration_for_printer fmt v
+    | BVbytes s                -> Format.fprintf fmt "0x%a" pp_str s
+    | BVunit                   -> Format.fprintf fmt "Unit"
   in
   pp_struct_poly pp_node fmt bval
 

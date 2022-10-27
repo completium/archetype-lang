@@ -65,6 +65,7 @@ type type_node =
   | Tnever
   | Tchest
   | Tchest_key
+  | Ttx_rollup_l2_address
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -1124,6 +1125,7 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
     | Tnever                 -> Tnever
     | Tchest                 -> Tchest
     | Tchest_key             -> Tchest_key
+    | Ttx_rollup_l2_address  -> Ttx_rollup_l2_address
   in
   {node = node; annotation = t.annotation}
 
@@ -1561,6 +1563,7 @@ end = struct
       | Tnever                 -> "never", []
       | Tchest                 -> "chest", []
       | Tchest_key             -> "chest_key", []
+      | Ttx_rollup_l2_address  -> "tx_rollup_l2_address", []
     in
     let args = if List.is_empty args then None else Some args in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
@@ -1617,6 +1620,7 @@ end = struct
         | Tnever                  -> Ovar (OMVfree x)
         | Tchest                  -> Ovar (OMVfree x)
         | Tchest_key              -> Ovar (OMVfree x)
+        | Ttx_rollup_l2_address   -> Ovar (OMVfree x)
       end
     | DIrCode (_id, _c) -> Oarray ([])
     | Dcode c           -> code_to_micheline c
@@ -1811,6 +1815,7 @@ end = struct
     | Tnever                  -> true
     | Tchest                  -> true
     | Tchest_key              -> true
+    | Ttx_rollup_l2_address   -> true
 end
 
 (***)

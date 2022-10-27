@@ -172,6 +172,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer (_, Collection) -> false
       | A.Tcontainer _           -> true
       | A.Tset                 _ -> true
@@ -218,6 +219,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> false
       | A.Tlist                _ -> false
@@ -263,6 +265,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer (_, Collection) -> false
       | A.Tcontainer _           -> true
       | A.Tset                 _ -> true
@@ -309,6 +312,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer (_, Collection) -> false
       | A.Tcontainer _           -> true
       | A.Tset                 t -> is_storable t
@@ -355,6 +359,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer (_, Collection) -> false
       | A.Tcontainer _           -> true
       | A.Tset                 t -> is_packable t
@@ -401,6 +406,7 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
+      | A.Tbuiltin VTtx_rollup_l2_address -> true
       | A.Tcontainer (_, Collection) -> false
       | A.Tcontainer _           -> true
       | A.Tset                 t -> is_big_map_value t
@@ -1731,7 +1737,8 @@ let core_types = [
   ("bls12_381_g2" , A.vtbls12_381_g2     );
   ("never"        , A.vtnever            );
   ("chest"        , A.vtchest            );
-  ("chest_key"    , A.vtchest_key        )
+  ("chest_key"    , A.vtchest_key        );
+  ("tx_rollup_l2_address", A.vttx_rollup_l2_address)
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -2411,6 +2418,7 @@ end = struct
       | Tnever                 -> A.Tbuiltin VTnever
       | Tchest                 -> A.Tbuiltin VTchest
       | Tchest_key             -> A.Tbuiltin VTchest_key
+      | Ttx_rollup_l2_address  -> A.Tbuiltin VTtx_rollup_l2_address
     in
     aux (T.to_type obj) |> normalize_type
 
@@ -2890,6 +2898,9 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
 
   | Laddress a ->
     mk_sp A.vtaddress (A.BVaddress a)
+
+  | Ltx_rollup_l2_address a ->
+    mk_sp A.vttx_rollup_l2_address (A.BVtx_rollup_l2_address a)
 
   | Lduration d ->
     mk_sp A.vtduration (A.BVduration (Core.string_to_duration d))

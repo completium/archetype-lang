@@ -3,11 +3,11 @@
 # --------------------------------------------------------------------
 .PHONY: all run clean merlin __force__
 
-PROFILE  ?= release
+PROFILE  ?= dev
 COMPILER := compiler.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) js .merlin
+all: $(COMPILER) .merlin
 
 run: __force__
 	dune exec ./$(COMPILER)

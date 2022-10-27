@@ -174,6 +174,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bnever        -> T.Tnever
       | Bchest        -> T.Tchest
       | Bchest_key    -> T.Tchest_key
+      | Btx_rollup_l2_address -> T.Ttx_rollup_l2_address
     end
   | Tcontainer _               -> assert false
   | Tlist t                    -> T.mk_type ?annotation (T.Tlist (to_type t))
@@ -211,6 +212,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mstring    s               -> Some (T.Dstring s)
   | Mcurrency  (v, _)          -> Some (T.Dint v)
   | Maddress   v               -> Some (T.Dstring v)
+  | Mtx_rollup_l2_address v    -> Some (T.Dstring v)
   | Mdate      v               -> Some (T.Dint (Core.date_to_timestamp v))
   | Mduration  n               -> Some (T.Dint (Core.duration_to_timestamp n))
   | Mtimestamp v               -> Some (T.Dint v)
@@ -411,6 +413,7 @@ let to_ir (model : M.model) : T.ir =
     | Mstring    s      -> T.Dstring s
     | Mcurrency  (v, _) -> T.Dint v
     | Maddress   v      -> T.Dstring v
+    | Mtx_rollup_l2_address v -> T.Dstring v
     | Mdate      v      -> T.Dint (Core.date_to_timestamp v)
     | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
     | Mtimestamp v      -> T.Dint v
@@ -736,6 +739,7 @@ let to_ir (model : M.model) : T.ir =
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
     | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
+    | Mtx_rollup_l2_address v -> T.Iconst (T.mk_type Ttx_rollup_l2_address, Dstring v)
     | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
     | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))
     | Mtimestamp v       -> T.Iconst (T.mk_type Ttimestamp,    Dint v)

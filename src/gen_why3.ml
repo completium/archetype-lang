@@ -125,6 +125,7 @@ let map_btype = function
   | M.Btimestamp     -> Tyint
   | M.Bstring        -> Tystring
   | M.Baddress       -> Tyaddr
+  | M.Btx_rollup_l2_address -> Tytx_rollup_l2_address
   | M.Bcurrency      -> Tytez
   | M.Bsignature     -> Tysignature
   | M.Bkey           -> Tykey
@@ -196,6 +197,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tystring -> Teq (Tystring, Tvar e1, Tvar e2)
   | Tybytes -> Teq (Tybytes, Tvar e1, Tvar e2)
   | Tyaddr -> Teq (Tyaddr, Tvar e1, Tvar e2)
+  | Tytx_rollup_l2_address -> Teq (Tytx_rollup_l2_address, Tvar e1, Tvar e2)
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
@@ -854,6 +856,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tybool        -> Ttrue
       | Tystring      -> Temptystr
       | Tyaddr        -> Tdefaultaddr
+      | Tytx_rollup_l2_address -> Tdefaultaddr
       | Tyoption _    -> Tnone
       | Tyunit        -> Tunit
       | Tyor (l, r)   -> Tleft (r, type_to_init m l)
@@ -1850,6 +1853,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcurrency (i, Utz)  -> Tint i
     | Mstring v ->  Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Maddress v -> Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mtx_rollup_l2_address v -> Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mbytes v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mchain_id  v -> Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mkey       v -> Tint (Tools.string_to_big_int v) (* Tstring v *)

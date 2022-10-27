@@ -209,6 +209,7 @@
 %token <string> MTZ
 %token <string> UTZ
 %token <string> ADDRESS
+%token <string> TX_ROLLUP_L2_ADDRESS
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
@@ -1239,19 +1240,20 @@ label_expr_unloc:
 | IN    e=simple_expr { Qcollection e }
 
 literal:
- | x=NUMBERINT   { Lint      x }
- | x=NUMBERNAT   { Lnat      x }
- | x=DECIMAL     { Ldecimal  x }
- | x=TZ          { Ltz       x }
- | x=MTZ         { Lmtz      x }
- | x=UTZ         { Lutz      x }
- | x=STRING      { Lstring   x }
- | x=ADDRESS     { Laddress  x }
- | x=bool_value  { Lbool     x }
- | x=DURATION    { Lduration x }
- | x=DATE        { Ldate     x }
- | x=BYTES       { Lbytes    x }
- | x=PERCENT_LIT { Lpercent  x }
+ | x=NUMBERINT      { Lint            x }
+ | x=NUMBERNAT      { Lnat            x }
+ | x=DECIMAL        { Ldecimal        x }
+ | x=TZ             { Ltz             x }
+ | x=MTZ            { Lmtz            x }
+ | x=UTZ            { Lutz            x }
+ | x=STRING         { Lstring         x }
+ | x=ADDRESS        { Laddress        x }
+ | x=TX_ROLLUP_L2_ADDRESS { Ltx_rollup_l2_address x }
+ | x=bool_value     { Lbool           x }
+ | x=DURATION       { Lduration       x }
+ | x=DATE           { Ldate           x }
+ | x=BYTES          { Lbytes          x }
+ | x=PERCENT_LIT    { Lpercent        x }
 
 %inline bool_value:
  | TRUE  { true }

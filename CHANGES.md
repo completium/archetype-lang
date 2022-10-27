@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - New feature
+  - add `tx_rollup_l2_address` type
 
 ## [1.3.5] - 2022-09-22
 ### Changed

@@ -43,6 +43,7 @@ let rec pp_type fmt (t : type_) =
   | Tnever                 -> pp_simple_a "never"
   | Tchest                 -> pp_simple_a "chest"
   | Tchest_key             -> pp_simple_a "chest_key"
+  | Ttx_rollup_l2_address  -> pp_simple_a "tx_rollup_l2_address"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with

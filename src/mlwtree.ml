@@ -31,6 +31,7 @@ type ('i,'t) abstract_type =
   | Tystring
   | Tyrational
   | Tyaddr
+  | Tytx_rollup_l2_address
   | Tykey
   | Tykeyhash
   | Tydate
@@ -349,6 +350,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
+  | Tytx_rollup_l2_address -> Tytx_rollup_l2_address
   | Tydate        -> Tydate
   | Tytez         -> Tytez
   | Tybytes       -> Tybytes
