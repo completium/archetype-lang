@@ -155,6 +155,7 @@ let string_of_token = function
   | DO                   -> "DO"
   | DIVEQUAL             -> "DIVEQUAL"
   | DIV                  -> "DIV"
+  | DETACH               -> "DETACH"
   | DEFINITION           -> "DEFINITION"
   | DECIMAL s            -> Printf.sprintf "DECIMAL(%s)" s
   | DATE s               -> Printf.sprintf "DATE(%s)" s
@@ -348,6 +349,7 @@ let string_of_symbol = function
   | X (T T_DO_FAIL_IF) -> "do_fail_if"
   | X (T T_DIVEQUAL) -> "/="
   | X (T T_DIV) -> "/"
+  | X (T T_DETACH) -> "detach"
   | X (T T_DEFINITION) -> "definition"
   | X (T T_DECIMAL) -> "decimal"
   | X (T T_DATE) -> "a date"

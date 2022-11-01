@@ -4401,6 +4401,7 @@ let rec for_xexpr
     | Ereturn    _
     | Eseq       _
     | Etransfer  _
+    | Edetach    _
     | Eemit      _
     | Eany
     | Einvalid ->
@@ -5512,6 +5513,8 @@ let rec for_instruction_r
           A.TToperation (e)
 
       in env, mki (Itransfer tr)
+
+    | Edetach (_id, _x, _f) -> assert false
 
     | Eemit (ty, arg) ->
 

@@ -44,6 +44,7 @@
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;
       "definition"          , DEFINITION          ;
+      "detach"              , DETACH              ;
       "div"                 , DIV                 ;
       "do"                  , DO                  ;
       "do_fail_if"          , DO_FAIL_IF          ;
