@@ -1,0 +1,10 @@
+archetype ticket_store_list
+
+variable lt : list<ticket<string>> = []
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  detach t from input.nth(0) : "ERROR";
+  info := some(read_ticket(t))
+}

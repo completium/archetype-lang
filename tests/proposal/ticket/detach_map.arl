@@ -1,0 +1,14 @@
+archetype detach_map
+
+variable input : map<nat, ticket<string>> = []
+
+variable output : option<ticket<string>> = none<ticket<string>>
+
+entry init() {
+  input := [(0, create_ticket("info", 1))];
+}
+
+entry exec() {
+  detach t from input[0] : "ERROR";
+  output := some(t)
+}

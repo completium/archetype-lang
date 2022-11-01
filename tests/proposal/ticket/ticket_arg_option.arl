@@ -1,0 +1,14 @@
+archetype ticket_arg_option
+
+variable info : option<(address * string * nat)> = none
+
+entry callback(ot : option<ticket<string>>) {
+  const t ?= ot : "ERROR";
+  info := some(read_ticket(t))
+}
+
+entry exec() {
+  const ot : option<ticket<string>> = some(create_ticket("info", 1));
+
+  transfer 0tz to entry self.callback(ot)
+}

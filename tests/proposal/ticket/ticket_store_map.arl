@@ -1,0 +1,12 @@
+archetype ticket_store_map
+
+variable mt : map<nat, ticket<string>> = []
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  mt := [(0, create_ticket("info", 1))];
+
+  detach t from mt[0] : "ERROR";
+  info := some(read_ticket(t))
+}

@@ -1,0 +1,19 @@
+archetype detach_list_option_map_record
+
+record rt {
+  n : nat;
+  t : option<ticket<nat>>
+}
+
+variable input : list<map<bytes, rt>> = []
+
+variable output : option<ticket<string>> = none<ticket<string>>
+
+entry init() {
+  input := [create_ticket("info", 1)];
+}
+
+entry exec() {
+  detach t from input.nth(0)[0x].t : "ERROR";
+  output := some(t)
+}

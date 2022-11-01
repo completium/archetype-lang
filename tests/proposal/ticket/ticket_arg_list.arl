@@ -1,0 +1,14 @@
+archetype ticket_arg_list
+
+variable info : option<(address * string * nat)> = none
+
+entry callback(lt : list<ticket<string>>) {
+  const t ?= match lt with | t::l -> some(t) | [] -> none<ticket<string>> end;
+  info := some(read_ticket(t))
+}
+
+entry exec() {
+  const lt : list<ticket<string>> = [create_ticket("info", 1)];
+
+  transfer 0tz to entry self.callback(lt)
+}
