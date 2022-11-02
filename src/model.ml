@@ -1897,6 +1897,36 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
   mktype ?annot:(get_atype t) (map_ptyp f (get_ntype t))
 
 (* -------------------------------------------------------------------- *)
+let fold_typ (f : 'a -> type_ -> 'a) (accu : 'a) (ty : type_) : 'a =
+  match fst ty with
+  | Tasset _                   -> accu
+  | Tenum _                    -> accu
+  | Tstate                     -> accu
+  | Tbuiltin _                 -> accu
+  | Tcontainer (t, _)          -> f accu t
+  | Tlist t                    -> f accu t
+  | Toption t                  -> f accu t
+  | Ttuple l                   -> List.fold_left f accu l
+  | Tset t                     -> f accu t
+  | Tmap (kt, vt)              -> f (f accu kt) vt
+  | Tbig_map (kt, vt)          -> f (f accu kt) vt
+  | Titerable_big_map (kt, vt) -> f (f accu kt) vt
+  | Tor (lt, rt)               -> f (f accu lt) rt
+  | Trecord _                  -> accu
+  | Tevent _                   -> accu
+  | Tlambda (at, rt)           -> f (f accu at) rt
+  | Tunit                      -> accu
+  | Tstorage                   -> accu
+  | Toperation                 -> accu
+  | Tcontract t                -> f accu t
+  | Tticket t                  -> f accu t
+  | Tsapling_state _           -> accu
+  | Tsapling_transaction _     -> accu
+  | Tprog t                    -> f accu t
+  | Tvset (_, t)               -> f accu t
+  | Ttrace _                   -> accu
+
+(* -------------------------------------------------------------------- *)
 
 let map_for_ident (g : 'id -> 'id) = function
   | FIsimple i             -> FIsimple (g i)

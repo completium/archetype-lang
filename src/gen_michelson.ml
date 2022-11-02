@@ -1033,7 +1033,7 @@ let to_ir (model : M.model) : T.ir =
     (* ticket *)
 
     | Mcreateticket (x, a)   -> T.Ibinop (Bcreateticket, f x, f a)
-    | Mreadticket x          -> T.Imichelson ([Iunop (Ureadticket, f x)], T.cseq [T.cswap; T.cdrop 1], [])
+    | Mreadticket x          -> T.Ireadticket (f x)
     | Msplitticket (x, a, b) -> T.Ibinop (Bsplitticket,  f x, mk_tuple [f a; f b])
     | Mjointickets (x, y)    -> T.Iunop  (Ujointickets,  mk_tuple [f x; f y])
 
@@ -1069,17 +1069,31 @@ let to_ir (model : M.model) : T.ir =
 
     (* variable *)
 
-    | Mvar (_an, Vassetstate _k, _, _) -> assert false
-    | Mvar (v, Vstorevar, _, _)        -> T.Ivar (M.unloc_mident v)
-    | Mvar (v, Vstorecol, _, _)        -> T.Ivar (M.unloc_mident v)
-    | Mvar (_v, Vdefinition, _, _)     -> assert false
-    | Mvar (v, Vlocal, _, _)           -> T.Ivar (M.unloc_mident v)
-    | Mvar (v, Vparam, _, _)           -> T.Ivar (M.unloc_mident v)
-    | Mvar (_v, Vfield, _, _)          -> assert false
-    | Mvar (_, Vthe, _, _)             -> assert false
-    | Mvar (_, Vstate, _, _)           -> assert false
-    | Mvar (v, Vparameter, _, _)       -> T.Iwildcard (ft mtt.type_, M.unloc_mident v)
-    | Menumval (_id, _args, _e)        -> assert false
+    | Mvar (v, kind, _, _) -> begin
+        let is_ticket_type ty =
+          let rec aux (accu : bool) (ty : M.type_) : bool =
+            match fst ty with
+            | M.Tcontract _ -> accu
+            | M.Tticket _ -> true
+            | _ -> M.fold_typ aux accu ty
+          in
+          aux false ty
+        in
+        let f = if is_ticket_type mtt.type_ then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
+
+        match kind with
+        | Vassetstate _k   -> assert false
+        | Vstorevar        -> f (M.unloc_mident v)
+        | Vstorecol        -> f (M.unloc_mident v)
+        | Vdefinition      -> assert false
+        | Vlocal           -> f (M.unloc_mident v)
+        | Vparam           -> f (M.unloc_mident v)
+        | Vfield           -> assert false
+        | Vthe             -> assert false
+        | Vstate           -> assert false
+        | Vparameter       -> T.Iwildcard (ft mtt.type_, M.unloc_mident v)
+      end
+    | Menumval (_id, _args, _e) -> assert false
 
     (* rational *)
 
@@ -1347,6 +1361,7 @@ type env = {
 let mk_env ?(vars=[]) () = { vars = vars; fail = false }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
+let dig_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
 let get_sp_for_id (env : env) id =
@@ -1524,6 +1539,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let b, _ = fe env0 b in
       if u
       then T.cseq [v; b; T.cdrop 1], env
+      (* then (if String.equal id "l" then T.cseq [v; b], env else T.cseq [v; b; T.cdrop 1], env) *)
       else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env
     end
 
@@ -1535,6 +1551,14 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         else T.cdup_n (n + 1)
       in
       c, inc_env env
+    end
+
+  | Ivar_no_dup id -> begin
+      let n = get_sp_for_id env id in
+      let c = T.cdig n in
+      let nenv = dig_env n env in
+      (* print_env nenv; *)
+      c, nenv
     end
 
   | Icall (id, args, inline)   -> begin
@@ -1833,6 +1857,18 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let x, _env0 = fe env x in
       let e, _env1 = fe (add_var_env env id) e in
       T.cseq [x; T.cmap [e; T.cswap; T.cdrop 1]], inc_env env
+    end
+
+  | Ireadticket (x) -> begin
+      match x with
+      | T.Ivar_no_dup v -> begin
+          let n = get_sp_for_id env v in
+          Format.eprintf "n: %d\n" n;
+          if n = 0
+          then T.cseq [T.cread_ticket], env
+          else T.cseq [T.cdig n; T.cread_ticket; T.cswap; T.cdug n], env
+        end
+      | _ -> T.cread_ticket, env
     end
 
   | Ireverse (t, x) -> begin

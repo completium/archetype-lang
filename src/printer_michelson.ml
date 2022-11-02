@@ -505,6 +505,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iseq l -> (pp_list ";@\n" f) fmt l
   | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
+  | Ivar_no_dup id -> pp_id fmt id
   | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
   | Iassigntuple (id, i, l, v) -> Format.fprintf fmt "%a[%d/%d] := @[%a@]" pp_id id i l f v
@@ -633,6 +634,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Irecupdate (x, r)       -> pp "recupdate[%a with [@[%a@]]]" f x pp_ruitem r
   | Ifold (ix, iy, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %a) ->@\n  @[%a@]@\ndone" f c f a ia (fun fmt _-> match iy with | Some iy -> Format.fprintf fmt "(%s, %s)" ix iy  | None -> Format.fprintf fmt "%s" ix) () f b
   | Imap_ (x, id, e)        -> pp "map(%a, %s -> @[%a@])" f x id f e
+  | Ireadticket (x)         -> pp "read_ticket(%a)" f x
   | Ireverse (t, x)         -> pp "reverse<%a>(%a)" pp_type t f x
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
   | Iwildcard (_, id)       -> pp "$$%s$$" id
