@@ -1354,16 +1354,21 @@ let concrete_michelson b : T.code =
 
 type env = {
   vars : ident list;
+  vars_no_dup  : ident list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(vars=[]) () = { vars = vars; fail = false }
+let mk_env ?(vars=[]) () = { vars = vars; fail = false; vars_no_dup = [] }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
 let dig_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
+let is_var_no_dup (id : ident) (env : env) : bool = List.mem id env.vars_no_dup
+let add_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = id::env.vars_no_dup }
+let add_vars_no_dup (ids : ident list) (env : env) : env = {env with vars_no_dup = ids @ env.vars_no_dup }
+let remove_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = (List.remove_if (fun x -> String.equal x id) env.vars_no_dup)}
 let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
@@ -1410,6 +1415,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   let assign env id v =
     let n = get_sp_for_id env id in
+    print_env ~str:"Iassign" env;
     let c =
       if n <= 0
       then T.cseq [ v; T.cswap; T.cdrop 1 ]
@@ -1536,8 +1542,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | IletIn (id, v, b, u)    -> begin
       let v, _ = f v in
       let env0 = add_var_env env id in
-      let b, _ = fe env0 b in
-      if u
+      let b, env1 = fe env0 b in
+      print_env env1;
+      if is_var_no_dup id env1
+      then T.cseq [v; b], env
+      else if u
       then T.cseq [v; b; T.cdrop 1], env
       (* then (if String.equal id "l" then T.cseq [v; b], env else T.cseq [v; b; T.cdrop 1], env) *)
       else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env
@@ -1556,8 +1565,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Ivar_no_dup id -> begin
       let n = get_sp_for_id env id in
       let c = T.cdig n in
-      let nenv = dig_env n env in
-      (* print_env nenv; *)
+      let nenv = dig_env n env |> add_var_no_dup id in
+      print_env ~str:"Ivar_no_dup" nenv;
       c, nenv
     end
 
@@ -1579,7 +1588,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iassign (id, v)  -> begin
-      let v, _ = f v in
+      let v, env = f v in
       assign env id v
     end
 
@@ -1706,7 +1715,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let a3, env = fe env a3 in
       let a2, env = fe env a2 in
       let a1, env = fe env a1 in
-      T.cseq [a3; a2; a1; op], (dec_env (dec_env env))
+      let nenv = dec_env (dec_env env) in
+      print_env ~str:"Iterop" nenv;
+      T.cseq [a3; a2; a1; op], nenv
     end
   | Iupdate (ku, aop) -> begin
       match ku with
@@ -1781,7 +1792,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq ((T.cempty_set t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.cseq [T.ctrue; x; T.cupdate ] ))), inc_env env
     end
   | Ilist (t, l) -> begin
-      T.cseq ((T.cnil t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env env) x in T.cseq [ x; T.ccons ] ))), inc_env env
+      let l, nenv =
+        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) l ([], inc_env env)
+      in
+      let nenv = dec_env nenv in
+      print_env ~str:"Ilist" nenv;
+      (T.cseq ((T.cnil t)::l), nenv)
     end
   | Imap (b, k, v, l) -> begin
       let a = if b then T.cempty_big_map (k, v) else T.cempty_map (k, v) in
@@ -1863,7 +1879,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       match x with
       | T.Ivar_no_dup v -> begin
           let n = get_sp_for_id env v in
-          Format.eprintf "n: %d\n" n;
           if n = 0
           then T.cseq [T.cread_ticket], env
           else T.cseq [T.cdig n; T.cread_ticket; T.cswap; T.cdug n], env
