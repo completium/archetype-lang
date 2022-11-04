@@ -1415,12 +1415,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   let assign env id v =
     let n = get_sp_for_id env id in
-    print_env ~str:"Iassign" env;
     let c =
       if n <= 0
       then T.cseq [ v; T.cswap; T.cdrop 1 ]
       else T.cseq [ v; (T.cdip (1, [T.cdig n; T.cdrop 1])); T.cdug n]
     in
+    print_env ~str:"Iassign" env;
     c, env
   in
 
@@ -1548,7 +1548,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       then T.cseq [v; b], env
       else if u
       then T.cseq [v; b; T.cdrop 1], env
-      (* then (if String.equal id "l" then T.cseq [v; b], env else T.cseq [v; b; T.cdrop 1], env) *)
       else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env
     end
 
@@ -1589,7 +1588,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iassign (id, v)  -> begin
       let v, env = f v in
-      assign env id v
+      assign (dec_env env) id v
     end
 
   | Iassigntuple (id, i, l, v) -> begin
@@ -1795,7 +1794,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let l, nenv =
         List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) l ([], inc_env env)
       in
-      let nenv = dec_env nenv in
       print_env ~str:"Ilist" nenv;
       (T.cseq ((T.cnil t)::l), nenv)
     end

@@ -9,7 +9,7 @@
          NIL operation;
          DUP 3;
          PUSH mutez 0;
-         DIG 2;
+         DIG 3;
          TRANSFER_TOKENS;
          CONS;
          DIP { DIG 2; DROP };
