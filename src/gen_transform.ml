@@ -5094,7 +5094,7 @@ let remove_asset (model : model) : model =
 
             let cond  = mk_cond an vkid vvid b in
             let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in
-            let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tr in
+            let mif   = mk_mterm (Mexprif (cond, mthen, vaccu)) tr in
             mif
           in
 
@@ -5222,7 +5222,7 @@ let remove_asset (model : model) : model =
               let neutral = mk_tuple [va0; prepend vxins va1] in
               let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vkid va1)] in
 
-              let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
+              let mif = mk_mterm (Mexprif (cond, act, neutral)) neutral.type_ in
 
               let matchsome : mterm = mk_mterm (Mmatchoption (va0, mk_mident (dumloc ""), mif, neutral)) vains.type_ in
 
@@ -5318,7 +5318,7 @@ let remove_asset (model : model) : model =
             let cond = mk_mterm (Mequal (tr, vtn, n)) tbool in
             let mthen = mk_tuple [inc; mk_some vkid] in
             let melse = mk_tuple [inc; vtr] in
-            mk_mterm (Mif(cond, mthen, Some melse)) tr
+            mk_mterm (Mexprif(cond, mthen, melse)) tr
           in
 
           let atk =
@@ -5448,7 +5448,7 @@ let remove_asset (model : model) : model =
             let add   = mk_mterm (Mlistprepend(atk, vtr, vkid)) tr in
             let mthen = mk_tuple [inc; add] in
             let melse = mk_tuple [inc; vtr] in
-            let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+            let mif   = mk_mterm (Mexprif (cond, mthen, melse)) vaccu.type_ in
             mif
           in
 
@@ -5499,7 +5499,7 @@ let remove_asset (model : model) : model =
               let add   = mk_mterm (Mlistprepend(atk, vtr, vid)) tr in
               let mthen = mk_tuple [inc; add] in
               let melse = mk_tuple [inc; vtr] in
-              let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+              let mif   = mk_mterm (Mexprif (cond, mthen, melse)) vaccu.type_ in
               mif
             in
 
