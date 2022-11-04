@@ -1895,8 +1895,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Ireverse (t, x) -> begin
-      let x, _env0 = fe (inc_env env) x in
-      T.cseq [T.cnil t; x; T.citer [T.ccons]], inc_env env
+      let x, env = fe (inc_env env) x in
+      T.cseq [T.cnil t; x; T.citer [T.ccons]], dec_env env
     end
 
   | Imichelson (a, c, v) -> begin

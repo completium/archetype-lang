@@ -1,0 +1,12 @@
+archetype reverse_a
+
+variable res : list<string> = []
+
+entry exec () {
+  effect {
+    const a = "a";
+    const b = "b";
+    const i = 0;
+    res := reverse([a; b; a])
+  }
+}
