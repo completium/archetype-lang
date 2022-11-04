@@ -1681,10 +1681,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iloopleft (l, i, b) -> begin
-      let l, _ = f l in
-      let b, env = fe (add_var_env env i) b in
+      let l, env = f l in
+      let b, env = fe (add_var_env (dec_env env) i) b in
 
-      T.cseq T.[l; cloop_left [b; cswap; cdrop 1]], env
+      T.cseq T.[l; cloop_left [b; cswap; cdrop 1]], dec_env env
     end
 
   | Ilambda (rt, id, at, e) -> begin
@@ -1855,6 +1855,16 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Ifold (ix, iy, ia, c, a, b) -> begin
+      (* let a, env = fe env a in
+         let c, env = fe (add_var_env (dec_env env) ia) c in
+         let env, pi, n =
+           (* let env_= add_var_env env ia in *)
+           match iy with
+           | Some iy -> add_var_env (add_var_env env iy) ix, T.cunpair, 2
+           | None -> add_var_env env ix, T.cskip, 1
+         in
+         let b, env = fe env b in
+         T.cseq [a; c; T.citer [pi; b; T.cdrop n]], env *)
       let a, _env0 = fe env a in
       let c, _env1 = fe (add_var_env env ia) c in
       let env2, pi, n =
