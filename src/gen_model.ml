@@ -1172,6 +1172,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Ilabel  i -> M.Mlabel (M.mk_mident i)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
+      | A.Idetach (id, v, f) -> assert false
 
       | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 

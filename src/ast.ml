@@ -473,6 +473,7 @@ and 'id instruction_node =
   | Ilabel of 'id
   | Ifail of 'id term_gen
   | Ifailsome of 'id term_gen
+  | Idetach of 'id * 'id * 'id term_gen option
 [@@deriving show {with_path = false}]
 
 and 'id for_ident = FIsimple of 'id | FIdouble of 'id * 'id

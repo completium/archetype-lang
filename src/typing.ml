@@ -681,6 +681,8 @@ type error_desc =
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
+  | DetachInvalidType                  of ident
+  | DetachVarNotFound                  of ident
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
   | DivergentExpr
   | DoesNotSupportMethodCall
@@ -929,6 +931,8 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
+  | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
+  | DetachVarNotFound id               -> pp "Variable `%s' not found" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
   | DivergentExpr                      -> pp "Divergent expression"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
@@ -5514,7 +5518,24 @@ let rec for_instruction_r
 
       in env, mki (Itransfer tr)
 
-    | Edetach (_id, _x, _f) -> assert false
+    | Edetach (id, v, f) -> begin
+        let env =
+          match Env.Var.lookup env (unloc v) with
+          | Some vdecl -> begin
+              let _ = check_and_emit_name_free env id in
+              let ty = match vdecl.vr_type with
+                | A.Toption ((A.Tticket _) as tty) -> tty
+                | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
+              in
+              Env.Local.push env (id, ty) ~kind:`Const
+            end
+          | None -> begin
+              Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+              env
+            end
+        in
+        env, mki (A.Idetach (id, v, Option.map (for_expr kind env) f))
+      end
 
     | Eemit (ty, arg) ->
 
