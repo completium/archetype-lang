@@ -707,6 +707,9 @@ let to_ir (model : M.model) : T.ir =
         let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e))), f value) in
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
+    | Mdetach (id, v, ty, fa)  -> begin
+        T.Ireplace (M.unloc_mident id, M.unloc_mident v, ft ty, f fa, f fa)
+      end
 
     (* entrypoint *)
 
@@ -1908,6 +1911,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let id = "const_" ^ id ^ "__" in
       let data : T.data = T.Dvar(id, ty, true) in
       T.cpush (ty, data), inc_env env
+    end
+
+  | Ireplace (id, v, ty, fa, _b) -> begin
+      print_env ~str:"Ireplace before" env;
+      let n = get_sp_for_id env v in
+      let a, _ = fe (inc_env env) fa in
+      let nenv = add_var_env env id in
+      print_env ~str:"Ireplace after" nenv;
+      T.cseq [(if n = 0 then T.cseq [] else T.cdig n); T.cifnone ([a; T.cfailwith], []); T.cpush (ty, T.Dnone); T.cdug (n + 1)], nenv
     end
 
 and process_data (d : T.data) : T.data =

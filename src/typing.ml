@@ -5519,22 +5519,20 @@ let rec for_instruction_r
       in env, mki (Itransfer tr)
 
     | Edetach (id, v, f) -> begin
-        let env =
-          match Env.Var.lookup env (unloc v) with
-          | Some vdecl -> begin
-              let _ = check_and_emit_name_free env id in
-              let ty = match vdecl.vr_type with
-                | A.Toption ((A.Tticket _) as tty) -> tty
-                | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
-              in
-              Env.Local.push env (id, ty) ~kind:`Const
-            end
-          | None -> begin
-              Env.emit_error env (loc id, DetachVarNotFound (unloc id));
-              env
-            end
-        in
-        env, mki (A.Idetach (id, v, Option.map (for_expr kind env) f))
+        match Env.Var.lookup env (unloc v) with
+        | Some vdecl -> begin
+            let _ = check_and_emit_name_free env id in
+            let ty = match vdecl.vr_type with
+              | A.Toption ((A.Tticket _) as tty) -> tty
+              | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
+            in
+            let env = Env.Local.push env (id, ty) ~kind:`Const in
+            env, mki (A.Idetach (id, v, vdecl.vr_type, Option.map (for_expr kind env) f))
+          end
+        | None -> begin
+            Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+            bailout()
+          end
       end
 
     | Eemit (ty, arg) ->

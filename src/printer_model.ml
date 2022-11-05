@@ -410,6 +410,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid e
         f x
 
+    | Mdetach (id, v, _ty, fa) ->
+      Format.fprintf fmt "detach %a from %a : %a"
+        pp_mid id
+        pp_mid v
+        f fa
+
 
     (* entrypoint *)
 

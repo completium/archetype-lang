@@ -249,6 +249,7 @@ type 'term mterm_node  =
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
+  | Mdetach           of mident * mident * type_ * 'term
   (* entrypoint *)
   | Mgetentrypoint    of type_ * mident * 'term                 (* type * address * string *)
   | Mcallview         of type_ * 'term * mident * 'term         (* type * address * string * argument *)
@@ -1274,6 +1275,7 @@ let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 (* -------------------------------------------------------------------- *)
 
 let fail_msg_ASSET_NOT_FOUND         = "ASSET_NOT_FOUND"
+let fail_msg_DETACH_ERROR            = "DETACH_ERROR"
 let fail_msg_DIV_BY_ZERO             = "DIV_BY_ZERO"
 let fail_msg_INVALID_CALLER          = "INVALID_CALLER"
 let fail_msg_INVALID_CONDITION       = "INVALID_CONDITION"
@@ -1518,6 +1520,7 @@ let cmp_mterm_node
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
+    | Mdetach (id1, v1, ty1, f1), Mdetach (id2, v2, ty2, f2)                           -> cmpi id1 id2 && cmpi v1 v2 && cmp_type ty1 ty2 && cmp f1 f2
     (* entrypoint *)
     | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
@@ -2014,6 +2017,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
+  | Mdetach (id, v, ty, fa)        -> Mdetach (g id, g v, ft ty, f fa)
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -2477,6 +2481,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
+  | Mdetach (_, _, _, x)                  -> f accu x
   (* entrypoint *)
   | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
@@ -2970,6 +2975,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Memit (e, xe)), xa
 
+  | Mdetach (id, v, ty, fa) ->
+    let fae, faa = f accu fa in
+    g (Mdetach (id, v, ty, fae)), faa
 
   (* entrypoint *)
 
