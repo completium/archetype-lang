@@ -19,13 +19,13 @@ type error_desc =
   | StackEmptyDec
   | StackIdNotFound of string * string list
   | NoConcreteImplementationFor of string
-  | TODO
+  | TODO of string
 [@@deriving show {with_path = false}]
 
 let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
   match e with
-  | TODO                          -> pp "TODO"
+  | TODO s                        -> pp "TODO: %s" s
   | FieldNotFoundFor (rn, fn)     -> pp "Field not found for record '%s' and field '%s'" rn fn
   | UnsupportedTerm s             -> pp "UnsupportedTerm: %s" s
   | StackEmptyDec                 -> pp "StackEmptyDec"
@@ -1088,10 +1088,7 @@ let to_ir (model : M.model) : T.ir =
           in
           aux false ty
         in
-        Format.eprintf "%a\n" M.pp_type_ mtt.type_;
-        let b = is_ticket_type model mtt.type_  in
-        Format.eprintf "is_ticket %s: %b\n" (M.unloc_mident v) b;
-        let f = if b then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
+        let f = if is_ticket_type model mtt.type_ then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
 
         match kind with
         | Vassetstate _k   -> assert false
@@ -1551,13 +1548,29 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   match i with
   | Iseq l               -> seq env l
 
+  (* | IletIn (id, v, b, u)    -> begin
+      let v, env = f v in
+      let env = add_var_env (dec_env env) id in
+      print_env ~str:("IletIn " ^ id ^ " before") env;
+      let b, env = fe env b in
+      print_env ~str:("IletIn " ^ id ^ " after") env;
+      if is_var_no_dup id env
+      then T.cseq [v; b], env
+      else if u
+      then T.cseq [v; b; T.cdrop 1], dec_env env
+      else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], dig_env 1 env |> dec_env
+    end *)
+
   | IletIn (id, v, b, u)    -> begin
-      let v, _ = f v in
+      (* let v, env = f v in *)
+      (* let env0 = add_var_env env id in *)
+
+      let v, env00 = f v in
       let env0 = add_var_env env id in
       print_env ~str:"IletIn before" env0;
       let b, env1 = fe env0 b in
       print_env ~str:"IletIn after" env1;
-      let env = {env with vars_no_dup = env1.vars_no_dup} in
+      let env = {env with vars_no_dup = env00.vars_no_dup @ env1.vars_no_dup} in
       if is_var_no_dup id env1
       then T.cseq [v; b], env
       else if u
@@ -1685,7 +1698,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       match ids with
       | [id] -> begin
           let b, env = fe (add_var_env (dec_env env) id) b in
-          T.cseq T.[c; citer [b; cdrop 1]], dec_env env
+          if is_var_no_dup id env
+          then T.cseq T.[c; citer [b]], env
+          else T.cseq T.[c; citer [b; cdrop 1]], dec_env env
         end
       | [k; v] -> begin
           let b, env = fe (add_var_env (add_var_env (dec_env env) v) k) b in
@@ -1901,6 +1916,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Ireadticket (x) -> begin
+      print_env ~str:"Ireadticket" env;
       match x with
       | T.Ivar_no_dup v -> begin
           let n = get_sp_for_id env v in
@@ -1914,7 +1930,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           then T.cseq [T.cunpair; T.cswap; T.cread_ticket; T.cswap; T.cdig 2; T.cpair; T.cswap], env
           else T.cseq [T.cdig n; T.cunpair; T.cswap; T.cread_ticket; T.cswap; T.cdig 2; T.cpair; T.cdug n], env
         end
-      | _ -> T.cread_ticket, env
+      | _ -> emit_error (TODO("Only ticket variable is supported"))
     end
 
   | Ireverse (t, x) -> begin
