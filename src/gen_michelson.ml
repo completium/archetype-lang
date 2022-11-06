@@ -1922,7 +1922,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let a, _ = fe (inc_env env) fa in
       let nenv = add_var_env env id in
       print_env ~str:"Ireplace after" nenv;
-      T.cseq [T.cdig n; T.cifcons ([], [a; T.cfailwith]);(if n = 0 then T.cseq [] else T.cdug (n + 1))], nenv
+      T.cseq [T.cdig n; T.cifcons ([], [a; T.cfailwith]);(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))], nenv
     end
 
 and process_data (d : T.data) : T.data =
@@ -2128,7 +2128,8 @@ and to_michelson (ir : T.ir) : T.michelson =
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
           let env = { env with vars = args @ eargs @ env.vars } in
-          let code, _ = instruction_to_code env e.body in
+          let code, env = instruction_to_code env e.body in
+          let nb_args = List.filter (fun (x, _) -> not (List.exists (fun y -> String.equal x y) env.vars_no_dup) ) l |> List.length in
           T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs)] @ fold_storage @ eops @ [T.cpair])
         end
     in
