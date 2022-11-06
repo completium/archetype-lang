@@ -1075,16 +1075,23 @@ let to_ir (model : M.model) : T.ir =
     (* variable *)
 
     | Mvar (v, kind, _, _) -> begin
-        let is_ticket_type ty =
+        let is_ticket_type (model : M.model) ty =
           let rec aux (accu : bool) (ty : M.type_) : bool =
             match fst ty with
-            | M.Tcontract _ -> accu
             | M.Tticket _ -> true
+            | M.Tcontract _ -> accu
+            | M.Trecord id -> begin
+                let r = M.Utils.get_record model (M.unloc_mident id) in
+                List.fold_left (fun accu (x : M.record_field) -> accu || aux accu (x.type_)) accu r.fields
+              end
             | _ -> M.fold_typ aux accu ty
           in
           aux false ty
         in
-        let f = if is_ticket_type mtt.type_ then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
+        Format.eprintf "%a\n" M.pp_type_ mtt.type_;
+        let b = is_ticket_type model mtt.type_  in
+        Format.eprintf "is_ticket %s: %b\n" (M.unloc_mident v) b;
+        let f = if b then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
 
         match kind with
         | Vassetstate _k   -> assert false
@@ -1645,7 +1652,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
       let ee, nenv =
         match ty.node with
-        | T.Tunit -> T.[cdrop 1], dec_env (dec_env e)
+        | T.Tunit -> T.[cdrop 1], dec_env e
         | _       -> T.[cswap; cdrop 1], dec_env e
       in
 
@@ -1674,17 +1681,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iiter (ids, c, b) -> begin
-      let c, _ = f c in
+      let c, env = f c in
       match ids with
       | [id] -> begin
-          let env0 = add_var_env env id in
-          let b, _ = fe env0 b in
-          T.cseq T.[c; citer [b; cdrop 1]] , env
+          let b, env = fe (add_var_env (dec_env env) id) b in
+          T.cseq T.[c; citer [b; cdrop 1]], dec_env env
         end
       | [k; v] -> begin
-          let env0 = add_var_env (add_var_env env v) k in
-          let b, _ = fe env0 b in
-          T.cseq T.[c; citer [cunpair; b; cdrop 2]] , env
+          let b, env = fe (add_var_env (add_var_env (dec_env env) v) k) b in
+          T.cseq T.[c; citer [cunpair; b; cdrop 2]], dec_env (dec_env env)
         end
       | _ -> assert false
     end
@@ -1902,6 +1907,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           if n = 0
           then T.cseq [T.cread_ticket], env
           else T.cseq [T.cdig n; T.cread_ticket; T.cswap; T.cdug n], env
+        end
+      | T.Iunop (Ucdr, T.Ivar_no_dup v) -> begin
+          let n = get_sp_for_id env v in
+          if n = 0
+          then T.cseq [T.cunpair; T.cswap; T.cread_ticket; T.cswap; T.cdig 2; T.cpair; T.cswap], env
+          else T.cseq [T.cdig n; T.cunpair; T.cswap; T.cread_ticket; T.cswap; T.cdig 2; T.cpair; T.cdug n], env
         end
       | _ -> T.cread_ticket, env
     end
