@@ -196,7 +196,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "let %a%a = %a in@\n%a%a"
         (pp_list ", " pp_mid) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
-        f a
+        (fun fmt x -> match x with | LVsimple v -> f fmt v | LVreplace (id, _ty, x) -> Format.fprintf fmt "replace %a : %a" pp_mid id f x) a
         f b
         (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" f)) o
 

@@ -5523,7 +5523,7 @@ let rec for_instruction_r
         | Some vdecl -> begin
             let _ = check_and_emit_name_free env id in
             let ty = match vdecl.vr_type with
-              | A.Toption ((A.Tticket _) as tty) -> tty
+              | A.Tlist ((A.Tticket _) as tty) -> tty
               | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
             in
             let env = Env.Local.push env (id, ty) ~kind:`Const in

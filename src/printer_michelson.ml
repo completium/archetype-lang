@@ -165,7 +165,7 @@ and pp_code fmt (i : code) =
   | LOOP is                  -> pp "LOOP %a" fsv is
   | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fsv is
   (* Stack manipulation *)
-  | DIG i                    -> pp "DIG%a" pp_arg2 i
+  | DIG i                    -> pp "DIG %d" i
   | DIP (i, is)              -> pp "DIP %a" pp_dip_arg (i, is)
   | DROP i                   -> pp "DROP%a" pp_arg i
   | DUG i                    -> pp "DUG%a" pp_arg2 i
@@ -638,7 +638,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Ireverse (t, x)         -> pp "reverse<%a>(%a)" pp_type t f x
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
   | Iwildcard (_, id)       -> pp "$$%s$$" id
-  | Ireplace (id, v, ty, _fa, b) -> Format.fprintf fmt "let replace %s : %a = %s in@\n  @[%a@]" id pp_type ty v f b
+  | Ireplace (id, v, ty, fa) -> Format.fprintf fmt "let replace %s : %a = %s in@\n  @[%a@]" id pp_type ty v f fa
 
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l
