@@ -1640,16 +1640,17 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iifleft (v, lid, le, rid, re, ty) -> begin
       let v, _ = fe env v in
-      let l, _ = fe (add_var_env env lid) le in
+      let l, e = fe (add_var_env env lid) le in
       let r, _ = fe (add_var_env env rid) re in
 
-      let ee, env =
+      let ee, nenv =
         match ty.node with
-        | T.Tunit -> T.[cdrop 1], env
-        | _       -> T.[cswap; cdrop 1], inc_env env
+        | T.Tunit -> T.[cdrop 1], dec_env (dec_env e)
+        | _       -> T.[cswap; cdrop 1], dec_env e
       in
 
-      T.cseq [ v; T.cifleft ([l] @ ee, [r] @ ee) ], env
+      print_env ~str:"Iifleft" nenv;
+      T.cseq [ v; T.cifleft ([l] @ ee, [r] @ ee) ], nenv
     end
 
   | Iifcons (x, hd, tl, hte, ne, ty) -> begin
@@ -1889,7 +1890,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let x, env0 = fe env x in
       let e, env = fe (add_var_env (dec_env env0) id) e in
       let aa = if is_var_no_dup id env then [] else [T.cswap; T.cdrop 1] in
-      T.cseq [x; T.cmap (e::aa)], inc_env (dec_env env0)
+      let nenv = inc_env (dec_env env0) in
+      print_env ~str:"Imap_" nenv;
+      T.cseq [x; T.cmap (e::aa)], nenv
     end
 
   | Ireadticket (x) -> begin
