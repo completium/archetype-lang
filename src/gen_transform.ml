@@ -1026,6 +1026,12 @@ let replace_declvar_by_letin (model : model) : model =
     end
   in
   let rec aux c (mt : mterm) : mterm =
+    let to_klv ty =
+    match get_ntype ty with
+    | Toption ty -> KLVoption ty
+    | Tlist _ -> KLVlist
+    | _ -> assert false
+    in
     match mt.node with
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
@@ -1034,7 +1040,7 @@ let replace_declvar_by_letin (model : model) : model =
             let res =  process_declvar (ids, t, LVsimple (aux c v)) accu in
             [ res ]
           | Mdetach (id, va, tya, fa) ->
-            let res = process_declvar ([id], Some tya, LVreplace (va, tya, aux c fa)) accu in
+            let res = process_declvar ([id], Some tya, LVreplace (va, to_klv tya, aux c fa)) accu in
             [ res ]
           | _ ->
             begin
@@ -1044,7 +1050,7 @@ let replace_declvar_by_letin (model : model) : model =
         ) l [] in
       { mt with node = Mseq ll }
     | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, LVsimple (aux c v)) []
-    | Mdetach (id, va, tya, fa) -> process_declvar ([id], Some tya, LVreplace (va, tya, aux c fa)) []
+    | Mdetach (id, va, tya, fa) -> process_declvar ([id], Some tya, LVreplace (va, to_klv tya, aux c fa)) []
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -2089,7 +2095,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
         mk_mterm (Mmin(a, b)) (process_type t)
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
-          node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (id, ty, fa) -> LVreplace (id, ty, aux fa)), Option.map process_type t, aux body, Option.map aux o)
+          node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (id, k, fa) -> LVreplace (id, k, aux fa)), Option.map process_type t, aux body, Option.map aux o)
         }
       | Mdeclvar (ids, t, v, c), _ ->
         { mt with
@@ -2483,7 +2489,7 @@ let extract_term_from_instruction f (model : model) : model =
     (* lambda *)
 
     | Mletin (i, a, t, b, o) ->
-      let ae, aa = match a with | LVsimple a -> let e, a = f a in (LVsimple e, a) | LVreplace (id, ty, fa) -> let e, a = f fa in (LVreplace (id, ty, e), a) in
+      let ae, aa = match a with | LVsimple a -> let e, a = f a in (LVsimple e, a) | LVreplace (id, k, fa) -> let e, a = f fa in (LVreplace (id, k, e), a) in
       let be = aux ctx b in
       let oe = Option.map (aux ctx) o in
       process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa

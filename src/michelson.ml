@@ -343,6 +343,10 @@ and builtin =
   | Bmuteztonat
 [@@deriving show {with_path = false}]
 
+and klv =
+| KLVoption of type_
+| KLVlist
+
 and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
@@ -377,7 +381,7 @@ and instruction =
   | Imichelson   of instruction list * code * ident list
   | Iwildcard    of type_ * ident
   | Ireadticket  of instruction
-  | Ireplace     of ident * ident * type_ * instruction
+  | Ireplace     of ident * ident * klv * instruction
 [@@deriving show {with_path = false}]
 
 and ritem =

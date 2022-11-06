@@ -222,9 +222,14 @@ type michelson_struct = {
 }
 [@@deriving show {with_path = false}]
 
+type klv =
+| KLVoption of type_
+| KLVlist
+[@@deriving show {with_path = false}]
+
 type 'term letin_value_gen =
 | LVsimple of 'term
-| LVreplace of mident * type_ * 'term
+| LVreplace of mident * klv * 'term
 [@@deriving show {with_path = false}]
 
 type 'term mterm_node  =
@@ -1503,7 +1508,7 @@ let cmp_mterm_node
   let cmp_letin_value (lhs : letin_value) (rhs : letin_value) : bool =
     match lhs, rhs with
     | LVsimple v1, LVsimple v2 -> cmp v1 v2
-    | LVreplace (id1, ty1, fa1), LVreplace (id2, ty2, fa2) -> cmpi id1 id2 && cmp_type ty1 ty2 && cmp fa1 fa2
+    | LVreplace (id1, k1, fa1), LVreplace (id2, k2, fa2) -> cmpi id1 id2 && k1 = k2 && cmp fa1 fa2
     | _, _ -> false
   in
   try
@@ -2006,7 +2011,7 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
-  | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, (match a with | LVsimple a -> LVsimple (f a) | LVreplace (id, ty, fa) -> LVreplace (g id, ft ty, f fa)), Option.map ft t, f b, Option.map f o)
+  | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, (match a with | LVsimple a -> LVsimple (f a) | LVreplace (id, k, fa) -> LVreplace (g id, k, f fa)), Option.map ft t, f b, Option.map f o)
   | Mdeclvar (i, t, v, c)          -> Mdeclvar (List.map g i, Option.map ft t, f v, c)
   | Mdeclvaropt (i, t, v, fa, c)   -> Mdeclvaropt (List.map g i, Option.map ft t, f v, Option.map f fa, c)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
@@ -2844,7 +2849,7 @@ let fold_map_term
   (* lambda *)
 
   | Mletin (idd, i, t, b, o) ->
-    let ie, ia = (match i with | LVsimple a -> let e, a = f accu a in (LVsimple e, a) | LVreplace (id, ty, a) -> let e, a = f accu a in (LVreplace (id, ty, e), a)) in
+    let ie, ia = (match i with | LVsimple a -> let e, a = f accu a in (LVsimple e, a) | LVreplace (id, k, a) -> let e, a = f accu a in (LVreplace (id, k, e), a)) in
     let be, ba = f ia b in
     let oe, oa =
       match o with
