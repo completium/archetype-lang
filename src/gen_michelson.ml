@@ -1726,6 +1726,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let c = z_op_to_code op in
       c, inc_env env
     end
+  | Iunop (Ucar, Ivar_no_dup id) -> begin
+     let n = get_sp_for_id env id in
+     if n = 0
+     then T.cseq [T.cunpair; T.cdup; T.cswap; T.cdig 2; T.cpair; T.cswap], env
+     else T.cseq [T.cdig n; T.cunpair; T.cdup; T.cswap; T.cdig 2; T.cpair; T.cdug n], env
+  end
   | Iunop (op, e) -> begin
       let op = un_op_to_code op in
       let e, env = fe env e in
