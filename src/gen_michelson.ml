@@ -1550,6 +1550,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       print_env ~str:"IletIn before" env0;
       let b, env1 = fe env0 b in
       print_env ~str:"IletIn after" env1;
+      let env = {env with vars_no_dup = env1.vars_no_dup} in
       if is_var_no_dup id env1
       then T.cseq [v; b], env
       else if u
