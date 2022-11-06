@@ -1595,6 +1595,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iassign (id, v)  -> begin
       let v, env = f v in
+      print_env ~str:"Iassign mid" env;
       assign (dec_env env) id v
     end
 
@@ -1885,9 +1886,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Imap_ (x, id, e) -> begin
-      let x, _env0 = fe env x in
-      let e, _env1 = fe (add_var_env env id) e in
-      T.cseq [x; T.cmap [e; T.cswap; T.cdrop 1]], inc_env env
+      let x, env0 = fe env x in
+      let e, env = fe (add_var_env (dec_env env0) id) e in
+      let aa = if is_var_no_dup id env then [] else [T.cswap; T.cdrop 1] in
+      T.cseq [x; T.cmap (e::aa)], inc_env (dec_env env0)
     end
 
   | Ireadticket (x) -> begin
