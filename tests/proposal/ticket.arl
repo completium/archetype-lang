@@ -5,13 +5,17 @@ variable jt : option<ticket<string>> = none
 variable st : option<ticket<string> * ticket<string>> = none
 
 entry e0 () {
-  rt := some(read_ticket(create_ticket ("mystring", 3)))
+  const t = create_ticket ("mystring", 3);
+  rt := some(read_ticket(t))
 }
 
 entry e1 () {
-  jt := join_tickets(create_ticket ("mystring", 3), create_ticket ("mystring", 5))
+  const t1 = create_ticket ("mystring", 3);
+  const t2 = create_ticket ("mystring", 5);
+  jt := join_tickets(t1, t2)
 }
 
 entry e2 () {
-  st := split_ticket(create_ticket ("mystring", 3), 1, 2)
+  const t = create_ticket ("mystring", 3);
+  st := split_ticket(t, 1, 2)
 }
