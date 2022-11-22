@@ -514,7 +514,7 @@ let rec tz_type_to_type_ (ty : T.type_) : type_=
   | Toperation             -> mk_type "operation"            ty.annotation None []
   | Toption t              -> mk_type "option"               ty.annotation None [f t]
   | Tor (l, r)             -> mk_type "or"                   ty.annotation None [f l; f r]
-  | Tpair (l, r)           -> mk_type "tuple"                ty.annotation None [f l; f r]
+  | Tpair l                -> mk_type "tuple"                ty.annotation None (List.map f l)
   | Tset t                 -> mk_type "set"                  ty.annotation None [f t]
   | Tsignature             -> mk_type "signature"            ty.annotation None []
   | Tstring                -> mk_type "string"               ty.annotation None []
@@ -544,11 +544,10 @@ let extract_storage (storage : T.type_) : decl_storage list =
       let path : int list = [] in (* TODO: handle path *)
       match obj with
       | {annotation = Some a} -> [a, obj, path]
-      | {node = T.Tpair (p, r); _ } -> begin
-          let p = aux p in
-          let r = aux r in
-          if List.length p > 0 && List.length r > 0
-          then p @ r
+      | {node = T.Tpair l; _ } -> begin
+          let l = List.map aux l |> List.flatten in
+          if List.length l > 0
+          then l
           else ["_", obj, path]
         end
       | _ -> []

@@ -134,7 +134,7 @@ end = struct
 
   let check_pair (ty : stack1) =
     match ty.node with
-    | M.Tpair (ty1, ty2) -> (ty1, ty2)
+    | M.Tpair [ty1; ty2] -> (ty1, ty2)
     | _ -> raise MichelsonTypingError
 
   let check_sapling_tx (ty : stack1) =
@@ -386,7 +386,7 @@ and op_EDIV (stack : stack) =
 
     | _, _ -> raise MichelsonTypingError in
 
-  Some (M.toption (M.tpair (M.mk_type aout1) (M.mk_type aout2)) :: stack)
+  Some (M.toption (M.tpair [(M.mk_type aout1); (M.mk_type aout2)]) :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_EMIT (stack : stack) =
@@ -536,7 +536,7 @@ and op_ITER (stack : stack) (code : M.code list) =
     | M.Tset kty ->
         kty
     | M.Tmap (kty, vty) ->
-        M.tpair kty vty
+        M.tpair [kty; vty]
     | _ -> raise MichelsonTypingError in
   let substack = tycheck (inty :: stack) (M.cseq code) in
   Stack.merge (Some stack) substack
@@ -637,7 +637,7 @@ and op_MAP (stack : stack) (code : M.code list) =
     | M.Tlist ty ->
         (ty, M.tlist)
     | M.Tmap (kty, vty) ->
-        (M.tpair kty vty, (M.tmap kty))
+        (M.tpair [kty; vty], (M.tmap kty))
     | _ -> raise MichelsonTypingError in
   let substack = tycheck (inty :: stack) (M.cseq code) in
   let outty, substack =
@@ -752,7 +752,7 @@ and op_PACK (stack : stack) =
 (* -------------------------------------------------------------------- *)
 and op_PAIR (stack : stack) =
   let (ty1, ty2), stack = Stack.pop2 stack in
-  Some (M.tpair ty1 ty2 :: stack)
+  Some (M.tpair [ty1; ty2] :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_PAIR_N (stack : stack) (n : int) =
@@ -762,7 +762,7 @@ and op_PAIR_N (stack : stack) (n : int) =
   let aout =
     match List.rev tys with
     | [] -> assert false
-    | ty :: tys -> List.fold_right M.tpair (List.rev tys) ty in
+    | ty :: tys -> List.fold_right (fun x accu ->  M.tpair [x; accu]) (List.rev tys) ty in
 
   Some (aout :: stack)
 
@@ -783,7 +783,7 @@ and op_READ_TICKET (stack : stack) =
   let ty, stack = Stack.pop stack in
   let ty = Ty.check_ticket ty in
   Some (
-    M.tpair M.taddress (M.tpair ty M.tnat)
+    M.tpair [M.taddress; (M.tpair [ty; M.tnat])]
       :: M.tticket ty :: stack)
 
 (* -------------------------------------------------------------------- *)
@@ -802,7 +802,7 @@ and op_SAPLING_VERIFY_UPDATE (stack : stack) =
   let ms2 = Ty.check_sapling_st st in
   if ms1 <> ms2 then
     raise MichelsonTypingError;
-  Some (M.toption (M.tpair M.tint st) :: stack)
+  Some (M.toption (M.tpair [M.tint; st]) :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_SELF_ADDRESS (stack : stack) =
@@ -876,7 +876,7 @@ and op_SPLIT_TICKET (stack : stack) =
   let typ1, typ2 = Ty.check_pair typ in
   let () = Ty.check_nat typ1 in
   let () = Ty.check_nat typ2 in
-  Some (M.toption (M.tpair (M.tticket ty) (M.tticket ty)) :: stack)
+  Some (M.toption (M.tpair [(M.tticket ty); (M.tticket ty)]) :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_SWAP (stack : stack) =

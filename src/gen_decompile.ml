@@ -334,7 +334,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
   ff input, env
 
 let tycheck_michelson ((input, env) : T.michelson * env) : T.michelson * env =
-  let stack = [T.tpair input.parameter input.storage] in
+  let stack = [T.tpair [input.parameter; input.storage]] in
   let _ : Mtyping.stack option = Mtyping.tycheck stack input.code in
   input, env
 
@@ -1154,7 +1154,7 @@ end = struct
 
       let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
         match ty with
-        | { node = Tpair (_, ty); _} ->
+        | { node = Tpair (_::ty::_); _} ->
           `Paired (mkvar i, create (i + 1) ty)
         | _ ->
           mkvar i
@@ -1210,7 +1210,7 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tset       t           -> M.tset    (f t)
   | Toperation             -> M.toperation
   | Tcontract  t           -> M.tcontract (f t)
-  | Tpair      (lt, rt)    -> M.ttuple [f lt; f rt]
+  | Tpair      l           -> M.ttuple (List.map f l)
   | Tor        (lt, rt)    -> M.tor(f lt) (f rt)
   | Tlambda    (at, rt)    -> M.tlambda (f at) (f rt)
   | Tmap       (kt, vt)    -> M.tmap (f kt) (f vt)
@@ -1278,7 +1278,7 @@ end = struct
     let rec aux (x : T.type_) =
       match x.node, x.annotation with
       | _, Some a  -> [a, x]
-      | T.Tpair (a, b), _ -> begin
+      | T.Tpair [a; b], _ -> begin
           match aux a, aux b with
           | [], _
           | _, [] -> []
@@ -1297,7 +1297,7 @@ end = struct
     | Tnat
     | Tint         -> T.Dint Big_int.zero_big_int
     | Tstring      -> T.Dstring ""
-    | Tpair (a, b) -> T.Dpair (f a, f b)
+    | Tpair [a; b] -> T.Dpair (f a, f b)
     | _ -> T.Dint Big_int.zero_big_int(* assert false *)
 
   let for_code (code : dcode) : mterm =

@@ -50,7 +50,7 @@ type type_node =
   | Toperation
   | Toption    of type_
   | Tor        of type_ * type_
-  | Tpair      of type_ * type_
+  | Tpair      of type_ list
   | Tset       of type_
   | Tsignature
   | Tstring
@@ -620,9 +620,9 @@ let taddress      = mk_type Taddress
 let ttimestamp    = mk_type Ttimestamp
 let tchain_id     = mk_type Tchain_id
 let tbytes        = mk_type Tbytes
-let tpair t1 t2   = mk_type (Tpair (t1, t2))
+let tpair l       = mk_type (Tpair l)
 let tor t1 t2     = mk_type (Tor (t1, t2))
-let trat          = tpair tint tnat
+let trat          = tpair [tint; tnat]
 let tlist t       = mk_type (Tlist t)
 let tset t        = mk_type (Tlist t)
 let tmap t1 t2    = mk_type (Tmap (t1, t2))
@@ -823,7 +823,7 @@ let cmp_type (lhs : type_) (rhs : type_) =
     | Toperation, Toperation                           -> true
     | Toption a1, Toption a2                           -> f a1 a2
     | Tor (a1, b1), Tor (a2, b2)                       -> f a1 a2 && f b1 b2
-    | Tpair (a1, b1), Tpair (a2, b2)                   -> f a1 a2 && f b1 b2
+    | Tpair l1, Tpair l2                               -> List.for_all2 f l1 l2
     | Tset a1, Tset a2                                 -> f a1 a2
     | Tsignature, Tsignature                           -> true
     | Tstring, Tstring                                 -> true
@@ -1110,7 +1110,7 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
     | Toperation             -> Toperation
     | Toption    t           -> Toption    (f t)
     | Tor        (l, r)      -> Tor        (f l, f r)
-    | Tpair      (l, r)      -> Tpair      (f l, f r)
+    | Tpair      l           -> Tpair      (List.map f l)
     | Tset       t           -> Tset       (f t)
     | Tsignature             -> Tsignature
     | Tstring                -> Tstring
@@ -1548,7 +1548,7 @@ end = struct
       | Toperation             -> "operation", []
       | Toption t              -> "option", [f t]
       | Tor (l, r)             -> "or", [f l; f r]
-      | Tpair (l, r)           -> "pair", [f l; f r]
+      | Tpair l                -> "pair", List.map f l
       | Tset t                 -> "set", [f t]
       | Tsignature             -> "signature", []
       | Tstring                -> "string", []
@@ -1605,7 +1605,7 @@ end = struct
         | Toperation              -> Ovar (OMVfree x)
         | Toption    _t           -> Ovar (OMVfree x)
         | Tor        (_l, _r)     -> Ovar (OMVfree x)
-        | Tpair      (_l, _r)     -> Ovar (OMVfree x)
+        | Tpair      _l           -> Ovar (OMVfree x)
         | Tset       _t           -> Ovar (OMVfree x)
         | Tsignature              -> Ovar (OMVbytes x)
         | Tstring                 -> Ovar (OMVstring x)
@@ -1800,7 +1800,7 @@ end = struct
     | Toperation              -> false
     | Toption    t            -> is_storable t
     | Tor        (l, r)       -> is_storable l && is_storable r
-    | Tpair      (l, r)       -> is_storable l && is_storable r
+    | Tpair      l            -> List.for_all is_storable l
     | Tset       t            -> is_storable t
     | Tsignature              -> true
     | Tstring                 -> true
@@ -1841,7 +1841,7 @@ let rec to_type (o : obj_micheline) : type_ =
   | Oprim ({prim = "operation"; annots; _})                               -> mk_type ?annotation:(fa annots)  Toperation
   | Oprim ({prim = "option"; annots; args = t::_})                        -> mk_type ?annotation:(fa annots) (Toption (f t))
   | Oprim ({prim = "or"; annots; args = a::b::_})                         -> mk_type ?annotation:(fa annots) (Tor (f a, f b))
-  | Oprim ({prim = "pair"; annots; args = a::l::_})                       -> mk_type ?annotation:(fa annots) (Tpair (f a, f l))
+  | Oprim ({prim = "pair"; annots; args = l})                             -> mk_type ?annotation:(fa annots) (Tpair (List.map f l))
   | Oprim ({prim = "set"; annots; args = t::_})                           -> mk_type ?annotation:(fa annots) (Tset (f t))
   | Oprim ({prim = "signature"; annots; _})                               -> mk_type ?annotation:(fa annots)  Tsignature
   | Oprim ({prim = "string"; annots; _})                                  -> mk_type ?annotation:(fa annots)  Tstring
@@ -1856,6 +1856,7 @@ let rec to_type (o : obj_micheline) : type_ =
   | Oprim ({prim = "never"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tnever
   | Oprim ({prim = "chest"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tchest
   | Oprim ({prim = "chest_key"; annots; _})                               -> mk_type ?annotation:(fa annots)  Tchest_key
+  | Oprim ({prim = "tx_rollup_l2_address"; annots; _})                    -> mk_type ?annotation:(fa annots)  Ttx_rollup_l2_address
   | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
 
 

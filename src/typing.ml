@@ -2398,7 +2398,7 @@ end = struct
       | Tset       t           -> A.Tset    (f t)
       | Toperation             -> A.Toperation
       | Tcontract  t           -> A.Tcontract (f t)
-      | Tpair      (lt, rt)    -> A.Ttuple [f lt; f rt]
+      | Tpair      l           -> A.Ttuple (List.map f l)
       | Tor        (lt, rt)    -> A.Tor (f lt, f rt)
       | Tlambda    (at, rt)    -> A.Tlambda (f at, f rt)
       | Tmap       (kt, vt)    -> A.Tmap (f kt, f vt)
