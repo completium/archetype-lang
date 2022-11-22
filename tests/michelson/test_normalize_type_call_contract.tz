@@ -1,0 +1,39 @@
+# Unit
+{
+  storage unit;
+  parameter (or (pair %e (nat %a) (nat %b)) (unit %createTest));
+  code { NIL operation;
+         DIG 1;
+         UNPAIR;
+         IF_LEFT
+           { DROP;
+             DIG 1;
+             PAIR }
+           { DROP;
+             PUSH nat 0;
+             PUSH nat 0;
+             PAIR;
+             NIL operation;
+             NIL operation;
+             DUP 5;
+             ITER { CONS };
+             SELF_ADDRESS;
+             CONTRACT %e (pair nat nat);
+             IF_NONE
+               { PUSH string "e";
+                 PUSH string "ENTRY_NOT_FOUND";
+                 PAIR;
+                 FAILWITH }
+               {  };
+             PUSH mutez 0;
+             DUP 5;
+             TRANSFER_TOKENS;
+             CONS;
+             ITER { CONS };
+             DIP { DIG 2; DROP };
+             DUG 2;
+             DROP;
+             DIG 1;
+             PAIR } };
+}
+

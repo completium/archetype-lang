@@ -772,7 +772,9 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTuple
+  | InvalidArgumentType                of A.ptyp * A.ptyp
   | InvalidArlFile
+  | InvalidStorageType                 of A.ptyp * A.ptyp
   | InvalidTzFile
   | InvalidValueForCurrency
   | InvalidValueForMemoSize
@@ -1022,7 +1024,9 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTuple                -> pp "Invalid type for tuple"
+  | InvalidArgumentType (from_, to_)   -> pp "Invalid argument type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
   | InvalidArlFile                     -> pp "Invalid arl file"
+  | InvalidStorageType (from_, to_)    -> pp "Invalid storage type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
   | InvalidTzFile                      -> pp "Invalid tz file"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
@@ -2470,6 +2474,24 @@ let empty : env =
 
   env
 
+let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
+  match ty with
+  | A.Trecord rn -> begin
+      let rv = Env.Record.get env (unloc rn) in
+      match rv.rd_fields with
+      | [ty] -> normalize_type env ty.rfd_type
+      | _ -> begin
+          let doit = normalize_type env in
+          match rv.rd_packing with
+          | Some rp -> begin
+              let aux = assert false in
+              aux rp
+            end
+          | None -> A.Ttuple (List.map (fun (x : rfielddecl) -> (doit x.rfd_type)) rv.rd_fields)
+        end
+    end
+  | _ -> A.map_ptyp (normalize_type env) ty
+
 (* --------------------------------------------------------------------- *)
 let ty_of_init_ty (env : env) (ty : A.ptyp) =
   match ty with
@@ -3801,7 +3823,13 @@ let rec for_xexpr
           | None -> (Env.emit_error env (loc path, InvalidTzFile) ; bailout ())
         in
 
-        let arg_storage = for_xexpr ~ety:storage_type env arg_storage in
+        let arg_storage = for_xexpr env arg_storage in
+
+        let from_type : A.ptyp = normalize_type env (Option.get arg_storage.type_) in
+        let to_type : A.ptyp = normalize_type env storage_type in
+
+        if not (Type.compatible ~autoview:false ~for_eq:false ~from_:from_type ~to_:to_type)
+        then Env.emit_error env (arg_storage.loc, InvalidStorageType(from_type, to_type));
 
         mk_sp (Some (A.Ttuple [A.Toperation; A.vtaddress])) (A.Pcreatecontract ({ms_content = content }, okh, amount, arg_storage))
       end
@@ -5476,9 +5504,13 @@ let rec for_instruction_r
                 bailout ()
               | Some typ -> typ in
 
-            (* Format.eprintf "etyp: %a@\n" A.pp_ptyp etyp; *)
-            (* Format.eprintf "%a@\n" pp_ptyp etyp; *)
-            let arg  = for_expr kind env arg ~ety:etyp in
+            let arg  = for_expr kind env arg in
+
+            let from_type : A.ptyp = normalize_type env (Option.get arg.type_) in
+            let to_type : A.ptyp = normalize_type env etyp in
+
+            if not (Type.compatible ~autoview:false ~for_eq:false ~from_:from_type ~to_:to_type)
+            then Env.emit_error env (arg.loc, InvalidArgumentType(from_type, to_type));
 
             TTgen (a, unloc en, unloc cn, etyp, address_arg, arg)
           end
