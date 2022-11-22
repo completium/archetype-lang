@@ -4,6 +4,7 @@ import import_decl from "./tests/proposal/import_decl.arl"
 
 variable res : nat = 0
 
-entry exec () {
-  res := import_decl(a).get();
+entry exec (a : address) {
+  const v : nat ?= import_decl(a).get() : "VIEW_ERROR";
+  res := v
 }

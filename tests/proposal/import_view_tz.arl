@@ -9,5 +9,6 @@ view getN() : nat {
 }
 
 entry exec () {
-  res := contract_tz(self_address).getN(Unit);
+  const v : nat ?= contract_tz(self_address).getN(Unit) : "VIEW_ERROR";
+  res := v
 }
