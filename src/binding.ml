@@ -86,7 +86,7 @@ let compute_type (model : model) (r : record) =
     | [ f ] -> {mty with annotation = Some ("%" ^ (unloc_mident f.name))}
     | _ -> mty
   in
-  let ty = T.mk_type (T.Tpair(mkt, mty)) in
+  let ty = T.mk_type (T.Tpair [mkt; mty]) in
   let t = Michelson.Utils.type_to_micheline ty in
   t
 

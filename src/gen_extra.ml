@@ -69,7 +69,7 @@ let to_model_expr (e : PT.expr) : T.data =
           | Some x -> begin
               let rec aux accu (t : T.type_) =
                 match t.node with
-                | T.Tpair (tl, tr) -> aux (accu @ [tl]) tr
+                | T.Tpair [tl; tr] -> aux (accu @ [tl]) tr
                 | _ -> accu @ [t]
               in
               match List.rev (aux [] x) with
@@ -96,7 +96,7 @@ let to_model_expr (e : PT.expr) : T.data =
         Dint n
       end
     | Eliteral (Ldecimal  s) -> begin
-        cc [T.tpair T.tint T.tnat];
+        cc [T.tpair [T.tint; T.tnat]];
         let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
       end
     | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Ktz  n)
@@ -109,7 +109,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Lduration s) -> cc [T.tint; T.ttimestamp]; Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
     | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
     | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
-    | Eliteral (Lpercent  n) -> cc [T.tpair T.tint T.tnat]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
+    | Eliteral (Lpercent  n) -> cc [T.tpair [T.tint; T.tnat]]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
     | Eunit
     | Enothing               -> cc [T.tunit]; Dunit
     | Earray         (_scope, l)  -> begin
@@ -203,7 +203,7 @@ let show_entries (input : T.obj_micheline) =
     let rec aux accu (t : T.type_) =
       match t.node with
       | _ when with_annot t -> accu @ [(Option.get t.annotation, ft t)]
-      | T.Tpair (l, r) -> aux (aux accu l) r
+      | T.Tpair l -> List.fold_left aux accu l
       | _ -> accu @ ["_", ft t]
     in
     aux [] {typ with annotation = None}

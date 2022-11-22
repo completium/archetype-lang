@@ -19,7 +19,7 @@ let rec pp_type fmt (t : type_) =
   | Tset       t           -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
   | Toperation             -> pp_simple_a "operation"
   | Tcontract  t           -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
-  | Tpair      (lt, rt)    -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
+  | Tpair      l           -> Format.fprintf fmt "(pair%a %a)"       pp_annot_opt () (pp_list " " pp_type) l
   | Tor        (lt, rt)    -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
   | Tlambda    (at, rt)    -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
   | Tmap       (kt, vt)    -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
@@ -51,7 +51,7 @@ let rec pp_pretty_type fmt (t : type_) =
   | Tlist      t        -> Format.fprintf fmt "list_%a"       pp_pretty_type t
   | Tset       t        -> Format.fprintf fmt "set_%a"        pp_pretty_type t
   | Tcontract  t        -> Format.fprintf fmt "contract_%a"   pp_pretty_type t
-  | Tpair      (lt, rt) -> Format.fprintf fmt "pair_%a_%a"    pp_pretty_type lt  pp_pretty_type rt
+  | Tpair      l        -> Format.fprintf fmt "pair_%a"       (pp_list "_" pp_pretty_type) l
   | Tor        (lt, rt) -> Format.fprintf fmt "or_%a_%a"      pp_pretty_type lt  pp_pretty_type rt
   | Tlambda    (at, rt) -> Format.fprintf fmt "lambda_%a_%a"  pp_pretty_type at  pp_pretty_type rt
   | Tmap       (kt, vt) -> Format.fprintf fmt "map_%a_%a"     pp_pretty_type kt  pp_pretty_type vt

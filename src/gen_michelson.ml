@@ -77,7 +77,7 @@ let to_one_gen init f l =
   | [] -> init
   | i::q -> List.fold_left (fun accu x -> f x accu) i q
 
-let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l
+let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair [x; accu]))) l
 
 let to_one_type_or (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tor (x, accu)))) l
 
@@ -155,7 +155,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bunit         -> T.Tunit
       | Bbool         -> T.Tbool
       | Bint          -> T.Tint
-      | Brational     -> T.Tpair (T.mk_type Tint, T.mk_type Tnat)
+      | Brational     -> T.Tpair [T.mk_type Tint; T.mk_type Tnat]
       | Bdate         -> T.Ttimestamp
       | Bduration     -> T.Tint
       | Btimestamp    -> T.Ttimestamp
@@ -280,7 +280,7 @@ let to_ir (model : M.model) : T.ir =
     match b with
     | Bmin t
     | Bmax t -> begin
-        let targ = T.tpair t t in
+        let targ = T.tpair [t; t] in
         let tret = t in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
@@ -291,12 +291,12 @@ let to_ir (model : M.model) : T.ir =
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistContains t -> begin
-        let targ = T.tpair (T.tlist t) t in
+        let targ = T.tpair [(T.tlist t); t] in
         let tret = T.tbool in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistNth t -> begin
-        let targ = T.tpair (T.tlist t) T.tnat in
+        let targ = T.tpair [(T.tlist t); T.tnat] in
         let tret = T.toption t in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
@@ -330,7 +330,7 @@ let to_ir (model : M.model) : T.ir =
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
+          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", Ivar "_var_ifnone", T.tpair [T.tint; T.tnat]) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iloop (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
@@ -340,7 +340,7 @@ let to_ir (model : M.model) : T.ir =
         T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Bratcmp -> begin
-        let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit))) in
+        let targ = T.tpair [(T.tpair [T.trat; T.trat]); (T.tor T.tunit (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)))] in
         let tret = T.tbool in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
@@ -350,13 +350,13 @@ let to_ir (model : M.model) : T.ir =
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brataddsub -> begin
-        let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit T.tunit) in
+        let targ = T.tpair [(T.tpair [T.trat; T.trat]); (T.tor T.tunit T.tunit)] in
         let tret = T.trat in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratmul
     | Bratdiv -> begin
-        let targ = T.tpair T.trat T.trat in
+        let targ = T.tpair [T.trat; T.trat] in
         let tret = T.trat in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
@@ -367,12 +367,12 @@ let to_ir (model : M.model) : T.ir =
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brattez -> begin
-        let targ = T.tpair T.trat T.tmutez in
+        let targ = T.tpair [T.trat; T.tmutez] in
         let tret = T.tmutez in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratdur -> begin
-        let targ = T.tpair T.trat T.tint in
+        let targ = T.tpair [T.trat; T.tint] in
         let tret = T.tint in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
@@ -1277,7 +1277,7 @@ let to_ir (model : M.model) : T.ir =
         match List.rev l with
         | []   -> T.tunit
         | [e]  -> annot (fst e) (snd e)
-        | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
+        | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair [annot id te; accu])) (annot id te) t
       in
       let  args : T.type_ = f e.args in
       let eargs : T.type_ =
@@ -1290,8 +1290,8 @@ let to_ir (model : M.model) : T.ir =
       match args.node, eargs.node with
       | T.Tunit, T.Tunit -> T.tunit
       |       _, T.Tunit -> args
-      | T.Tunit, _       -> T.tpair T.tunit eargs
-      | _                -> T.tpair args eargs
+      | T.Tunit, _       -> T.tpair [T.tunit; eargs]
+      | _                -> T.tpair [args; eargs]
     in
     let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
     entries
