@@ -3973,7 +3973,7 @@ let rec for_xexpr
 
             let arg = for_xexpr ~ety:at env arg in
 
-            mk_sp (Some rt) (A.Pcall (None, A.Cconst CimportCallView, [rt], [AIdent m; AExpr a; AExpr arg]))
+            mk_sp (Some (A.Toption rt)) (A.Pcall (None, A.Cconst CimportCallView, [rt], [AIdent m; AExpr a; AExpr arg]))
           end
         | _ -> begin
             let type_of_mthtype asset amap = function
