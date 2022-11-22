@@ -1,0 +1,16 @@
+archetype arg_fun_constant
+
+constant MY_CONSTANT : string = "MY_CONSTANT"
+
+function f() : bool {
+  fail(MY_CONSTANT)
+}
+
+entry manage_transfers(){
+  require {
+    s0 : f();
+  }
+  effect {
+    ()
+  }
+}
