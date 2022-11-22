@@ -2475,20 +2475,31 @@ let empty : env =
   env
 
 let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
+  let doit = normalize_type env in
   match ty with
   | A.Trecord rn -> begin
       let rv = Env.Record.get env (unloc rn) in
       match rv.rd_fields with
-      | [ty] -> normalize_type env ty.rfd_type
+      | [ty] -> doit ty.rfd_type
       | _ -> begin
-          let doit = normalize_type env in
           match rv.rd_packing with
           | Some rp -> begin
-              let aux = assert false in
+              let idx : int ref = ref 0 in
+              let l = List.mapi (fun i (x : rfielddecl) -> (i, x.rfd_type)) rv.rd_fields in
+              let rec aux (a : rpacking) =
+                match a with
+                | RLeaf _ -> begin idx := !idx + 1; let a = List.assoc (!idx - 1) l in doit a  end
+                | RNode l -> doit (A.Ttuple (List.map aux l))
+              in
               aux rp
             end
-          | None -> A.Ttuple (List.map (fun (x : rfielddecl) -> (doit x.rfd_type)) rv.rd_fields)
+          | None -> doit (A.Ttuple (List.map (fun (x : rfielddecl) -> (doit x.rfd_type)) rv.rd_fields))
         end
+    end
+  | A.Ttuple l when (match List.rev l with | (A.Ttuple _)::_ -> true | _ -> false) -> begin
+      match List.rev l with
+      | (A.Ttuple ll)::q -> doit (A.Ttuple (List.map doit (List.rev q) @ List.map doit ll))
+      | _ -> assert false
     end
   | _ -> A.map_ptyp (normalize_type env) ty
 

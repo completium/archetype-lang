@@ -95,7 +95,7 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "option<%a>"
       pp_type t
   | Ttuple ts ->
-    Format.fprintf fmt "%a"
+    Format.fprintf fmt "(%a)"
       (pp_list " * " pp_type) ts
   | Toperation ->
     Format.fprintf fmt "operation"
