@@ -1,0 +1,17 @@
+# None
+{
+  storage (option (pair address (pair string nat)));
+  parameter (unit %exec);
+  code { UNPAIR;
+         DROP;
+         PUSH nat 1;
+         PUSH string "info";
+         TICKET;
+         READ_TICKET;
+         SOME;
+         SWAP;
+         DROP 2;
+         NIL operation;
+         PAIR };
+}
+

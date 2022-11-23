@@ -1,0 +1,36 @@
+archetype fa2_1
+
+record transfer_event_item_dest {
+  teid_to_      : option<address>;
+  teid_token_id : nat;
+  teid_amount   : nat
+} as ((%to_, (token_id, amount)))
+
+record import_ticket_param {
+  itp_to: address;
+  itp_tickets: ticket<nat * option<bytes>>;
+} as ((%to_, %tickets_to_import))
+
+asset ledger identified by lowner ltokenid to big_map {
+  lowner     : address;
+  ltokenid   : nat;
+  lamount    : nat = 0;
+}
+
+entry import_ticket(input : list<import_ticket_param>) {
+  var ltransfer_event_item_dest : list<transfer_event_item_dest> = [];
+  for i in input do
+    // const t : (address * (nat * option<bytes>) * nat) = read_ticket(i.itp_tickets);
+    // const addr = t[0];
+    const t : (address * (nat * option<bytes>) * nat) = read_ticket(i.itp_tickets);
+    const ltoken_id = t[1][0];
+    const amount = t[2];
+    const tooo = i.itp_to;
+    // const amount = t[2];
+    // do_require(addr = self_address, "FA2_1_INVALID_TICKET");
+    ledger.add_update((tooo, ltoken_id), { lamount = amount });
+    // const teid : transfer_event_item_dest = {teid_to_ = some(i.itp_to); teid_token_id = ltoken_id; teid_amount = amount};
+    // ltransfer_event_item_dest.prepend(teid)
+  done;
+  // emit<transfer_event>({te_sender = caller; te_transfer = [{tei_from_ = none; tei_txs = ltransfer_event_item_dest}]})
+}

@@ -1,0 +1,17 @@
+# (Pair { } { })
+{
+  storage (pair (list %input (ticket string)) (list %output (ticket string)));
+  parameter (unit %exec);
+  code { UNPAIR;
+         DIP { UNPAIR 2 };
+         DROP;
+         IF_CONS
+           { PUSH string "ERROR";
+             FAILWITH }
+           {  };
+         DROP;
+         PAIR 2;
+         NIL operation;
+         PAIR };
+}
+

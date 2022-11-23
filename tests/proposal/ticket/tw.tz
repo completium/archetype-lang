@@ -1,0 +1,19 @@
+# { }
+{
+  storage (list (nat));
+  parameter (pair %transfer_ticket (nat %fa2_1) (nat %to_));
+  code { UNPAIR;
+         UNPAIR;
+         SWAP;
+         DIG 2;
+         IF_CONS
+           {  }
+           { PUSH string "NO_TICKET";
+             FAILWITH };
+         PUSH nat 0;
+         DIP { DUG 3 };
+         DROP 3;
+         NIL operation;
+         PAIR };
+}
+

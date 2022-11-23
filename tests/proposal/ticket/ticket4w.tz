@@ -1,0 +1,20 @@
+# Unit
+{
+  storage unit;
+  parameter (contract %export_ticket (ticket (pair nat (option bytes))));
+  code { NIL operation;
+         DIG 1;
+         UNPAIR;
+         NIL (ticket (pair nat (option bytes)));
+         DIG 0;
+         MAP { DUP 2;
+               PUSH mutez 0;
+               DIG 2;
+               TRANSFER_TOKENS };
+         DIP { DIG 2; DROP };
+         DUG 2;
+         DROP;
+         DIG 1;
+         PAIR };
+}
+

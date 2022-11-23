@@ -1,0 +1,19 @@
+# (Pair { } { })
+{
+  storage (pair (list %input nat) (list %output nat));
+  parameter (unit %exec);
+  code { UNPAIR;
+         DIP { UNPAIR 2 };
+         DROP;
+         IF_CONS
+           {  }
+           { PUSH string "ERROR";
+             FAILWITH };
+         FAILWITH };
+#         DUG 1;
+#         DROP;
+#         PAIR 2;
+#         NIL operation;
+#         PAIR };
+}
+

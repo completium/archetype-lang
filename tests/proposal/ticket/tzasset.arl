@@ -1,0 +1,12 @@
+archetype tzasset
+
+asset mya {
+  k : nat;
+  va : nat;
+  vb : nat;
+}
+
+entry export_ticket() {
+  mya.update(0, {va += 1});
+  // mya.update(0, {va += 1});
+}

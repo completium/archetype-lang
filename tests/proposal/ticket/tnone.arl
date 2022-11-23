@@ -1,0 +1,6 @@
+archetype ticket_wallet with metadata ""
+
+entry callback () {
+  const t : option<ticket<string>> = none;
+  // my_ticket := [input]
+}

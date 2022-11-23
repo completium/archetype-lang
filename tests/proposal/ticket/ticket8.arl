@@ -1,0 +1,11 @@
+archetype fa2_1
+
+record import_ticket_param {
+  itp_to: address;
+  itp_tickets: ticket<string>;
+} as ((%to_, %tickets_to_import))
+
+entry import_ticket() {
+  const i = {itp_to = caller; itp_tickets = create_ticket("info", 1)};
+  const t : (address * string * nat) = read_ticket(i.itp_tickets)
+}

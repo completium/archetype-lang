@@ -1,0 +1,12 @@
+# { Elt "" 0x }
+{
+  storage (big_map string bytes);
+  parameter (unit %callback);
+  code { UNPAIR;
+         DROP;
+         NONE (ticket string);
+         DROP;
+         NIL operation;
+         PAIR };
+}
+

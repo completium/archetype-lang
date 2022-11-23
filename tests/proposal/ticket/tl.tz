@@ -1,0 +1,16 @@
+# (Pair { } { Elt "" 0x })
+{
+  storage (pair (list %my_ticket (ticket nat)) (big_map %metadata string bytes));
+  parameter (ticket %callback nat);
+  code { UNPAIR;
+         DIP { UNPAIR 2 };
+         NIL (ticket nat);
+         DIG 1;
+         CONS;
+         SWAP;
+         DROP;
+         PAIR 2;
+         NIL operation;
+         PAIR };
+}
+

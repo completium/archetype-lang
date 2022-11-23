@@ -1,0 +1,24 @@
+# Unit
+{
+  storage unit;
+  parameter (unit %import_ticket);
+  code { UNPAIR;
+         DROP;
+         PUSH nat 0;
+         NONE bytes;
+         PUSH nat 0;
+         PAIR;
+         PAIR;
+         SENDER;
+         PAIR;
+         DUP;
+         CAR;
+         DUP 2;
+         CDR;
+         CAR;
+         CAR;
+         DROP 3;
+         NIL operation;
+         PAIR };
+}
+

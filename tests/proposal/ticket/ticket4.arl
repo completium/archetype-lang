@@ -1,0 +1,24 @@
+archetype fa2_1
+
+record export_ticket_item {
+  eti_from     : address;
+  eti_token_id : nat;
+  eti_amount   : nat;
+} as ((%from, token_id, amount))
+
+entry export_ticket(
+  d : contract<ticket<nat * option<bytes>>>,
+  // tickets_to_export : list<export_ticket_item>
+) {
+  // const l = 0;
+  var l : list<ticket<nat * option<bytes>>> = [];
+  // const a = 1;
+  // for eti in tickets_to_export do
+  //   // const ltoken_id = eti.eti_token_id;
+
+  //   l.prepend(create_ticket((1, none<bytes>), 0));
+  // done;
+  // const op = make_operation(0tz, destination, l);
+  // operations := [op]
+ operations := map(l, x -> make_operation(0tz, d, x))
+}

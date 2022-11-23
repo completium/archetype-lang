@@ -1,0 +1,36 @@
+# { }
+{
+  storage (big_map (pair address nat) nat);
+  parameter (list %import_ticket (pair (address %to_) (ticket %tickets_to_import (pair nat (option bytes)))));
+  code { UNPAIR;
+         DIG 0;
+         ITER { UNPAIR;
+                DUP;
+                DIG 2;
+                SWAP;
+                PAIR;
+                SWAP;
+                DIG 2;
+                UNPAIR;
+                DUP;
+                DIG 2;
+                SWAP;
+                PAIR;
+                DUG 2;
+                DIG 2;
+                UNPAIR;
+                DUP;
+                DIG 2;
+                SWAP;
+                PAIR;
+                DUG 2;
+                COMPARE;
+                EQ;
+                IF
+                  {  }
+                  {  };
+                DROP 2 };
+         NIL operation;
+         PAIR };
+}
+

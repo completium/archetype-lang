@@ -1,0 +1,24 @@
+# Unit
+{
+  storage unit;
+  parameter (list %import_ticket (pair (address %to_) (ticket %tickets_to_import (pair nat (option bytes)))));
+  code { UNPAIR;
+         DIG 0;
+         ITER { UNPAIR;
+                SWAP;
+                READ_TICKET;
+                SWAP;
+                DIG 2;
+                PAIR;
+                SWAP;
+                DUP;
+                CAR;
+                DUP 2;
+                CDR;
+                CAR;
+                CAR;
+                DROP 4 };
+         NIL operation;
+         PAIR };
+}
+

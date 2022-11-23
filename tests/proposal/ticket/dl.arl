@@ -1,0 +1,10 @@
+archetype dl
+
+variable input : list<ticket<string>> = []
+
+variable output : list<ticket<string>> = []
+
+entry exec() {
+  detach t from input :: "ERROR";
+  output := [t]
+}

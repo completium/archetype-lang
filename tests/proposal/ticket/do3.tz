@@ -1,0 +1,6 @@
+# (Pair None 2)
+{
+  storage (pair (option %input (ticket string)) (nat %n));
+  parameter (unit %exec);
+  code { DROP; PUSH (list (ticket string)) {}; FAILWITH };
+}

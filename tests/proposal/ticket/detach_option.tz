@@ -1,0 +1,29 @@
+# (Pair None None)
+{
+  storage (pair (option %input (ticket string)) (option %output (ticket string)));
+  parameter (or (unit %init) (unit %exec));
+  code { UNPAIR;
+         DIP { UNPAIR 2 };
+         IF_LEFT
+           { DROP;
+             PUSH nat 1;
+             PUSH string "info";
+             TICKET;
+             SOME;
+             SWAP;
+             DROP;
+             PAIR 2;
+             NIL operation;
+             PAIR }
+           { DROP;
+             DIG 0;
+             IF_NONE
+               { PUSH string "ERROR";
+                 FAILWITH }
+               { NONE (ticket string); SWAP };
+             DROP;
+             PAIR 2;
+             NIL operation;
+             PAIR } };
+}
+

@@ -1,0 +1,7 @@
+archetype ticket_wallet with metadata ""
+
+variable my_ticket : list<ticket<nat>> = []
+
+entry callback (input : ticket<nat>) {
+  my_ticket := [input]
+}

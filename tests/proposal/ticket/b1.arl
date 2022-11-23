@@ -1,0 +1,53 @@
+archetype fa2_1
+
+record operator_param {
+  opp_owner    : address;
+  opp_operator : address;
+  opp_token_id : nat
+} as ((owner, (operator, token_id)))
+
+record approve_event_item {
+  aei_owner: address;
+  aei_spender: address;
+  aei_token_id: nat;
+  aei_value : nat;
+} as ((%owner, %spender, %token_id, %new_value))
+
+record operator_update_item {
+  oui_owner : address;
+  oui_operator : address;
+  oui_token_id : nat;
+  oui_is_operator : bool;
+} as ((owner, operator, token_id, is_operator))
+
+event operator_update_event {
+  oue_sender : address;
+  oue_operator_update : list<operator_update_item>
+} as ((sender, %transfer))
+
+function make_operator_update_item (iparam : operator_param, io : bool) : operator_update_item {
+  return {
+      oui_owner = iparam.opp_owner;
+      oui_operator = iparam.opp_operator;
+      oui_token_id = iparam.opp_token_id;
+      oui_is_operator = io
+  }
+}
+
+entry update_operators (upl : list<or<operator_param, operator_param>>) {
+    for up in upl do
+      match up with
+      | left(param) -> (* add *)
+        do_require(param.opp_owner = caller , "CALLER_NOT_OWNER")
+        // operator.put({param.opp_operator; param.opp_token_id; param.opp_owner})
+      | right(param) -> (* remove *)
+        do_require(param.opp_owner = caller , "CALLER_NOT_OWNER")
+        // operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
+      end;
+    done;
+    emit<operator_update_event>({oue_sender = caller; oue_operator_update = map(upl, up ->
+    match up with
+     | left(param)  -> make_operator_update_item (param, true)
+     | right(param) -> make_operator_update_item (param, false)
+    end)})
+}

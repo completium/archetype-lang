@@ -1,0 +1,18 @@
+archetype fa2_1
+
+record transfer_event_item_dest {
+  teid_to_      : option<address>;
+  teid_token_id : nat;
+  teid_amount   : nat
+} as ((%to_, (token_id, amount)))
+
+record import_ticket_param {
+  itp_to: address;
+  itp_tickets: ticket<nat * option<bytes>>;
+} as ((%to_, %tickets_to_import))
+
+entry import_ticket() {
+    const t : (address * (nat * option<bytes>) * nat) = (caller, (0, none<bytes>), 0);
+    const addr = t[0];
+    const ltoken_id = t[1][0];
+}

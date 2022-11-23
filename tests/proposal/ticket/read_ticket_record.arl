@@ -1,0 +1,9 @@
+archetype ticket_var_simple
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  const a : (nat * ticket<string>)  = (0, create_ticket("info", 1));
+  // const t : ticket<string> = create_ticket("info", 1);
+  info := some(read_ticket(a[1]))
+}

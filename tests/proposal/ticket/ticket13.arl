@@ -1,0 +1,26 @@
+archetype fa2_1
+
+record transfer_event_item_dest {
+  teid_to_      : option<address>;
+  teid_token_id : nat;
+  teid_amount   : nat
+} as ((%to_, (token_id, amount)))
+
+record import_ticket_param {
+  itp_to: address;
+  itp_tickets: ticket<nat * option<bytes>>;
+} as ((%to_, %tickets_to_import))
+
+asset ledger identified by lowner ltokenid to big_map {
+  lowner     : address;
+  ltokenid   : nat;
+  lamount    : nat = 0;
+}
+
+entry import_ticket(input : list<import_ticket_param>) {
+  for i in input do
+    const tooo = i.itp_to;
+    if (i.itp_to = i.itp_to) then ();
+  done;
+  // emit<transfer_event>({te_sender = caller; te_transfer = [{tei_from_ = none; tei_txs = ltransfer_event_item_dest}]})
+}
