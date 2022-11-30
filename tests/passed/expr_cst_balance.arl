@@ -3,8 +3,5 @@ archetype expr_cst_balance
 variable res : tez = 0tz
 
 entry exec () {
-  accept transfer
-  effect {
-    res := balance
-  }
+  res := balance
 }

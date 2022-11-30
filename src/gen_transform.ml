@@ -2043,7 +2043,14 @@ let replace_date_duration_by_timestamp (model : model) : model =
   in
   let rec to_timestamp (x : mterm) =
     let mk n = mk_mterm (Mtimestamp n) ttimestamp in
-    let extract (x : mterm) = match x.node with | Mtimestamp n -> n | _ -> assert false in
+    let extract (x : mterm) =
+      match x.node with
+      | Mtimestamp n -> n
+      | Mvar (_id, Vparam, _, _) -> begin
+          assert false
+        end
+      | _ -> assert false
+    in
     let f = to_timestamp in
     let g = extract |@ f in
     match x.node with
@@ -6146,7 +6153,7 @@ let patch_fa2 (model : model) : model =
   }
 
 (* let process_event (model : model) : model =
-  let rec aux ctx (mt : mterm) =
+   let rec aux ctx (mt : mterm) =
     match mt.node with
     | Memit (e, value) -> begin
         let type_ = Gen_michelson.to_type model (tevent e) in
@@ -6169,8 +6176,8 @@ let patch_fa2 (model : model) : model =
         mk_transfer_op op
       end
     | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model *)
+   in
+   map_mterm_model aux model *)
 
 let remove_iterable_big_map (model : model) : model =
   let process_type ?(id : mident option) (t : type_) : type_ =

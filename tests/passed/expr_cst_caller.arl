@@ -1,10 +1,7 @@
 archetype expr_cst_caller
 
-variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable res : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 entry exec () {
-  accept transfer
-  effect {
-    res := caller
-  }
+  res := caller
 }

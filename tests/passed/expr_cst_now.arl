@@ -3,8 +3,5 @@ archetype expr_cst_now
 variable res : date = 1970-01-01
 
 entry exec () {
-  accept transfer
-  effect {
-    res := now
-  }
+  res := now
 }

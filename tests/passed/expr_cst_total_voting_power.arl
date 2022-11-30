@@ -1,0 +1,7 @@
+archetype expr_cst_total_voting_power
+
+variable res : nat = 0
+
+entry exec () {
+  res := total_voting_power
+}

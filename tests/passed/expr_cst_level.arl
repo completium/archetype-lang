@@ -1,0 +1,9 @@
+archetype expr_cst_level
+
+variable res : nat = 0
+
+entry exec () {
+  effect {
+    res := level
+  }
+}

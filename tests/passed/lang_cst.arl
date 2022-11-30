@@ -20,5 +20,7 @@ entry exec () {
     do_require(h = h, "ko");
     var i : nat      = total_voting_power;  (* TOTAL_VOTING_POWER *)
     do_require(i = i, "ko");
+    var j : nat      = min_block_time;      (* MIN_BLOCK_TIME *)
+    do_require(j = j, "ko");
   }
 }

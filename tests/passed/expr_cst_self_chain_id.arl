@@ -1,0 +1,7 @@
+archetype expr_cst_self_chain_id
+
+variable res : chain_id = "NetXdQprcVkpaWU"
+
+entry exec () {
+  res := self_chain_id
+}

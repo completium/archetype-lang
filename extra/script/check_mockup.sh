@@ -2,13 +2,14 @@
 
 TEZ_ADDRESS=tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx
 
-BIN_TEZOS_CLIENT=tezos-client
+BIN_OCTEZ_CLIENT=octez-client
 BIN_ARCHETYPE="./archetype.exe --set-caller-init=$TEZ_ADDRESS"
 
-PROTOCOL=PtKathmankSpLLDALzWw7CGD2j2MtyveTwboEYokqUCP4a1LxMg
+# PROTOCOL=PtKathmankSpLLDALzWw7CGD2j2MtyveTwboEYokqUCP4a1LxMg
+PROTOCOL=PtLimaPtLMwfNinJi9rCfDPWea8dFgTZ1MeJ9f1m2SRic6ayiwW
 MOCKUP_PATH=/tmp/mockup
 MOCKUP_NAME=mockup
-MOCKUP_CLIENT="$BIN_TEZOS_CLIENT --mode mockup --base-dir $MOCKUP_PATH"
+MOCKUP_CLIENT="$BIN_OCTEZ_CLIENT --mode mockup --base-dir $MOCKUP_PATH"
 
 process_compile() {
   FILE=$1
@@ -58,7 +59,7 @@ process_files() {
 
 rm -fr $MOCKUP_PATH
 mkdir $MOCKUP_PATH
-$BIN_TEZOS_CLIENT --protocol $PROTOCOL --base-dir $MOCKUP_PATH --mode mockup create $MOCKUP_NAME
+$BIN_OCTEZ_CLIENT --protocol $PROTOCOL --base-dir $MOCKUP_PATH --mode mockup create $MOCKUP_NAME
 
 process_files "./contracts"
 process_files "./tests/passed"

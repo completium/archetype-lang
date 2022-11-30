@@ -1,6 +1,6 @@
 archetype expr_cst_self_address
 
-variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable res : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 entry exec () {
   effect {
