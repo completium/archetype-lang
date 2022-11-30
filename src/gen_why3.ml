@@ -2462,6 +2462,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mselfchainid          -> Tchainid (dl gs)
     | Mmetadata             -> assert false
     | Mlevel                -> assert false
+    | Mminblocktime         -> assert false
 
     (* variables *)
 

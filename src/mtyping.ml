@@ -588,6 +588,10 @@ and op_LEVEL (stack : stack) =
   Some (M.tnat :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_MIN_BLOCK_TIME (stack : stack) =
+  Some (M.tnat :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_LOOP (stack : stack) (code : M.code list) =
   let cond, stack = Stack.pop stack in
   let () = Ty.check_bool cond in
@@ -1215,6 +1219,9 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | LEVEL ->
       op_LEVEL stack
+
+  | MIN_BLOCK_TIME ->
+      op_MIN_BLOCK_TIME stack
 
   | NOW ->
       op_NOW stack

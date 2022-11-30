@@ -463,6 +463,7 @@ type 'term mterm_node  =
   | Mselfchainid
   | Mmetadata
   | Mlevel
+  | Mminblocktime
   (* variable *)
   | Mvar              of mident * 'term var_kind_gen * temp * delta
   | Menumval          of mident * 'term list * ident  (* value * args * ident of enum *)
@@ -1200,6 +1201,7 @@ let mselfaddress  = mk_mterm Mselfaddress taddress
 let mselfchainid  = mk_mterm Mselfchainid tchainid
 let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
 let mlevel        = mk_mterm Mlevel       tnat
+let mminblocktime = mk_mterm Mminblocktime tnat
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
@@ -1732,6 +1734,7 @@ let cmp_mterm_node
     | Mselfchainid, Mselfchainid                                                       -> true
     | Mmetadata, Mmetadata                                                             -> true
     | Mlevel, Mlevel                                                                   -> true
+    | Mminblocktime, Mminblocktime                                                     -> true
     (* variable *)
     | Mvar (id1, k1, t1, d1), Mvar (id2, k2, t2, d2)                                   -> cmpi id1 id2 && cmp_var_kind k1 k2 && cmp_temp t1 t2 && cmp_delta d1 d2
     (* rational *)
@@ -2198,6 +2201,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mselfchainid                   -> Mselfchainid
   | Mmetadata                      -> Mmetadata
   | Mlevel                         -> Mlevel
+  | Mminblocktime                  -> Mminblocktime
   (* variable *)
   | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
   | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
@@ -2661,6 +2665,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mselfchainid                          -> accu
   | Mmetadata                             -> accu
   | Mlevel                                -> accu
+  | Mminblocktime                         -> accu
   (* variable *)
   | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
   | Menumval (_, args, _)                 -> List.fold_left f accu args
@@ -3904,6 +3909,9 @@ let fold_map_term
 
   | Mlevel ->
     g Mlevel, accu
+
+  | Mminblocktime ->
+    g Mminblocktime, accu
 
 
   (* variable *)
@@ -6190,6 +6198,7 @@ end = struct
       | Mselfchainid               -> "self_chain_id"::accu
       | Mmetadata                  -> "metadata"::accu
       | Mlevel                     -> "level"::accu
+      | Mminblocktime              -> "min_block_time"::accu
 
       | Mget (an, ck, _)
       | Mselect (an, ck, _, _, _)

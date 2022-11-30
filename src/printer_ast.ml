@@ -314,6 +314,7 @@ let to_const = function
   (* voting *)
   | Ctotalvotingpower      -> "total_voting_power"
   | Cvotingpower           -> "voting_power"
+  | Cminblocktime          -> "min_block_time"
   (* ticket *)
   | Ccreateticket          -> "create_ticket"
   | Creadticket            -> "read_ticket"

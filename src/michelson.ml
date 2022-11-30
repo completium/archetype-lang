@@ -158,6 +158,7 @@ and code_node =
   | EMIT               of type_ * ident option
   | IMPLICIT_ACCOUNT
   | LEVEL
+  | MIN_BLOCK_TIME
   | NOW
   | SELF               of ident option
   | SELF_ADDRESS
@@ -233,6 +234,7 @@ and z_operator =
   | Ztotalvotingpower
   | Zlevel
   | Zsapling_empty_state of int
+  | Zmin_block_time
 [@@deriving show {with_path = false}]
 
 and un_operator =
@@ -745,6 +747,7 @@ let ccreate_contract    c         = mk_code (CREATE_CONTRACT c)
 let cemit               (a, b)    = mk_code (EMIT (a, b))
 let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
 let clevel                        = mk_code  LEVEL
+let cmin_block_time               = mk_code  MIN_BLOCK_TIME
 let cnow                          = mk_code  NOW
 let cself                a        = mk_code (SELF a)
 let cself_address                 = mk_code  SELF_ADDRESS
@@ -1013,6 +1016,7 @@ let cmp_code (lhs : code) (rhs : code) =
     | CREATE_CONTRACT _c1, CREATE_CONTRACT _c2       -> true (* TODO *)
     | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
     | LEVEL, LEVEL                                   -> true
+    | MIN_BLOCK_TIME, MIN_BLOCK_TIME                 -> true
     | NOW, NOW                                       -> true
     | SELF a1, SELF a2                               -> Option.cmp String.equal a1 a2
     | SELF_ADDRESS, SELF_ADDRESS                     -> true
@@ -1239,6 +1243,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | CREATE_CONTRACT c        -> CREATE_CONTRACT c
     | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
     | LEVEL                    -> LEVEL
+    | MIN_BLOCK_TIME           -> MIN_BLOCK_TIME
     | NOW                      -> NOW
     | SELF a                   -> SELF a
     | SELF_ADDRESS             -> SELF_ADDRESS
@@ -1702,6 +1707,7 @@ end = struct
     | EMIT (t, a)              -> mk ~args:[ft t] ~annots:(fan a) "EMIT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
     | LEVEL                    -> mk "LEVEL"
+    | MIN_BLOCK_TIME           -> mk "MIN_BLOCK_TIME"
     | NOW                      -> mk "NOW"
     | SELF a                   -> mk ~annots:(fan a) "SELF"
     | SELF_ADDRESS             -> mk "SELF_ADDRESS"

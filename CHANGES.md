@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - new feature
+  - add `min_block_time` constant
 
 ## [1.3.6] - 2022-11-24
 ### Added

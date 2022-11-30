@@ -218,6 +218,7 @@ and pp_code fmt (i : code) =
   | EMIT (t, a)              -> pp "EMIT%a %a" pp_annot a pp_type t
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
   | LEVEL                    -> pp "LEVEL"
+  | MIN_BLOCK_TIME           -> pp "MIN_BLOCK_TIME"
   | NOW                      -> pp "NOW"
   | SELF a                   -> pp "SELF%a" pp_annot a
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
@@ -416,6 +417,7 @@ let pp_zop fmt op =
   | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
   | Ztotalvotingpower   -> pp "totalvotingpower"
   | Zlevel              -> pp "level"
+  | Zmin_block_time     -> pp "min_block_time"
   | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
 
 let pp_uop f fmt (op, e) =
@@ -535,6 +537,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
       | Ztotalvotingpower   -> pp "totalvotingpower"
       | Zlevel              -> pp "level"
+      | Zmin_block_time     -> pp "min_block_time"
       | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
     end
   | Iunop (op, e) -> begin

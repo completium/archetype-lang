@@ -1891,10 +1891,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mcaller        -> A.eterm (dumloc A.cst_caller)
     | Mbalance       -> A.eterm (dumloc A.cst_balance)
     | Msource        -> A.eterm (dumloc A.cst_source)
-    | Mselfaddress   -> A.eterm (dumloc A.cst_selfaddress)
-    | Mselfchainid   -> A.eterm (dumloc A.cst_chainid)
+    | Mselfaddress   -> A.eterm (dumloc A.cst_self_address)
+    | Mselfchainid   -> A.eterm (dumloc A.cst_self_chain_id)
     | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
     | Mlevel         -> A.eterm (dumloc A.cst_level)
+    | Mminblocktime  -> A.eterm (dumloc A.cst_min_block_time)
 
 
     (* variable *)

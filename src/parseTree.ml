@@ -687,15 +687,16 @@ let mk_archetype ?(decls=[]) ?(loc=dummy) () =
 
 (* -------------------------------------------------------------------- *)
 
-let cst_now         = "now"
-let cst_transferred = "transferred"
-let cst_caller      = "caller"
-let cst_balance     = "balance"
-let cst_source      = "source"
-let cst_selfaddress = "selfaddress"
-let cst_chainid     = "chainid"
-let cst_metadata    = "metadata"
-let cst_level       = "level"
+let cst_now            = "now"
+let cst_transferred    = "transferred"
+let cst_caller         = "caller"
+let cst_balance        = "balance"
+let cst_source         = "source"
+let cst_self_address   = "self_address"
+let cst_self_chain_id  = "self_chain_id"
+let cst_metadata       = "metadata"
+let cst_level          = "level"
+let cst_min_block_time = "min_block_time"
 
 
 (* utils *)

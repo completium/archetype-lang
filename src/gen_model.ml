@@ -403,6 +403,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pconst Cmetadata                     -> M.Mmetadata
       | A.Pconst Ctotalvotingpower             -> M.Mtotalvotingpower
       | A.Pconst Clevel                        -> M.Mlevel
+      | A.Pconst Cminblocktime                 -> M.Mminblocktime
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;
         assert false

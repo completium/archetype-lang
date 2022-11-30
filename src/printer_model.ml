@@ -1516,6 +1516,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mselfchainid   -> pp_str fmt "self_chain_id"
     | Mmetadata      -> pp_str fmt "metadata"
     | Mlevel         -> pp_str fmt "level"
+    | Mminblocktime  -> pp_str fmt "min_block_time"
 
 
     (* variable *)

@@ -1065,6 +1065,7 @@ let to_ir (model : M.model) : T.ir =
     | Mselfchainid   -> T.Izop Zchain_id
     | Mmetadata      -> assert false
     | Mlevel         -> T.Izop Zlevel
+    | Mminblocktime  -> T.Izop Zmin_block_time
 
 
     (* variable *)
@@ -1421,6 +1422,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Zemptybigmap (k, v)    -> T.cempty_big_map (rar k, rar v)
     | T.Ztotalvotingpower      -> T.ctotal_voting_power
     | T.Zlevel                 -> T.clevel
+    | T.Zmin_block_time        -> T.cmin_block_time
     | T.Zsapling_empty_state n -> T.csapling_empty_state n
   in
 

@@ -1305,6 +1305,7 @@ let globals = [
   ("metadata"      , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
   ("level"         , A.Clevel       , A.vtnat);
   ("total_voting_power", A.Ctotalvotingpower, A.vtnat);
+  ("min_block_time", A.Cminblocktime, A.vtnat);
 ]
 
 let statename = "state"

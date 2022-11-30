@@ -238,6 +238,8 @@ type const =
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
+  (* blockchain *)
+  | Cminblocktime
   (* ticket *)
   | Ccreateticket
   | Creadticket
