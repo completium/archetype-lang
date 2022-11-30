@@ -85,7 +85,7 @@ let to_model_expr (e : PT.expr) : T.data =
         in
 
         List.fold_left (fun accu (x, typ) ->
-            T.Dpair (f ?typ x, accu)
+            T.Dpair [f ?typ x; accu]
           ) (f ?typ:t i) q
     in
 
@@ -97,7 +97,7 @@ let to_model_expr (e : PT.expr) : T.data =
       end
     | Eliteral (Ldecimal  s) -> begin
         cc [T.tpair [T.tint; T.tnat]];
-        let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
+        let n, d = Core.decimal_string_to_rational s in Dpair [Dint n; Dint d]
       end
     | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Ktz  n)
     | Eliteral (Lmtz      n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Kmtz n)
@@ -109,7 +109,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Lduration s) -> cc [T.tint; T.ttimestamp]; Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
     | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
     | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
-    | Eliteral (Lpercent  n) -> cc [T.tpair [T.tint; T.tnat]]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
+    | Eliteral (Lpercent  n) -> cc [T.tpair [T.tint; T.tnat]]; let n, d = string_to_big_int_percent n in Dpair [Dint n; Dint d]
     | Eunit
     | Enothing               -> cc [T.tunit]; Dunit
     | Earray         (_scope, l)  -> begin

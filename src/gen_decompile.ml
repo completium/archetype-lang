@@ -1256,7 +1256,7 @@ end = struct
     | Dunit            -> unit
     | Dtrue            -> mtrue
     | Dfalse           -> mfalse
-    | Dpair  (ld, rd)  -> mk_pair (for_data ld) (for_data rd)
+    | Dpair   l        -> mk_pair (List.map for_data l)
     | Dleft    d       -> begin
         match t with
         | Some { node = Tor (tl, tr) } -> mk_left (for_type tr) (for_data ~t:tl d)
@@ -1299,7 +1299,7 @@ end = struct
     | Tnat
     | Tint         -> T.Dint Big_int.zero_big_int
     | Tstring      -> T.Dstring ""
-    | Tpair [a; b] -> T.Dpair (f a, f b)
+    | Tpair l      -> T.Dpair (List.map f l)
     | _ -> T.Dint Big_int.zero_big_int(* assert false *)
 
   let for_code (code : dcode) : mterm =
@@ -1318,7 +1318,7 @@ end = struct
       match e with
       | Dvar v          -> mk_mvar (M.mk_mident (dumloc (for_dvar v))) tunit
       | Ddata (t, d)    -> for_data ~t d
-      | Depair (e1, e2) -> mk_pair (for_expr e1) (for_expr e2)
+      | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
       | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
       | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool

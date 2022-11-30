@@ -67,7 +67,7 @@ let rec pp_data fmt (d : data) =
   | Dunit           -> pp "Unit"
   | Dtrue           -> pp "True"
   | Dfalse          -> pp "False"
-  | Dpair  (ld, rd) -> pp "(Pair %a %a)" pp_data ld pp_data rd
+  | Dpair   l       -> pp "(Pair %a)"     (pp_list " " pp_data) l
   | Dleft   d       -> pp "(Left %a)"      pp_data d
   | Dright  d       -> pp "(Right %a)"     pp_data d
   | Dsome   d       -> pp "(Some %a)"      pp_data d

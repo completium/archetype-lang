@@ -78,7 +78,7 @@ type data =
   | Dunit
   | Dtrue
   | Dfalse
-  | Dpair              of data * data
+  | Dpair              of data list
   | Dleft              of data
   | Dright             of data
   | Dsome              of data
@@ -855,7 +855,7 @@ let cmp_data lhs rhs =
     | Dunit, Dunit                   -> true
     | Dtrue, Dtrue                   -> true
     | Dfalse, Dfalse                 -> true
-    | Dpair (a1, b1), Dpair (a2, b2) -> f a1 a2 && f b1 b2
+    | Dpair l1, Dpair l2             -> List.for_all2 f l1 l2
     | Dleft d1, Dleft d2             -> f d1 d2
     | Dright d1, Dright d2           -> f d1 d2
     | Dsome d1, Dsome d2             -> f d1 d2
@@ -1164,7 +1164,7 @@ let map_data (f : data -> data) = function
   | Dunit        -> Dunit
   | Dtrue        -> Dtrue
   | Dfalse       -> Dfalse
-  | Dpair (l, r) -> Dpair (f l, f r)
+  | Dpair l      -> Dpair (List.map f l)
   | Dleft v      -> Dleft (f v)
   | Dright v     -> Dright (f v)
   | Dsome v      -> Dsome (f v)
@@ -1586,7 +1586,7 @@ end = struct
     | Dunit        -> Oprim (mk_prim "Unit")
     | Dtrue        -> Oprim (mk_prim "True")
     | Dfalse       -> Oprim (mk_prim "False")
-    | Dpair (l, r) -> Oprim (mk_prim ~args:[f l; f r] "Pair")
+    | Dpair l      -> Oprim (mk_prim ~args:(List.map f l) "Pair")
     | Dleft v      -> Oprim (mk_prim ~args:[f v] "Left")
     | Dright v     -> Oprim (mk_prim ~args:[f v] "Right")
     | Dsome v      -> Oprim (mk_prim ~args:[f v] "Some")
@@ -1878,7 +1878,7 @@ let rec to_data (o : obj_micheline) : data =
   | Oprim ({prim = "Unit";  _ })              -> Dunit
   | Oprim ({prim = "True";  _ })              -> Dtrue
   | Oprim ({prim = "False"; _ })              -> Dfalse
-  | Oprim ({prim = "Pair";  args = a::b::_ }) -> Dpair  (f a, f b)
+  | Oprim ({prim = "Pair";  args        })    -> Dpair  (List.map f args)
   | Oprim ({prim = "Left";  args = a::_ })    -> Dleft  (f a)
   | Oprim ({prim = "Right"; args = a::_ })    -> Dright (f a)
   | Oprim ({prim = "Some";  args = a::_ })    -> Dsome  (f a)
