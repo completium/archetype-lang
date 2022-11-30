@@ -1,0 +1,17 @@
+# (Pair (Lambda_rec { PUSH int -1; ADD; ISNAT; IF_NONE { DROP; PUSH nat 1 } { DUP; DIP {EXEC}; PUSH nat 1; ADD; MUL } }) 0)
+{
+  storage (pair (lambda %fact nat nat) (nat %res));
+  parameter (unit %e);
+  code { UNPAIR;
+         DIP { UNPAIR 2 };
+         DROP;
+         DUP;
+         PUSH nat 3;
+         EXEC;
+         DIP { DIG 1; DROP };
+         DUG 1;
+         PAIR 2;
+         NIL operation;
+         PAIR };
+}
+

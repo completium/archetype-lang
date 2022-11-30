@@ -255,6 +255,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
       | Oprim ({prim = "RENAME"; _})                         -> T.mk_code T.RENAME
       | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
+      | Oprim ({prim = "MIN_BLOCK_TIME"; _})                 -> T.mk_code T.MIN_BLOCK_TIME
       | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.mk_code (T.SAPLING_EMPTY_STATE (int_of_string n))
       | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
       | Oprim ({prim = "NEVER"; _})                          -> T.mk_code T.NEVER
@@ -1273,6 +1274,7 @@ end = struct
     | Dvar _           -> assert false
     | DIrCode _        -> assert false
     | Dcode _          -> assert false
+    | Dlambda_rec _    -> assert false
 
   let get_storage_list tstorage =
     let rec aux (x : T.type_) =

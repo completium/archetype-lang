@@ -77,6 +77,7 @@ let rec pp_data fmt (d : data) =
   | Dvar (x, _, _)  -> pp "%s" x
   | DIrCode (_id, _c) -> pp "IrCode"
   | Dcode c         -> pp "{ %a }" pp_code c
+  | Dlambda_rec c   -> pp "(Lambda_rec { %a })" pp_code c
 
 and pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in

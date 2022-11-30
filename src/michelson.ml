@@ -88,6 +88,7 @@ type data =
   | Dvar               of ident * type_ * bool
   | DIrCode            of ident * instruction
   | Dcode              of code
+  | Dlambda_rec        of code
 [@@deriving show {with_path = false}]
 
 and code_node =
@@ -1173,6 +1174,7 @@ let map_data (f : data -> data) = function
   | Dvar (c, t, b) -> Dvar (c, t, b)
   | DIrCode (id, c) -> DIrCode (id, c)
   | Dcode c      -> Dcode c
+  | Dlambda_rec c -> Dlambda_rec c
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (x : code) : code =
   let node =
@@ -1629,6 +1631,7 @@ end = struct
       end
     | DIrCode (_id, _c) -> Oarray ([])
     | Dcode c           -> code_to_micheline c
+    | Dlambda_rec c     -> Oprim (mk_prim ~args:[code_to_micheline c] "Lambda_rec")
 
   and code_to_micheline (c : code) : obj_micheline =
     let f = code_to_micheline in
@@ -1882,6 +1885,7 @@ let rec to_data (o : obj_micheline) : data =
   | Oprim ({prim = "None";  _ })              -> Dnone
   | Oarray l                                  -> Dlist (List.map f l)
   | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
+  | Oprim ({prim = "Lambda_rec"; args = _a::_ }) -> Format.eprintf "TODO Lambda_rec"; assert false
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
 
 type micheline_ = Micheline_printer.node
