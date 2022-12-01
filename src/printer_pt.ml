@@ -120,20 +120,20 @@ let pp_id fmt (id : lident) =
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
 
+let pp_id_scope fmt = function
+  | SINone -> ()
+  | SIParent -> Format.fprintf fmt "::"
+  | SIId x -> Format.fprintf fmt "%a::" pp_id x
+
 let rec pp_type fmt (e, a) =
   let f fmt x = pp_type fmt x in
 
   let pp_e fmt e =
     match unloc e with
-    | Tref x ->
+    | Tref (s, x) ->
       Format.fprintf fmt
-        "%a"
-        pp_id x
-
-    | Trefscope (i, x) ->
-      Format.fprintf fmt
-        "%a::%a"
-        (pp_option pp_id) i
+        "%a%a"
+        pp_id_scope s
         pp_id x
 
     | Tcontainer (x, y) ->
@@ -334,15 +334,10 @@ let string_of_scope (s : scope) =
   | Removed -> "removed"
   | Stable  -> "stable"
 
-let pp_scope fmt = function
-  | SINone -> ()
-  | SIParent -> Format.fprintf fmt "::"
-  | SIId x -> Format.fprintf fmt "%a::" pp_id x
-
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm (scope, (vset, lbl), id) ->
+  | Eterm ((vset, lbl), (scope, id)) ->
     let pp_label fmt lbl =
       let s =
         match lbl with
@@ -359,7 +354,7 @@ let rec pp_expr outer pos fmt a =
       in Format.fprintf fmt "%s." s in
 
     Format.fprintf fmt "%a%a%a%a"
-      pp_scope scope
+      pp_id_scope scope
       (pp_option pp_vset ) vset
       (pp_option pp_label) lbl
       pp_id id
@@ -376,29 +371,31 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt (scope, values) =
       Format.fprintf fmt "%a[%a]"
-        pp_scope scope
+        pp_id_scope scope
         (pp_list "; " (pp_expr e_simple PInfix)) values
     in
     (maybe_paren outer e_default pos pp) fmt (scope, values)
 
 
-  | Edot (lhs, rhs) ->
+  | Edot (lhs, (scope, rhs)) ->
 
-    let pp fmt (lhs, rhs) =
-      Format.fprintf fmt "%a.%a"
+    let pp fmt (lhs, (scope, rhs)) =
+      Format.fprintf fmt "%a.%a%a"
         pp_simple_expr lhs
+        pp_id_scope scope
         pp_id rhs
     in
-    (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
+    (maybe_paren outer e_dot pos pp) fmt (lhs, (scope, rhs))
 
-  | Equestiondot (lhs, rhs) ->
+  | Equestiondot (lhs, (scope, rhs)) ->
 
-    let pp fmt (lhs, rhs) =
-      Format.fprintf fmt "%a?.%a"
+    let pp fmt (lhs, (scope, rhs)) =
+      Format.fprintf fmt "%a?.%a%a"
         pp_simple_expr lhs
+        pp_id_scope scope
         pp_id rhs
     in
-    (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
+    (maybe_paren outer e_dot pos pp) fmt (lhs, (scope, rhs))
 
   | Eternary (c, x, y) ->
 
@@ -924,7 +921,7 @@ and pp_fun_args fmt args =
 
 and pp_record_expr_internal fmt (scope, l) =
   Format.fprintf fmt "%a{%a}"
-    pp_scope scope
+    pp_id_scope scope
     (pp_list ";@ " (
         fun fmt (o, e) ->
           Format.fprintf fmt "%a%a"

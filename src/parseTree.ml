@@ -9,7 +9,7 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 type lident = ident loced
 [@@deriving yojson, show {with_path = false}]
 
-and scope_import =
+and id_scope =
   | SINone
   | SIParent
   | SIId of lident
@@ -24,8 +24,7 @@ and container =
   | AssetView
 
 and type_r =
-  | Tref                 of lident
-  | Trefscope            of lident option * lident
+  | Tref                 of (id_scope * lident)
   | Tcontainer           of type_t * container
   | Ttuple               of type_t list
   | Toption              of type_t
@@ -125,13 +124,13 @@ and transfer_t =
   | TToperation of expr
 
 and expr_unloc =
-  | Eterm          of scope_import * (var_vset option * var_label option) * lident
+  | Eterm          of (var_vset option * var_label option) * (id_scope * lident)
   | Eliteral       of literal
-  | Earray         of scope_import * expr list
-  | Erecord        of scope_import * record_item list
+  | Earray         of id_scope * expr list
+  | Erecord        of id_scope * record_item list
   | Etuple         of expr list
-  | Edot           of expr * lident
-  | Equestiondot   of expr * lident
+  | Edot           of expr * (id_scope * lident)
+  | Equestiondot   of expr * (id_scope * lident)
   | Esqapp         of expr * expr
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list
@@ -451,26 +450,26 @@ and archetype = archetype_unloc loced
 
 (* types *)
 
-let tref ?(loc=dummy) ?a vt : type_t = (mkloc loc (Tref (mkloc loc vt))), a
+let tref ?(loc=dummy) ?a vt : type_t = (mkloc loc (Tref (SINone, mkloc loc vt))), a
 
-let tunit      = tref "unit"
-let tstring    = tref "string"
-let tnat       = tref "nat"
-let tint       = tref "int"
-let trational  = tref "rational"
-let tbool      = tref "bool"
-let trole      = tref "role"
-let taddress   = tref "address"
-let tdate      = tref "date"
-let ttez       = tref "tez"
-let tduration  = tref "duration"
-let tsignature = tref "signature"
-let tkey       = tref "key"
-let tkey_hash  = tref "key_hash"
-let tbytes     = tref "bytes"
-let tchain_id  = tref "chain_id"
-let toperation = tref "operation"
-let toperation = tref "operation"
+let tunit         = tref "unit"
+let tstring       = tref "string"
+let tnat          = tref "nat"
+let tint          = tref "int"
+let trational     = tref "rational"
+let tbool         = tref "bool"
+let trole         = tref "role"
+let taddress      = tref "address"
+let tdate         = tref "date"
+let ttez          = tref "tez"
+let tduration     = tref "duration"
+let tsignature    = tref "signature"
+let tkey          = tref "key"
+let tkey_hash     = tref "key_hash"
+let tbytes        = tref "bytes"
+let tchain_id     = tref "chain_id"
+let toperation    = tref "operation"
+let toperation    = tref "operation"
 let tbls12_381_fr = tref "bls12_381_fr"
 let tbls12_381_g1 = tref "bls12_381_g1"
 let tbls12_381_g2 = tref "bls12_381_g2"
@@ -549,7 +548,7 @@ let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)
 let ebytes    v = mk_eliteral (Lbytes v)
 
-let eterm         ?(loc=dummy) ?(s=SINone) ?temp ?delta id = mkloc loc (Eterm (s, (delta, temp), id))
+let eterm         ?(loc=dummy) ?(s=SINone) ?temp ?delta id = mkloc loc (Eterm ((delta, temp), (s, id)))
 let earray        ?(loc=dummy) ?(s=SINone) l               = mkloc loc (Earray (s, l))
 let erecord       ?(loc=dummy) ?(s=SINone) rl              = mkloc loc (Erecord (s, rl))
 let etuple        ?(loc=dummy) l                  = mkloc loc (Etuple l)

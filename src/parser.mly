@@ -626,8 +626,7 @@ type_r:
 | x=type_s_unloc          { x }
 
 type_s_unloc:
-| x=ident                                                  { Tref x                   }
-| i=ident?      COLONCOLON x=ident                         { Trefscope (i, x)         }
+| s=scope x=ident                                          { Tref (s, x)              }
 | c=container         LESS x=type_t GREATER                { Tcontainer (x, c)        }
 | OPTION              LESS x=type_t GREATER                { Toption x                }
 | LIST                LESS x=type_t GREATER                { Tlist x                  }
@@ -734,6 +733,11 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 | x=loc(PIDENT) { x }
+
+%inline scope:
+ | x=ident COLONCOLON { SIId x }
+ |         COLONCOLON { SIParent }
+ |                    { SINone }
 
 entry:
   ENTRY exts=option(extensions) x=ident
@@ -1082,11 +1086,6 @@ order_operations:
  | LPAREN RPAREN         { [] }
  | LPAREN xs=snl(COMMA, expr) RPAREN  { xs }
 
-%inline scope:
- | x=ident COLONCOLON { SIId x }
- |         COLONCOLON { SIParent }
- |                    { SINone }
-
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
 
@@ -1103,8 +1102,8 @@ simple_expr_r:
  | id=get_typed_id LESS ts=snl(COMMA, type_t) GREATER a=app_args
      { Eappt ( Fident id, ts, a) }
 
- | x=simple_expr DOT y=ident
-     { Edot (x, y) }
+ | x=simple_expr DOT s=scope y=ident
+     { Edot (x, (s, y)) }
 
  | i=simple_expr LBRACKET e=expr RBRACKET
      { Esqapp (i, e) }
@@ -1112,8 +1111,8 @@ simple_expr_r:
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
 
- | x=simple_expr QUESTIONDOT y=ident
-     { Equestiondot (x, y) }
+ | x=simple_expr QUESTIONDOT s=scope y=ident
+     { Equestiondot (x, (s, y)) }
 
  | s=scope LBRACKET RBRACKET
      { Earray (s, []) }
@@ -1131,7 +1130,7 @@ simple_expr_r:
      { Eliteral x }
 
  | s=scope vt=vt x=ident
-     { Eterm (s, vt, x) }
+     { Eterm (vt, (s, x)) }
 
  | SOME x=paren(simple_expr)
      { Eoption (OSome x) }

@@ -118,6 +118,7 @@ module Option : sig
   val none        : 'a option
   val some        : 'a -> 'a option
 
+  val to_list     : 'a option -> 'a list
   val get         : 'a option -> 'a
   val get_all     : ('a option) list -> 'a list option
   val get_exn     : exn -> 'a option -> 'a
@@ -147,6 +148,9 @@ end = struct
 
   let some =
     fun x -> Some x
+
+  let to_list =
+    function None -> [] | Some x -> [x]
 
   let get =
     function None -> raise No_value | Some e -> e
