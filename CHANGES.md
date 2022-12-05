@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - add `min_block_time` constant
+  - Add `min_block_time` constant
 ### Changed
-  - Improve type-checking
+  - Improve type-checking (e.g. can now use named composite types in contract parameter)
   - `pair` is now n-ary (instead of binary right comb)
 
 ## [1.3.6] - 2022-11-24
