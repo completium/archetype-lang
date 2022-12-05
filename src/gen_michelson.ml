@@ -83,11 +83,6 @@ let to_one_type_or (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu
 
 let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair [x; accu])) l
 
-let to_one_gen init f l =
-  match List.rev l with
-  | [] -> init
-  | i::q -> List.fold_left (fun accu x -> f x accu) i q
-
 let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   let to_type = to_type model in
   let annotation =
