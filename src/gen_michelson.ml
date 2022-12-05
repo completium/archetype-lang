@@ -77,11 +77,17 @@ let to_one_gen init f l =
   | [] -> init
   | i::q -> List.fold_left (fun accu x -> f x accu) i q
 
-let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair [x; accu]))) l
-
 let to_one_type_or (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tor (x, accu)))) l
 
-let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair [x; accu])) l
+let to_one_nary_gen init f l =
+  match l with
+  | [] -> init
+  | [v] -> v
+  | _ -> f l
+
+let to_one_type (l : T.type_ list) : T.type_ = to_one_nary_gen T.tunit (fun x -> (T.tpair x)) l
+
+let to_one_data (l : T.data list) : T.data = to_one_nary_gen T.Dunit (fun x -> (T.Dpair x)) l
 
 let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   let to_type = to_type model in
