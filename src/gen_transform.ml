@@ -3702,10 +3702,20 @@ let remove_storage_field_in_function (model : model) : model =
   let extract_storage_var map (fs : function_struct) : mterm * (argument list * mterm list MapString.t) =
     let fs_name = unloc_mident fs.name in
 
+    let is_not_constant (model : model) (id : mident) =
+      let ovar = Utils.get_var_opt model (unloc_mident id) in
+      let cst =
+        match ovar with
+        | Some dvar -> (match dvar.kind with | VKconstant -> true | _ -> false)
+        | None -> false
+      in
+      not cst
+    in
+
     let rec aux (accu, map) (mt : mterm) : mterm * (argument list * mterm list MapString.t) =
       let g (x : mterm__node) : mterm = { mt with node = x; } in
       match mt.node with
-      | Mvar (id, (Vstorecol | Vstorevar), d, t) -> begin
+      | Mvar (id, (Vstorecol | Vstorevar), d, t) when is_not_constant model id -> begin
           let a =
             if List.exists (fun (c, _, _) -> String.equal (unloc_mident id) (unloc_mident c) ) accu
             then accu, map
