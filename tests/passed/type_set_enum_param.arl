@@ -1,0 +1,9 @@
+archetype type_set_enum_param
+
+enum e_enum = | e_1 | e_2<nat> | e_3<string> | e_4<bytes * bool>
+
+variable res : set<e_enum> = []
+
+entry set_value(i : set<e_enum>) {
+  res := i
+}

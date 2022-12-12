@@ -1877,7 +1877,7 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Tlist t                  -> Tlist (f t)
   | Toption t                -> Toption (f t)
   | Ttuple l                 -> Ttuple (List.map f l)
-  | Tset k                   -> Tset k
+  | Tset k                   -> Tset (f k)
   | Tmap (k, v)              -> Tmap (f k, f v)
   | Tbig_map (k, v)          -> Tbig_map (f k, f v)
   | Titerable_big_map (k, v) -> Titerable_big_map (f k, f v)
