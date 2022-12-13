@@ -1,0 +1,7 @@
+archetype ascii_string
+
+variable s : string = ""
+
+entry exec() {
+  s := " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{}~"
+}
