@@ -1,10 +1,41 @@
 archetype type_asset_container
 
-asset my_asset {
-  id : nat;
-  v : string;
+/* set --- */
+
+asset my_asset_set {
+  mas_k : nat;
 }
 
-entry exec(k : asset_container<my_asset>) {
+variable mas_res : asset_container<my_asset_set> = []
 
+entry e_mas(input : asset_container<my_asset_set>) {
+  mas_res := input
+}
+
+
+/* map --- */
+
+asset my_asset_map {
+  mam_k : nat;
+  mam_v : string;
+}
+
+variable mam_res : asset_container<my_asset_map> = []
+
+entry e_mam(input : asset_container<my_asset_map>) {
+  mam_res := input
+}
+
+
+/* big_map --- */
+
+asset my_asset_big_map to big_map {
+  mabm_k : nat;
+  mabm_v : string;
+}
+
+variable res_mabm : asset_container<my_asset_big_map> = []
+
+entry e_mabm(input : asset_container<my_asset_big_map>) {
+  res_mabm := input
 }
