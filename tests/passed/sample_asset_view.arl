@@ -1,0 +1,24 @@
+archetype sample_asset_view
+
+asset my_asset {
+  k : nat;
+  v : string
+} initialized with {
+  {0; "zero"};
+  {1; "one"};
+  {2; "two"}
+}
+
+variable res : asset_view<my_asset> = []
+
+entry exec(i : asset_view<my_asset>) {
+  res := i
+}
+
+getter my_getter() : asset_view<my_asset> {
+  return my_asset.select(k % 2 = 0)
+}
+
+view my_view() : asset_view<my_asset> {
+  return my_asset.select(k % 2 = 0)
+}

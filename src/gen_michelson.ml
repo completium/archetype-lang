@@ -177,6 +177,18 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bchest_key    -> T.Tchest_key
       | Btx_rollup_l2_address -> T.Ttx_rollup_l2_address
     end
+  | Tcontainer ((Tasset an, _), View) -> begin
+      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      T.mk_type ?annotation (T.Tlist (to_type ty))
+    end
+  (* | Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> begin
+      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      T.mk_type ?annotation (T.Tset (to_type ty))
+    end
+  | Tcontainer ((Tasset an, _), AssetKey) -> begin
+      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      to_type ty
+    end *)
   | Tcontainer _               -> assert false
   | Tlist t                    -> T.mk_type ?annotation (T.Tlist (to_type t))
   | Toption t                  -> T.mk_type ?annotation (T.Toption (to_type t))
