@@ -611,10 +611,11 @@ let print_version () =
 
 
 let compile_gen input =
-  match !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_contract_interface with
-  | true, _, _ -> get_storage_values input
-  | _, true, _ -> with_parameters input
-  | _, _, true -> contract_interface input
+  match !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with
+  | true, _, _, _ -> get_storage_values input
+  | _, true, _, _ -> with_parameters input
+  | _, _, true, _ -> contract_interface input
+  | _, _, _, true -> show_contract_interface_michelson input
   | _       -> compile input
 
 let compile_from_string input = compile (FIString input)
