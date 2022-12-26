@@ -56,6 +56,8 @@ type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
 }
 
+let remove_annot (t : T.type_) = {t with annotation = None}
+
 let mk_env ?function_p _ =
   { function_p }
 
@@ -184,11 +186,11 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   (* | Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> begin
       let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
       T.mk_type ?annotation (T.Tset (to_type ty))
-    end
-  | Tcontainer ((Tasset an, _), AssetKey) -> begin
+     end
+     | Tcontainer ((Tasset an, _), AssetKey) -> begin
       let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
       to_type ty
-    end *)
+     end *)
   | Tcontainer _               -> assert false
   | Tlist t                    -> T.mk_type ?annotation (T.Tlist (to_type t))
   | Toption t                  -> T.mk_type ?annotation (T.Toption (to_type t))
@@ -196,7 +198,18 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   | Tset t                     -> T.mk_type ?annotation (T.Tset (to_type t))
   | Tmap (k, v)                -> T.mk_type ?annotation (T.Tmap (to_type k, to_type v))
   | Tbig_map (k, v)            -> T.mk_type ?annotation (T.Tbig_map (to_type k, to_type v))
-  | Titerable_big_map (_k, _v) -> assert false
+  | Titerable_big_map (k, v)   -> begin
+      let kt = k |> to_type |> remove_annot in
+      let vt = v |> to_type |> remove_annot in
+      T.mk_type
+        ?annotation
+        (to_one_type
+           [
+             T.mk_type ~annotation:"%values" (Tbig_map (kt, T.mk_type ~annotation:"%values" (T.Tpair [T.mk_type ~annotation:"%index" Tnat; T.mk_type ~annotation:"%value" vt.node])));
+             T.mk_type ~annotation:"%keys" (Tbig_map (T.tnat, kt));
+             T.mk_type ~annotation:"%size" Tnat
+           ] |> fun x -> x.node)
+    end
   | Tor (l, r)                 -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
   | Trecord id                 -> let t = process_record M.Utils.get_record (snd id) in T.mk_type ?annotation t.node
   | Tevent id                  -> let t = process_record M.Utils.get_event (snd id) in T.mk_type ?annotation t.node
@@ -256,8 +269,6 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | _ -> None
 
 let to_ir (model : M.model) : T.ir =
-
-  let remove_annot (t : T.type_) = {t with annotation = None} in
 
   let builtins = ref [] in
 
