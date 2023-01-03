@@ -255,9 +255,12 @@ type storage_value = {
 type storage_values = storage_value list
 [@@deriving yojson, show {with_path = false}]
 
+let replace_code (_model : Model.model) (data : T.data) : T.data =
+  Gen_michelson.process_data data
+
 let get_storage_values (model : Model.model) =
   let ir = Gen_michelson.to_ir model in
-  let storage_values : storage_values = List.map (fun (id, _, v) -> {id = id; value = Format.asprintf "%a" Printer_michelson.pp_data v}) ir.storage_list in
+  let storage_values : storage_values = List.map (fun (id, _, v) -> {id = id; value = Format.asprintf "%a" Printer_michelson.pp_data (replace_code model v)}) ir.storage_list in
   Yojson.Safe.to_string (storage_values_to_yojson storage_values)
 
 let generate_contract_metadata ?(only_views=false) (model : Model.model) offchain_views =
