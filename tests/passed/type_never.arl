@@ -1,0 +1,3 @@
+archetype type_never
+
+variable res : or<never, nat> = right<never>(1)
