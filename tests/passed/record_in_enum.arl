@@ -1,18 +1,28 @@
 archetype record_in_enum
 
-enum myenum =
-| abc <nat>
-| xyz <nat>
-
-record myrec {
-  f : myenum;
-  g : nat;
+record myrecord {
+  a : nat;
+  b : string;
 }
 
-variable r : myenum = abc(1)
-variable z : nat = 0
+enum myenum =
+| abc <myrecord>
+| xyz <myrecord>
 
+variable res : nat = 0
 
-entry exec (a : list<myrec>) {
-
+entry exec () {
+  specification {
+    s0: res = 10;
+  }
+  effect {
+  const l : list<myenum> = [abc({a = 1; b = "abc"}); xyz({a = 2; b = "wxyz"})];
+  res := 0;
+  for i in l do
+    match i with
+    | abc(x) -> res += x.a + length(x.b)
+    | xyz(x) -> res += x.a + length(x.b)
+    end
+  done
+  }
 }
