@@ -1,3 +1,0 @@
-archetype invalid_ratinal_literal
-
-variable r : rational = 2 / 0
