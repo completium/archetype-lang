@@ -4,9 +4,9 @@ variable res : int = 0
 
 entry exec() {
   specification {
-    s0: res = -6
+    s0: res = -8
   }
   effect {
-    res := not 5i;
+    res := not 7i;
   }
 }
