@@ -1,0 +1,12 @@
+archetype not_nat
+
+variable res : int = 0
+
+entry exec() {
+  specification {
+    s0: res = -6
+  }
+  effect {
+    res := not 5i;
+  }
+}
