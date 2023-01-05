@@ -1,4 +1,4 @@
-archetype not_nat
+archetype not_int
 
 variable res : int = 0
 
