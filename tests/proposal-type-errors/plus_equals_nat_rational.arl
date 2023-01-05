@@ -1,0 +1,7 @@
+archetype plus_equals_nat_rational
+
+variable s : nat = 0
+
+entry exec (r : rational) {
+  s += r
+}
