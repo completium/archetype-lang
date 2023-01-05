@@ -1,0 +1,9 @@
+archetype init_forbidden_value
+
+variable result : bytes = pack(0)
+
+entry set_result(n : nat) {
+   effect {
+      result := pack(n)
+   }
+}
