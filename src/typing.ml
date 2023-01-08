@@ -1279,6 +1279,9 @@ let opsigs =
       PT.Arith PT.DivRat , ([A.VTcurrency; A.VTcurrency      ], A.VTrational)  ;
       PT.Arith PT.Modulo , ([A.VTcurrency; A.VTcurrency      ], A.VTcurrency)  ;
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
+      PT.Logical PT.And  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Logical PT.And  , ([A.VTint     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Logical PT.Or   , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
       PT.Logical PT.Xor  , ([A.VTbool    ; A.VTbool          ], A.VTbool    )  ;
       PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
       PT.Unary PT.Not    , ([A.VTnat                         ], A.VTint     )  ;
