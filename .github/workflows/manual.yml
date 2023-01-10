@@ -10,10 +10,15 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
   # This workflow contains a single job called "greet"
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ocaml-version: [4.10.2]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -22,7 +27,7 @@ jobs:
     # - run: sudo apt-get -y update
     - run: sudo apt-get -y install opam ocaml-nox
     # Initialize the switch.
-    - run: opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
+    - run: opam init -a --disable-sandboxing --compiler="${{ matrix.ocaml-version }}"
     - run: opam update
     - run: opam install depext
     - run: opam pin add -n archetype .
