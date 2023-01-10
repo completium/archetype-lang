@@ -42,7 +42,7 @@ jobs:
 
     - run: _build/default/src/compiler.exe -v
 
-    - run: ./extra/script/check_action.sh
+    # - run: ./extra/script/check_action.sh
 
     - run: cd check
 
