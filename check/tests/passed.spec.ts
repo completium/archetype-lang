@@ -1,6 +1,6 @@
 import { get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
-import { Address, Nat } from '@completium/archetype-ts-types';
+import { Address, Int, Nat } from '@completium/archetype-ts-types';
 
 import * as add_update_record from '../bindings/passed/add_update_record'
 import * as addupdate_partition from '../bindings/passed/addupdate_partition'
@@ -1302,28 +1302,27 @@ describe('Tests', async () => {
       // assert(my_asset_exec2[0][1].c.equals(new Nat(1)), "Invalid Value")
     })
 
-    // TODO
     it('annot_enum', async () => {
       await annot_enum.annot_enum.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await annot_enum.annot_enum.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await annot_enum.annot_enum.exec({ as: alice })
-      //      const res_after = await annot_enum.annot_enum.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const r_0 = await annot_enum.annot_enum.get_r()
+      assert(r_0.equals(new annot_enum.abc(new Nat(1))), "Invalid Value")
+      const z_0 = await annot_enum.annot_enum.get_z()
+      assert(z_0.equals(new Nat(0)), "Invalid Value")
+      await annot_enum.annot_enum.exec([], { as: alice })
+      const r_exec = await annot_enum.annot_enum.get_r()
+      assert(r_exec.equals(new annot_enum.abc(new Nat(1))), "Invalid Value")
+      const z_exec = await annot_enum.annot_enum.get_z()
+      assert(z_exec.equals(new Nat(0)), "Invalid Value")
     })
 
-    // TODO
     it('apply_lambda', async () => {
       await apply_lambda.apply_lambda.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await apply_lambda.apply_lambda.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await apply_lambda.apply_lambda.exec({ as: alice })
-      //      const res_after = await apply_lambda.apply_lambda.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_0 = await apply_lambda.apply_lambda.get_res();
+      assert(res_0.equals(new Int(0)), "Invalid Value")
+      await apply_lambda.apply_lambda.exec({ as: alice })
+      const res_exec = await apply_lambda.apply_lambda.get_res();
+      console.log(res_exec.toString())
+      assert(res_exec.equals(new Int(6)), "Invalid Value")
     })
 
     // TODO
