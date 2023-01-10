@@ -28,7 +28,7 @@ jobs:
 
     - run: sudo add-apt-repository ppa:serokell/tezos && sudo apt-get update
 
-    - run: sudo apt-get install -y apt-transport-https octez-client
+    - run: sudo apt-get install -y apt-transport-https tezoz-client
 
     # Runs a single command using the runners shell
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
@@ -39,3 +39,5 @@ jobs:
     - run: opam install . --deps-only --with-test
 
     - run: opam exec -- dune build
+
+    - run: ./extra/script/check_mockup.sh

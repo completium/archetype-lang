@@ -2,7 +2,7 @@
 
 TEZ_ADDRESS=tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx
 
-BIN_OCTEZ_CLIENT=octez-client
+BIN_OCTEZ_CLIENT=tezos-client
 BIN_ARCHETYPE="./archetype.exe --set-caller-init=$TEZ_ADDRESS"
 
 # PROTOCOL=PtKathmankSpLLDALzWw7CGD2j2MtyveTwboEYokqUCP4a1LxMg
