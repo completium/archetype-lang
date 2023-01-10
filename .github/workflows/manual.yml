@@ -44,22 +44,33 @@ jobs:
 
     # - run: ./extra/script/check_action.sh
 
-    - run: cd check
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
+      working-directory: ./check
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
-    - run: npm ci
+    - name: install
+      working-directory: ./check
+      run: npm ci
 
-    - run: npm run init
+    - name: init
+      working-directory: ./check
+      run: npm run init
 
-    - run: npm run set_binary
+    - name: set_binary
+      working-directory: ./check
+      run: npm run set_binary
 
-    - run: npm run show_archetype_version
+    - name: show_archetype_version
+      working-directory: ./check
+      run: npm run show_archetype_version
 
-    - run: npm run mockup_init
+    - name: mockup_init
+      working-directory: ./check
+      run: npm run mockup init
 
-    - run: npm test
+    - name: test
+      working-directory: ./check
+      run: npm test
