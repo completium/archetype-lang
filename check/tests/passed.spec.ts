@@ -11769,18 +11769,6 @@ describe('Tests', async () => {
     })
 
     // TODO
-    it('test', async () => {
-      await test.test.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await test.test.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await test.test.exec({ as: alice })
-      //      const res_after = await test.test.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
-    })
-
-    // TODO
     it('test_add_asset2_with_partition', async () => {
       await test_add_asset2_with_partition.test_add_asset2_with_partition.deploy({ as: alice })
       //      const before_expected = new Nat(0)
@@ -14072,29 +14060,29 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // TODO
-    it('timelock', async () => {
-      await timelock.timelock.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await timelock.timelock.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await timelock.timelock.exec({ as: alice })
-      //      const res_after = await timelock.timelock.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
-    })
+    // // TODO
+    // it('timelock', async () => {
+    //   await timelock.timelock.deploy({ as: alice })
+    //   //      const before_expected = new Nat(0)
+    //   //      const after_expected = new Nat(1)
+    //   //      const res_before = await timelock.timelock.get_res();
+    //   //      assert(res_before.equals(before_expected), "Invalid Value")
+    //   //      await timelock.timelock.exec({ as: alice })
+    //   //      const res_after = await timelock.timelock.get_res();
+    //   //      assert(res_after.equals(after_expected), "Invalid Value")
+    // })
 
-    // TODO
-    it('timelock_var', async () => {
-      await timelock_var.timelock_var.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await timelock_var.timelock_var.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await timelock_var.timelock_var.exec({ as: alice })
-      //      const res_after = await timelock_var.timelock_var.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
-    })
+    // // TODO
+    // it('timelock_var', async () => {
+    //   await timelock_var.timelock_var.deploy({ as: alice })
+    //   //      const before_expected = new Nat(0)
+    //   //      const after_expected = new Nat(1)
+    //   //      const res_before = await timelock_var.timelock_var.get_res();
+    //   //      assert(res_before.equals(before_expected), "Invalid Value")
+    //   //      await timelock_var.timelock_var.exec({ as: alice })
+    //   //      const res_after = await timelock_var.timelock_var.get_res();
+    //   //      assert(res_after.equals(after_expected), "Invalid Value")
+    // })
 
     // TODO
     it('transfer_call', async () => {
