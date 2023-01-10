@@ -24,8 +24,8 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - run: sudo add-apt-repository -y ppa:avsm/ppa
-    - run: sudo apt-get -y update
-    - run: sudo apt-get -y install opam ocaml-nox
+    - run: sudo apt -y update
+    - run: sudo apt -y install opam ocaml-nox
     # Initialize the switch.
     - run: opam init -a --disable-sandboxing --compiler="${{ matrix.ocaml-version }}"
     - run: opam update
