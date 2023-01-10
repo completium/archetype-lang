@@ -9,5 +9,5 @@ asset my_asset {
 entry exec() {
   // var z = (0, caller);
   var z = caller;
-  my_asset.update(z, { b += 2 });
+  my_asset.add_update(z, { b += 2 });
 }

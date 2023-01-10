@@ -1,6 +1,6 @@
 import { get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
-import { Address, Int, Nat, Tez } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Nat, Option, Tez } from '@completium/archetype-ts-types';
 
 import * as add_update_record from '../bindings/passed/add_update_record'
 import * as addupdate_partition from '../bindings/passed/addupdate_partition'
@@ -880,7 +880,6 @@ import * as tern_bool_false from '../bindings/passed/tern_bool_false'
 import * as tern_bool_true from '../bindings/passed/tern_bool_true'
 import * as tern_opt from '../bindings/passed/tern_opt'
 import * as tern_opt_3 from '../bindings/passed/tern_opt_3'
-import * as test from '../bindings/passed/test'
 import * as test_add_asset2_with_partition from '../bindings/passed/test_add_asset2_with_partition'
 import * as test_add_asset_with_aggregate from '../bindings/passed/test_add_asset_with_aggregate'
 import * as test_add_asset_with_both from '../bindings/passed/test_add_asset_with_both'
@@ -1344,88 +1343,120 @@ describe('Tests', async () => {
       assert(bob_balance_before.plus(new Tez(1)).equals(bob_balance_after), "Invalid Value")
     })
 
-    // TODO
     it('ascii_string', async () => {
       await ascii_string.ascii_string.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await ascii_string.ascii_string.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await ascii_string.ascii_string.exec({ as: alice })
-      //      const res_after = await ascii_string.ascii_string.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const s_before = await ascii_string.ascii_string.get_s()
+      assert(s_before == "", "Invalid Value")
+      await ascii_string.ascii_string.exec({ as: alice })
+      const s_after = await ascii_string.ascii_string.get_s();
+      assert(s_after == " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{}~", "Invalid Value")
     })
 
-    // TODO
     it('asset_access', async () => {
       await asset_access.asset_access.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_access.asset_access.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_access.asset_access.exec({ as: alice })
-      //      const res_after = await asset_access.asset_access.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_access.asset_access.get_my_asset()
+      assert(my_asset_before.length == 1, "Invalid Value")
+      assert(my_asset_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_before[0][1].b == "mystr", "Invalid Value")
+      assert(my_asset_before[0][1].c.equals(new Bytes("02")), "Invalid Value")
+      const x_before = await asset_access.asset_access.get_x()
+      assert(x_before.equals(new Bytes("")), "Invalid Value")
+      const y_before = await asset_access.asset_access.get_y()
+      assert(y_before.equals(Option.None<Bytes>()), "Invalid Value")
+      const z_before = await asset_access.asset_access.get_z()
+      assert(z_before.equals(new Bytes("")), "Invalid Value")
+      await asset_access.asset_access.get_value({ as: alice })
+      const my_asset_after = await asset_access.asset_access.get_my_asset()
+      assert(my_asset_after.length == 1, "Invalid Value")
+      assert(my_asset_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_after[0][1].b == "mystr", "Invalid Value")
+      assert(my_asset_after[0][1].c.equals(new Bytes("02")), "Invalid Value")
+      const x_after = await asset_access.asset_access.get_x()
+      assert(x_after.equals(new Bytes("")), "Invalid Value")
+      const y_after = await asset_access.asset_access.get_y()
+      assert(y_after.equals(Option.Some(new Bytes("02"))), "Invalid Value")
+      const z_after = await asset_access.asset_access.get_z()
+      assert(z_after.equals(new Bytes("02")), "Invalid Value")
     })
 
-    // TODO
     it('asset_access_basic', async () => {
       await asset_access_basic.asset_access_basic.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_access_basic.asset_access_basic.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_access_basic.asset_access_basic.exec({ as: alice })
-      //      const res_after = await asset_access_basic.asset_access_basic.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const abc_before = await asset_access_basic.asset_access_basic.get_abc()
+      assert(abc_before.length == 1, "Invalid Value")
+      assert(abc_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_before[0][1].b == "mystr", "Invalid Value")
+      assert(abc_before[0][1].c.equals(new Bytes("")), "Invalid Value")
+      await asset_access_basic.asset_access_basic.get_value({ as: alice })
+      const abc_after = await asset_access_basic.asset_access_basic.get_abc()
+      assert(abc_after.length == 1, "Invalid Value")
+      assert(abc_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_after[0][1].b == "mystr", "Invalid Value")
+      assert(abc_after[0][1].c.equals(new Bytes("")), "Invalid Value")
     })
 
-    // TODO
     it('asset_access_option_found', async () => {
       await asset_access_option_found.asset_access_option_found.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_access_option_found.asset_access_option_found.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_access_option_found.asset_access_option_found.exec({ as: alice })
-      //      const res_after = await asset_access_option_found.asset_access_option_found.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const abc_before = await asset_access_option_found.asset_access_option_found.get_abc()
+      assert(abc_before.length == 1, "Invalid Value")
+      assert(abc_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_before[0][1].b == "mystr", "Invalid Value")
+      assert(abc_before[0][1].c.equals(new Bytes("")), "Invalid Value")
+      const res_before = await asset_access_option_found.asset_access_option_found.get_res()
+      assert(res_before.equals(Option.None<string>()), "Invalid Value")
+      await asset_access_option_found.asset_access_option_found.get_value({ as: alice })
+      const abc_after = await asset_access_option_found.asset_access_option_found.get_abc()
+      assert(abc_after.length == 1, "Invalid Value")
+      assert(abc_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_after[0][1].b == "mystr", "Invalid Value")
+      assert(abc_after[0][1].c.equals(new Bytes("")), "Invalid Value")
+      const res_after = await asset_access_option_found.asset_access_option_found.get_res()
+      assert(res_after.equals(Option.Some<string>("mystr")), "Invalid Value")
     })
 
-    // TODO
     it('asset_access_option_not_found', async () => {
       await asset_access_option_not_found.asset_access_option_not_found.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_access_option_not_found.asset_access_option_not_found.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_access_option_not_found.asset_access_option_not_found.exec({ as: alice })
-      //      const res_after = await asset_access_option_not_found.asset_access_option_not_found.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const abc_before = await asset_access_option_not_found.asset_access_option_not_found.get_abc()
+      assert(abc_before.length == 1, "Invalid Value")
+      assert(abc_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_before[0][1].b == "mystr", "Invalid Value")
+      assert(abc_before[0][1].c.equals(new Bytes("")), "Invalid Value")
+      const res_before = await asset_access_option_not_found.asset_access_option_not_found.get_res()
+      assert(res_before.equals(Option.None<string>()), "Invalid Value")
+      await asset_access_option_not_found.asset_access_option_not_found.get_value({ as: alice })
+      const abc_after = await asset_access_option_not_found.asset_access_option_not_found.get_abc()
+      assert(abc_after.length == 1, "Invalid Value")
+      assert(abc_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_after[0][1].b == "mystr", "Invalid Value")
+      assert(abc_after[0][1].c.equals(new Bytes("")), "Invalid Value")
+      const res_after = await asset_access_option_not_found.asset_access_option_not_found.get_res()
+      assert(res_after.equals(Option.None<string>()), "Invalid Value")
     })
 
-    // TODO
     it('asset_access_value', async () => {
       await asset_access_value.asset_access_value.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_access_value.asset_access_value.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_access_value.asset_access_value.exec({ as: alice })
-      //      const res_after = await asset_access_value.asset_access_value.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const abc_before = await asset_access_value.asset_access_value.get_abc()
+      assert(abc_before.length == 1, "Invalid Value")
+      assert(abc_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_before[0][1].b == "mystr", "Invalid Value")
+      assert(abc_before[0][1].c.equals(new Bytes("")), "Invalid Value")
+      await asset_access_value.asset_access_value.get_value({ as: alice })
+      const abc_after = await asset_access_value.asset_access_value.get_abc()
+      assert(abc_after.length == 1, "Invalid Value")
+      assert(abc_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(abc_after[0][1].b == "mystr", "Invalid Value")
+      assert(abc_after[0][1].c.equals(new Bytes("")), "Invalid Value")
     })
 
-    // TODO
     it('asset_addupdate', async () => {
       await asset_addupdate.asset_addupdate.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_addupdate.asset_addupdate.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_addupdate.asset_addupdate.exec({ as: alice })
-      //      const res_after = await asset_addupdate.asset_addupdate.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_addupdate.asset_addupdate.get_my_asset()
+      assert(my_asset_before.length == 0, "Invalid Value")
+      await asset_addupdate.asset_addupdate.exec({ as: alice })
+      const my_asset_after = await asset_addupdate.asset_addupdate.get_my_asset()
+      assert(my_asset_after.length == 1, "Invalid Value")
+      assert(my_asset_after[0][0].equals(alice.get_address()), "Invalid Value")
+      assert(my_asset_after[0][1].b.equals(new Nat(2)), "Invalid Value")
+      assert(my_asset_after[0][1].c.equals(new Nat(0)), "Invalid Value")
     })
 
     // TODO
