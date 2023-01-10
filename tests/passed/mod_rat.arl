@@ -1,0 +1,14 @@
+archetype mod_rat
+
+function mod_rational(x : rational, y : rational) : rational {
+  const d = x / y;
+  const q : int = d > 0 ? floor(d) : ceil(d);
+  const r : rational = x - q * y;
+  return r
+}
+
+variable res : rational = 0.0
+
+entry exec(i : rational, j : rational) {
+  res := mod_rational(i, j)
+}

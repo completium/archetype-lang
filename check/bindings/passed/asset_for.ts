@@ -46,7 +46,14 @@ export class Asset_for {
     async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map(storage, (x, y) => [att.Nat.from_mich(x), att.mich_to_string(y)]);
+            return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Nat.from_mich(x), att.mich_to_string(y)]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res(): Promise<string> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_string((storage as att.Mpair).args[1]);
         }
         throw new Error("Contract not initialised");
     }

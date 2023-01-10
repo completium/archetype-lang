@@ -723,6 +723,7 @@ import * as match_entrypoint from '../bindings/passed/match_entrypoint'
 import * as max_tez from '../bindings/passed/max_tez'
 import * as method_in_dorequire_or_dofailif from '../bindings/passed/method_in_dorequire_or_dofailif'
 import * as miles_with_expiration_spec from '../bindings/passed/miles_with_expiration_spec'
+import * as mod_rat from '../bindings/passed/mod_rat'
 import * as multi_e from '../bindings/passed/multi_e'
 import * as multi_p from '../bindings/passed/multi_p'
 import * as multi_sort from '../bindings/passed/multi_sort'
@@ -1459,112 +1460,178 @@ describe('Tests', async () => {
       assert(my_asset_after[0][1].c.equals(new Nat(0)), "Invalid Value")
     })
 
-    // TODO
     it('asset_big_map', async () => {
       await asset_big_map.asset_big_map.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map.asset_big_map.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map.asset_big_map.exec({ as: alice })
-      //      const res_after = await asset_big_map.asset_big_map.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map.asset_big_map.get_my_asset_value("id0")
+      assert(id0_my_asset_before?.value.equals(new Int(0)), "Invalid Value")
+      assert(id0_my_asset_before?.col.length == 0, "Invalid Value")
+      const id1_my_asset_before = await asset_big_map.asset_big_map.get_my_asset_value("id1")
+      assert(id1_my_asset_before?.value.equals(new Int(1)), "Invalid Value")
+      assert(id1_my_asset_before?.col.length == 0, "Invalid Value")
+      const id2_my_asset_before = await asset_big_map.asset_big_map.get_my_asset_value("id2")
+      assert(id2_my_asset_before?.value.equals(new Int(2)), "Invalid Value")
+      assert(id2_my_asset_before?.col.length == 0, "Invalid Value")
+      await asset_big_map.asset_big_map.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map.asset_big_map.get_my_asset_value("id0")
+      assert(id0_my_asset_after?.value.equals(new Int(0)), "Invalid Value")
+      assert(id0_my_asset_after?.col.length == 0, "Invalid Value")
+      const id1_my_asset_after = await asset_big_map.asset_big_map.get_my_asset_value("id1")
+      assert(id1_my_asset_after?.value.equals(new Int(1)), "Invalid Value")
+      assert(id1_my_asset_after?.col.length == 0, "Invalid Value")
+      const id2_my_asset_after = await asset_big_map.asset_big_map.get_my_asset_value("id2")
+      assert(id2_my_asset_after?.value.equals(new Int(2)), "Invalid Value")
+      assert(id2_my_asset_after?.col.length == 0, "Invalid Value")
     })
 
-    // TODO
     it('asset_big_map_unit_effect_add', async () => {
       await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after !== undefined)
+      const id1_my_asset_after = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after !== undefined)
+      const id2_my_asset_after = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after !== undefined)
+      const id3_my_asset_after = await asset_big_map_unit_effect_add.asset_big_map_unit_effect_add.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_after !== undefined)
     })
 
-    // TODO
     it('asset_big_map_unit_effect_addupdate', async () => {
       await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after !== undefined)
+      const id1_my_asset_after = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after !== undefined)
+      const id2_my_asset_after = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after !== undefined)
+      const id3_my_asset_after = await asset_big_map_unit_effect_addupdate.asset_big_map_unit_effect_addupdate.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_after !== undefined)
     })
 
-    // TODO
     it('asset_big_map_unit_effect_remove', async () => {
       await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after !== undefined)
+      const id1_my_asset_after = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after !== undefined)
+      const id2_my_asset_after = await asset_big_map_unit_effect_remove.asset_big_map_unit_effect_remove.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after === undefined)
     })
 
-    // TODO
     it('asset_big_map_unit_effect_removeall', async () => {
       await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after === undefined)
+      const id1_my_asset_after = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after === undefined)
+      const id2_my_asset_after = await asset_big_map_unit_effect_removeall.asset_big_map_unit_effect_removeall.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after === undefined)
     })
 
-    // TODO
     it('asset_big_map_unit_effect_update', async () => {
       await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after !== undefined)
+      const id1_my_asset_after = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after !== undefined)
+      const id2_my_asset_after = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after !== undefined)
+      const id3_my_asset_after = await asset_big_map_unit_effect_update.asset_big_map_unit_effect_update.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_after === undefined)
     })
 
-    // TODO
     it('asset_big_map_unit_expression_contains', async () => {
       await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
+      const res_before = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_res();
+      assert(res_before == false)
+      await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.exec({ as: alice })
+      const id0_my_asset_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_after !== undefined)
+      const id1_my_asset_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_after !== undefined)
+      const id2_my_asset_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_after !== undefined)
+      const id3_my_asset_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_after === undefined)
+      const res_after = await asset_big_map_unit_expression_contains.asset_big_map_unit_expression_contains.get_res();
+      assert(res_after == true)
     })
 
-    // TODO
     it('asset_big_map_unit_storage', async () => {
       await asset_big_map_unit_storage.asset_big_map_unit_storage.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_big_map_unit_storage.asset_big_map_unit_storage.exec({ as: alice })
-      //      const res_after = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const id0_my_asset_before = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_my_asset_value(new Nat(0))
+      assert(id0_my_asset_before !== undefined)
+      const id1_my_asset_before = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_my_asset_value(new Nat(1))
+      assert(id1_my_asset_before !== undefined)
+      const id2_my_asset_before = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_my_asset_value(new Nat(2))
+      assert(id2_my_asset_before !== undefined)
+      const id3_my_asset_before = await asset_big_map_unit_storage.asset_big_map_unit_storage.get_my_asset_value(new Nat(3))
+      assert(id3_my_asset_before === undefined)
     })
 
-    // TODO
     it('asset_for', async () => {
       await asset_for.asset_for.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_for.asset_for.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_for.asset_for.exec({ as: alice })
-      //      const res_after = await asset_for.asset_for.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_for.asset_for.get_my_asset()
+      assert(my_asset_before.length == 3, "Invalid Value")
+      const res_before = await asset_for.asset_for.get_res()
+      assert(res_before === "", "Invalid Value")
+      await asset_for.asset_for.exec({ as: alice })
+      const my_asset_after = await asset_for.asset_for.get_my_asset()
+      assert(my_asset_after.length == 3, "Invalid Value")
+      const res_after = await asset_for.asset_for.get_res()
+      assert(res_after === "mystr_0mystr_1mystr_2", "Invalid Value")
     })
 
     // TODO
@@ -9916,6 +9983,11 @@ describe('Tests', async () => {
       //      await miles_with_expiration_spec.miles_with_expiration_spec.exec({ as: alice })
       //      const res_after = await miles_with_expiration_spec.miles_with_expiration_spec.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('mod_rat', async () => {
+      await mod_rat.mod_rat.deploy({ as: alice })
     })
 
     // TODO

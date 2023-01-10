@@ -16,21 +16,24 @@ asset my_asset to big_map {
 }
 
 entry exec () {
-    var my_asset_id = "id0";
+    const my_asset_id = "id3";
 
     my_asset.add({ id = my_asset_id; value = 0; col = [] });
-    my_asset.remove(my_asset_id);
 
     my_asset.update(my_asset_id, {value += 2});
     my_asset.add_update(my_asset_id, {value += 3});
 
-    my_asset[my_asset_id].col.add({ 0; "ovalue" });
-    my_asset[my_asset_id].col.remove(0);
+    my_asset.remove(my_asset_id);
 
-    var v = my_asset[my_asset_id].value;
+    const my_asset_id0 = "id0";
+
+    my_asset[my_asset_id0].col.add({ 0; "ovalue" });
+    my_asset[my_asset_id0].col.remove(0);
+
+    const v = my_asset[my_asset_id0].value;
 
     do_require(v = 0i, "ko");
 
-    var b = my_asset.contains(my_asset_id);
+    const b = my_asset.contains(my_asset_id0);
     do_require(b, "ko")
 }

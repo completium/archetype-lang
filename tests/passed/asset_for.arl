@@ -9,8 +9,11 @@ asset my_asset {
   { 2; "mystr_2" }
 }
 
+variable res : string = ""
+
 entry exec () {
+  res := "";
   for k in my_asset do
-   var a : string = my_asset[k].v;
+   res += my_asset[k].v;
   done
 }
