@@ -1,4 +1,4 @@
-archetype expr_mk_set
+archetype expr_make_set
 
 variable res : set<nat> = []
 

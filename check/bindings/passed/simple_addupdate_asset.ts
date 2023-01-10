@@ -35,7 +35,7 @@ const update_arg_to_mich = (idToChange: att.Nat, newValue1: att.Nat, newValue2: 
         att.string_to_mich(newValue2)
     ]);
 }
-export class Simple_add_update_asset {
+export class Simple_addupdate_asset {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -53,7 +53,7 @@ export class Simple_add_update_asset {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/simple_add_update_asset.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/simple_addupdate_asset.arl", {}, params)).address;
         this.address = address;
     }
     async update(idToChange: att.Nat, newValue1: att.Nat, newValue2: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -77,4 +77,4 @@ export class Simple_add_update_asset {
     }
     errors = {};
 }
-export const simple_add_update_asset = new Simple_add_update_asset();
+export const simple_addupdate_asset = new Simple_addupdate_asset();

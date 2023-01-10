@@ -20,7 +20,7 @@ const exec_arg_to_mich = (n: att.Nat, is: string): att.Micheline => {
         att.string_to_mich(is)
     ]);
 }
-export class Test_remove_if_part_1 {
+export class Test_removeif_part_1 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -38,7 +38,7 @@ export class Test_remove_if_part_1 {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_remove_if_part_1.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_removeif_part_1.arl", {}, params)).address;
         this.address = address;
     }
     async exec(n: att.Nat, is: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -69,4 +69,4 @@ export class Test_remove_if_part_1 {
     }
     errors = {};
 }
-export const test_remove_if_part_1 = new Test_remove_if_part_1();
+export const test_removeif_part_1 = new Test_removeif_part_1();

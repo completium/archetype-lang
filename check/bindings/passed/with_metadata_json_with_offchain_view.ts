@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class With_metadata_uri {
+export class With_metadata_json_with_offchain_view {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class With_metadata_uri {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/with_metadata_uri.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/with_metadata_json_with_offchain_view.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -64,4 +64,4 @@ export class With_metadata_uri {
     }
     errors = {};
 }
-export const with_metadata_uri = new With_metadata_uri();
+export const with_metadata_json_with_offchain_view = new With_metadata_json_with_offchain_view();

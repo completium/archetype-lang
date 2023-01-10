@@ -1,4 +1,4 @@
-archetype select_partition_to_big_map
+archetype select_partition_big_map
 
 asset o_asset to big_map {
   oid : string;

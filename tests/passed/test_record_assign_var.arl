@@ -1,4 +1,4 @@
-archetype test_record_assign_4
+archetype test_record_assign_var
 
 record my_record {
   id : string;

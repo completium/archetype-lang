@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Test_list_mynth2 {
+export class Test_list_mynth3 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Test_list_mynth2 {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_list_mynth2.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_list_mynth3.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -45,4 +45,4 @@ export class Test_list_mynth2 {
     }
     errors = {};
 }
-export const test_list_mynth2 = new Test_list_mynth2();
+export const test_list_mynth3 = new Test_list_mynth3();

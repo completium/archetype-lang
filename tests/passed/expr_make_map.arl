@@ -1,4 +1,4 @@
-archetype expr_mk_map
+archetype expr_make_map
 
 variable res : map<nat, string> = []
 

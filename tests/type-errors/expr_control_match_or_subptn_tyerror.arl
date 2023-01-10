@@ -1,4 +1,4 @@
-archetype expr_control_match_or_bad_return
+archetype expr_control_match_or_subptn_tyerror
 
 variable res : nat = 0
 

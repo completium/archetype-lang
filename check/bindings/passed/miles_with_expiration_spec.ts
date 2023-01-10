@@ -52,7 +52,7 @@ const consume_arg_to_mich = (a: att.Address, quantity: att.Int): att.Micheline =
 const clear_expired_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Miles_with_expiration {
+export class Miles_with_expiration_spec {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -70,7 +70,7 @@ export class Miles_with_expiration {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/miles_with_expiration.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/miles_with_expiration_spec.arl", {}, params)).address;
         this.address = address;
     }
     async add(ow: att.Address, newmile_id: string, newmile_amount: att.Int, newmile_expiration: Date, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -138,4 +138,4 @@ export class Miles_with_expiration {
         c1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"c1\"")])
     };
 }
-export const miles_with_expiration = new Miles_with_expiration();
+export const miles_with_expiration_spec = new Miles_with_expiration_spec();

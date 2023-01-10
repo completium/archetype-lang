@@ -1,4 +1,4 @@
-archetype expr_mk_map
+archetype expr_make_map_empty
 
 variable res : map<nat, string> = [(0, "0"); (1, "1"); (2, "2")]
 

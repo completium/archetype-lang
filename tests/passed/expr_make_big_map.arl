@@ -1,4 +1,4 @@
-archetype expr_mk_big_map
+archetype expr_make_big_map
 
 variable res : big_map<nat, string> = []
 

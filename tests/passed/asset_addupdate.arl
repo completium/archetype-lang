@@ -1,4 +1,4 @@
-archetype asset_add_update
+archetype asset_addupdate
 
 asset my_asset {
   a : address;

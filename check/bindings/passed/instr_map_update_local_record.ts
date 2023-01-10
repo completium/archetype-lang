@@ -29,7 +29,7 @@ export const my_record_mich_type: att.MichelineType = att.pair_array_to_mich_typ
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Instr_map_update {
+export class Instr_map_update_local_record {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -47,7 +47,7 @@ export class Instr_map_update {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/instr_map_update.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/instr_map_update_local_record.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -74,4 +74,4 @@ export class Instr_map_update {
     }
     errors = {};
 }
-export const instr_map_update = new Instr_map_update();
+export const instr_map_update_local_record = new Instr_map_update_local_record();

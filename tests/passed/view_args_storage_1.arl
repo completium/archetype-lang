@@ -1,4 +1,4 @@
-archetype view_args_several_args_and_storage
+archetype view_args_storage_1
 
 variable res : option<nat> = none
 

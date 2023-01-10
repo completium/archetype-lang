@@ -1,4 +1,4 @@
-archetype effect_control_match_loop_left
+archetype expr_control_fold
 
 variable res : nat = 0
 

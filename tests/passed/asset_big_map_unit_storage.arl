@@ -1,4 +1,4 @@
-archetype asset_iterable_big_map
+archetype asset_big_map_unit_storage
 
 asset my_asset to big_map {
   id : nat

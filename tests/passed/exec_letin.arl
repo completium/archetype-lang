@@ -1,4 +1,4 @@
-archetype tern_opt
+archetype exec_letin
 
 variable res : bool = false
 

@@ -10,7 +10,7 @@ export const abc_container_mich_type: att.MichelineType = att.pair_annot_to_mich
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Asset_access_ternary_found {
+export class Asset_ternary_expr_notfound {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -28,7 +28,7 @@ export class Asset_access_ternary_found {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/asset_access_ternary_found.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/asset_ternary_expr_notfound.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -61,4 +61,4 @@ export class Asset_access_ternary_found {
         INVALID_VALUE: att.string_to_mich("\"INVALID_VALUE\"")
     };
 }
-export const asset_access_ternary_found = new Asset_access_ternary_found();
+export const asset_ternary_expr_notfound = new Asset_ternary_expr_notfound();

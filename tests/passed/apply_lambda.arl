@@ -1,4 +1,4 @@
-archetype expr_lambda
+archetype apply_lambda
 
 variable res : int = 0
 

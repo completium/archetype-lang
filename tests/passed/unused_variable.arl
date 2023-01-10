@@ -1,4 +1,4 @@
-archetype unused_argument
+archetype unused_variable
 
 variable n : nat = 0
 

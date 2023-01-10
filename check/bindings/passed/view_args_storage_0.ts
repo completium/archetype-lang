@@ -6,7 +6,7 @@ const exec_arg_to_mich = (): att.Micheline => {
 const view_get_arg_to_mich = (i: att.Nat): att.Micheline => {
     return i.to_mich();
 }
-export class View_args_storage_yes_yes {
+export class View_args_storage_0 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -24,7 +24,7 @@ export class View_args_storage_yes_yes {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/view_args_storage_yes_yes.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/view_args_storage_0.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -62,4 +62,4 @@ export class View_args_storage_yes_yes {
     }
     errors = {};
 }
-export const view_args_storage_yes_yes = new View_args_storage_yes_yes();
+export const view_args_storage_0 = new View_args_storage_0();

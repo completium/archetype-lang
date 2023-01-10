@@ -1,4 +1,4 @@
-archetype effect_do_require
+archetype effect_dorequire
 
 entry exec () {
   effect {

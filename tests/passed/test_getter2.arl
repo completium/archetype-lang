@@ -1,4 +1,4 @@
-archetype test_getter
+archetype test_getter2
 
 variable n : nat = 2
 

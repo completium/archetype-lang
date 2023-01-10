@@ -22,7 +22,7 @@ export type my_asset_container = Array<[
     my_asset_value
 ]>;
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("unit", []), []);
-export class Asset_iterable_big_map {
+export class Asset_big_map_unit_storage {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -40,7 +40,7 @@ export class Asset_iterable_big_map {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/asset_iterable_big_map.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/asset_big_map_unit_storage.arl", {}, params)).address;
         this.address = address;
     }
     async get_my_asset_value(key: att.Nat): Promise<my_asset_value | undefined> {
@@ -71,4 +71,4 @@ export class Asset_iterable_big_map {
     }
     errors = {};
 }
-export const asset_iterable_big_map = new Asset_iterable_big_map();
+export const asset_big_map_unit_storage = new Asset_big_map_unit_storage();

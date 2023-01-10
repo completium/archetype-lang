@@ -1,4 +1,4 @@
-archetype multivars
+archetype multivars_simple
 
 variable u : nat = 0
 variable v : string = ""

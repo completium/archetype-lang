@@ -1,4 +1,4 @@
-archetype rat_tez
+archetype rat_tez_big
 
 variable res : tez = 0tz
 

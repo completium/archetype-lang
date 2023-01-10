@@ -1,4 +1,4 @@
-archetype asset_access_ternary_found
+archetype asset_ternary_expr_notfound
 
 asset abc {
   k : nat;

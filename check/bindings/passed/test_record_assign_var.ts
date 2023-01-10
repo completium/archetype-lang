@@ -23,7 +23,7 @@ export const my_record_mich_type: att.MichelineType = att.pair_array_to_mich_typ
 const exec_arg_to_mich = (i: att.Int): att.Micheline => {
     return i.to_mich();
 }
-export class Test_record_assign_4 {
+export class Test_record_assign_var {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -41,7 +41,7 @@ export class Test_record_assign_4 {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_record_assign_4.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_record_assign_var.arl", {}, params)).address;
         this.address = address;
     }
     async exec(i: att.Int, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -65,4 +65,4 @@ export class Test_record_assign_4 {
     }
     errors = {};
 }
-export const test_record_assign_4 = new Test_record_assign_4();
+export const test_record_assign_var = new Test_record_assign_var();

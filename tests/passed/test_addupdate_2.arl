@@ -1,4 +1,4 @@
-archetype test_add_update_2
+archetype test_addupdate_2
 
 asset my_asset identified by id {
   id : string;

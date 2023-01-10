@@ -1,4 +1,4 @@
-archetype asset_iterable_big_map_multi_effect_remove_if
+archetype asset_iterable_big_map_multi_effect_removeif
 
 asset my_asset to iterable_big_map {
   id : string;

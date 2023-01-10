@@ -1,4 +1,4 @@
-archetype effect_do_fail_if
+archetype effect_dofailif
 
 entry exec () {
   effect {

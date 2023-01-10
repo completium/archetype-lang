@@ -1,4 +1,4 @@
-archetype add_update_with_no_effect_on_default_value
+archetype addupdate_with_no_effect_on_default_value
 
 variable r : nat = 0
 

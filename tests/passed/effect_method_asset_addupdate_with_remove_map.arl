@@ -1,4 +1,4 @@
-archetype effect_method_asset_update_with_remove_map
+archetype effect_method_asset_addupdate_with_remove_map
 
 asset my_asset {
   id : nat;

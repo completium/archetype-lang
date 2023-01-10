@@ -1,4 +1,4 @@
-archetype test_view
+archetype view_exhaustive
 
 asset my_asset {
   id : nat;

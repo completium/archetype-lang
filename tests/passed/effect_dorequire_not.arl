@@ -1,4 +1,4 @@
-archetype effect_do_require_not
+archetype effect_dorequire_not
 
 entry exec () {
   effect {

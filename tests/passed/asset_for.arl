@@ -1,4 +1,4 @@
-archetype asset_simple
+archetype asset_for
 
 asset my_asset {
   id : nat;

@@ -1,4 +1,4 @@
-archetype method_in_do_require_or_do_fail_if
+archetype method_in_dorequire_or_dofailif
 
 asset my_asset identified by id {
   id : string;

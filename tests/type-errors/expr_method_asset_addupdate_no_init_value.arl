@@ -1,4 +1,4 @@
-archetype expr_method_asset_add_update_no_init_value
+archetype expr_method_asset_addupdate_no_init_value
 
 asset my_asset identified by id {
   id : string;

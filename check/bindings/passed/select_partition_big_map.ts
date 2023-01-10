@@ -20,7 +20,7 @@ const init_arg_to_mich = (): att.Micheline => {
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Select_partition_to_big_map {
+export class Select_partition_big_map {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -38,7 +38,7 @@ export class Select_partition_to_big_map {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/select_partition_to_big_map.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/select_partition_big_map.arl", {}, params)).address;
         this.address = address;
     }
     async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -126,4 +126,4 @@ export class Select_partition_to_big_map {
     }
     errors = {};
 }
-export const select_partition_to_big_map = new Select_partition_to_big_map();
+export const select_partition_big_map = new Select_partition_big_map();

@@ -1,4 +1,4 @@
-archetype match_get_entrypoint
+archetype match_entrypoint
 
 variable res : nat = 0
 

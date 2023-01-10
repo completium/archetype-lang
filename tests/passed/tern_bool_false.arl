@@ -1,4 +1,4 @@
-archetype tern_opt
+archetype tern_bool_false
 
 variable res : nat = 0
 

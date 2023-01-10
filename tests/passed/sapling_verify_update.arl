@@ -1,4 +1,4 @@
-archetype test_sapling_verify_update
+archetype sapling_verify_update
 
 variable res : option<bytes * int * sapling_state(8)> = none
 

@@ -19,7 +19,7 @@ export class ev implements att.ArchetypeType {
 const e1_arg_to_mich = (n: att.Nat): att.Micheline => {
     return n.to_mich();
 }
-export class Event_simple {
+export class Event_single {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -37,7 +37,7 @@ export class Event_simple {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/event_simple.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/event_single.arl", {}, params)).address;
         this.address = address;
     }
     async e1(n: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -66,4 +66,4 @@ export class Event_simple {
     }
     errors = {};
 }
-export const event_simple = new Event_simple();
+export const event_single = new Event_single();

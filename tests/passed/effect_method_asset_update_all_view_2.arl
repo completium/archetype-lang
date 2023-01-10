@@ -1,4 +1,4 @@
-archetype effect_method_asset_update_all_view_1
+archetype effect_method_asset_update_all_view_2
 
 asset my_asset {
   mid : string;

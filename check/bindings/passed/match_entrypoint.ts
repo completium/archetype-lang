@@ -6,7 +6,7 @@ const set_value_arg_to_mich = (n: att.Nat): att.Micheline => {
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Match_get_entrypoint {
+export class Match_entrypoint {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -24,7 +24,7 @@ export class Match_get_entrypoint {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/match_get_entrypoint.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/match_entrypoint.arl", {}, params)).address;
         this.address = address;
     }
     async set_value(n: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -62,4 +62,4 @@ export class Match_get_entrypoint {
         KO: att.string_to_mich("\"KO\"")
     };
 }
-export const match_get_entrypoint = new Match_get_entrypoint();
+export const match_entrypoint = new Match_entrypoint();

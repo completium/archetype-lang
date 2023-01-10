@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Expr_mk_map {
+export class Expr_make_map_empty {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Expr_mk_map {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/expr_mk_map.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/expr_make_map_empty.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -48,4 +48,4 @@ export class Expr_mk_map {
     }
     errors = {};
 }
-export const expr_mk_map = new Expr_mk_map();
+export const expr_make_map_empty = new Expr_make_map_empty();

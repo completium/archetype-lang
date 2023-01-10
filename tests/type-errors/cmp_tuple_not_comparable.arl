@@ -1,4 +1,4 @@
-archetype cmp_test
+archetype cmp_tuple_not_comparable
 
 variable res : bool = false
 

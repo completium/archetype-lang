@@ -1,4 +1,4 @@
-archetype expr_control_match_option_bad_return
+archetype expr_control_match_option_non_homogeneous
 
 variable res : nat = 0
 

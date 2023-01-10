@@ -1,4 +1,4 @@
-archetype view_onchain
+archetype view_all_chain
 
 variable n : option<nat> = none
 

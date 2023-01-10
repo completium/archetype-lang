@@ -1,4 +1,4 @@
-archetype instr_map_update
+archetype instr_map_update_local_var
 
 variable res : map<nat, string> = []
 

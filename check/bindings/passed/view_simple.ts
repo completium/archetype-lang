@@ -6,7 +6,7 @@ const setN_arg_to_mich = (v: att.Nat): att.Micheline => {
 const view_get_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Test_view {
+export class View_simple {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -24,7 +24,7 @@ export class Test_view {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_view.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/view_simple.arl", {}, params)).address;
         this.address = address;
     }
     async setN(v: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -55,4 +55,4 @@ export class Test_view {
     }
     errors = {};
 }
-export const test_view = new Test_view();
+export const view_simple = new View_simple();

@@ -17,7 +17,7 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Effect_method_asset_remove_if_partition {
+export class Effect_method_asset_removeif_partition {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -35,7 +35,7 @@ export class Effect_method_asset_remove_if_partition {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/effect_method_asset_remove_if_partition.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/effect_method_asset_removeif_partition.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -66,4 +66,4 @@ export class Effect_method_asset_remove_if_partition {
     }
     errors = {};
 }
-export const effect_method_asset_remove_if_partition = new Effect_method_asset_remove_if_partition();
+export const effect_method_asset_removeif_partition = new Effect_method_asset_removeif_partition();

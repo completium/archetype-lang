@@ -1,4 +1,4 @@
-archetype expr_map_put
+archetype expr_map_update
 
 variable res : map<nat, string> = []
 

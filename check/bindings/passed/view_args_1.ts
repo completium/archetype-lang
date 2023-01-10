@@ -10,7 +10,7 @@ const view_get_arg_to_mich = (i: att.Nat, s: string, b: att.Bytes): att.Michelin
         b.to_mich()
     ]);
 }
-export class View_args_several_args {
+export class View_args_1 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -28,7 +28,7 @@ export class View_args_several_args {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/view_args_several_args.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/view_args_1.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -59,4 +59,4 @@ export class View_args_several_args {
     }
     errors = {};
 }
-export const view_args_several_args = new View_args_several_args();
+export const view_args_1 = new View_args_1();

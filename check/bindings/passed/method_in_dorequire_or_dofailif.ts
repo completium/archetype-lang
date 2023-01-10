@@ -10,7 +10,7 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
 const exec_arg_to_mich = (str: string): att.Micheline => {
     return att.string_to_mich(str);
 }
-export class Method_in_do_require_or_do_fail_if {
+export class Method_in_dorequire_or_dofailif {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -28,7 +28,7 @@ export class Method_in_do_require_or_do_fail_if {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/method_in_do_require_or_do_fail_if.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/method_in_dorequire_or_dofailif.arl", {}, params)).address;
         this.address = address;
     }
     async exec(str: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -61,4 +61,4 @@ export class Method_in_do_require_or_do_fail_if {
         KO: att.string_to_mich("\"ko\"")
     };
 }
-export const method_in_do_require_or_do_fail_if = new Method_in_do_require_or_do_fail_if();
+export const method_in_dorequire_or_dofailif = new Method_in_dorequire_or_dofailif();

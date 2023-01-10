@@ -1,4 +1,4 @@
-archetype simple
+archetype very_simple
 
 variable res : nat = 0
 

@@ -13,7 +13,7 @@ export const s_asset_container_mich_type: att.MichelineType = att.pair_annot_to_
 const exec_arg_to_mich = (n: att.Nat): att.Micheline => {
     return n.to_mich();
 }
-export class Test_remove_if_agg_0 {
+export class Test_removeif_agg_0 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -31,7 +31,7 @@ export class Test_remove_if_agg_0 {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_remove_if_agg_0.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_removeif_agg_0.arl", {}, params)).address;
         this.address = address;
     }
     async exec(n: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -62,4 +62,4 @@ export class Test_remove_if_agg_0 {
     }
     errors = {};
 }
-export const test_remove_if_agg_0 = new Test_remove_if_agg_0();
+export const test_removeif_agg_0 = new Test_removeif_agg_0();

@@ -1,4 +1,4 @@
-archetype test_sapling
+archetype sapling_var
 
 variable s : sapling_state(8)
 variable n : int = 0

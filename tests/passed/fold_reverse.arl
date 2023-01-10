@@ -1,4 +1,4 @@
-archetype effect_control_match_loop_left
+archetype fold_reverse
 
 variable res : list<nat> = []
 

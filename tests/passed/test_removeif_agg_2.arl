@@ -1,4 +1,4 @@
-archetype test_remove_if_agg_2
+archetype test_removeif_agg_2
 
 asset my_asset identified by id {
   id     : nat;

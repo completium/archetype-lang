@@ -34,7 +34,7 @@ const exec_arg_to_mich = (): att.Micheline => {
 const exec2_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Add_update_with_no_effect_on_default_value {
+export class Addupdate_with_no_effect_on_default_value {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -52,7 +52,7 @@ export class Add_update_with_no_effect_on_default_value {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/add_update_with_no_effect_on_default_value.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/addupdate_with_no_effect_on_default_value.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -95,4 +95,4 @@ export class Add_update_with_no_effect_on_default_value {
     }
     errors = {};
 }
-export const add_update_with_no_effect_on_default_value = new Add_update_with_no_effect_on_default_value();
+export const addupdate_with_no_effect_on_default_value = new Addupdate_with_no_effect_on_default_value();

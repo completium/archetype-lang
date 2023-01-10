@@ -1,4 +1,4 @@
-archetype effect_method_asset_remove_if_partition
+archetype effect_method_asset_removeif_partition
 
 asset o_asset identified by oid {
   oid : int;

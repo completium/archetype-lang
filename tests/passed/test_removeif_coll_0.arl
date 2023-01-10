@@ -1,4 +1,4 @@
-archetype test_remove_if_coll_0
+archetype test_removeif_coll_0
 
 asset my_asset identified by id {
   id     : nat;

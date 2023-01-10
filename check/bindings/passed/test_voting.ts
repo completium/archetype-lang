@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Edo_crypto {
+export class Test_voting {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Edo_crypto {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/edo_crypto.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_voting.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -52,4 +52,4 @@ export class Edo_crypto {
     }
     errors = {};
 }
-export const edo_crypto = new Edo_crypto();
+export const test_voting = new Test_voting();

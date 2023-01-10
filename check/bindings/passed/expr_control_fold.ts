@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Effect_control_match_loop_left {
+export class Expr_control_fold {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Effect_control_match_loop_left {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/effect_control_match_loop_left.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/expr_control_fold.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -45,4 +45,4 @@ export class Effect_control_match_loop_left {
     }
     errors = {};
 }
-export const effect_control_match_loop_left = new Effect_control_match_loop_left();
+export const expr_control_fold = new Expr_control_fold();

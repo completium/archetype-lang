@@ -1,4 +1,4 @@
-archetype expr_mk_list_empty
+archetype expr_make_list_empty
 
 variable res : list<nat> = [0; 1; 2]
 

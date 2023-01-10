@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const e_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Unused_argument {
+export class Unused_variable {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Unused_argument {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/unused_argument.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/unused_variable.arl", {}, params)).address;
         this.address = address;
     }
     async e(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -45,4 +45,4 @@ export class Unused_argument {
     }
     errors = {};
 }
-export const unused_argument = new Unused_argument();
+export const unused_variable = new Unused_variable();

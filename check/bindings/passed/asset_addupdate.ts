@@ -31,7 +31,7 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Asset_add_update {
+export class Asset_addupdate {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -49,7 +49,7 @@ export class Asset_add_update {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/asset_add_update.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/asset_addupdate.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -73,4 +73,4 @@ export class Asset_add_update {
     }
     errors = {};
 }
-export const asset_add_update = new Asset_add_update();
+export const asset_addupdate = new Asset_addupdate();

@@ -1,4 +1,4 @@
-archetype no_asset_effect_on_view_add_update
+archetype no_asset_effect_on_view_addupdate
 
 asset my_asset identified by id {
   id : string;

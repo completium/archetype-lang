@@ -1,4 +1,4 @@
-archetype test_view
+archetype view_simple
 
 variable n : nat = 2
 

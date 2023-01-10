@@ -1,4 +1,4 @@
-archetype expr_control_match_loop_left_bad_type
+archetype expr_control_fold_bad_type
 
 variable res : nat = 0
 

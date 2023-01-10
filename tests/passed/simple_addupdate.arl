@@ -1,4 +1,4 @@
-archetype effect_method_asset_add_update
+archetype simple_addupdate
 
 asset my_asset identified by id {
   id : string;

@@ -1,4 +1,4 @@
-archetype test_list_mynth2
+archetype test_list_mynth3
 
 variable res : option<string> = none
 

@@ -1,4 +1,4 @@
-archetype aggregate_remove_if
+archetype aggregate_removeif
 
 asset o_asset identified by oid {
   oid : int;

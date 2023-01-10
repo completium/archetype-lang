@@ -6,7 +6,7 @@ const init_arg_to_mich = (s: att.Sapling_state, t: att.Sapling_transaction): att
         t.to_mich()
     ]);
 }
-export class Test_sapling_verify_update {
+export class Sapling_verify_update {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -24,7 +24,7 @@ export class Test_sapling_verify_update {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_sapling_verify_update.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/sapling_verify_update.arl", {}, params)).address;
         this.address = address;
     }
     async init(s: att.Sapling_state, t: att.Sapling_transaction, params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -54,4 +54,4 @@ export class Test_sapling_verify_update {
     }
     errors = {};
 }
-export const test_sapling_verify_update = new Test_sapling_verify_update();
+export const sapling_verify_update = new Sapling_verify_update();

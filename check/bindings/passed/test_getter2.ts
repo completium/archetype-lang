@@ -9,7 +9,7 @@ const getN_arg_to_mich = (): att.Micheline => {
 export const deploy_getN_callback = async (params: Partial<ex.Parameters>): Promise<att.DeployResult> => {
     return await ex.deploy_callback("getN", att.prim_annot_to_mich_type("nat", []), params);
 };
-export class Test_getter {
+export class Test_getter2 {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -28,7 +28,7 @@ export class Test_getter {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/test_getter.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/test_getter2.arl", {}, params)).address;
         this.address = address;
         this.getN_callback_address = (await deploy_getN_callback(params)).address;
     }
@@ -63,4 +63,4 @@ export class Test_getter {
     }
     errors = {};
 }
-export const test_getter = new Test_getter();
+export const test_getter2 = new Test_getter2();

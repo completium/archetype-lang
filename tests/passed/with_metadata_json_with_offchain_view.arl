@@ -1,4 +1,4 @@
-archetype with_metadata_uri
+archetype with_metadata_json_with_offchain_view
 with metadata `{
   "symbol": "MTK",
   "name": "MyToken",

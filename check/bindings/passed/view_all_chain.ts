@@ -12,7 +12,7 @@ const view_getonchain_arg_to_mich = (): att.Micheline => {
 const view_getonoffchain_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class View_onchain {
+export class View_all_chain {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -30,7 +30,7 @@ export class View_onchain {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/view_onchain.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/view_all_chain.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -101,4 +101,4 @@ export class View_onchain {
     }
     errors = {};
 }
-export const view_onchain = new View_onchain();
+export const view_all_chain = new View_all_chain();

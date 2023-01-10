@@ -10,7 +10,7 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Effect_method_asset_update_with_add_set {
+export class Effect_method_asset_addupdate_with_add_set {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -28,7 +28,7 @@ export class Effect_method_asset_update_with_add_set {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/effect_method_asset_update_with_add_set.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/effect_method_asset_addupdate_with_add_set.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -52,4 +52,4 @@ export class Effect_method_asset_update_with_add_set {
     }
     errors = {};
 }
-export const effect_method_asset_update_with_add_set = new Effect_method_asset_update_with_add_set();
+export const effect_method_asset_addupdate_with_add_set = new Effect_method_asset_addupdate_with_add_set();

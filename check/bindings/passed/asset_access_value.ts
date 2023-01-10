@@ -31,7 +31,7 @@ export const abc_container_mich_type: att.MichelineType = att.pair_annot_to_mich
 const get_value_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Asset_access_basic {
+export class Asset_access_value {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -49,7 +49,7 @@ export class Asset_access_basic {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/asset_access_basic.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/asset_access_value.arl", {}, params)).address;
         this.address = address;
     }
     async get_value(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -76,4 +76,4 @@ export class Asset_access_basic {
         ERROR: att.string_to_mich("\"ERROR\"")
     };
 }
-export const asset_access_basic = new Asset_access_basic();
+export const asset_access_value = new Asset_access_value();

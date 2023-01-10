@@ -1,4 +1,4 @@
-archetype collection_add_update
+archetype collection_addupdate
 
 asset my_asset identified by id {
   id : string;

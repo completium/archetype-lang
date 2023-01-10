@@ -1,4 +1,4 @@
-archetype decl_var_opt
+archetype assign_opt
 
 variable res : nat = 0
 

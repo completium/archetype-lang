@@ -1,4 +1,4 @@
-archetype effect_method_asset_remove_if_collection
+archetype effect_method_asset_removeif_collection
 
 asset my_asset identified by id {
   id     : string;

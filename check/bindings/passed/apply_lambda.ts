@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Expr_lambda {
+export class Apply_lambda {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Expr_lambda {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/expr_lambda.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/apply_lambda.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -45,4 +45,4 @@ export class Expr_lambda {
     }
     errors = {};
 }
-export const expr_lambda = new Expr_lambda();
+export const apply_lambda = new Apply_lambda();

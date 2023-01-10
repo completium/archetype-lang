@@ -1,4 +1,4 @@
-archetype edo_crypto
+archetype test_voting
 
 variable total : nat = 0
 variable power : nat = 0
