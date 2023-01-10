@@ -6,15 +6,7 @@ name: Archetype compiler CI
 # or API.
 on:
   workflow_dispatch:
-    # Inputs the workflow accepts.
-    inputs:
-      name:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Build Archetype'
-        # Default value if no value is explicitly provided
-        default: 'World'
-        # Input has to be provided for the workflow to run
-        required: true
+
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -26,8 +18,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Runs a single command using the runners shell
-    - run: sudo add-apt-repository -y ppa:avsm/ppa
-    - run: sudo apt-get -y update
+    # - run: sudo add-apt-repository -y ppa:avsm/ppa
+    # - run: sudo apt-get -y update
     - run: sudo apt-get -y install opam ocaml-nox
     # Initialize the switch.
     - run: opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
