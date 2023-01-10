@@ -1,0 +1,5 @@
+archetype invalid_cond_type_ternary
+
+entry exec() {
+  const a = 0 ? 0 : 1
+}
