@@ -1,4 +1,3 @@
-/* DO NOT EDIT, GENERATED FILE */
 import { get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
 import { Address, Nat } from '@completium/archetype-ts-types';
@@ -1138,16 +1137,23 @@ set_mockup()
 
 describe('Tests', async () => {
   describe('Passed', async () => {
-    // TODO
+
     it('add_update_record', async () => {
       await add_update_record.add_update_record.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await add_update_record.add_update_record.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await add_update_record.add_update_record.exec({ as: alice })
-      //      const res_after = await add_update_record.add_update_record.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await add_update_record.add_update_record.get_my_asset();
+      assert(res_before.length == 1, "Invalid Value")
+      assert(res_before[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(res_before[0][1].b == false, "Invalid Value")
+      assert(res_before[0][1].c.length == 0, "Invalid Value")
+      await add_update_record.add_update_record.updateTransferlist({ as: alice })
+      const res_after = await add_update_record.add_update_record.get_my_asset()
+      assert(res_after.length == 1, "Invalid Value")
+      assert(res_after[0][0].equals(new Nat(0)), "Invalid Value")
+      assert(res_after[0][1].b == true, "Invalid Value")
+      assert(res_after[0][1].c.length == 3, "Invalid Value")
+      assert(res_after[0][1].c[0].equals(new Nat(0)), "Invalid Value")
+      assert(res_after[0][1].c[1].equals(new Nat(1)), "Invalid Value")
+      assert(res_after[0][1].c[2].equals(new Nat(2)), "Invalid Value")
     })
 
     // TODO
