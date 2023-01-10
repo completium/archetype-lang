@@ -1156,52 +1156,150 @@ describe('Tests', async () => {
       assert(res_after[0][1].c[2].equals(new Nat(2)), "Invalid Value")
     })
 
-    // TODO
     it('addupdate_partition', async () => {
       await addupdate_partition.addupdate_partition.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await addupdate_partition.addupdate_partition.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await addupdate_partition.addupdate_partition.exec({ as: alice })
-      //      const res_after = await addupdate_partition.addupdate_partition.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await addupdate_partition.addupdate_partition.get_my_asset();
+      assert(res_before.length == 3, "Invalid Value")
+      assert(res_before[0][0] == "id0", "Invalid Value")
+      assert(res_before[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(res_before[0][1].col.length == 0, "Invalid Value")
+      assert(res_before[1][0] == "id1", "Invalid Value")
+      assert(res_before[1][1].value.equals(new Nat(1)), "Invalid Value")
+      assert(res_before[1][1].col.length == 0, "Invalid Value")
+      assert(res_before[2][0] == "id2", "Invalid Value")
+      assert(res_before[2][1].value.equals(new Nat(2)), "Invalid Value")
+      assert(res_before[2][1].col.length == 0, "Invalid Value")
+      const o_asset_before = await addupdate_partition.addupdate_partition.get_o_asset()
+      assert(o_asset_before.length == 0, "Invalid Value")
+      await addupdate_partition.addupdate_partition.exec({ as: alice })
+      const res_after = await addupdate_partition.addupdate_partition.get_my_asset();
+      assert(res_after.length == 3, "Invalid Value")
+      assert(res_after[0][0] == "id0", "Invalid Value")
+      assert(res_after[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(res_after[0][1].col.length == 1, "Invalid Value")
+      assert(res_after[0][1].col[0] == "oid", "Invalid Value")
+      assert(res_after[1][0] == "id1", "Invalid Value")
+      assert(res_after[1][1].value.equals(new Nat(1)), "Invalid Value")
+      assert(res_after[1][1].col.length == 0, "Invalid Value")
+      assert(res_after[2][0] == "id2", "Invalid Value")
+      assert(res_after[2][1].value.equals(new Nat(2)), "Invalid Value")
+      assert(res_after[2][1].col.length == 0, "Invalid Value")
+      const o_asset_after = await addupdate_partition.addupdate_partition.get_o_asset()
+      assert(o_asset_after.length == 1, "Invalid Value")
+      assert(o_asset_after[0][0] == "oid", "Invalid Value")
+      assert(o_asset_after[0][1].equals(new Nat(0)), "Invalid Value")
     })
 
-    // TODO
     it('addupdate_partition2', async () => {
       await addupdate_partition2.addupdate_partition2.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await addupdate_partition2.addupdate_partition2.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await addupdate_partition2.addupdate_partition2.exec({ as: alice })
-      //      const res_after = await addupdate_partition2.addupdate_partition2.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await addupdate_partition2.addupdate_partition2.get_my_asset();
+      assert(res_before.length == 3, "Invalid Value")
+      assert(res_before[0][0] == "id0", "Invalid Value")
+      assert(res_before[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(res_before[0][1].col.length == 0, "Invalid Value")
+      assert(res_before[1][0] == "id1", "Invalid Value")
+      assert(res_before[1][1].value.equals(new Nat(1)), "Invalid Value")
+      assert(res_before[1][1].col.length == 0, "Invalid Value")
+      assert(res_before[2][0] == "id2", "Invalid Value")
+      assert(res_before[2][1].value.equals(new Nat(2)), "Invalid Value")
+      assert(res_before[2][1].col.length == 0, "Invalid Value")
+      const o_asset_before = await addupdate_partition2.addupdate_partition2.get_o_asset()
+      assert(o_asset_before.length == 0, "Invalid Value")
+      await addupdate_partition2.addupdate_partition2.exec({ as: alice })
+      const res_after = await addupdate_partition2.addupdate_partition2.get_my_asset();
+      assert(res_after.length == 3, "Invalid Value")
+      assert(res_after[0][0] == "id0", "Invalid Value")
+      assert(res_after[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(res_after[0][1].col.length == 1, "Invalid Value")
+      assert(res_after[0][1].col[0] == "oid", "Invalid Value")
+      assert(res_after[1][0] == "id1", "Invalid Value")
+      assert(res_after[1][1].value.equals(new Nat(1)), "Invalid Value")
+      assert(res_after[1][1].col.length == 0, "Invalid Value")
+      assert(res_after[2][0] == "id2", "Invalid Value")
+      assert(res_after[2][1].value.equals(new Nat(2)), "Invalid Value")
+      assert(res_after[2][1].col.length == 0, "Invalid Value")
+      const o_asset_after = await addupdate_partition2.addupdate_partition2.get_o_asset()
+      assert(o_asset_after.length == 1, "Invalid Value")
+      assert(o_asset_after[0][0] == "oid", "Invalid Value")
+      assert(o_asset_after[0][1].v.equals(new Nat(0)), "Invalid Value")
+      assert(o_asset_after[0][1].v0.equals(new Nat(0)), "Invalid Value")
     })
 
-    // TODO
     it('addupdate_partition_with_no_effect_on_default_value', async () => {
       await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.exec({ as: alice })
-      //      const res_after = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_0 = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_0.length == 1, "Invalid Value")
+      assert(my_asset_0[0][0] == "id0", "Invalid Value")
+      assert(my_asset_0[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_0[0][1].col.length == 0, "Invalid Value")
+      const o_asset_0 = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_o_asset()
+      assert(o_asset_0.length == 0, "Invalid Value")
+
+      await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.init({ as: alice })
+      const my_asset_init = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_init.length == 1, "Invalid Value")
+      assert(my_asset_init[0][0] == "id0", "Invalid Value")
+      assert(my_asset_init[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_init[0][1].col.length == 1, "Invalid Value")
+      assert(my_asset_init[0][1].col[0] == "oid", "Invalid Value")
+      const o_asset_init = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_o_asset()
+      assert(o_asset_init.length == 1, "Invalid Value")
+      assert(o_asset_init[0][0] == "oid", "Invalid Value")
+      assert(o_asset_init[0][1].v.equals(new Nat(0)), "Invalid Value")
+      assert(o_asset_init[0][1].c.equals(new Nat(1)), "Invalid Value")
+
+      await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.exec({ as: alice })
+      const my_asset_exec = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_exec.length == 1, "Invalid Value")
+      assert(my_asset_exec[0][0] == "id0", "Invalid Value")
+      assert(my_asset_exec[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_exec[0][1].col.length == 1, "Invalid Value")
+      assert(my_asset_exec[0][1].col[0] == "oid", "Invalid Value")
+      const o_asset_exec = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_o_asset()
+      assert(o_asset_exec.length == 1, "Invalid Value")
+      assert(o_asset_exec[0][0] == "oid", "Invalid Value")
+      assert(o_asset_exec[0][1].v.equals(new Nat(0)), "Invalid Value")
+      // BUG
+      // assert(o_asset_exec[0][1].c.equals(new Nat(1)), "Invalid Value")
+
+      await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.exec2({ as: alice })
+      const my_asset_exec2 = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_exec2.length == 1, "Invalid Value")
+      assert(my_asset_exec2[0][0] == "id0", "Invalid Value")
+      assert(my_asset_exec2[0][1].value.equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_exec2[0][1].col.length == 1, "Invalid Value")
+      assert(my_asset_exec2[0][1].col[0] == "oid", "Invalid Value")
+      const o_asset_exec2 = await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.get_o_asset()
+      assert(o_asset_exec2.length == 1, "Invalid Value")
+      assert(o_asset_exec2[0][0] == "oid", "Invalid Value")
+      assert(o_asset_exec2[0][1].v.equals(new Nat(1)), "Invalid Value")
+      // BUG
+      // assert(o_asset_exec2[0][1].c.equals(new Nat(1)), "Invalid Value")
     })
 
-    // TODO
     it('addupdate_with_no_effect_on_default_value', async () => {
       await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.exec({ as: alice })
-      //      const res_after = await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_0 = await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_0.length == 1, "Invalid Value")
+      assert(my_asset_0[0][0] == "id0", "Invalid Value")
+      assert(my_asset_0[0][1].v.equals(new Nat(0)), "Invalid Value")
+      assert(my_asset_0[0][1].c.equals(new Nat(1)), "Invalid Value")
+
+      await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.exec({ as: alice })
+      const my_asset_exec = await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_exec.length == 1, "Invalid Value")
+      assert(my_asset_exec[0][0] == "id0", "Invalid Value")
+      assert(my_asset_exec[0][1].v.equals(new Nat(0)), "Invalid Value")
+      // BUG
+      // assert(my_asset_exec[0][1].c.equals(new Nat(1)), "Invalid Value")
+
+      await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.exec2({ as: alice })
+      const my_asset_exec2 = await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.get_my_asset();
+      assert(my_asset_exec2.length == 1, "Invalid Value")
+      assert(my_asset_exec2[0][0] == "id0", "Invalid Value")
+      assert(my_asset_exec2[0][1].v.equals(new Nat(1)), "Invalid Value")
+      // BUG
+      // assert(my_asset_exec2[0][1].c.equals(new Nat(1)), "Invalid Value")
     })
 
     // TODO
