@@ -5,7 +5,7 @@ constant a : tez = 1tz
 entry exec (r : address) {
   accept transfer
   effect {
-    var c : int = 0;
+    var c : int = 1;
     var b : tez = c * a;
 
     transfer b to r

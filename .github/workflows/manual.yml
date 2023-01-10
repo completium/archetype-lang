@@ -43,3 +43,23 @@ jobs:
     - run: _build/default/src/compiler.exe -v
 
     - run: ./extra/script/check_action.sh
+
+    - run: cd check
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - run: npm ci
+
+    - run: npm run init
+
+    - run: npm run set_binary
+
+    - run: npm run show_archetype_version
+
+    - run: npm run mockup_init
+
+    - run: npm test

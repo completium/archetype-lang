@@ -2,6 +2,10 @@
   "name": "check",
   "version": "1.0.0",
   "scripts": {
+    "init": "completium-cli init",
+    "set_binary": "completium-cli set binary path archetype _build/default/src/compiler.exe && completium-cli set mode archetype binary",
+    "show_archetype_version": "completium-cli archetype version",
+    "mockup_init": "completium-cli mockup init",
     "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts",
     "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts"
   },
@@ -12,6 +16,7 @@
     "@completium/experiment-ts": "0.1.7"
   },
   "devDependencies": {
+    "@completium/completium-cli": "0.4.63",
     "@types/expect": "^24.3.0",
     "@types/mocha": "^10.0.0",
     "@types/node": "latest",
