@@ -38,6 +38,8 @@ jobs:
 
     - run: opam install . --deps-only --with-test
 
-    - run: make all
+    - run: opam exec -- dune build
 
-    - run: ./extra/script/check_mockup.sh
+    - run: _build/default/src/compiler.exe -v
+
+    - run: ./extra/script/check_action.sh
