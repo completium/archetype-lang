@@ -20,6 +20,8 @@ jobs:
       matrix:
         ocaml-compiler:
           - 4.10.2
+        node-compiler:
+          - 18.x
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -46,10 +48,10 @@ jobs:
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
-      working-directory: ./check
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: './check/package-lock.json'
 
     - name: install
       working-directory: ./check
