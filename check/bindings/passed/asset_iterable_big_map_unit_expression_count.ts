@@ -1,9 +1,38 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
+export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export class my_asset_value implements att.ArchetypeType {
+    constructor() { }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    to_mich(): att.Micheline {
+        return att.unit_to_mich();
+    }
+    equals(v: my_asset_value): boolean {
+        return true;
+    }
+    static from_mich(input: att.Micheline): my_asset_value {
+        return new my_asset_value();
+    }
+}
+export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("unit", []);
+export type my_asset_container = Array<[
+    att.Nat,
+    my_asset_value
+]>;
+export const my_asset_container_mich_type: att.MichelineType = att.pair_array_to_mich_type([
+    att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.pair_array_to_mich_type([
+        att.prim_annot_to_mich_type("nat", ["%index"]),
+        att.prim_annot_to_mich_type("unit", ["%value"])
+    ], ["%values"]), ["%values"]),
+    att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("nat", []), ["%keys"]),
+    att.prim_annot_to_mich_type("nat", ["%size"])
+], []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Iterable_big_map_length {
+export class Asset_iterable_big_map_unit_expression_count {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +50,7 @@ export class Iterable_big_map_length {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/iterable_big_map_length.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/asset_iterable_big_map_unit_expression_count.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -36,12 +65,12 @@ export class Iterable_big_map_length {
         }
         throw new Error("Contract not initialised");
     }
-    async get_my_map_value(key: string): Promise<att.Bytes | undefined> {
+    async get_my_asset_value(key: att.Nat): Promise<my_asset_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = (await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", [])) as att.Mpair)?.args[1];
+            const data = (await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), key.to_mich(), my_asset_key_mich_type) as att.Mpair)?.args[1];
             if (data != undefined) {
-                return att.Bytes.from_mich(data);
+                return my_asset_value.from_mich(data);
             }
             else {
                 return undefined;
@@ -49,10 +78,10 @@ export class Iterable_big_map_length {
         }
         throw new Error("Contract not initialised");
     }
-    async has_my_map_value(key: string): Promise<boolean> {
+    async has_my_asset_value(key: att.Nat): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
+            const data = (await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), key.to_mich(), my_asset_key_mich_type) as att.Mpair)?.args[1];
             if (data != undefined) {
                 return true;
             }
@@ -70,7 +99,7 @@ export class Iterable_big_map_length {
         throw new Error("Contract not initialised");
     }
     errors = {
-        INVALID_VALUE: att.string_to_mich("\"INVALID_VALUE\"")
+        KO: att.string_to_mich("\"ko\"")
     };
 }
-export const iterable_big_map_length = new Iterable_big_map_length();
+export const asset_iterable_big_map_unit_expression_count = new Asset_iterable_big_map_unit_expression_count();

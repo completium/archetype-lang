@@ -6,14 +6,17 @@
     "set_binary": "completium-cli set binary path archetype ${PWD}/../_build/default/src/compiler.exe && completium-cli set mode archetype binary",
     "show_archetype_version": "completium-cli archetype version",
     "mockup_init": "completium-cli mockup init",
-    "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts",
-    "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts"
+    "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g asset_iterable_big_map_effect_add",
+    "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts",
+    "generate:json": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_json.ts"
   },
   "dependencies": {
     "@completium/archetype-binder-ts": "0.1.3",
     "@completium/archetype-ts-types": "0.1.2",
     "@completium/event-listener": "^0.0.4",
-    "@completium/experiment-ts": "0.1.7"
+    "@completium/experiment-ts": "0.1.7",
+    "cross-spawn": "^7.0.3",
+    "execa": "^6.1.0"
   },
   "devDependencies": {
     "@completium/completium-cli": "0.4.63",

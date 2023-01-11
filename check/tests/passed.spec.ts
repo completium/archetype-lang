@@ -31,6 +31,58 @@ import * as asset_init_by_const_key from '../bindings/passed/asset_init_by_const
 import * as asset_init_by_const_key_parameter from '../bindings/passed/asset_init_by_const_key_parameter'
 import * as asset_initializedby_aggregate_empty from '../bindings/passed/asset_initializedby_aggregate_empty'
 import * as asset_initializedby_aggregate_filled from '../bindings/passed/asset_initializedby_aggregate_filled'
+import * as asset_iterable_big_map from '../bindings/passed/asset_iterable_big_map'
+import * as asset_iterable_big_map_effect_add from '../bindings/passed/asset_iterable_big_map_effect_add'
+import * as asset_iterable_big_map_effect_addupdate from '../bindings/passed/asset_iterable_big_map_effect_addupdate'
+import * as asset_iterable_big_map_effect_remove from '../bindings/passed/asset_iterable_big_map_effect_remove'
+import * as asset_iterable_big_map_effect_removeall from '../bindings/passed/asset_iterable_big_map_effect_removeall'
+import * as asset_iterable_big_map_effect_removeif from '../bindings/passed/asset_iterable_big_map_effect_removeif'
+import * as asset_iterable_big_map_effect_update from '../bindings/passed/asset_iterable_big_map_effect_update'
+import * as asset_iterable_big_map_expression_contains from '../bindings/passed/asset_iterable_big_map_expression_contains'
+import * as asset_iterable_big_map_expression_count from '../bindings/passed/asset_iterable_big_map_expression_count'
+import * as asset_iterable_big_map_expression_get from '../bindings/passed/asset_iterable_big_map_expression_get'
+import * as asset_iterable_big_map_expression_head from '../bindings/passed/asset_iterable_big_map_expression_head'
+import * as asset_iterable_big_map_expression_nth from '../bindings/passed/asset_iterable_big_map_expression_nth'
+import * as asset_iterable_big_map_expression_select from '../bindings/passed/asset_iterable_big_map_expression_select'
+import * as asset_iterable_big_map_expression_sort from '../bindings/passed/asset_iterable_big_map_expression_sort'
+import * as asset_iterable_big_map_expression_sum from '../bindings/passed/asset_iterable_big_map_expression_sum'
+import * as asset_iterable_big_map_expression_tail from '../bindings/passed/asset_iterable_big_map_expression_tail'
+import * as asset_iterable_big_map_instruction_for from '../bindings/passed/asset_iterable_big_map_instruction_for'
+import * as asset_iterable_big_map_multi_effect_add from '../bindings/passed/asset_iterable_big_map_multi_effect_add'
+import * as asset_iterable_big_map_multi_effect_addupdate from '../bindings/passed/asset_iterable_big_map_multi_effect_addupdate'
+import * as asset_iterable_big_map_multi_effect_remove from '../bindings/passed/asset_iterable_big_map_multi_effect_remove'
+import * as asset_iterable_big_map_multi_effect_removeall from '../bindings/passed/asset_iterable_big_map_multi_effect_removeall'
+import * as asset_iterable_big_map_multi_effect_removeif from '../bindings/passed/asset_iterable_big_map_multi_effect_removeif'
+import * as asset_iterable_big_map_multi_effect_update from '../bindings/passed/asset_iterable_big_map_multi_effect_update'
+import * as asset_iterable_big_map_multi_expression_contains from '../bindings/passed/asset_iterable_big_map_multi_expression_contains'
+import * as asset_iterable_big_map_multi_expression_count from '../bindings/passed/asset_iterable_big_map_multi_expression_count'
+import * as asset_iterable_big_map_multi_expression_get from '../bindings/passed/asset_iterable_big_map_multi_expression_get'
+import * as asset_iterable_big_map_multi_expression_head from '../bindings/passed/asset_iterable_big_map_multi_expression_head'
+import * as asset_iterable_big_map_multi_expression_nth from '../bindings/passed/asset_iterable_big_map_multi_expression_nth'
+import * as asset_iterable_big_map_multi_expression_select from '../bindings/passed/asset_iterable_big_map_multi_expression_select'
+import * as asset_iterable_big_map_multi_expression_sort from '../bindings/passed/asset_iterable_big_map_multi_expression_sort'
+import * as asset_iterable_big_map_multi_expression_sum from '../bindings/passed/asset_iterable_big_map_multi_expression_sum'
+import * as asset_iterable_big_map_multi_expression_tail from '../bindings/passed/asset_iterable_big_map_multi_expression_tail'
+import * as asset_iterable_big_map_multi_instruction_for from '../bindings/passed/asset_iterable_big_map_multi_instruction_for'
+import * as asset_iterable_big_map_multi_storage from '../bindings/passed/asset_iterable_big_map_multi_storage'
+import * as asset_iterable_big_map_storage from '../bindings/passed/asset_iterable_big_map_storage'
+import * as asset_iterable_big_map_unit from '../bindings/passed/asset_iterable_big_map_unit'
+import * as asset_iterable_big_map_unit_effect_add from '../bindings/passed/asset_iterable_big_map_unit_effect_add'
+import * as asset_iterable_big_map_unit_effect_addupdate from '../bindings/passed/asset_iterable_big_map_unit_effect_addupdate'
+import * as asset_iterable_big_map_unit_effect_remove from '../bindings/passed/asset_iterable_big_map_unit_effect_remove'
+import * as asset_iterable_big_map_unit_effect_removeall from '../bindings/passed/asset_iterable_big_map_unit_effect_removeall'
+import * as asset_iterable_big_map_unit_effect_removeif from '../bindings/passed/asset_iterable_big_map_unit_effect_removeif'
+import * as asset_iterable_big_map_unit_effect_update from '../bindings/passed/asset_iterable_big_map_unit_effect_update'
+import * as asset_iterable_big_map_unit_expression_contains from '../bindings/passed/asset_iterable_big_map_unit_expression_contains'
+import * as asset_iterable_big_map_unit_expression_count from '../bindings/passed/asset_iterable_big_map_unit_expression_count'
+import * as asset_iterable_big_map_unit_expression_head from '../bindings/passed/asset_iterable_big_map_unit_expression_head'
+import * as asset_iterable_big_map_unit_expression_nth from '../bindings/passed/asset_iterable_big_map_unit_expression_nth'
+import * as asset_iterable_big_map_unit_expression_select from '../bindings/passed/asset_iterable_big_map_unit_expression_select'
+import * as asset_iterable_big_map_unit_expression_sort from '../bindings/passed/asset_iterable_big_map_unit_expression_sort'
+import * as asset_iterable_big_map_unit_expression_sum from '../bindings/passed/asset_iterable_big_map_unit_expression_sum'
+import * as asset_iterable_big_map_unit_expression_tail from '../bindings/passed/asset_iterable_big_map_unit_expression_tail'
+import * as asset_iterable_big_map_unit_instruction_for from '../bindings/passed/asset_iterable_big_map_unit_instruction_for'
+import * as asset_iterable_big_map_unit_storage from '../bindings/passed/asset_iterable_big_map_unit_storage'
 import * as asset_key_in_record from '../bindings/passed/asset_key_in_record'
 import * as asset_key_tuple from '../bindings/passed/asset_key_tuple'
 import * as asset_not_found from '../bindings/passed/asset_not_found'
@@ -1692,6 +1744,648 @@ describe('Tests', async () => {
       assert(o_asset[4][1] == "str4")
       assert(o_asset[5][0].equals(new Nat(5)))
       assert(o_asset[5][1] == "str5")
+    })
+
+    // TODO
+    it('asset_iterable_big_map', async () => {
+      await asset_iterable_big_map.asset_iterable_big_map.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map.asset_iterable_big_map.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map.asset_iterable_big_map.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map.asset_iterable_big_map.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    it('asset_iterable_big_map_effect_add', async () => {
+      await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.deploy({ as: alice })
+      const id0_my_asset_before = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id0")
+      assert(id0_my_asset_before?.equals(new Nat(0)))
+      const id1_my_asset_before = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id1")
+      assert(id1_my_asset_before?.equals(new Nat(1)))
+      const id2_my_asset_before = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id2")
+      assert(id2_my_asset_before?.equals(new Nat(2)))
+      const id3_my_asset_before = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id3")
+      assert(id3_my_asset_before === undefined)
+      await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.exec({ as: alice })
+      const id0_my_asset_after = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id0")
+      assert(id0_my_asset_after?.equals(new Nat(0)))
+      const id1_my_asset_after = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id1")
+      assert(id1_my_asset_after?.equals(new Nat(1)))
+      const id2_my_asset_after = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id2")
+      assert(id2_my_asset_after?.equals(new Nat(2)))
+      const id3_my_asset_after = await asset_iterable_big_map_effect_add.asset_iterable_big_map_effect_add.get_my_asset_value("id3")
+      assert(id3_my_asset_after?.equals(new Nat(3)))
+    })
+
+    it('asset_iterable_big_map_effect_addupdate', async () => {
+      await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.deploy({ as: alice })
+      const id0_my_asset_before = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id0")
+      assert(id0_my_asset_before?.equals(new Nat(0)))
+      const id1_my_asset_before = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id1")
+      assert(id1_my_asset_before?.equals(new Nat(1)))
+      const id2_my_asset_before = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id2")
+      assert(id2_my_asset_before?.equals(new Nat(2)))
+      const id3_my_asset_before = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id3")
+      assert(id3_my_asset_before === undefined)
+      await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.exec({ as: alice })
+      const id0_my_asset_after = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id0")
+      assert(id0_my_asset_after?.equals(new Nat(2)))
+      const id1_my_asset_after = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id1")
+      assert(id1_my_asset_after?.equals(new Nat(1)))
+      const id2_my_asset_after = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id2")
+      assert(id2_my_asset_after?.equals(new Nat(2)))
+      const id3_my_asset_after = await asset_iterable_big_map_effect_addupdate.asset_iterable_big_map_effect_addupdate.get_my_asset_value("id3")
+      assert(id3_my_asset_after === undefined)
+    })
+
+    // TODO
+    it('asset_iterable_big_map_effect_remove', async () => {
+      await asset_iterable_big_map_effect_remove.asset_iterable_big_map_effect_remove.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_effect_remove.asset_iterable_big_map_effect_remove.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_effect_remove.asset_iterable_big_map_effect_remove.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_effect_remove.asset_iterable_big_map_effect_remove.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_effect_removeall', async () => {
+      await asset_iterable_big_map_effect_removeall.asset_iterable_big_map_effect_removeall.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_effect_removeall.asset_iterable_big_map_effect_removeall.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_effect_removeall.asset_iterable_big_map_effect_removeall.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_effect_removeall.asset_iterable_big_map_effect_removeall.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_effect_removeif', async () => {
+      await asset_iterable_big_map_effect_removeif.asset_iterable_big_map_effect_removeif.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_effect_removeif.asset_iterable_big_map_effect_removeif.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_effect_removeif.asset_iterable_big_map_effect_removeif.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_effect_removeif.asset_iterable_big_map_effect_removeif.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_effect_update', async () => {
+      await asset_iterable_big_map_effect_update.asset_iterable_big_map_effect_update.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_effect_update.asset_iterable_big_map_effect_update.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_effect_update.asset_iterable_big_map_effect_update.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_effect_update.asset_iterable_big_map_effect_update.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_contains', async () => {
+      await asset_iterable_big_map_expression_contains.asset_iterable_big_map_expression_contains.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_contains.asset_iterable_big_map_expression_contains.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_contains.asset_iterable_big_map_expression_contains.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_contains.asset_iterable_big_map_expression_contains.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_count', async () => {
+      await asset_iterable_big_map_expression_count.asset_iterable_big_map_expression_count.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_count.asset_iterable_big_map_expression_count.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_count.asset_iterable_big_map_expression_count.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_count.asset_iterable_big_map_expression_count.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_get', async () => {
+      await asset_iterable_big_map_expression_get.asset_iterable_big_map_expression_get.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_get.asset_iterable_big_map_expression_get.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_get.asset_iterable_big_map_expression_get.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_get.asset_iterable_big_map_expression_get.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_head', async () => {
+      await asset_iterable_big_map_expression_head.asset_iterable_big_map_expression_head.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_head.asset_iterable_big_map_expression_head.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_head.asset_iterable_big_map_expression_head.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_head.asset_iterable_big_map_expression_head.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_nth', async () => {
+      await asset_iterable_big_map_expression_nth.asset_iterable_big_map_expression_nth.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_nth.asset_iterable_big_map_expression_nth.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_nth.asset_iterable_big_map_expression_nth.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_nth.asset_iterable_big_map_expression_nth.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_select', async () => {
+      await asset_iterable_big_map_expression_select.asset_iterable_big_map_expression_select.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_select.asset_iterable_big_map_expression_select.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_select.asset_iterable_big_map_expression_select.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_select.asset_iterable_big_map_expression_select.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_sort', async () => {
+      await asset_iterable_big_map_expression_sort.asset_iterable_big_map_expression_sort.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_sort.asset_iterable_big_map_expression_sort.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_sort.asset_iterable_big_map_expression_sort.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_sort.asset_iterable_big_map_expression_sort.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_sum', async () => {
+      await asset_iterable_big_map_expression_sum.asset_iterable_big_map_expression_sum.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_sum.asset_iterable_big_map_expression_sum.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_sum.asset_iterable_big_map_expression_sum.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_sum.asset_iterable_big_map_expression_sum.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_expression_tail', async () => {
+      await asset_iterable_big_map_expression_tail.asset_iterable_big_map_expression_tail.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_expression_tail.asset_iterable_big_map_expression_tail.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_expression_tail.asset_iterable_big_map_expression_tail.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_expression_tail.asset_iterable_big_map_expression_tail.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_instruction_for', async () => {
+      await asset_iterable_big_map_instruction_for.asset_iterable_big_map_instruction_for.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_instruction_for.asset_iterable_big_map_instruction_for.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_instruction_for.asset_iterable_big_map_instruction_for.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_instruction_for.asset_iterable_big_map_instruction_for.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_add', async () => {
+      await asset_iterable_big_map_multi_effect_add.asset_iterable_big_map_multi_effect_add.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_add.asset_iterable_big_map_multi_effect_add.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_add.asset_iterable_big_map_multi_effect_add.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_add.asset_iterable_big_map_multi_effect_add.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_addupdate', async () => {
+      await asset_iterable_big_map_multi_effect_addupdate.asset_iterable_big_map_multi_effect_addupdate.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_addupdate.asset_iterable_big_map_multi_effect_addupdate.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_addupdate.asset_iterable_big_map_multi_effect_addupdate.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_addupdate.asset_iterable_big_map_multi_effect_addupdate.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_remove', async () => {
+      await asset_iterable_big_map_multi_effect_remove.asset_iterable_big_map_multi_effect_remove.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_remove.asset_iterable_big_map_multi_effect_remove.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_remove.asset_iterable_big_map_multi_effect_remove.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_remove.asset_iterable_big_map_multi_effect_remove.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_removeall', async () => {
+      await asset_iterable_big_map_multi_effect_removeall.asset_iterable_big_map_multi_effect_removeall.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_removeall.asset_iterable_big_map_multi_effect_removeall.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_removeall.asset_iterable_big_map_multi_effect_removeall.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_removeall.asset_iterable_big_map_multi_effect_removeall.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_removeif', async () => {
+      await asset_iterable_big_map_multi_effect_removeif.asset_iterable_big_map_multi_effect_removeif.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_removeif.asset_iterable_big_map_multi_effect_removeif.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_removeif.asset_iterable_big_map_multi_effect_removeif.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_removeif.asset_iterable_big_map_multi_effect_removeif.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_effect_update', async () => {
+      await asset_iterable_big_map_multi_effect_update.asset_iterable_big_map_multi_effect_update.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_effect_update.asset_iterable_big_map_multi_effect_update.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_effect_update.asset_iterable_big_map_multi_effect_update.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_effect_update.asset_iterable_big_map_multi_effect_update.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_contains', async () => {
+      await asset_iterable_big_map_multi_expression_contains.asset_iterable_big_map_multi_expression_contains.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_contains.asset_iterable_big_map_multi_expression_contains.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_contains.asset_iterable_big_map_multi_expression_contains.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_contains.asset_iterable_big_map_multi_expression_contains.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_count', async () => {
+      await asset_iterable_big_map_multi_expression_count.asset_iterable_big_map_multi_expression_count.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_count.asset_iterable_big_map_multi_expression_count.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_count.asset_iterable_big_map_multi_expression_count.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_count.asset_iterable_big_map_multi_expression_count.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_get', async () => {
+      await asset_iterable_big_map_multi_expression_get.asset_iterable_big_map_multi_expression_get.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_get.asset_iterable_big_map_multi_expression_get.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_get.asset_iterable_big_map_multi_expression_get.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_get.asset_iterable_big_map_multi_expression_get.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_head', async () => {
+      await asset_iterable_big_map_multi_expression_head.asset_iterable_big_map_multi_expression_head.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_head.asset_iterable_big_map_multi_expression_head.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_head.asset_iterable_big_map_multi_expression_head.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_head.asset_iterable_big_map_multi_expression_head.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_nth', async () => {
+      await asset_iterable_big_map_multi_expression_nth.asset_iterable_big_map_multi_expression_nth.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_nth.asset_iterable_big_map_multi_expression_nth.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_nth.asset_iterable_big_map_multi_expression_nth.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_nth.asset_iterable_big_map_multi_expression_nth.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_select', async () => {
+      await asset_iterable_big_map_multi_expression_select.asset_iterable_big_map_multi_expression_select.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_select.asset_iterable_big_map_multi_expression_select.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_select.asset_iterable_big_map_multi_expression_select.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_select.asset_iterable_big_map_multi_expression_select.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_sort', async () => {
+      await asset_iterable_big_map_multi_expression_sort.asset_iterable_big_map_multi_expression_sort.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_sort.asset_iterable_big_map_multi_expression_sort.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_sort.asset_iterable_big_map_multi_expression_sort.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_sort.asset_iterable_big_map_multi_expression_sort.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_sum', async () => {
+      await asset_iterable_big_map_multi_expression_sum.asset_iterable_big_map_multi_expression_sum.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_sum.asset_iterable_big_map_multi_expression_sum.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_sum.asset_iterable_big_map_multi_expression_sum.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_sum.asset_iterable_big_map_multi_expression_sum.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_expression_tail', async () => {
+      await asset_iterable_big_map_multi_expression_tail.asset_iterable_big_map_multi_expression_tail.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_expression_tail.asset_iterable_big_map_multi_expression_tail.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_expression_tail.asset_iterable_big_map_multi_expression_tail.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_expression_tail.asset_iterable_big_map_multi_expression_tail.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_instruction_for', async () => {
+      await asset_iterable_big_map_multi_instruction_for.asset_iterable_big_map_multi_instruction_for.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_instruction_for.asset_iterable_big_map_multi_instruction_for.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_instruction_for.asset_iterable_big_map_multi_instruction_for.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_instruction_for.asset_iterable_big_map_multi_instruction_for.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_multi_storage', async () => {
+      await asset_iterable_big_map_multi_storage.asset_iterable_big_map_multi_storage.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_multi_storage.asset_iterable_big_map_multi_storage.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_multi_storage.asset_iterable_big_map_multi_storage.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_multi_storage.asset_iterable_big_map_multi_storage.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_storage', async () => {
+      await asset_iterable_big_map_storage.asset_iterable_big_map_storage.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_storage.asset_iterable_big_map_storage.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_storage.asset_iterable_big_map_storage.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_storage.asset_iterable_big_map_storage.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit', async () => {
+      await asset_iterable_big_map_unit.asset_iterable_big_map_unit.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit.asset_iterable_big_map_unit.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit.asset_iterable_big_map_unit.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit.asset_iterable_big_map_unit.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_add', async () => {
+      await asset_iterable_big_map_unit_effect_add.asset_iterable_big_map_unit_effect_add.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_add.asset_iterable_big_map_unit_effect_add.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_add.asset_iterable_big_map_unit_effect_add.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_add.asset_iterable_big_map_unit_effect_add.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_addupdate', async () => {
+      await asset_iterable_big_map_unit_effect_addupdate.asset_iterable_big_map_unit_effect_addupdate.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_addupdate.asset_iterable_big_map_unit_effect_addupdate.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_addupdate.asset_iterable_big_map_unit_effect_addupdate.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_addupdate.asset_iterable_big_map_unit_effect_addupdate.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_remove', async () => {
+      await asset_iterable_big_map_unit_effect_remove.asset_iterable_big_map_unit_effect_remove.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_remove.asset_iterable_big_map_unit_effect_remove.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_remove.asset_iterable_big_map_unit_effect_remove.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_remove.asset_iterable_big_map_unit_effect_remove.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_removeall', async () => {
+      await asset_iterable_big_map_unit_effect_removeall.asset_iterable_big_map_unit_effect_removeall.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_removeall.asset_iterable_big_map_unit_effect_removeall.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_removeall.asset_iterable_big_map_unit_effect_removeall.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_removeall.asset_iterable_big_map_unit_effect_removeall.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_removeif', async () => {
+      await asset_iterable_big_map_unit_effect_removeif.asset_iterable_big_map_unit_effect_removeif.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_removeif.asset_iterable_big_map_unit_effect_removeif.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_removeif.asset_iterable_big_map_unit_effect_removeif.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_removeif.asset_iterable_big_map_unit_effect_removeif.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_effect_update', async () => {
+      await asset_iterable_big_map_unit_effect_update.asset_iterable_big_map_unit_effect_update.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_effect_update.asset_iterable_big_map_unit_effect_update.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_effect_update.asset_iterable_big_map_unit_effect_update.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_effect_update.asset_iterable_big_map_unit_effect_update.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_contains', async () => {
+      await asset_iterable_big_map_unit_expression_contains.asset_iterable_big_map_unit_expression_contains.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_contains.asset_iterable_big_map_unit_expression_contains.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_contains.asset_iterable_big_map_unit_expression_contains.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_contains.asset_iterable_big_map_unit_expression_contains.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_count', async () => {
+      await asset_iterable_big_map_unit_expression_count.asset_iterable_big_map_unit_expression_count.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_count.asset_iterable_big_map_unit_expression_count.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_count.asset_iterable_big_map_unit_expression_count.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_count.asset_iterable_big_map_unit_expression_count.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_head', async () => {
+      await asset_iterable_big_map_unit_expression_head.asset_iterable_big_map_unit_expression_head.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_head.asset_iterable_big_map_unit_expression_head.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_head.asset_iterable_big_map_unit_expression_head.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_head.asset_iterable_big_map_unit_expression_head.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_nth', async () => {
+      await asset_iterable_big_map_unit_expression_nth.asset_iterable_big_map_unit_expression_nth.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_nth.asset_iterable_big_map_unit_expression_nth.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_nth.asset_iterable_big_map_unit_expression_nth.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_nth.asset_iterable_big_map_unit_expression_nth.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_select', async () => {
+      await asset_iterable_big_map_unit_expression_select.asset_iterable_big_map_unit_expression_select.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_select.asset_iterable_big_map_unit_expression_select.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_select.asset_iterable_big_map_unit_expression_select.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_select.asset_iterable_big_map_unit_expression_select.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_sort', async () => {
+      await asset_iterable_big_map_unit_expression_sort.asset_iterable_big_map_unit_expression_sort.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_sort.asset_iterable_big_map_unit_expression_sort.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_sort.asset_iterable_big_map_unit_expression_sort.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_sort.asset_iterable_big_map_unit_expression_sort.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_sum', async () => {
+      await asset_iterable_big_map_unit_expression_sum.asset_iterable_big_map_unit_expression_sum.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_sum.asset_iterable_big_map_unit_expression_sum.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_sum.asset_iterable_big_map_unit_expression_sum.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_sum.asset_iterable_big_map_unit_expression_sum.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_expression_tail', async () => {
+      await asset_iterable_big_map_unit_expression_tail.asset_iterable_big_map_unit_expression_tail.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_expression_tail.asset_iterable_big_map_unit_expression_tail.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_expression_tail.asset_iterable_big_map_unit_expression_tail.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_expression_tail.asset_iterable_big_map_unit_expression_tail.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_instruction_for', async () => {
+      await asset_iterable_big_map_unit_instruction_for.asset_iterable_big_map_unit_instruction_for.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_instruction_for.asset_iterable_big_map_unit_instruction_for.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_instruction_for.asset_iterable_big_map_unit_instruction_for.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_instruction_for.asset_iterable_big_map_unit_instruction_for.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('asset_iterable_big_map_unit_storage', async () => {
+      await asset_iterable_big_map_unit_storage.asset_iterable_big_map_unit_storage.deploy({ as: alice })
+      //      const before_expected = new Nat(0)
+      //      const after_expected = new Nat(1)
+      //      const res_before = await asset_iterable_big_map_unit_storage.asset_iterable_big_map_unit_storage.get_res();
+      //      assert(res_before.equals(before_expected), "Invalid Value")
+      //      await asset_iterable_big_map_unit_storage.asset_iterable_big_map_unit_storage.exec({ as: alice })
+      //      const res_after = await asset_iterable_big_map_unit_storage.asset_iterable_big_map_unit_storage.get_res();
+      //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
     it('asset_key_in_record', async () => {

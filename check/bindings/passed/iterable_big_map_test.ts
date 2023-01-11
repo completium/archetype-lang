@@ -72,7 +72,7 @@ export class Iterable_big_map_test {
     async get_my_map_value(key: string): Promise<att.Bytes | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = (await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair).args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", [])) as att.Mpair).args[1];
+            const data = (await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", [])) as att.Mpair)?.args[1];
             if (data != undefined) {
                 return att.Bytes.from_mich(data);
             }
@@ -85,7 +85,7 @@ export class Iterable_big_map_test {
     async has_my_map_value(key: string): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair).args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
+            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair).args[0] as att.Mpair)?.args[0]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
                 return true;
             }
