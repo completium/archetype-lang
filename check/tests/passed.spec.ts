@@ -1,4 +1,4 @@
-import { get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
+import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
 import { Address, Bytes, Int, Nat, Option, Tez } from '@completium/archetype-ts-types';
 
@@ -1634,100 +1634,113 @@ describe('Tests', async () => {
       assert(res_after === "mystr_0mystr_1mystr_2", "Invalid Value")
     })
 
-    // TODO
     it('asset_init_by_const_key', async () => {
       await asset_init_by_const_key.asset_init_by_const_key.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_init_by_const_key.asset_init_by_const_key.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_init_by_const_key.asset_init_by_const_key.exec({ as: alice })
-      //      const res_after = await asset_init_by_const_key.asset_init_by_const_key.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset = await asset_init_by_const_key.asset_init_by_const_key.get_my_asset()
+      assert(my_asset.length == 2)
+      assert(my_asset[0].equals(new Nat(1)))
+      assert(my_asset[1].equals(new Nat(2)))
     })
 
-    // TODO
     it('asset_init_by_const_key_parameter', async () => {
       await asset_init_by_const_key_parameter.asset_init_by_const_key_parameter.deploy(new Nat(1), { as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_init_by_const_key_parameter.asset_init_by_const_key_parameter.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_init_by_const_key_parameter.asset_init_by_const_key_parameter.exec({ as: alice })
-      //      const res_after = await asset_init_by_const_key_parameter.asset_init_by_const_key_parameter.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset = await asset_init_by_const_key_parameter.asset_init_by_const_key_parameter.get_my_asset()
+      assert(my_asset.length == 1)
+      assert(my_asset[0].equals(new Nat(1)))
     })
 
-    // TODO
     it('asset_initializedby_aggregate_empty', async () => {
       await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.exec({ as: alice })
-      //      const res_after = await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset = await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.get_my_asset()
+      assert(my_asset.length == 1)
+      assert(my_asset[0][0] == "my_id")
+      assert(my_asset[0][1].length == 0)
+      const o_asset = await asset_initializedby_aggregate_empty.asset_initializedby_aggregate_empty.get_o_asset()
+      assert(o_asset.length == 0)
     })
 
-    // TODO
     it('asset_initializedby_aggregate_filled', async () => {
       await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.exec({ as: alice })
-      //      const res_after = await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset = await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.get_my_asset()
+      assert(my_asset.length == 3)
+      assert(my_asset[0][0] == "my_id0")
+      assert(my_asset[0][1].length == 3)
+      assert(my_asset[0][1][0].equals(new Nat(0)))
+      assert(my_asset[0][1][1].equals(new Nat(1)))
+      assert(my_asset[0][1][2].equals(new Nat(2)))
+      assert(my_asset[1][0] == "my_id1")
+      assert(my_asset[1][1].length == 3)
+      assert(my_asset[1][1][0].equals(new Nat(3)))
+      assert(my_asset[1][1][1].equals(new Nat(4)))
+      assert(my_asset[1][1][2].equals(new Nat(5)))
+      assert(my_asset[2][0] == "my_id2")
+      assert(my_asset[2][1].length == 3)
+      assert(my_asset[2][1][0].equals(new Nat(0)))
+      assert(my_asset[2][1][1].equals(new Nat(1)))
+      assert(my_asset[2][1][2].equals(new Nat(2)))
+      const o_asset = await asset_initializedby_aggregate_filled.asset_initializedby_aggregate_filled.get_o_asset()
+      assert(o_asset.length == 6)
+      assert(o_asset[0][0].equals(new Nat(0)))
+      assert(o_asset[0][1] == "str0")
+      assert(o_asset[1][0].equals(new Nat(1)))
+      assert(o_asset[1][1] == "str1")
+      assert(o_asset[2][0].equals(new Nat(2)))
+      assert(o_asset[2][1] == "str2")
+      assert(o_asset[3][0].equals(new Nat(3)))
+      assert(o_asset[3][1] == "str3")
+      assert(o_asset[4][0].equals(new Nat(4)))
+      assert(o_asset[4][1] == "str4")
+      assert(o_asset[5][0].equals(new Nat(5)))
+      assert(o_asset[5][1] == "str5")
     })
 
-    // TODO
     it('asset_key_in_record', async () => {
       await asset_key_in_record.asset_key_in_record.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_key_in_record.asset_key_in_record.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_key_in_record.asset_key_in_record.exec({ as: alice })
-      //      const res_after = await asset_key_in_record.asset_key_in_record.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset = await asset_key_in_record.asset_key_in_record.get_my_asset();
+      assert(my_asset.length == 0)
     })
 
-    // TODO
     it('asset_key_tuple', async () => {
       await asset_key_tuple.asset_key_tuple.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_key_tuple.asset_key_tuple.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_key_tuple.asset_key_tuple.exec({ as: alice })
-      //      const res_after = await asset_key_tuple.asset_key_tuple.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_key_tuple.asset_key_tuple.get_my_asset()
+      assert(my_asset_before.length == 1)
+      assert(my_asset_before[0][0][0].equals(new Int(3)))
+      assert(my_asset_before[0][0][1].equals(new Nat(4)))
+      assert(my_asset_before[0][1] == "value")
+      await asset_key_tuple.asset_key_tuple.exec({ as: alice })
+      const my_asset_after = await asset_key_tuple.asset_key_tuple.get_my_asset()
+      assert(my_asset_after.length == 1)
+      assert(my_asset_after[0][0][0].equals(new Int(3)))
+      assert(my_asset_after[0][0][1].equals(new Nat(4)))
+      assert(my_asset_after[0][1] == "value")
     })
 
-    // TODO
     it('asset_not_found', async () => {
       await asset_not_found.asset_not_found.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_not_found.asset_not_found.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_not_found.asset_not_found.exec({ as: alice })
-      //      const res_after = await asset_not_found.asset_not_found.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_not_found.asset_not_found.get_my_asset()
+      assert(my_asset_before.length == 0)
+      expect_to_fail(async () => {
+        await asset_not_found.asset_not_found.exec({ as: alice })
+      }, { prim: "Pair", args: [{ string: "ASSET_NOT_FOUND" }, { string: "my_asset" }] })
     })
 
-    // TODO
     it('asset_nth', async () => {
       await asset_nth.asset_nth.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await asset_nth.asset_nth.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await asset_nth.asset_nth.exec({ as: alice })
-      //      const res_after = await asset_nth.asset_nth.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const my_asset_before = await asset_nth.asset_nth.get_my_asset()
+      assert(my_asset_before.length == 3)
+      assert(my_asset_before[0] == "id0")
+      assert(my_asset_before[1] == "id1")
+      assert(my_asset_before[2] == "id2")
+      const res_before = await asset_nth.asset_nth.get_res();
+      assert(res_before.equals(Option.None<string>()))
+      await asset_nth.asset_nth.exec({ as: alice })
+      const my_asset_after = await asset_nth.asset_nth.get_my_asset()
+      assert(my_asset_after.length == 3)
+      assert(my_asset_after[0] == "id0")
+      assert(my_asset_after[1] == "id1")
+      assert(my_asset_after[2] == "id2")
+      const res_after = await asset_nth.asset_nth.get_res();
+      assert(res_after.equals(Option.None<string>()))
     })
 
     // TODO
