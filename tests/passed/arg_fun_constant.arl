@@ -3,14 +3,11 @@ archetype arg_fun_constant
 constant MY_CONSTANT : string = "MY_CONSTANT"
 
 function f() : bool {
-  fail(MY_CONSTANT)
+  return (MY_CONSTANT = MY_CONSTANT)
 }
 
+variable res : bool = false
+
 entry manage_transfers(){
-  require {
-    s0 : f();
-  }
-  effect {
-    ()
-  }
+  res := f()
 }

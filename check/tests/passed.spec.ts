@@ -1,6 +1,6 @@
 import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
-import { Address, Bytes, Int, Nat, Option, Tez } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Micheline, Nat, Option, Or, Tez } from '@completium/archetype-ts-types';
 
 import * as add_update_record from '../bindings/passed/add_update_record'
 import * as addupdate_partition from '../bindings/passed/addupdate_partition'
@@ -9,6 +9,7 @@ import * as addupdate_partition_with_no_effect_on_default_value from '../binding
 import * as addupdate_with_no_effect_on_default_value from '../bindings/passed/addupdate_with_no_effect_on_default_value'
 import * as annot_enum from '../bindings/passed/annot_enum'
 import * as apply_lambda from '../bindings/passed/apply_lambda'
+import * as arg_fun_constant from '../bindings/passed/arg_fun_constant'
 import * as arith_bls from '../bindings/passed/arith_bls'
 import * as arith_tez from '../bindings/passed/arith_tez'
 import * as ascii_string from '../bindings/passed/ascii_string'
@@ -1377,6 +1378,15 @@ describe('Tests', async () => {
       assert(r_exec.equals(new annot_enum.abc(new Nat(1))), "Invalid Value")
       const z_exec = await annot_enum.annot_enum.get_z()
       assert(z_exec.equals(new Nat(0)), "Invalid Value")
+    })
+
+    it('arg_fun_constant', async () => {
+      await arg_fun_constant.arg_fun_constant.deploy({ as: alice })
+      const res_before = await arg_fun_constant.arg_fun_constant.get_res();
+      assert(res_before == false, "Invalid Value")
+      await arg_fun_constant.arg_fun_constant.manage_transfers({ as: alice })
+      const res_after = await arg_fun_constant.arg_fun_constant.get_res();
+      assert(res_after == true, "Invalid Value")
     })
 
     it('apply_lambda', async () => {
@@ -15038,9 +15048,10 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // TODO
     it('type_never', async () => {
       await type_never.type_never.deploy({ as: alice })
+      const res = await type_never.type_never.get_res();
+      assert(res.equals(Or.Right<Micheline, Nat>(new Nat(1))), "Invalid Value")
     })
 
     // TODO
