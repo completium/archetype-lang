@@ -1,6 +1,7 @@
 import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
 import assert from 'assert'
-import { Address, Bytes, Int, Micheline, Nat, Option, Or, Tez } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez } from '@completium/archetype-ts-types';
+import { BigNumber } from 'bignumber.js'
 
 import * as add_update_record from '../bindings/passed/add_update_record'
 import * as addupdate_partition from '../bindings/passed/addupdate_partition'
@@ -540,6 +541,8 @@ import * as expr_fun_concat_list_byt from '../bindings/passed/expr_fun_concat_li
 import * as expr_fun_concat_list_str from '../bindings/passed/expr_fun_concat_list_str'
 import * as expr_fun_concat_str from '../bindings/passed/expr_fun_concat_str'
 import * as expr_fun_floor from '../bindings/passed/expr_fun_floor'
+import * as expr_fun_get_denominator from '../bindings/passed/expr_fun_get_denominator'
+import * as expr_fun_get_numerator from '../bindings/passed/expr_fun_get_numerator'
 import * as expr_fun_int_to_nat from '../bindings/passed/expr_fun_int_to_nat'
 import * as expr_fun_key_hash_to_contract from '../bindings/passed/expr_fun_key_hash_to_contract'
 import * as expr_fun_length_bytes from '../bindings/passed/expr_fun_length_bytes'
@@ -579,6 +582,7 @@ import * as expr_fun_pack_complex from '../bindings/passed/expr_fun_pack_complex
 import * as expr_fun_pack_lit_tuple from '../bindings/passed/expr_fun_pack_lit_tuple'
 import * as expr_fun_pack_string from '../bindings/passed/expr_fun_pack_string'
 import * as expr_fun_setdelegate from '../bindings/passed/expr_fun_setdelegate'
+import * as expr_fun_simplify_rational from '../bindings/passed/expr_fun_simplify_rational'
 import * as expr_fun_slice_byt from '../bindings/passed/expr_fun_slice_byt'
 import * as expr_fun_slice_str from '../bindings/passed/expr_fun_slice_str'
 import * as expr_fun_sub_mutez from '../bindings/passed/expr_fun_sub_mutez'
@@ -7869,6 +7873,26 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
+    it('expr_fun_get_denominator', async () => {
+      await expr_fun_get_denominator.expr_fun_get_denominator.deploy({ as: alice })
+      const v = new Rational(1, new BigNumber(2));
+      const res_before = await expr_fun_get_denominator.expr_fun_get_denominator.get_res();
+      assert(res_before.equals(new Nat(0)), "Invalid Value")
+      await expr_fun_get_denominator.expr_fun_get_denominator.exec(v, { as: alice })
+      const res_after = await expr_fun_get_denominator.expr_fun_get_denominator.get_res();
+      assert(res_after.equals(new Nat(2)), "Invalid Value")
+    })
+
+    it('expr_fun_get_numerator', async () => {
+      await expr_fun_get_numerator.expr_fun_get_numerator.deploy({ as: alice })
+      const v = new Rational(1, new BigNumber(2));
+      const res_before = await expr_fun_get_numerator.expr_fun_get_numerator.get_res();
+      assert(res_before.equals(new Int(0)), "Invalid Value")
+      await expr_fun_get_numerator.expr_fun_get_numerator.exec(v, { as: alice })
+      const res_after = await expr_fun_get_numerator.expr_fun_get_numerator.get_res();
+      assert(res_after.equals(new Int(1)), "Invalid Value")
+    })
+
     // TODO
     it('expr_fun_int_to_nat', async () => {
       await expr_fun_int_to_nat.expr_fun_int_to_nat.deploy({ as: alice })
@@ -8335,6 +8359,30 @@ describe('Tests', async () => {
       //      await expr_fun_setdelegate.expr_fun_setdelegate.exec({ as: alice })
       //      const res_after = await expr_fun_setdelegate.expr_fun_setdelegate.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    it('expr_fun_simplify_rational', async () => {
+      await expr_fun_simplify_rational.expr_fun_simplify_rational.deploy({ as: alice })
+      const res_before = await expr_fun_simplify_rational.expr_fun_simplify_rational.get_res();
+      assert(res_before.equals(new Rational(0)), "Invalid Value")
+      {
+        const v = new Rational(36, new BigNumber(48))
+        await expr_fun_simplify_rational.expr_fun_simplify_rational.exec(v, { as: alice })
+        const res = await expr_fun_simplify_rational.expr_fun_simplify_rational.get_res();
+        assert(res.equals(new Rational(3, new BigNumber(4))))
+      }
+      {
+        const v = new Rational(-36, new BigNumber(48))
+        await expr_fun_simplify_rational.expr_fun_simplify_rational.exec(v, { as: alice })
+        const res = await expr_fun_simplify_rational.expr_fun_simplify_rational.get_res();
+        assert(res.equals(new Rational(-3, new BigNumber(4))))
+      }
+      {
+        const v = new Rational(28, new BigNumber(140))
+        await expr_fun_simplify_rational.expr_fun_simplify_rational.exec(v, { as: alice })
+        const res = await expr_fun_simplify_rational.expr_fun_simplify_rational.get_res();
+        assert(res.equals(new Rational(1, new BigNumber(5))))
+      }
     })
 
     // TODO

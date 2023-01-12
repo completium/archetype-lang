@@ -1,9 +1,9 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const manage_transfers_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (i: att.Rational): att.Micheline => {
+    return i.to_mich();
 }
-export class Arg_fun_constant {
+export class Expr_fun_get_numerator {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,28 +21,28 @@ export class Arg_fun_constant {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/arg_fun_constant.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/expr_fun_get_numerator.arl", {}, params)).address;
         this.address = address;
     }
-    async manage_transfers(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(i: att.Rational, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "manage_transfers", manage_transfers_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(i), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_manage_transfers_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(i: att.Rational, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "manage_transfers", manage_transfers_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(i), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<boolean> {
+    async get_res(): Promise<att.Int> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_bool(storage);
+            return att.Int.from_mich(storage);
         }
         throw new Error("Contract not initialised");
     }
     errors = {};
 }
-export const arg_fun_constant = new Arg_fun_constant();
+export const expr_fun_get_numerator = new Expr_fun_get_numerator();

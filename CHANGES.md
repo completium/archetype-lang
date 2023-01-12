@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - New feature
+  - Add `simplify_rational`, `get_numerator` and `get_denominator` builtin functions
 
 ## [1.4.0] - 2022-12-06
 ### Added
