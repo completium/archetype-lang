@@ -7,6 +7,8 @@
     "show_archetype_version": "completium-cli archetype version",
     "mockup_init": "completium-cli mockup init",
     "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts",
+    "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts",
+    "test:type-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/type-errors.spec.ts",
     "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts",
     "generate:json": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_json.ts"
   },

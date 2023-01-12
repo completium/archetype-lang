@@ -2,8 +2,8 @@ archetype expr_cmp_ne_option
 
 entry exec () {
   effect {
-    var a : option<string> = none;
-    var b : option<string> = none;
+    var a : option<set<int>> = none;
+    var b : option<set<int>> = none;
     do_require (a <> b, "ko")
   }
 }

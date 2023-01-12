@@ -20,7 +20,7 @@ const write_binding = (input: string) => {
   fs.writeFileSync(out_ts, output)
 }
 
-const skip : Array<string> = []
+const skip: Array<string> = []
 
 const generate_spec_template = (input: Array<string>) => {
   let imports: Array<string> = []
@@ -69,6 +69,36 @@ ${(items.map(x => x)).join('')}
   fs.writeFileSync('./tests/template.spec.ts', output)
 }
 
+
+const generate_spec_error = (input: Array<string>) => {
+  let items: Array<string> = []
+  for (const id of input) {
+    items.push(`
+  it('${id}', async () => {
+    const stat = compile("../tests/type-errors/${id}.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })`);
+  }
+  const output = `/* DO NOT EDIT, GENERATED FILE */
+import assert from 'assert'
+
+/* Utils ------------------------------------------------------------------- */
+
+const compile = (p : string) => {
+  const spawn = require('cross-spawn');
+  const bin = '../archetype.exe'
+  const res = spawn.sync(bin, [p], { });
+  return res
+}
+
+/* Tests ------------------------------------------------------------------- */
+
+describe('Type errors', async () => {${(items.map(x => x)).join('')}
+})
+  `
+  fs.writeFileSync('./tests/type-errors.spec.ts', output)
+}
+
 describe('Generate binding', async () => {
   describe('Passed', async () => {
     const p = './json/passed'
@@ -79,7 +109,7 @@ describe('Generate binding', async () => {
       const filename = dirent.name as string;
       if (filename.endsWith(".json")) {
         if (!skip.includes(filename)) {
-          const f : string = filename.substring(0, (filename.length -5));
+          const f: string = filename.substring(0, (filename.length - 5));
           filenames.push(f)
         }
       }
@@ -92,5 +122,26 @@ describe('Generate binding', async () => {
       });
     }
     // generate_spec_template(filenames)
+  })
+
+  describe('Generate spec.ts files', async () => {
+    it('type-errors', async () => {
+      const p = '../tests/type-errors'
+      const dir = fs.opendirSync(p)
+      let dirent;
+      let filenames: Array<string> = []
+      while ((dirent = dir.readSync()) !== null) {
+        const filename = dirent.name as string;
+        if (filename.endsWith(".arl")) {
+          if (!skip.includes(filename)) {
+            const f: string = filename.substring(0, (filename.length - 4));
+            filenames.push(f)
+          }
+        }
+      }
+      dir.closeSync()
+      filenames.sort((x, y) => (x > y ? 1 : -1));
+      generate_spec_error(filenames)
+    })
   })
 })
