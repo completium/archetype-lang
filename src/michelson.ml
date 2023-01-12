@@ -344,6 +344,7 @@ and builtin =
   | Brattez
   | Bratdur
   | Bmuteztonat
+  | Bsimplify_rational
 [@@deriving show {with_path = false}]
 
 and instruction =
@@ -662,8 +663,8 @@ let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
 let isub_mutez l r   = Ibinop (Bsubmutez, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
 let irecord ir       = Irecord ir
 let isrecord l       = irecord (Rtuple l)
 let ipair x y        = Ibinop (Bpair, x, y)
@@ -1093,6 +1094,7 @@ let cmp_builtin lhs rhs =
   | Bratabs, Bratabs                   -> true
   | Brattez, Brattez                   -> true
   | Bratdur, Bratdur                   -> true
+  | Bsimplify_rational, Bsimplify_rational -> true
   | _ -> false
 
 let map_type (f : type_ -> type_) (t : type_) : type_ =
@@ -1441,6 +1443,7 @@ end = struct
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Bnattostring    -> "_nat_to_string_"
+    | Bsimplify_rational    -> "_simplify_rational_"
     | Bratcmp         -> "_ratcmp"
     | Bratnorm        -> "_ratnorm"
     | Brataddsub      -> "_rataddsub"

@@ -290,6 +290,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Brattez          -> true
     | T.Bratdur          -> true
     | T.Bmuteztonat      -> true
+    | T.Bsimplify_rational -> false
   in
 
   let add_builtin b =
@@ -403,6 +404,11 @@ let to_ir (model : M.model) : T.ir =
     | Bmuteztonat -> begin
         let targ = T.tmutez in
         let tret = T.tnat in
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | Bsimplify_rational -> begin
+        let targ = T.trat in
+        let tret = T.trat in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
   in
@@ -1036,7 +1042,7 @@ let to_ir (model : M.model) : T.ir =
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
     | Maddresstocontract (t, x) -> T.Iunop (Ucontract(ft t, None), f x)
     | Mkeytoaddress    x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
-    | Msimplify_rational _x -> assert false
+    | Msimplify_rational x -> let b = T.Bsimplify_rational in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mget_numerator     x -> T.Iunop (Ucar,  f x)
     | Mget_denominator   x -> T.Iunop (Ucdr,  f x)
 
@@ -1223,6 +1229,7 @@ let to_ir (model : M.model) : T.ir =
         | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type model t)))
         | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
         | Mnattostring _          -> (doit accu mt (T.Bnattostring))
+        | Msimplify_rational _    -> (doit accu mt (T.Bsimplify_rational))
 
         | Mrateq _
         | Mratcmp _                          -> (doit accu mt (T.Bratcmp   ))
@@ -1338,6 +1345,81 @@ let map_implem : (string * T.code list) list = [
                                       cabs; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
   get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
   get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
+
+  get_fun_name T.Bsimplify_rational, T.[
+    cpush (tunit, T.Dunit);
+    cdup_n 2;
+    ccar;
+    cdup_n 3;
+    ccdr;
+    cdup_n 2;
+    cdup_n 2;
+    cpush (tnat, T.Dint Big_int.zero_big_int);
+    cdup_n 2;
+    ccompare;
+    cneq;
+    cloop [
+      cdup;
+      cdup_n 2;
+      cint;
+      cdup_n 4;
+      cediv;
+      cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccdr; cswap; cdrop 1]);
+      cdip (1, [cdig 1; cdrop 1]);
+      cdug 1;
+      cdup;
+      cint;
+      cdip (1, [cdig 2; cdrop 1]);
+      cdug 2;
+      cdrop 1;
+      cpush (tnat, T.Dint Big_int.zero_big_int);
+      cdup_n 2;
+      ccompare;
+      cneq
+    ];
+    cpush (tnat, T.Dint Big_int.unit_big_int);
+    cdup_n 3;
+    cdup_n 5;
+    cint;
+    cediv;
+    cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccar; cswap; cdrop 1]);
+    cpair;
+    cpush (tnat, T.Dint Big_int.unit_big_int);
+    cdup_n 4;
+    cdup_n 7;
+    cediv;
+    cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccar; cswap; cdrop 1]);
+    cpair;
+    cpair;
+    cunpair;
+    cdip (1, [cunpair]);
+    cunpair;
+    cdig 3;
+    cdup;
+    cdig 3;
+    cdup;
+    cdug 4;
+    cmul;
+    cpush (tnat, T.Dint Big_int.zero_big_int);
+    ccompare;
+    ceq;
+    cif ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], []);
+    cpush (tint, T.Dint Big_int.zero_big_int);
+    cdig 4;
+    cdup;
+    cdug 5;
+    ccompare;
+    cge;
+    cif ([cint], [cneg]);
+    cmul;
+    cdip (1, [cmul; cabs]);
+    cpair;
+    cdip (1, [cdig 4; cdrop 1]);
+    cdug 4;
+    cdrop 4;
+    cdug 1;
+    cdrop 1
+  ]
 ]
 
 let concrete_michelson b : T.code =
@@ -1365,6 +1447,7 @@ let concrete_michelson b : T.code =
   | T.Brattez         -> T.cseq (get_implem b)
   | T.Bratdur         -> T.cseq (get_implem b)
   | T.Bmuteztonat     -> T.cseq (get_implem b)
+  | T.Bsimplify_rational -> T.cseq (get_implem b)
 
 type env = {
   vars : ident list;
