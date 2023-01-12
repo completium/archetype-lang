@@ -5,7 +5,7 @@ import assert from 'assert'
 
 const compile = (p : string) => {
   const spawn = require('cross-spawn');
-  const bin = '../archetype.exe'
+  const bin = '../_build/default/src/compiler.exe'
   const res = spawn.sync(bin, [p], { });
   return res
 }
