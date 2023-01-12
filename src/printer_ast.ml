@@ -292,6 +292,9 @@ let to_const = function
   | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
   | Cmakeevent             -> "make_event"
+  | Csimplifyrational      -> "simplify_rational"
+  | Cgetnumerator          -> "get_numerator"
+  | Cgetdenominator        -> "get_denominator"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"

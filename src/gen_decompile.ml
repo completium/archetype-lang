@@ -1842,7 +1842,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mkeyhashtocontract _x -> assert false
     | Mcontracttoaddress _x -> assert false
     | Maddresstocontract (_t, _x) -> assert false
-    | Mkeytoaddress _x    -> assert false
+    | Mkeytoaddress _x      -> assert false
+    | Msimplify_rational _x -> assert false
+    | Mget_numerator _x     -> assert false
+    | Mget_denominator _x   -> assert false
 
 
     (* crypto functions *)

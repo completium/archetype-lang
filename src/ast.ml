@@ -215,6 +215,9 @@ type const =
   | CrequireEntrypoint
   | CcallView
   | CimportCallView
+  | Csimplifyrational
+  | Cgetnumerator
+  | Cgetdenominator
   (* set *)
   | Csadd
   | Csremove

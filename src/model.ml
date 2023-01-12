@@ -429,7 +429,10 @@ type 'term mterm_node  =
   | Mkeyhashtocontract of 'term
   | Mcontracttoaddress of 'term
   | Maddresstocontract  of type_ * 'term
-  | Mkeytoaddress     of 'term
+  | Mkeytoaddress      of 'term
+  | Msimplify_rational of 'term
+  | Mget_numerator     of 'term
+  | Mget_denominator   of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -1701,6 +1704,9 @@ let cmp_mterm_node
     | Mcontracttoaddress x1, Mcontracttoaddress x2                                     -> cmp x1 x2
     | Maddresstocontract (t1, x1), Maddresstocontract (t2, x2)                         -> cmp_type t1 t2 && cmp x1 x2
     | Mkeytoaddress x1, Mkeytoaddress x2                                               -> cmp x1 x2
+    | Msimplify_rational x1, Msimplify_rational x2                                     -> cmp x1 x2
+    | Mget_numerator x1, Mget_numerator x2                                             -> cmp x1 x2
+    | Mget_denominator x1, Mget_denominator x2                                         -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -2168,6 +2174,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mcontracttoaddress x           -> Mcontracttoaddress (f x)
   | Maddresstocontract (t, x)      -> Maddresstocontract (t, f x)
   | Mkeytoaddress x                -> Mkeytoaddress (f x)
+  | Msimplify_rational x           -> Msimplify_rational (f x)
+  | Mget_numerator x               -> Mget_numerator (f x)
+  | Mget_denominator x             -> Mget_denominator (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2632,6 +2641,9 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mcontracttoaddress x                  -> f accu x
   | Maddresstocontract (_, x)             -> f accu x
   | Mkeytoaddress x                       -> f accu x
+  | Msimplify_rational x                  -> f accu x
+  | Mget_numerator x                      -> f accu x
+  | Mget_denominator x                    -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -3788,6 +3800,18 @@ let fold_map_term
   | Mkeytoaddress x ->
     let xe, xa = f accu x in
     g (Mkeytoaddress xe), xa
+
+  | Msimplify_rational x ->
+    let xe, xa = f accu x in
+    g (Msimplify_rational xe), xa
+
+  | Mget_numerator x ->
+    let xe, xa = f accu x in
+    g (Mget_numerator xe), xa
+
+  | Mget_denominator x ->
+    let xe, xa = f accu x in
+    g (Mget_denominator xe), xa
 
   (* crypto functions *)
 

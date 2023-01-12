@@ -1424,6 +1424,18 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "key_to_address (%a)"
         f x
 
+    | Msimplify_rational x ->
+      Format.fprintf fmt "simplify_rational (%a)"
+        f x
+
+    | Mget_numerator x ->
+      Format.fprintf fmt "get_numerator (%a)"
+        f x
+
+    | Mget_denominator x ->
+      Format.fprintf fmt "get_denominator (%a)"
+        f x
+
 
     (* crypto functions *)
 

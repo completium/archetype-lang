@@ -1,0 +1,7 @@
+archetype expr_fun_get_numerator
+
+variable res : int = 0i
+
+entry exec(i : rational) {
+  res := get_numerator(i)
+}

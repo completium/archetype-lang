@@ -1577,7 +1577,10 @@ let mathops : opinfo list =
     op "sub_nat" A.Csubnat `Total (Some A.vtnat) [ A.vtnat ] (`Ty (A.Toption A.vtnat)) Mint.empty;
     op "sub_mutez" A.Csubmutez `Total (Some A.vtcurrency) [ A.vtcurrency ] (`Ty (A.Toption A.vtcurrency)) Mint.empty;
     op "greedy_and" A.Cgreedyand `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty;
-    op "greedy_or" A.Cgreedyor `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty
+    op "greedy_or" A.Cgreedyor `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty;
+    op "simplify_rational" A.Csimplifyrational `Total None [ A.vtrational ] (`Ty A.vtrational) Mint.empty;
+    op "get_numerator" A.Cgetnumerator `Total None [ A.vtrational ] (`Ty A.vtint) Mint.empty;
+    op "get_denominator" A.Cgetdenominator `Total None [ A.vtrational ] (`Ty A.vtnat) Mint.empty
   ]
 
 (* -------------------------------------------------------------------- *)

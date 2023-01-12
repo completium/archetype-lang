@@ -1036,6 +1036,9 @@ let to_ir (model : M.model) : T.ir =
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
     | Maddresstocontract (t, x) -> T.Iunop (Ucontract(ft t, None), f x)
     | Mkeytoaddress    x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
+    | Msimplify_rational _x -> assert false
+    | Mget_numerator     x -> T.Iunop (Ucar,  f x)
+    | Mget_denominator   x -> T.Iunop (Ucdr,  f x)
 
     (* crypto functions *)
 

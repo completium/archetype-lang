@@ -1,0 +1,7 @@
+archetype expr_fun_simplify_rational
+
+variable res : rational = 0.0
+
+entry exec(i : rational) {
+  res := simplify_rational(i)
+}
