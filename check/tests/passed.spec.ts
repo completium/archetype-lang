@@ -2400,8 +2400,11 @@ describe('Tests', async () => {
 
     it('asset_key_in_record', async () => {
       await asset_key_in_record.asset_key_in_record.deploy({ as: alice })
-      const my_asset = await asset_key_in_record.asset_key_in_record.get_my_asset();
-      assert(my_asset.length == 0)
+      const my_asset_before = await asset_key_in_record.asset_key_in_record.get_my_asset();
+      assert(my_asset_before.length == 0)
+      await asset_key_in_record.asset_key_in_record.exec({ as: alice })
+      const my_asset_after = await asset_key_in_record.asset_key_in_record.get_my_asset();
+      assert(my_asset_after.length == 0)
     })
 
     it('asset_key_tuple', async () => {
@@ -2927,16 +2930,9 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // TODO
     it('const_decl', async () => {
       await const_decl.const_decl.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await const_decl.const_decl.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await const_decl.const_decl.exec({ as: alice })
-      //      const res_after = await const_decl.const_decl.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      await const_decl.const_decl.exec({ as: alice })
     })
 
     // TODO
@@ -3350,13 +3346,11 @@ describe('Tests', async () => {
     // TODO
     it('duration_to_int', async () => {
       await duration_to_int.duration_to_int.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await duration_to_int.duration_to_int.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await duration_to_int.duration_to_int.exec({ as: alice })
-      //      const res_after = await duration_to_int.duration_to_int.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await duration_to_int.duration_to_int.get_res();
+      assert(res_before.equals(new Int(0)), "Invalid Value")
+      await duration_to_int.duration_to_int.exec({ as: alice })
+      const res_after = await duration_to_int.duration_to_int.get_res();
+      assert(res_after.equals(new Int(2)), "Invalid Value")
     })
 
     // TODO
@@ -10885,25 +10879,21 @@ describe('Tests', async () => {
     // TODO
     it('not_int', async () => {
       await not_int.not_int.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await not_int.not_int.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await not_int.not_int.exec({ as: alice })
-      //      const res_after = await not_int.not_int.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await not_int.not_int.get_res();
+      assert(res_before.equals(new Int(0)), "Invalid Value")
+      await not_int.not_int.exec({ as: alice })
+      const res_after = await not_int.not_int.get_res();
+      assert(res_after.equals(new Int(-8)), "Invalid Value")
     })
 
     // TODO
     it('not_nat', async () => {
       await not_nat.not_nat.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await not_nat.not_nat.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await not_nat.not_nat.exec({ as: alice })
-      //      const res_after = await not_nat.not_nat.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await not_nat.not_nat.get_res();
+      assert(res_before.equals(new Int(0)), "Invalid Value")
+      await not_nat.not_nat.exec({ as: alice })
+      const res_after = await not_nat.not_nat.get_res();
+      assert(res_after.equals(new Int(-8)), "Invalid Value")
     })
 
     // TODO
@@ -11314,16 +11304,13 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // TODO
     it('record_in_enum', async () => {
       await record_in_enum.record_in_enum.deploy({ as: alice })
-      //      const before_expected = new Nat(0)
-      //      const after_expected = new Nat(1)
-      //      const res_before = await record_in_enum.record_in_enum.get_res();
-      //      assert(res_before.equals(before_expected), "Invalid Value")
-      //      await record_in_enum.record_in_enum.exec({ as: alice })
-      //      const res_after = await record_in_enum.record_in_enum.get_res();
-      //      assert(res_after.equals(after_expected), "Invalid Value")
+      const res_before = await record_in_enum.record_in_enum.get_res();
+      assert(res_before.equals(new Nat(0)), "Invalid Value")
+      await record_in_enum.record_in_enum.exec({ as: alice })
+      const res_after = await record_in_enum.record_in_enum.get_res();
+      assert(res_after.equals(new Nat(10)), "Invalid Value")
     })
 
     // TODO
@@ -13800,7 +13787,7 @@ describe('Tests', async () => {
 
     it('test_create_contract_bytes', async () => {
       await test_create_contract_bytes.test_create_contract_bytes.deploy({ as: alice })
-      await test_create_contract_bytes.test_create_contract_bytes.exec({as : alice})
+      await test_create_contract_bytes.test_create_contract_bytes.exec({ as: alice })
     })
 
     // TODO
