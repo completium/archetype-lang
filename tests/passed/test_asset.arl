@@ -24,7 +24,7 @@ asset my_asset_all identified by id {
   k : int;
   b : bool;
 }
-with states my_enums
+// with states my_enums
 with {
   a2 : k >= 1;
   a3 : k <= 10;

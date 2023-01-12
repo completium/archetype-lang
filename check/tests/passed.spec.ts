@@ -186,6 +186,7 @@ import * as effect_control_while from '../bindings/passed/effect_control_while'
 import * as effect_dofailif from '../bindings/passed/effect_dofailif'
 import * as effect_dorequire from '../bindings/passed/effect_dorequire'
 import * as effect_dorequire_not from '../bindings/passed/effect_dorequire_not'
+import * as effect_fail_complex from '../bindings/passed/effect_fail_complex'
 import * as effect_fail from '../bindings/passed/effect_fail'
 import * as effect_instruction_put_in_asset from '../bindings/passed/effect_instruction_put_in_asset'
 import * as effect_method_asset_add_aggregate from '../bindings/passed/effect_method_asset_add_aggregate'
@@ -712,6 +713,7 @@ import * as fail_if from '../bindings/passed/fail_if'
 import * as fail_match_list from '../bindings/passed/fail_match_list'
 import * as fail_match_option from '../bindings/passed/fail_match_option'
 import * as fail_while from '../bindings/passed/fail_while'
+import * as fail_with_tuple_lit from '../bindings/passed/fail_with_tuple_lit'
 import * as fold_reverse from '../bindings/passed/fold_reverse'
 import * as formula_added_asset from '../bindings/passed/formula_added_asset'
 import * as fun from '../bindings/passed/fun'
@@ -756,6 +758,7 @@ import * as lang_contract from '../bindings/passed/lang_contract'
 import * as lang_crypto from '../bindings/passed/lang_crypto'
 import * as lang_cst from '../bindings/passed/lang_cst'
 import * as lang_entry from '../bindings/passed/lang_entry'
+import * as lang_enum from '../bindings/passed/lang_enum'
 import * as lang_formula_asset_api from '../bindings/passed/lang_formula_asset_api'
 import * as lang_funs from '../bindings/passed/lang_funs'
 import * as lang_list from '../bindings/passed/lang_list'
@@ -830,6 +833,7 @@ import * as record_update from '../bindings/passed/record_update'
 import * as remove_asset_with_partition from '../bindings/passed/remove_asset_with_partition'
 import * as reverse_otherwise from '../bindings/passed/reverse_otherwise'
 import * as reverse_with_enum from '../bindings/passed/reverse_with_enum'
+import * as rf_failif_with from '../bindings/passed/rf_failif_with'
 import * as rf_require_otherwise from '../bindings/passed/rf_require_otherwise'
 import * as same_varname_in_two_distinct_scope from '../bindings/passed/same_varname_in_two_distinct_scope'
 import * as sample_asset_view from '../bindings/passed/sample_asset_view'
@@ -922,6 +926,7 @@ import * as spec_definition_with_param from '../bindings/passed/spec_definition_
 import * as spec_entry from '../bindings/passed/spec_entry'
 import * as spec_fail_caller from '../bindings/passed/spec_fail_caller'
 import * as spec_fail_source from '../bindings/passed/spec_fail_source'
+import * as spec_fails from '../bindings/passed/spec_fails'
 import * as spec_full from '../bindings/passed/spec_full'
 import * as spec_function from '../bindings/passed/spec_function'
 import * as spec_predicate from '../bindings/passed/spec_predicate'
@@ -1023,6 +1028,7 @@ import * as test_asset_update_partition_7 from '../bindings/passed/test_asset_up
 import * as test_asset_update_partition_8 from '../bindings/passed/test_asset_update_partition_8'
 import * as test_asset_update_partition_9 from '../bindings/passed/test_asset_update_partition_9'
 import * as test_asset_view from '../bindings/passed/test_asset_view'
+import * as test_asset from '../bindings/passed/test_asset'
 import * as test_bound_value from '../bindings/passed/test_bound_value'
 import * as test_caller_getter from '../bindings/passed/test_caller_getter'
 import * as test_cmp_bool from '../bindings/passed/test_cmp_bool'
@@ -1135,6 +1141,7 @@ import * as transfer_self from '../bindings/passed/transfer_self'
 import * as transfer_simple from '../bindings/passed/transfer_simple'
 import * as transfer_simple_with_entrypoint from '../bindings/passed/transfer_simple_with_entrypoint'
 import * as tuple_in_contains from '../bindings/passed/tuple_in_contains'
+import * as type_never from '../bindings/passed/type_never'
 import * as type_or from '../bindings/passed/type_or'
 import * as type_set_enum_param from '../bindings/passed/type_set_enum_param'
 import * as type_storage_or from '../bindings/passed/type_storage_or'
@@ -1142,12 +1149,14 @@ import * as type_tx_rollup_l2_address from '../bindings/passed/type_tx_rollup_l2
 import * as typetuple from '../bindings/passed/typetuple'
 import * as unused_argument from '../bindings/passed/unused_argument'
 import * as unused_variable from '../bindings/passed/unused_variable'
+import * as unused_variable_opt from '../bindings/passed/unused_variable_opt'
 import * as update_minus_equal from '../bindings/passed/update_minus_equal'
 import * as var_in_spec from '../bindings/passed/var_in_spec'
 import * as var_in_state_inv from '../bindings/passed/var_in_state_inv'
 import * as var_without_effect from '../bindings/passed/var_without_effect'
 import * as variable_in_container from '../bindings/passed/variable_in_container'
 import * as verif_simple from '../bindings/passed/verif_simple'
+import * as verif_fail from '../bindings/passed/verif_fail'
 import * as very_simple from '../bindings/passed/very_simple'
 import * as view_0 from '../bindings/passed/view_0'
 import * as view_all_chain from '../bindings/passed/view_all_chain'
@@ -3611,6 +3620,13 @@ describe('Tests', async () => {
       //      await effect_dorequire.effect_dorequire.exec({ as: alice })
       //      const res_after = await effect_dorequire.effect_dorequire.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    it('effect_fail_complex', async () => {
+      await effect_fail_complex.effect_fail_complex.deploy({ as: alice })
+      expect_to_fail(async () => {
+        await effect_fail_complex.effect_fail_complex.exec({ as: alice })
+      }, { prim: "Pair", args: [{ string: "error" }, { int: "0" }] })
     })
 
     // TODO
@@ -9936,6 +9952,13 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
+    it('fail_with_tuple_lit', async () => {
+      await fail_with_tuple_lit.fail_with_tuple_lit.deploy({ as: alice })
+      expect_to_fail(async () => {
+        await fail_with_tuple_lit.fail_with_tuple_lit.exec({ as: alice })
+      }, { prim: "Pair", args: [{ string: "error" }, { int: "0" }] })
+    })
+
     // TODO
     it('fold_reverse', async () => {
       await fold_reverse.fold_reverse.deploy({ as: alice })
@@ -10462,6 +10485,11 @@ describe('Tests', async () => {
       //      await lang_entry.lang_entry.exec({ as: alice })
       //      const res_after = await lang_entry.lang_entry.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('lang_enum', async () => {
+      await lang_enum.lang_enum.deploy({ as: alice })
     })
 
     // TODO
@@ -11343,6 +11371,11 @@ describe('Tests', async () => {
       //      await reverse_with_enum.reverse_with_enum.exec({ as: alice })
       //      const res_after = await reverse_with_enum.reverse_with_enum.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('rf_failif_with', async () => {
+      await rf_failif_with.rf_failif_with.deploy({ as: alice })
     })
 
     // TODO
@@ -12444,6 +12477,11 @@ describe('Tests', async () => {
       //      await spec_fail_source.spec_fail_source.exec({ as: alice })
       //      const res_after = await spec_fail_source.spec_fail_source.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('spec_fails', async () => {
+      await spec_fails.spec_fails.deploy({ as: alice })
     })
 
     // TODO
@@ -13656,6 +13694,11 @@ describe('Tests', async () => {
       //      await test_asset_view.test_asset_view.exec({ as: alice })
       //      const res_after = await test_asset_view.test_asset_view.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('test_asset', async () => {
+      await test_asset.test_asset.deploy({ as: alice })
     })
 
     // TODO
@@ -15003,6 +15046,11 @@ describe('Tests', async () => {
     })
 
     // TODO
+    it('type_never', async () => {
+      await type_never.type_never.deploy({ as: alice })
+    })
+
+    // TODO
     it('type_or', async () => {
       await type_or.type_or.deploy({ as: alice })
       //      const before_expected = new Nat(0)
@@ -15087,6 +15135,11 @@ describe('Tests', async () => {
     })
 
     // TODO
+    it('unused_variable_opt', async () => {
+      await unused_variable_opt.unused_variable_opt.deploy({ as: alice })
+    })
+
+    // TODO
     it('update_minus_equal', async () => {
       await update_minus_equal.update_minus_equal.deploy({ as: alice })
       //      const before_expected = new Nat(0)
@@ -15144,6 +15197,11 @@ describe('Tests', async () => {
       //      await variable_in_container.variable_in_container.exec({ as: alice })
       //      const res_after = await variable_in_container.variable_in_container.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('verif_fail', async () => {
+      await verif_fail.verif_fail.deploy({ as: alice })
     })
 
     // TODO

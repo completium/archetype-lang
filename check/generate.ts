@@ -20,17 +20,7 @@ const write_binding = (input: string) => {
   fs.writeFileSync(out_ts, output)
 }
 
-const skip = [
-  'effect_fail_complex.json',
-  'fail_with_tuple_lit.json',
-  'lang_enum.json',
-  'rf_failif_with.json',
-  'spec_fails.json',
-  'test_asset.json',
-  'type_never.json',
-  'unused_variable_opt.json',
-  'verif_fail.json',
-]
+const skip : Array<string> = []
 
 const generate_spec_template = (input: Array<string>) => {
   let imports: Array<string> = []
