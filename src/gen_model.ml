@@ -831,6 +831,19 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mkeytokeyhash (fx)
 
+      | A.Pcall (None, A.Cconst A.Csimplifyrational, [], [AExpr x]) ->
+        let fx = f x in
+        M.Msimplify_rational (fx)
+
+      | A.Pcall (None, A.Cconst A.Cgetnumerator, [], [AExpr x]) ->
+        let fx = f x in
+        M.Mget_numerator (fx)
+
+      | A.Pcall (None, A.Cconst A.Cgetdenominator, [], [AExpr x]) ->
+        let fx = f x in
+        M.Mget_denominator (fx)
+
+
       | A.Pcall (None, A.Cconst A.Cchecksignature, [], [AExpr k; AExpr s; AExpr x]) ->
         let fk = f k in
         let fs = f s in
