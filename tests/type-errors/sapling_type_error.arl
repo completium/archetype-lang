@@ -1,4 +1,4 @@
-archetype edo_sapling_type_error
+archetype sapling_type_error
 
 entry init (t : sapling_transaction(4)) {
   var s : sapling_state(2) = sapling_empty_state(3); // 2 <> 3

@@ -1,5 +1,0 @@
-archetype invalid_type_do_require
-
-entry exec () {
-  do_require(0, "ERROR")
-}

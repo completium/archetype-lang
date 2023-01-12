@@ -12,7 +12,7 @@ const compile = (p : string) => {
 
 /* Tests ------------------------------------------------------------------- */
 
-describe('Type errors', async () => {
+describe('type-errors', async () => {
   it('arith_div_tez_int', async () => {
     const stat = compile("../tests/type-errors/arith_div_tez_int.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -277,6 +277,38 @@ describe('Type errors', async () => {
     const stat = compile("../tests/type-errors/for_ident_simple_map.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('instruction_const', async () => {
+    const stat = compile("../tests/type-errors/instruction_const.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_fun_asset', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_fun_asset.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_fun_assign', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_fun_assign.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_fun_container_instr', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_fun_container_instr.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_view_asset', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_view_assign', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_view_assign.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_view_container_instr', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_view_container_instr.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_instruction_view_fun', async () => {
+    const stat = compile("../tests/type-errors/invalid_instruction_view_fun.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_type_do_require', async () => {
     const stat = compile("../tests/type-errors/invalid_type_do_require.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -287,6 +319,10 @@ describe('Type errors', async () => {
   })
   it('iterable_big_map_update', async () => {
     const stat = compile("../tests/type-errors/iterable_big_map_update.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('no_acces_to_field_in_partition', async () => {
+    const stat = compile("../tests/type-errors/no_acces_to_field_in_partition.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_asset_effect_on_view_add', async () => {
@@ -431,6 +467,10 @@ describe('Type errors', async () => {
   })
   it('same_id_variable_parameter', async () => {
     const stat = compile("../tests/type-errors/same_id_variable_parameter.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('sapling_type_error', async () => {
+    const stat = compile("../tests/type-errors/sapling_type_error.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('shadow_field_errors_1', async () => {

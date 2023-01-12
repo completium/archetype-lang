@@ -4,7 +4,7 @@ import { RawContractInterface } from "@completium/archetype-binder-ts/build/src/
 const fs = require('fs')
 const path = require('path')
 
-const path_contracts = '../tests/passed/'
+const skip: Array<string> = []
 
 const write_binding = (input: string) => {
   const filename = input + '.json';
@@ -13,14 +13,12 @@ const write_binding = (input: string) => {
   const settings: BindingSettings = {
     language: Language.Archetype,
     target: Target.Experiment,
-    path: path_contracts
+    path: '../tests/passed/'
   }
   const output = generate_binding(rci, settings);
   const out_ts = './bindings/passed/' + path.basename(filename.replace('.json', '.ts'));
   fs.writeFileSync(out_ts, output)
 }
-
-const skip: Array<string> = []
 
 const generate_spec_template = (input: Array<string>) => {
   let imports: Array<string> = []
@@ -70,13 +68,13 @@ ${(items.map(x => x)).join('')}
 }
 
 
-const generate_spec_error = (input: Array<string>) => {
+const generate_spec_error = (input: Array<string>, name: string, path : string, code: number) => {
   let items: Array<string> = []
   for (const id of input) {
     items.push(`
   it('${id}', async () => {
-    const stat = compile("../tests/type-errors/${id}.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+    const stat = compile("${path}/${id}.arl")
+    assert(stat.status == ${code}, "Invalid status code, actual: " + stat.status + ", expected: ${code}")
   })`);
   }
   const output = `/* DO NOT EDIT, GENERATED FILE */
@@ -93,29 +91,34 @@ const compile = (p : string) => {
 
 /* Tests ------------------------------------------------------------------- */
 
-describe('Type errors', async () => {${(items.map(x => x)).join('')}
+describe('${name}', async () => {${(items.map(x => x)).join('')}
 })
   `
-  fs.writeFileSync('./tests/type-errors.spec.ts', output)
+  fs.writeFileSync(`./tests/${name}.spec.ts`, output)
+}
+
+const extract_file_dir = (path: string, ext: string): Array<string> => {
+  const dir = fs.opendirSync(path)
+  let dirent;
+  let filenames: Array<string> = []
+  while ((dirent = dir.readSync()) !== null) {
+    const filename = dirent.name as string;
+    if (filename.endsWith(ext)) {
+      if (!skip.includes(filename)) {
+        const f: string = filename.substring(0, (filename.length - ext.length));
+        filenames.push(f)
+      }
+    }
+  }
+  dir.closeSync()
+  filenames.sort((x, y) => (x > y ? 1 : -1));
+  return filenames
 }
 
 describe('Generate binding', async () => {
   describe('Passed', async () => {
     const p = './json/passed'
-    const dir = fs.opendirSync(p)
-    let dirent;
-    let filenames: Array<string> = []
-    while ((dirent = dir.readSync()) !== null) {
-      const filename = dirent.name as string;
-      if (filename.endsWith(".json")) {
-        if (!skip.includes(filename)) {
-          const f: string = filename.substring(0, (filename.length - 5));
-          filenames.push(f)
-        }
-      }
-    }
-    dir.closeSync()
-    filenames.sort((x, y) => (x > y ? 1 : -1));
+    const filenames = extract_file_dir(p, '.json')
     for (const filename of filenames) {
       it(filename, () => {
         write_binding(p + '/' + filename)
@@ -125,23 +128,22 @@ describe('Generate binding', async () => {
   })
 
   describe('Generate spec.ts files', async () => {
-    it('type-errors', async () => {
-      const p = '../tests/type-errors'
-      const dir = fs.opendirSync(p)
-      let dirent;
-      let filenames: Array<string> = []
-      while ((dirent = dir.readSync()) !== null) {
-        const filename = dirent.name as string;
-        if (filename.endsWith(".arl")) {
-          if (!skip.includes(filename)) {
-            const f: string = filename.substring(0, (filename.length - 4));
-            filenames.push(f)
-          }
-        }
-      }
-      dir.closeSync()
-      filenames.sort((x, y) => (x > y ? 1 : -1));
-      generate_spec_error(filenames)
-    })
+    const items: Array<[string, string, number]> = [
+      ['syntax-errors', '../tests/syntax-errors', 1],
+      ['type-errors', '../tests/type-errors', 3],
+      ['model-errors', '../tests/model-errors', 5],
+      ['proposal-type-errors', '../tests/proposal-type-errors', 3],
+      ['proposal-model-errors', '../tests/proposal-model-errors', 5]
+    ]
+    for (const item of items) {
+      const name = item[0]
+      const path = item[1]
+      const code = item[2]
+
+      it(name, () => {
+        const filenames = extract_file_dir(path, ".arl")
+        generate_spec_error(filenames, name, path, code)
+      })
+    }
   })
 })
