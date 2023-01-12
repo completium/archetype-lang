@@ -1037,6 +1037,7 @@ import * as test_conditions from '../bindings/passed/test_conditions'
 import * as test_contains_get from '../bindings/passed/test_contains_get'
 import * as test_contract from '../bindings/passed/test_contract'
 import * as test_contract_self from '../bindings/passed/test_contract_self'
+import * as test_create_contract_bytes from '../bindings/passed/test_create_contract_bytes'
 import * as test_fget from '../bindings/passed/test_fget'
 import * as test_for_list_alt from '../bindings/passed/test_for_list_alt'
 import * as test_fun0 from '../bindings/passed/test_fun0'
@@ -13795,6 +13796,11 @@ describe('Tests', async () => {
       //      await test_contract_self.test_contract_self.exec({ as: alice })
       //      const res_after = await test_contract_self.test_contract_self.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    it('test_create_contract_bytes', async () => {
+      await test_create_contract_bytes.test_create_contract_bytes.deploy({ as: alice })
+      await test_create_contract_bytes.test_create_contract_bytes.exec({as : alice})
     })
 
     // TODO
