@@ -535,6 +535,7 @@ import * as expr_fun_abs_int from '../bindings/passed/expr_fun_abs_int'
 import * as expr_fun_abs_rat from '../bindings/passed/expr_fun_abs_rat'
 import * as expr_fun_address_to_contract from '../bindings/passed/expr_fun_address_to_contract'
 import * as expr_fun_address_to_contract_unit from '../bindings/passed/expr_fun_address_to_contract_unit'
+import * as expr_fun_bytes_to_nat from '../bindings/passed/expr_fun_bytes_to_nat'
 import * as expr_fun_ceil from '../bindings/passed/expr_fun_ceil'
 import * as expr_fun_concat_byt from '../bindings/passed/expr_fun_concat_byt'
 import * as expr_fun_concat_list_byt from '../bindings/passed/expr_fun_concat_list_byt'
@@ -573,6 +574,7 @@ import * as expr_fun_min_rat_int from '../bindings/passed/expr_fun_min_rat_int'
 import * as expr_fun_min_rat_nat from '../bindings/passed/expr_fun_min_rat_nat'
 import * as expr_fun_min_rat_rat from '../bindings/passed/expr_fun_min_rat_rat'
 import * as expr_fun_min_tez from '../bindings/passed/expr_fun_min_tez'
+import * as expr_fun_nat_to_bytes from '../bindings/passed/expr_fun_nat_to_bytes'
 import * as expr_fun_nat_to_string from '../bindings/passed/expr_fun_nat_to_string'
 import * as expr_fun_opt_get_some from '../bindings/passed/expr_fun_opt_get_some'
 import * as expr_fun_opt_is_none from '../bindings/passed/expr_fun_opt_is_none'
@@ -7805,6 +7807,11 @@ describe('Tests', async () => {
     })
 
     // TODO
+    it('expr_fun_bytes_to_nat', async () => {
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.deploy({ as: alice })
+    })
+
+    // TODO
     it('expr_fun_ceil', async () => {
       await expr_fun_ceil.expr_fun_ceil.deploy({ as: alice })
       //      const before_expected = new Nat(0)
@@ -8254,6 +8261,11 @@ describe('Tests', async () => {
       //      await expr_fun_min_tez.expr_fun_min_tez.exec({ as: alice })
       //      const res_after = await expr_fun_min_tez.expr_fun_min_tez.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    // TODO
+    it('expr_fun_nat_to_bytes', async () => {
+      await expr_fun_nat_to_bytes.expr_fun_nat_to_bytes.deploy({ as: alice })
     })
 
     // TODO

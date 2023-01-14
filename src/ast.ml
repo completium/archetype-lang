@@ -198,6 +198,8 @@ type const =
   | Cmakeoperation
   | Cmakeevent
   | Cnattostring
+  | Cbytestonat
+  | Cnattobytes
   | Cexec
   | Capply
   | Cinttodate

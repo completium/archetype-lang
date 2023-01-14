@@ -1,0 +1,7 @@
+archetype expr_fun_nat_to_bytes
+
+variable res : bytes = 0x
+
+entry exec (n : nat) {
+  res := nat_to_bytes(n)
+}

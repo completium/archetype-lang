@@ -1394,6 +1394,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "nat_to_string (%a)"
         f x
 
+    | Mbytestonat x ->
+      Format.fprintf fmt "bytes_to_nat (%a)"
+        f x
+
+    | Mnattobytes x ->
+      Format.fprintf fmt "nat_to_bytes (%a)"
+        f x
+
     | Mpack x ->
       Format.fprintf fmt "pack (%a)"
         f x

@@ -423,6 +423,8 @@ type 'term mterm_node  =
   | Mfloor            of 'term
   | Mceil             of 'term
   | Mnattostring      of 'term
+  | Mbytestonat       of 'term
+  | Mnattobytes       of 'term
   | Mpack             of 'term
   | Munpack           of type_ * 'term
   | Msetdelegate      of 'term
@@ -1697,6 +1699,8 @@ let cmp_mterm_node
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     | Mnattostring x1, Mnattostring x2                                                 -> cmp x1 x2
+    | Mbytestonat x1, Mbytestonat x2                                                   -> cmp x1 x2
+    | Mnattobytes x1, Mnattobytes x2                                                   -> cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
     | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
@@ -2167,6 +2171,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
   | Mnattostring x                 -> Mnattostring (f x)
+  | Mbytestonat x                  -> Mbytestonat (f x)
+  | Mnattobytes x                  -> Mnattobytes (f x)
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   | Msetdelegate x                 -> Msetdelegate (f x)
@@ -2634,6 +2640,8 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
   | Mnattostring x                        -> f accu x
+  | Mbytestonat x                         -> f accu x
+  | Mnattobytes x                         -> f accu x
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
   | Msetdelegate x                        -> f accu x
@@ -3772,6 +3780,14 @@ let fold_map_term
   | Mnattostring x ->
     let xe, xa = f accu x in
     g (Mnattostring xe), xa
+
+  | Mbytestonat x ->
+    let xe, xa = f accu x in
+    g (Mbytestonat xe), xa
+
+  | Mnattobytes x ->
+    let xe, xa = f accu x in
+    g (Mnattobytes xe), xa
 
   | Mpack x ->
     let xe, xa = f accu x in

@@ -776,6 +776,14 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mnattostring fx
 
+      | A.Pcall (None, A.Cconst A.Cbytestonat, [], [AExpr x]) ->
+        let fx = f x in
+        M.Mbytestonat fx
+
+      | A.Pcall (None, A.Cconst A.Cnattobytes, [], [AExpr x]) ->
+        let fx = f x in
+        M.Mnattobytes fx
+
       | A.Pcall (None, A.Cconst A.Cpack, [], [AExpr x]) ->
         let fx = f x in
         M.Mpack (fx)

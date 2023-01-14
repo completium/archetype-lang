@@ -2408,6 +2408,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
     | Mnattostring s -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
+    | Mbytestonat _s -> assert false
+    | Mnattobytes _s -> assert false
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])

@@ -1483,7 +1483,9 @@ let coreops : opinfo list =
   @ [
     op "int_to_nat"  A.Cinttonat `Total None [A.vtint] (`Ty (A.Toption A.vtnat)) Mint.empty;
     op "int_to_date" A.Cinttodate `Total None [A.vtint] (`Ty A.vtdate) Mint.empty;
-    op "mutez_to_nat" A.CmutezToNat `Total None [A.vtcurrency] (`Ty A.vtnat) Mint.empty
+    op "mutez_to_nat" A.CmutezToNat `Total None [A.vtcurrency] (`Ty A.vtnat) Mint.empty;
+    op "bytes_to_nat" A.Cbytestonat `Total None [A.vtbytes] (`Ty A.vtnat) Mint.empty;
+    op "nat_to_bytes" A.Cnattobytes `Total None [A.vtnat] (`Ty A.vtbytes) Mint.empty
   ]
 
 

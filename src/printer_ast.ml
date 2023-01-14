@@ -276,6 +276,8 @@ let to_const = function
   | Cmakeoperation         -> "make_operation"
   | CtoContainer           -> "to_container"
   | Cnattostring           -> "nat_to_string"
+  | Cbytestonat            -> "bytes_to_nat"
+  | Cnattobytes            -> "nat_to_bytes"
   | Cexec                  -> "exec"
   | Capply                 -> "apply"
   | Cinttodate             -> "int_to_date"
