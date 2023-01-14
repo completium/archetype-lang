@@ -1,0 +1,11 @@
+archetype function_with_nat_to_string
+
+variable res : string = ""
+
+function f(n : nat) : string {
+  return nat_to_string(n)
+}
+
+entry exec (n : nat) {
+  res := f(n)
+}

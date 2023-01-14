@@ -133,7 +133,7 @@ and pp_code fmt (i : code) =
     end
   in
   let pp_concrete_michelson fmt (c : obj_micheline) =
-    let m_ = Michelson.to_micheline_ c in
+    let m_ = Michelson.to_tz_micheline c in
     (* let ppf = Format.std_formatter in *)
     Micheline_printer.print_expr fmt m_
 

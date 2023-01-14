@@ -1891,9 +1891,9 @@ let rec to_data (o : obj_micheline) : data =
   | Oprim ({prim = "Lambda_rec"; args = _a::_ }) -> Format.eprintf "TODO Lambda_rec"; assert false
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
 
-type micheline_ = Micheline_printer.node
+type tz_micheline = Micheline_printer.node
 
-let to_micheline_ (input : obj_micheline) : micheline_ =
+let to_tz_micheline (input : obj_micheline) : tz_micheline =
 
   let emptyloc : Micheline_printer.location = {comment = None} in
 
@@ -1903,17 +1903,27 @@ let to_micheline_ (input : obj_micheline) : micheline_ =
   let mkprim    (p, args, annot) = Micheline.Prim (emptyloc, p, args, annot) in
   let mkseq nodes = Micheline.Seq (emptyloc, nodes) in
 
-  let rec doit (i : obj_micheline) : micheline_ =
+  let rec doit (i : obj_micheline) : tz_micheline =
     match i with
     | Oprim p -> mkprim (p.prim, List.map doit p.args, p.annots)
     | Ostring v -> mkstring v
     | Obytes v -> mkbytes (Hex.to_bytes (`Hex v))
     | Oint v -> mkint (Big_int.big_int_of_string v)
     | Oarray v -> mkseq (List.map doit v)
-    | Ovar _ -> assert false
+    | Ovar v -> begin
+        let f id = mkprim (id, [], []) in
+        match v with
+        | OMVfree id -> f id
+        | OMVint (id, _) -> f id
+        | OMVstring id -> f id
+        | OMVbytes id -> f id
+        | OMVif (id, _, _) -> f id
+      end
   in
 
   doit input
 
-
-(* mkseq [storage; parameter; code] *)
+let micheline_to_tz_micheline (input : micheline) : tz_micheline =
+  let views = List.map (fun x -> Oprim({prim = "view"; args = [x]; annots = []})) input.views in
+  let obj : obj_micheline = Oarray (input.code @ views) in
+  to_tz_micheline obj

@@ -722,6 +722,8 @@ import * as fail_with_tuple_lit from '../bindings/passed/fail_with_tuple_lit'
 import * as fold_reverse from '../bindings/passed/fold_reverse'
 import * as formula_added_asset from '../bindings/passed/formula_added_asset'
 import * as fun from '../bindings/passed/fun'
+import * as function_with_nat_to_string from '../bindings/passed/function_with_nat_to_string'
+import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
 import * as get_in_require_failif from '../bindings/passed/get_in_require_failif'
 import * as get_some_with_msg from '../bindings/passed/get_some_with_msg'
 import * as greedy_and from '../bindings/passed/greedy_and'
@@ -772,6 +774,7 @@ import * as lang_map from '../bindings/passed/lang_map'
 import * as lang_methods_asset from '../bindings/passed/lang_methods_asset'
 import * as lang_security from '../bindings/passed/lang_security'
 import * as lang_set from '../bindings/passed/lang_set'
+import * as large_if from '../bindings/passed/large_if'
 import * as list_list from '../bindings/passed/list_list'
 import * as list_nth_out_of_bound from '../bindings/passed/list_nth_out_of_bound'
 import * as list_option from '../bindings/passed/list_option'
@@ -10048,6 +10051,24 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
+    it('function_with_nat_to_string', async () => {
+      await function_with_nat_to_string.function_with_nat_to_string.deploy({ as: alice })
+      const res_before = await function_with_nat_to_string.function_with_nat_to_string.get_res();
+      assert(res_before == "", "Invalid Value")
+      await function_with_nat_to_string.function_with_nat_to_string.exec(new Nat(256), { as: alice })
+      const res_after = await function_with_nat_to_string.function_with_nat_to_string.get_res();
+      assert(res_after == "256", "Invalid Value")
+    })
+
+    it('function_with_simplify_rational', async () => {
+      await function_with_simplify_rational.function_with_simplify_rational.deploy({ as: alice })
+      const res_before = await function_with_simplify_rational.function_with_simplify_rational.get_res();
+      assert(res_before.equals(new Rational(0)), "Invalid Value")
+      await function_with_simplify_rational.function_with_simplify_rational.exec(new Rational(36, new BigNumber(48)), { as: alice })
+      const res_after = await function_with_simplify_rational.function_with_simplify_rational.get_res();
+      assert(res_after.equals(new Rational(3, new BigNumber(4))), "Invalid Value")
+    })
+
     // TODO
     it('get_in_require_failif', async () => {
       await get_in_require_failif.get_in_require_failif.deploy({ as: alice })
@@ -10639,6 +10660,15 @@ describe('Tests', async () => {
       //      await lang_set.lang_set.exec({ as: alice })
       //      const res_after = await lang_set.lang_set.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+    it('large_if', async () => {
+      await large_if.large_if.deploy({ as: alice })
+      const res_before = await large_if.large_if.get_res();
+      assert(res_before.equals(new Nat(0)), "Invalid Value")
+      await large_if.large_if.exec({ as: alice })
+      const res_after = await large_if.large_if.get_res();
+      assert(res_after.equals(new Nat(86)), "Invalid Value")
     })
 
     // TODO

@@ -157,17 +157,14 @@ let output (model : Model.model) : string =
                   let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
                   | MichelsonStorage ->
-                    let output = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
-                    Format.fprintf fmt "%s" output
+                    let tz_storage_data = ir.storage_data |> Michelson.Utils.data_to_micheline |> Michelson.to_tz_micheline in
+                    Micheline_printer.print_expr fmt tz_storage_data
                   | Michelson ->
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
                     else begin
                       if !Options.opt_json then
                         let micheline = Michelson.Utils.to_micheline michelson storage_data in
-                        (* let m_ = Michelson.to_micheline_ micheline in
-                           let ppf = Format.std_formatter in
-                           Micheline_printer.print_expr ppf m_ *)
                         if !Options.opt_code_only
                         then begin
                           let code = micheline.code in
@@ -179,10 +176,9 @@ let output (model : Model.model) : string =
                           else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
                         end
                       else
-                        let sdata = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
-                        Format.fprintf fmt "# %s@.%a@."
-                          sdata
-                          Printer_michelson.pp_michelson michelson
+                        let micheline : Michelson.micheline = Michelson.Utils.to_micheline michelson storage_data in
+                        let tz_micheline = Michelson.micheline_to_tz_micheline micheline in
+                        Micheline_printer.print_expr fmt tz_micheline
                     end
                   | Javascript -> begin
                       let micheline = Michelson.Utils.to_micheline michelson storage_data in

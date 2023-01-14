@@ -1,0 +1,11 @@
+archetype function_with_simplify_rational
+
+variable res : rational = 0.0
+
+function f(r : rational) : rational {
+  return simplify_rational(r)
+}
+
+entry exec (r : rational) {
+  res := f(r)
+}
