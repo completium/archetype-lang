@@ -10763,14 +10763,14 @@ it('expr_list_tail', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // it('large_if', async () => {
-    //   await large_if.large_if.deploy({ as: alice })
-    //   const res_before = await large_if.large_if.get_res();
-    //   assert(res_before.equals(new Nat(0)), "Invalid Value")
-    //   await large_if.large_if.exec({ as: alice })
-    //   const res_after = await large_if.large_if.get_res();
-    //   assert(res_after.equals(new Nat(86)), "Invalid Value")
-    // })
+    it('large_if', async () => {
+      await large_if.large_if.deploy({ as: alice })
+      const res_before = await large_if.large_if.get_res();
+      assert(res_before.equals(new Nat(0)), "Invalid Value")
+      await large_if.large_if.exec({ as: alice })
+      const res_after = await large_if.large_if.get_res();
+      assert(res_after.equals(new Nat(86)), "Invalid Value")
+    })
 
     // TODO
     it('list_list', async () => {
