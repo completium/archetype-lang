@@ -157,7 +157,7 @@ let output (model : Model.model) : string =
                   let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
                   | MichelsonStorage ->
-                    let tz_storage_data = ir.storage_data |> Michelson.Utils.data_to_micheline |> Michelson.to_tz_micheline in
+                    let tz_storage_data = storage_data |> Michelson.Utils.data_to_micheline |> Michelson.to_tz_micheline in
                     Micheline_printer.print_expr fmt tz_storage_data
                   | Michelson ->
                     if !Options.opt_raw_michelson
