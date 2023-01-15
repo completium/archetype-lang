@@ -7806,9 +7806,25 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
-    // TODO
     it('expr_fun_bytes_to_nat', async () => {
       await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.deploy({ as: alice })
+      const res_init = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_init.equals(new Nat(0)), "Invalid Value")
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.exec(new Bytes(""), { as: alice })
+      const res_empty = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_empty.equals(new Nat(0)), "Invalid Value")
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.exec(new Bytes("00"), { as: alice })
+      const res_00 = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_00.equals(new Nat(0)), "Invalid Value")
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.exec(new Bytes("86"), { as: alice })
+      const res_86 = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_86.equals(new Nat(134)), "Invalid Value")
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.exec(new Bytes("abcd"), { as: alice })
+      const res_abcd = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_abcd.equals(new Nat(new BigNumber("43981"))), "Invalid Value")
+      await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.exec(new Bytes("123456789abcdef0"), { as: alice })
+      const res_123456789abcdef0 = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
+      assert(res_123456789abcdef0.equals(new Nat(new BigNumber("1311768467463790320"))), "Invalid Value")
     })
 
     // TODO

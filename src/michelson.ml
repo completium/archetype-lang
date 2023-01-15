@@ -1462,7 +1462,7 @@ end = struct
     | Bmuteztonat     -> "_muteztonat"
 
   let rec flat (c : code) : code =
-    (* let f l = List.fold_left (fun accu x -> let fc = flat x in match fc.node with | SEQ l -> accu @ l | _ -> accu @ [fc]) l [] in *)
+    (* let f l = List.fold_left (fun accu x -> let fc = flat x in match fc.node with | SEQ l -> accu @ l | _ -> accu @ [fc]) [] l in *)
     let f l = List.fold_right (fun x accu -> let fc = flat x in match fc.node with | SEQ l -> l @ accu | _ -> fc::accu) l [] in
     map_seq f c
 

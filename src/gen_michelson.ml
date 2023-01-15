@@ -1337,6 +1337,8 @@ let to_ir (model : M.model) : T.ir =
 
 (* -------------------------------------------------------------------- *)
 
+let data_map_bytes_nat : T.data list = List.int_fold (fun accu idx -> (T.Delt (Dbytes (Format.asprintf "%02x" idx), Dint (Big_int.big_int_of_int idx)))::accu) [] 256 |> List.rev
+
 let map_implem : (string * T.code list) list = [
   get_fun_name (T.Bmin T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccar], [ccdr])];
   get_fun_name (T.Bmax T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccdr], [ccar])];
@@ -1436,7 +1438,43 @@ let map_implem : (string * T.code list) list = [
       cdug 1;
       cdrop 1
     ];
-  get_fun_name T.Bbytestonat, T.[cdrop 1; cpush (tnat, T.Dint Big_int.zero_big_int)];
+  get_fun_name T.Bbytestonat, T.[
+      cpush (tmap tbytes tnat, Dlist data_map_bytes_nat);
+      cpush (tnat, T.Dint Big_int.zero_big_int);
+      cdup_n 3;
+      csize;
+      cpush (tnat, T.Dint Big_int.zero_big_int);
+      cdup_n 2;
+      cdup_n 2;
+      ccompare;
+      clt;
+      cloop [
+        cpush (tnat, T.Dint (Big_int.big_int_of_int 256));
+        cdig 3;
+        cmul;
+        cdug 2;
+        cdup_n 5;
+        cpush (tnat, T.Dint (Big_int.unit_big_int));
+        cdup_n 3;
+        cslice;
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        cdup_n 5;
+        cswap;
+        cget;
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        cdig 3;
+        cadd;
+        cdug 2;
+        cpush (tnat, T.Dint (Big_int.unit_big_int));
+        cadd;
+        cdup_n 2;
+        cdup_n 2;
+        ccompare;
+        clt
+      ];
+      cdig 2;
+      cdip (1, [cdrop 4])
+    ];
   get_fun_name T.Bnattobytes, T.[cdrop 1; cpush (tnat, T.Dbytes "")]
 ]
 
