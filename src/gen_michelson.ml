@@ -1338,6 +1338,7 @@ let to_ir (model : M.model) : T.ir =
 (* -------------------------------------------------------------------- *)
 
 let data_map_bytes_nat : T.data list = List.int_fold (fun accu idx -> (T.Delt (Dbytes (Format.asprintf "%02x" idx), Dint (Big_int.big_int_of_int idx)))::accu) [] 256 |> List.rev
+let data_map_nat_bytes : T.data list = List.int_fold (fun accu idx -> (T.Delt (Dint (Big_int.big_int_of_int idx), Dbytes (Format.asprintf "%02x" idx)))::accu) [] 256 |> List.rev
 
 let map_implem : (string * T.code list) list = [
   get_fun_name (T.Bmin T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccar], [ccdr])];
@@ -1475,7 +1476,32 @@ let map_implem : (string * T.code list) list = [
       cdig 2;
       cdip (1, [cdrop 4])
     ];
-  get_fun_name T.Bnattobytes, T.[cdrop 1; cpush (tnat, T.Dbytes "")]
+  get_fun_name T.Bnattobytes, T.[
+    cpush (tmap tnat tbytes, Dlist data_map_nat_bytes);
+    cpush (tlist tbytes, Dlist []);
+    cdup_n 3;
+    cpush (tnat, Dint Big_int.zero_big_int);
+    ccompare;
+    cneq;
+    cloop [
+      cpush (tnat, Dint (Big_int.big_int_of_int 256));
+      cdig 3;
+      cediv;
+      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+      cunpair;
+      cdug 3;
+      cdup_n 3;
+      cswap;
+      cget;
+      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+      ccons;
+      cdup_n 3;
+      cpush (tnat, Dint Big_int.zero_big_int);
+      ccompare;
+      cneq];
+    cconcat;
+    cdip (1, [cdrop 2])
+  ]
 ]
 
 let concrete_michelson b : T.code =
