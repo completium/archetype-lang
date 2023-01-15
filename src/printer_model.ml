@@ -1235,6 +1235,16 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
+    | Mlisthead (_, c, a) ->
+      Format.fprintf fmt "list_head (%a, %a)"
+        f c
+        f a
+
+    | Mlisttail (_, c, a) ->
+      Format.fprintf fmt "list_tail (%a, %a)"
+        f c
+        f a
+
     | Mlistreverse (_, l) ->
       Format.fprintf fmt "list_reverse (%a)"
         f l

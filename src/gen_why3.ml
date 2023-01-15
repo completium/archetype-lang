@@ -2327,6 +2327,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ -> mk_match ctx (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
       end
+    | M.Mlisthead _ -> assert false
+    | M.Mlisttail _ -> assert false
     | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
     | Mlistfold    _ -> error_not_translated "Mlistfold"
@@ -3022,6 +3024,8 @@ let fold_exns m body : term list =
       let idx = get_fail_idx m v.type_ in
       acc @ [Texn (Efail (idx, None))]
     | M.Mlistnth _ -> acc @ [Texn ENotFound]
+    | M.Mlisthead _ -> acc @ [Texn ENotFound]
+    | M.Mlisttail _ -> acc @ [Texn ENotFound]
     | M.Mself _ -> acc @ [Texn ENotFound]
     | M.Mcast ((Tbuiltin Baddress, _), (Tcontract _, _), v) -> internal_fold_exn (acc @ [Texn ENotFound]) v
     | M.Mtransfer (TKself (v, _, _)) -> internal_fold_exn (acc @ [Texn ENotFound]) v

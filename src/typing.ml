@@ -1519,6 +1519,8 @@ let listops : opinfo list =
     op "nth"      A.Cnth      `Total   (Some lst) [A.vtnat] (`Ty (A.Toption elemt)) Mint.empty;
     op "reverse"  A.Creverse  `Total   (Some lst) [       ] `Self          Mint.empty;
     op "concat"   A.Cconcat   `Total   (Some lst) [lst    ] `Self          Mint.empty;
+    op "head"     A.Chead     `Total   (Some lst) [A.vtnat] `Self          Mint.empty;
+    op "tail"     A.Ctail     `Total   (Some lst) [A.vtnat] `Self          Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)

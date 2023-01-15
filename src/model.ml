@@ -390,6 +390,8 @@ type 'term mterm_node  =
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
+  | Mlisthead         of type_ * 'term * 'term
+  | Mlisttail         of type_ * 'term * 'term
   | Mlistreverse      of type_ * 'term
   | Mlistconcat       of type_ * 'term * 'term
   | Mlistfold         of type_ * mident   * mident   * 'term * 'term * 'term
@@ -1666,6 +1668,8 @@ let cmp_mterm_node
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlisthead (t1, c1, a1), Mlisthead (t2, c2, a2)                                   -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlisttail (t1, c1, a1), Mlisttail (t2, c2, a2)                                   -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
     | Mlistconcat (t1, l1, m1), Mlistconcat (t2, l2, m2)                               -> cmp_type t1 t2 && cmp l1 l2 && cmp m1 m2
     | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_mident ix1 ix2 && cmp_mident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
@@ -2138,6 +2142,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistlength(t, c)              -> Mlistlength(ft t, f c)
   | Mlistcontains (t, c, a)        -> Mlistcontains (ft t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (ft t, f c, f a)
+  | Mlisthead (t, c, a)            -> Mlisthead (ft t, f c, f a)
+  | Mlisttail (t, c, a)            -> Mlisttail (ft t, f c, f a)
   | Mlistreverse(t, l)             -> Mlistreverse(ft t, f l)
   | Mlistconcat(t, l, m)           -> Mlistconcat(ft t, f l, f m)
   | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
@@ -2607,6 +2613,8 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mlistlength (_, c)                    -> f accu c
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
+  | Mlisthead (_, c, a)                   -> f (f accu c) a
+  | Mlisttail (_, c, a)                   -> f (f accu c) a
   | Mlistreverse (_, l)                   -> f accu l
   | Mlistconcat (_, l, m)                 -> f (f accu l) m
   | Mlistfold (_, _, _, c, a, b)          -> f (f (f accu c) a) b
@@ -3627,6 +3635,16 @@ let fold_map_term
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Mlistnth (t, ce, ae)), aa
+
+  | Mlisthead (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlisthead (t, ce, ae)), aa
+
+  | Mlisttail (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlisttail (t, ce, ae)), aa
 
   | Mlistreverse (t, l) ->
     let le, la = f accu l in

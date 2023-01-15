@@ -279,6 +279,8 @@ let to_ir (model : M.model) : T.ir =
     | T.Bceil            -> true
     | T.BlistContains  _ -> false
     | T.BlistNth       _ -> false
+    | T.BlistHead      _ -> false
+    | T.BlistTail      _ -> false
     | T.Bnattostring     -> false
     | T.Bbytestonat      -> false
     | T.Bnattobytes      -> false
@@ -325,6 +327,16 @@ let to_ir (model : M.model) : T.ir =
     | BlistNth t -> begin
         let targ = T.tpair [(T.tlist t); T.tnat] in
         let tret = T.toption t in
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | BlistHead t -> begin
+        let targ = T.tpair [(T.tlist t); T.tnat] in
+        let tret = T.tlist t in
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | BlistTail t -> begin
+        let targ = T.tpair [(T.tlist t); T.tnat] in
+        let tret = T.tlist t in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bnattostring -> begin
@@ -1004,6 +1016,8 @@ let to_ir (model : M.model) : T.ir =
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
+    | Mlisthead (t, c, a)        -> let b = T.BlistHead (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
+    | Mlisttail (t, c, a)        -> let b = T.BlistTail (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistreverse (t, l)        -> T.Ireverse (to_type model t, f l)
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (M.unloc_mident ix, None, M.unloc_mident ia, f c, f a, T.Iassign (M.unloc_mident ia, f b))
@@ -1242,6 +1256,8 @@ let to_ir (model : M.model) : T.ir =
         | Mceil  _                -> (doit accu mt (T.Bceil))
         | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type model t)))
         | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
+        | Mlisthead (t, _, _)     -> (doit accu mt (T.BlistHead (to_type model t)))
+        | Mlisttail (t, _, _)     -> (doit accu mt (T.BlistTail (to_type model t)))
         | Mnattostring _          -> (doit accu mt (T.Bnattostring))
         | Mbytestonat _           -> (doit accu mt (T.Bbytestonat))
         | Mnattobytes _           -> (doit accu mt (T.Bnattobytes))
@@ -1477,31 +1493,31 @@ let map_implem : (string * T.code list) list = [
       cdip (1, [cdrop 4])
     ];
   get_fun_name T.Bnattobytes, T.[
-    cpush (tmap tnat tbytes, Dlist data_map_nat_bytes);
-    cpush (tlist tbytes, Dlist []);
-    cdup_n 3;
-    cpush (tnat, Dint Big_int.zero_big_int);
-    ccompare;
-    cneq;
-    cloop [
-      cpush (tnat, Dint (Big_int.big_int_of_int 256));
-      cdig 3;
-      cediv;
-      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
-      cunpair;
-      cdug 3;
-      cdup_n 3;
-      cswap;
-      cget;
-      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
-      ccons;
+      cpush (tmap tnat tbytes, Dlist data_map_nat_bytes);
+      cpush (tlist tbytes, Dlist []);
       cdup_n 3;
       cpush (tnat, Dint Big_int.zero_big_int);
       ccompare;
-      cneq];
-    cconcat;
-    cdip (1, [cdrop 2])
-  ]
+      cneq;
+      cloop [
+        cpush (tnat, Dint (Big_int.big_int_of_int 256));
+        cdig 3;
+        cediv;
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        cunpair;
+        cdug 3;
+        cdup_n 3;
+        cswap;
+        cget;
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        ccons;
+        cdup_n 3;
+        cpush (tnat, Dint Big_int.zero_big_int);
+        ccompare;
+        cneq];
+      cconcat;
+      cdip (1, [cdrop 2])
+    ]
 ]
 
 let concrete_michelson b : T.code =
@@ -1516,6 +1532,96 @@ let concrete_michelson b : T.code =
   | T.BlistNth t      -> T.cseq T.[cunpair; cpush (tnat, T.Dint Big_int.zero_big_int); cpush (toption t, T.Dnone); cdig 2;
                                    citer [cdup_n 3; cdup_n 5; ccompare; ceq; cif ([csome; cswap; cdrop 1], [cdrop 1]); cswap; cpush (tnat, T.Dint Big_int.unit_big_int); cadd; cswap];
                                    cdip (1, [cdrop 2]) ]
+  | T.BlistHead t -> T.cseq T.[
+      cunpair;
+      cdup_n 2;
+      cdup_n 2;
+      csize;
+      cpair;
+      cdup;
+      cunpair;
+      ccompare;
+      clt;
+      cif ([ccar], [ccdr]);
+      cnil t;
+      cdup_n 2;
+      cint;
+      cpush (tint, Dint Big_int.zero_big_int);
+      cdup_n 2;
+      cdup_n 2;
+      ccompare;
+      clt;
+      cloop [
+        cdig 2;
+        cdup_n 5;
+        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith]);
+        cswap;
+        cdig 6;
+        cdrop 1;
+        cdug 5;
+        ccons;
+        cdug 2;
+        cpush (tint, Dint Big_int.unit_big_int);
+        cdup_n 2;
+        cadd;
+        cswap;
+        cdrop 1;
+        cdup_n 2;
+        cdup_n 2;
+        ccompare;
+        clt
+      ];
+      cdrop 2;
+      cnil t;
+      cdig 1;
+      citer [ccons];
+      cdip (1, [cdrop 3])
+    ]
+  | T.BlistTail t -> T.cseq T.[
+      cunpair;
+      cnil t;
+      cdig 1;
+      citer [ccons];
+      cdup_n 2;
+      cdup_n 2;
+      csize;
+      cpair;
+      cdup;
+      cunpair;
+      ccompare;
+      clt;
+      cif ([ccar], [ccdr]);
+      cnil t;
+      cdup_n 2;
+      cint;
+      cpush (tint, Dint Big_int.zero_big_int);
+      cdup_n 2;
+      cdup_n 2;
+      ccompare;
+      clt;
+      cloop [
+        cdig 2;
+        cdup_n 5;
+        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith]);
+        cswap;
+        cdig 6;
+        cdrop 1;
+        cdug 5;
+        ccons;
+        cdug 2;
+        cpush (tint, Dint Big_int.unit_big_int);
+        cdup_n 2;
+        cadd;
+        cswap;
+        cdrop 1;
+        cdup_n 2;
+        cdup_n 2;
+        ccompare;
+        clt
+      ];
+      cdrop 2;
+      cdip (1, [cdrop 3])
+    ]
   | T.Bnattostring    -> error ()
   | T.Bbytestonat     -> T.cseq (get_implem b)
   | T.Bnattobytes     -> T.cseq (get_implem b)

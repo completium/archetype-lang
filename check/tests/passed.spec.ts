@@ -608,6 +608,7 @@ import * as expr_lambda from '../bindings/passed/expr_lambda'
 import * as expr_lambda2 from '../bindings/passed/expr_lambda2'
 import * as expr_list_concat from '../bindings/passed/expr_list_concat'
 import * as expr_list_contains from '../bindings/passed/expr_list_contains'
+import * as expr_list_head from '../bindings/passed/expr_list_head'
 import * as expr_list_length from '../bindings/passed/expr_list_length'
 import * as expr_list_lit from '../bindings/passed/expr_list_lit'
 import * as expr_list_map from '../bindings/passed/expr_list_map'
@@ -615,6 +616,7 @@ import * as expr_list_map_string_nat from '../bindings/passed/expr_list_map_stri
 import * as expr_list_nth from '../bindings/passed/expr_list_nth'
 import * as expr_list_prepend from '../bindings/passed/expr_list_prepend'
 import * as expr_list_reverse from '../bindings/passed/expr_list_reverse'
+import * as expr_list_tail from '../bindings/passed/expr_list_tail'
 import * as expr_lit_addr from '../bindings/passed/expr_lit_addr'
 import * as expr_lit_bytes from '../bindings/passed/expr_lit_bytes'
 import * as expr_lit_cur_mtz from '../bindings/passed/expr_lit_cur_mtz'
@@ -8705,6 +8707,35 @@ describe('Tests', async () => {
       //      assert(res_after.equals(after_expected), "Invalid Value")
     })
 
+    it('expr_list_head', async () => {
+      await expr_list_head.expr_list_head.deploy({ as: alice })
+      const res_init = await expr_list_head.expr_list_head.get_res();
+      assert(res_init.length == 0, "Invalid Value")
+      await expr_list_head.expr_list_head.exec([], new Nat(3), { as: alice })
+      const res_a = await expr_list_head.expr_list_head.get_res();
+      assert(res_a.length == 0, "Invalid Value")
+      await expr_list_head.expr_list_head.exec(["a", "b", "c"], new Nat(0), { as: alice })
+      const res_b = await expr_list_head.expr_list_head.get_res();
+      assert(res_b.length == 0, "Invalid Value")
+      await expr_list_head.expr_list_head.exec(["a", "b", "c"], new Nat(2), { as: alice })
+      const res_c = await expr_list_head.expr_list_head.get_res();
+      assert(res_c.length == 2, "Invalid Value")
+      assert(res_c[0] == "a", "Invalid Value")
+      assert(res_c[1] == "b", "Invalid Value")
+      await expr_list_head.expr_list_head.exec(["a", "b", "c"], new Nat(3), { as: alice })
+      const res_d = await expr_list_head.expr_list_head.get_res();
+      assert(res_d.length == 3, "Invalid Value")
+      assert(res_d[0] == "a", "Invalid Value")
+      assert(res_d[1] == "b", "Invalid Value")
+      assert(res_d[2] == "c", "Invalid Value")
+      await expr_list_head.expr_list_head.exec(["a", "b", "c"], new Nat(4), { as: alice })
+      const res_e = await expr_list_head.expr_list_head.get_res();
+      assert(res_e.length == 3, "Invalid Value")
+      assert(res_e[0] == "a", "Invalid Value")
+      assert(res_e[1] == "b", "Invalid Value")
+      assert(res_e[2] == "c", "Invalid Value")
+    })
+
     // TODO
     it('expr_list_length', async () => {
       await expr_list_length.expr_list_length.deploy({ as: alice })
@@ -8787,6 +8818,35 @@ describe('Tests', async () => {
       //      await expr_list_reverse.expr_list_reverse.exec({ as: alice })
       //      const res_after = await expr_list_reverse.expr_list_reverse.get_res();
       //      assert(res_after.equals(after_expected), "Invalid Value")
+    })
+
+it('expr_list_tail', async () => {
+      await expr_list_tail.expr_list_tail.deploy({ as: alice })
+      const res_init = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_init.length == 0, "Invalid Value")
+      await expr_list_tail.expr_list_tail.exec([], new Nat(3), { as: alice })
+      const res_a = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_a.length == 0, "Invalid Value")
+      await expr_list_tail.expr_list_tail.exec(["a", "b", "c"], new Nat(0), { as: alice })
+      const res_b = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_b.length == 0, "Invalid Value")
+      await expr_list_tail.expr_list_tail.exec(["a", "b", "c"], new Nat(2), { as: alice })
+      const res_c = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_c.length == 2, "Invalid Value")
+      assert(res_c[0] == "b", "Invalid Value")
+      assert(res_c[1] == "c", "Invalid Value")
+      await expr_list_tail.expr_list_tail.exec(["a", "b", "c"], new Nat(3), { as: alice })
+      const res_d = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_d.length == 3, "Invalid Value")
+      assert(res_d[0] == "a", "Invalid Value")
+      assert(res_d[1] == "b", "Invalid Value")
+      assert(res_d[2] == "c", "Invalid Value")
+      await expr_list_tail.expr_list_tail.exec(["a", "b", "c"], new Nat(4), { as: alice })
+      const res_e = await expr_list_tail.expr_list_tail.get_res();
+      assert(res_e.length == 3, "Invalid Value")
+      assert(res_e[0] == "a", "Invalid Value")
+      assert(res_e[1] == "b", "Invalid Value")
+      assert(res_e[2] == "c", "Invalid Value")
     })
 
     // TODO

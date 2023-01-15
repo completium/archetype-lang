@@ -1792,6 +1792,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlistlength (_, c)                   -> A.eapp (A.Fident (dumloc "size")) [f c]
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false
+    | Mlisthead (_, _c, _a)                -> assert false
+    | Mlisttail (_, _c, _a)                -> assert false
     | Mlistreverse (_, _l)                 -> assert false
     | Mlistconcat (_, _l, _m)              -> assert false
     | Mlistfold (_t, _ix, _ia, _c, _a, _b) -> assert false

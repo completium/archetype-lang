@@ -1,0 +1,7 @@
+archetype expr_list_head
+
+variable res : list<string> = []
+
+entry exec (l : list<string>, n : nat) {
+  res := head(l, n);
+}
