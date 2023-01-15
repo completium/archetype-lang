@@ -1931,6 +1931,5 @@ let to_tz_micheline (input : obj_micheline) : tz_micheline =
   doit input
 
 let micheline_to_tz_micheline (input : micheline) : tz_micheline =
-  let views = List.map (fun x -> Oprim({prim = "view"; args = [x]; annots = []})) input.views in
-  let obj : obj_micheline = Oarray (input.code @ views) in
+  let obj : obj_micheline = Oarray (input.code @ input.views) in
   to_tz_micheline obj
