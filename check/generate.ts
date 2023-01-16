@@ -1,4 +1,3 @@
-import ts, { createPrinter, createSourceFile, factory, ListFormat, NodeArray, NewLineKind, ScriptKind, ScriptTarget } from 'typescript';
 import { BindingSettings, generate_binding, Language, Target } from "@completium/archetype-binder-ts";
 import { RawContractInterface } from "@completium/archetype-binder-ts/build/src/utils";
 
@@ -146,33 +145,33 @@ describe('Generate binding', async () => {
   describe('passed', async () => {
     const p = './json/passed'
     const filenames = extract_file_dir(p, '.json')
-    // for (const filename of filenames) {
-    //   it(filename, () => {
-    //     write_binding(p + '/' + filename)
-    //   });
-    // }
+    for (const filename of filenames) {
+      it(filename, () => {
+        write_binding(p + '/' + filename)
+      });
+    }
     it('Generate passed.spec.ts', async () => {
       generate_spec_passed(filenames)
     })
   })
 
-  //   describe('Generate spec.ts files', async () => {
-  //     const items: Array<[string, string, number]> = [
-  //       ['syntax-errors', '../tests/syntax-errors', 1],
-  //       ['type-errors', '../tests/type-errors', 3],
-  //       ['model-errors', '../tests/model-errors', 5],
-  //       ['proposal-type-errors', '../tests/proposal-type-errors', 3],
-  //       ['proposal-model-errors', '../tests/proposal-model-errors', 5]
-  //     ]
-  //     for (const item of items) {
-  //       const name = item[0]
-  //       const path = item[1]
-  //       const code = item[2]
+    describe('Generate spec.ts files', async () => {
+      const items: Array<[string, string, number]> = [
+        ['syntax-errors', '../tests/syntax-errors', 1],
+        ['type-errors', '../tests/type-errors', 3],
+        ['model-errors', '../tests/model-errors', 5],
+        ['proposal-type-errors', '../tests/proposal-type-errors', 3],
+        ['proposal-model-errors', '../tests/proposal-model-errors', 5]
+      ]
+      for (const item of items) {
+        const name = item[0]
+        const path = item[1]
+        const code = item[2]
 
-  //       it(name, () => {
-  //         const filenames = extract_file_dir(path, ".arl")
-  //         generate_spec_error(filenames, name, path, code)
-  //       })
-  //     }
-  //   })
+        it(name, () => {
+          const filenames = extract_file_dir(path, ".arl")
+          generate_spec_error(filenames, name, path, code)
+        })
+      }
+    })
 })
