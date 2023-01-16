@@ -1143,8 +1143,6 @@ import * as test_tuple_access_3 from '../bindings/passed/test_tuple_access_3'
 import * as test_update from '../bindings/passed/test_update'
 import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
-import * as timelock from '../bindings/passed/timelock'
-import * as timelock_var from '../bindings/passed/timelock_var'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
 import * as transfer_entrypoint2 from '../bindings/passed/transfer_entrypoint2'
@@ -7534,31 +7532,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  // // TODO
-  // it('timelock', async () => {
-  //   await timelock.timelock.deploy({ as: alice })
-  //   //      const before_expected = new Nat(0)
-  //   //      const after_expected = new Nat(1)
-  //   //      const res_before = await timelock.timelock.get_res();
-  //   //      assert(res_before.equals(before_expected), "Invalid Value")
-  //   //      await timelock.timelock.exec({ as: alice })
-  //   //      const res_after = await timelock.timelock.get_res();
-  //   //      assert(res_after.equals(after_expected), "Invalid Value")
-  // })
-
-  // // TODO
-  // it('timelock_var', async () => {
-  //   await timelock_var.timelock_var.deploy({ as: alice })
-  //   //      const before_expected = new Nat(0)
-  //   //      const after_expected = new Nat(1)
-  //   //      const res_before = await timelock_var.timelock_var.get_res();
-  //   //      assert(res_before.equals(before_expected), "Invalid Value")
-  //   //      await timelock_var.timelock_var.exec({ as: alice })
-  //   //      const res_after = await timelock_var.timelock_var.get_res();
-  //   //      assert(res_after.equals(after_expected), "Invalid Value")
-  // })
-
-  // TODO
   it('transfer_call', async () => {
     await transfer_call.transfer_call.deploy({ as: alice })
     // TODO
