@@ -1,3 +1,4 @@
+import ts, { createPrinter, createSourceFile, factory, ListFormat, NodeArray, NewLineKind, ScriptKind, ScriptTarget } from 'typescript';
 import { BindingSettings, generate_binding, Language, Target } from "@completium/archetype-binder-ts";
 import { RawContractInterface } from "@completium/archetype-binder-ts/build/src/utils";
 
@@ -67,8 +68,172 @@ ${(items.map(x => x)).join('')}
   fs.writeFileSync('./tests/template.spec.ts', output)
 }
 
+const generate_spec_passed = (items: Array<string>) => {
+  const path = './tests/passed.actual.spec.ts'
 
-const generate_spec_error = (input: Array<string>, name: string, path : string, code: number) => {
+  const gen_ImportDeclaration = (name: string, items: Array<string>): ts.ImportDeclaration => {
+    return factory.createImportDeclaration(
+      undefined,
+      factory.createImportClause(
+        false,
+        undefined,
+        factory.createNamedImports(
+          items.map(x => factory.createImportSpecifier(
+            false,
+            undefined,
+            factory.createIdentifier(x)
+          )
+          )
+        )
+      ),
+      factory.createStringLiteral(name),
+      undefined
+    )
+  }
+
+  const gen_item_ImportDeclaration = (name: string) => {
+    return factory.createImportDeclaration(
+      undefined,
+      factory.createImportClause(
+        false,
+        undefined,
+        factory.createNamespaceImport(factory.createIdentifier(name))
+      ),
+      factory.createStringLiteral(`../bindings/passed/${name}`),
+      undefined
+    )
+  }
+
+  const import_completium_experiment = gen_ImportDeclaration(
+    "@completium/experiment-ts",
+    [
+      'expect_to_fail',
+      'get_account',
+      'set_mockup',
+      'set_quiet',
+    ])
+  const import_completium_archetype_ts_types = gen_ImportDeclaration(
+    "@completium/archetype-ts-types",
+    [
+      'Address',
+      'Bytes',
+      'Int',
+      'Micheline',
+      'Nat',
+      'Option',
+      'Or',
+      'Rational',
+      'Tez'
+    ])
+  const import_assert = factory.createImportDeclaration(
+    undefined,
+    factory.createImportClause(
+      false,
+      factory.createIdentifier("assert"),
+      undefined
+    ),
+    factory.createStringLiteral("assert"),
+    undefined
+  )
+  const import_BigNumber = gen_ImportDeclaration("bignumber.js", ["BigNumber"])
+
+  const gen_account = (name: string): ts.VariableStatement => {
+    return factory.createVariableStatement(
+      undefined,
+      factory.createVariableDeclarationList(
+        [factory.createVariableDeclaration(
+          factory.createIdentifier(name),
+          undefined,
+          undefined,
+          factory.createCallExpression(
+            factory.createIdentifier("get_account"),
+            undefined,
+            [factory.createStringLiteral(name)]
+          )
+        )],
+        ts.NodeFlags.Const
+      )
+    )
+  }
+
+  const gen_expr_statement = (input: [string, Array<ts.Expression>]): ts.ExpressionStatement => {
+    return factory.createExpressionStatement(factory.createCallExpression(
+      factory.createIdentifier(input[0]),
+      undefined,
+      input[1]
+    ))
+  }
+
+  const basic_imports: Array<ts.ImportDeclaration> = [import_completium_experiment, import_completium_archetype_ts_types, import_assert, import_BigNumber]
+  const item_imports: Array<ts.ImportDeclaration> = items.map(gen_item_ImportDeclaration)
+  const accounts: Array<ts.VariableStatement> = ['alice', 'bob', 'carl'].map(gen_account)
+  const aaa: Array<[string, Array<ts.Expression>]> = [["set_quiet", [factory.createTrue()]], ["set_mockup", []]]
+  const expr_statements: Array<ts.ExpressionStatement> = aaa.map(gen_expr_statement)
+  const gen_it = (name: string) => {
+    return factory.createExpressionStatement(factory.createCallExpression(
+      factory.createIdentifier("it"),
+      undefined,
+      [
+        factory.createStringLiteral(name),
+        factory.createArrowFunction(
+          [factory.createToken(ts.SyntaxKind.AsyncKeyword)],
+          undefined,
+          [],
+          undefined,
+          factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+          factory.createBlock(
+            [factory.createExpressionStatement(factory.createAwaitExpression(factory.createCallExpression(
+              factory.createPropertyAccessExpression(
+                factory.createPropertyAccessExpression(
+                  factory.createIdentifier(name),
+                  factory.createIdentifier(name)
+                ),
+                factory.createIdentifier("deploy")
+              ),
+              undefined,
+              [factory.createObjectLiteralExpression(
+                [factory.createPropertyAssignment(
+                  factory.createIdentifier("as"),
+                  factory.createIdentifier("alice")
+                )],
+                false
+              )]
+            )))],
+            true
+          )
+        )
+      ]
+    ))
+  }
+  const desc = [
+    factory.createExpressionStatement(factory.createCallExpression(
+      factory.createIdentifier("describe"),
+      undefined,
+      [
+        factory.createStringLiteral("passed"),
+        factory.createArrowFunction(
+          [factory.createToken(ts.SyntaxKind.AsyncKeyword)],
+          undefined,
+          [],
+          undefined,
+          factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+          factory.createBlock(
+            items.map(gen_it),
+            true
+          )
+        )
+      ]
+    ))];
+  const decls: Array<Array<ts.ImportDeclaration | ts.VariableStatement | ts.ExpressionStatement>> = [basic_imports, item_imports, accounts, expr_statements, desc]
+  const decls2: Array<ts.ImportDeclaration | ts.VariableStatement | ts.ExpressionStatement> = decls.flat()
+  const nodeArr = factory.createNodeArray(decls2);
+  const printer = createPrinter({ newLine: NewLineKind.LineFeed });
+  const file = createSourceFile("source.ts", "", ScriptTarget.ESNext, false, ScriptKind.TS);
+  const output = printer.printList(ListFormat.MultiLine, nodeArr, file);
+  fs.writeFileSync(path, output)
+}
+
+const generate_spec_error = (input: Array<string>, name: string, path: string, code: number) => {
   let items: Array<string> = []
   for (const id of input) {
     items.push(`
@@ -116,7 +281,7 @@ const extract_file_dir = (path: string, ext: string): Array<string> => {
 }
 
 describe('Generate binding', async () => {
-  describe('Passed', async () => {
+  describe('passed', async () => {
     const p = './json/passed'
     const filenames = extract_file_dir(p, '.json')
     for (const filename of filenames) {
@@ -124,7 +289,9 @@ describe('Generate binding', async () => {
         write_binding(p + '/' + filename)
       });
     }
-    // generate_spec_template(filenames)
+    it('Generate passed.spec.ts', async () => {
+      generate_spec_passed(filenames)
+    })
   })
 
   describe('Generate spec.ts files', async () => {
