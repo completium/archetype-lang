@@ -1,6 +1,8 @@
+/* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
-import assert from 'assert'
 import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez } from '@completium/archetype-ts-types';
+
+import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
 
 import * as add_update_record from '../bindings/passed/add_update_record'
@@ -92,6 +94,7 @@ import * as asset_nth from '../bindings/passed/asset_nth'
 import * as asset_put_single from '../bindings/passed/asset_put_single'
 import * as asset_simple from '../bindings/passed/asset_simple'
 import * as asset_simple_to_big_map from '../bindings/passed/asset_simple_to_big_map'
+import * as asset_simple_to_iterable_big_map from '../bindings/passed/asset_simple_to_iterable_big_map'
 import * as asset_tern_opt from '../bindings/passed/asset_tern_opt'
 import * as asset_ternary_expr_found from '../bindings/passed/asset_ternary_expr_found'
 import * as asset_ternary_expr_notfound from '../bindings/passed/asset_ternary_expr_notfound'
@@ -188,8 +191,8 @@ import * as effect_control_while from '../bindings/passed/effect_control_while'
 import * as effect_dofailif from '../bindings/passed/effect_dofailif'
 import * as effect_dorequire from '../bindings/passed/effect_dorequire'
 import * as effect_dorequire_not from '../bindings/passed/effect_dorequire_not'
-import * as effect_fail_complex from '../bindings/passed/effect_fail_complex'
 import * as effect_fail from '../bindings/passed/effect_fail'
+import * as effect_fail_complex from '../bindings/passed/effect_fail_complex'
 import * as effect_instruction_put_in_asset from '../bindings/passed/effect_instruction_put_in_asset'
 import * as effect_method_asset_add_aggregate from '../bindings/passed/effect_method_asset_add_aggregate'
 import * as effect_method_asset_add_asset from '../bindings/passed/effect_method_asset_add_asset'
@@ -961,6 +964,7 @@ import * as test_addfield_partition_2 from '../bindings/passed/test_addfield_par
 import * as test_addupdate_0 from '../bindings/passed/test_addupdate_0'
 import * as test_addupdate_1 from '../bindings/passed/test_addupdate_1'
 import * as test_addupdate_2 from '../bindings/passed/test_addupdate_2'
+import * as test_asset from '../bindings/passed/test_asset'
 import * as test_asset_head_agg_0 from '../bindings/passed/test_asset_head_agg_0'
 import * as test_asset_head_agg_1 from '../bindings/passed/test_asset_head_agg_1'
 import * as test_asset_head_agg_2 from '../bindings/passed/test_asset_head_agg_2'
@@ -1040,7 +1044,6 @@ import * as test_asset_update_partition_7 from '../bindings/passed/test_asset_up
 import * as test_asset_update_partition_8 from '../bindings/passed/test_asset_update_partition_8'
 import * as test_asset_update_partition_9 from '../bindings/passed/test_asset_update_partition_9'
 import * as test_asset_view from '../bindings/passed/test_asset_view'
-import * as test_asset from '../bindings/passed/test_asset'
 import * as test_bound_value from '../bindings/passed/test_bound_value'
 import * as test_caller_getter from '../bindings/passed/test_caller_getter'
 import * as test_cmp_bool from '../bindings/passed/test_cmp_bool'
@@ -1166,8 +1169,8 @@ import * as var_in_spec from '../bindings/passed/var_in_spec'
 import * as var_in_state_inv from '../bindings/passed/var_in_state_inv'
 import * as var_without_effect from '../bindings/passed/var_without_effect'
 import * as variable_in_container from '../bindings/passed/variable_in_container'
-import * as verif_simple from '../bindings/passed/verif_simple'
 import * as verif_fail from '../bindings/passed/verif_fail'
+import * as verif_simple from '../bindings/passed/verif_simple'
 import * as very_simple from '../bindings/passed/very_simple'
 import * as view_0 from '../bindings/passed/view_0'
 import * as view_all_chain from '../bindings/passed/view_all_chain'
@@ -1208,7 +1211,6 @@ set_quiet(true);
 set_mockup()
 
 /* Tests-------------------------------------------------------------------- */
-
 
 describe('passed', async () => {
 
@@ -1389,15 +1391,6 @@ describe('passed', async () => {
     assert(z_exec.equals(new Nat(0)), "Invalid Value")
   })
 
-  it('arg_fun_constant', async () => {
-    await arg_fun_constant.arg_fun_constant.deploy({ as: alice })
-    const res_before = await arg_fun_constant.arg_fun_constant.get_res();
-    assert(res_before == false, "Invalid Value")
-    await arg_fun_constant.arg_fun_constant.manage_transfers({ as: alice })
-    const res_after = await arg_fun_constant.arg_fun_constant.get_res();
-    assert(res_after == true, "Invalid Value")
-  })
-
   it('apply_lambda', async () => {
     await apply_lambda.apply_lambda.deploy({ as: alice })
     const res_0 = await apply_lambda.apply_lambda.get_res();
@@ -1405,6 +1398,15 @@ describe('passed', async () => {
     await apply_lambda.apply_lambda.exec({ as: alice })
     const res_exec = await apply_lambda.apply_lambda.get_res();
     assert(res_exec.equals(new Int(6)), "Invalid Value")
+  })
+
+  it('arg_fun_constant', async () => {
+    await arg_fun_constant.arg_fun_constant.deploy({ as: alice })
+    const res_before = await arg_fun_constant.arg_fun_constant.get_res();
+    assert(res_before == false, "Invalid Value")
+    await arg_fun_constant.arg_fun_constant.manage_transfers({ as: alice })
+    const res_after = await arg_fun_constant.arg_fun_constant.get_res();
+    assert(res_after == true, "Invalid Value")
   })
 
   it('arith_bls', async () => {
@@ -2134,6 +2136,11 @@ describe('passed', async () => {
     // TODO
   })
 
+  it('asset_simple_to_iterable_big_map', async () => {
+      await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.deploy({ as: alice })
+      // TODO
+  })
+
   it('asset_tern_opt', async () => {
     await asset_tern_opt.asset_tern_opt.deploy({ as: alice })
     // TODO
@@ -2613,13 +2620,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('effect_fail_complex', async () => {
-    await effect_fail_complex.effect_fail_complex.deploy({ as: alice })
-    expect_to_fail(async () => {
-      await effect_fail_complex.effect_fail_complex.exec({ as: alice })
-    }, { prim: "Pair", args: [{ string: "error" }, { int: "0" }] })
-  })
-
   it('effect_dorequire_not', async () => {
     await effect_dorequire_not.effect_dorequire_not.deploy({ as: alice })
     // TODO
@@ -2628,6 +2628,13 @@ describe('passed', async () => {
   it('effect_fail', async () => {
     await effect_fail.effect_fail.deploy({ as: alice })
     // TODO
+  })
+
+  it('effect_fail_complex', async () => {
+    await effect_fail_complex.effect_fail_complex.deploy({ as: alice })
+    expect_to_fail(async () => {
+      await effect_fail_complex.effect_fail_complex.exec({ as: alice })
+    }, { prim: "Pair", args: [{ string: "error" }, { int: "0" }] })
   })
 
   it('effect_instruction_put_in_asset', async () => {
@@ -6623,6 +6630,10 @@ describe('passed', async () => {
     // TODO
   })
 
+  it('test_asset', async () => {
+    await test_asset.test_asset.deploy({ as: alice })
+  })
+
   it('test_asset_head_agg_0', async () => {
     await test_asset_head_agg_0.test_asset_head_agg_0.deploy({ as: alice })
     // TODO
@@ -7016,10 +7027,6 @@ describe('passed', async () => {
   it('test_asset_view', async () => {
     await test_asset_view.test_asset_view.deploy({ as: alice })
     // TODO
-  })
-
-  it('test_asset', async () => {
-    await test_asset.test_asset.deploy({ as: alice })
   })
 
   it('test_bound_value', async () => {
@@ -7780,5 +7787,5 @@ describe('passed', async () => {
     await with_metadata_uri.with_metadata_uri.deploy({ as: alice })
     // TODO
   })
-})
 
+})

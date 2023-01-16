@@ -42,7 +42,7 @@ const generate_spec_passed = (input: Array<string>) => {
       const id = z[1]
 
       const tmp_content = ii.split('\n');
-      const content = tmp_content.slice(1, tmp_content.length - (idx == aa.length - 1 ? 2 : 1)).join('\n')
+      const content = tmp_content.slice(1, tmp_content.length - (idx == aa.length - 1 ? 3 : 1)).join('\n')
 
       res.set(id, '\n' + content + '\n  ')
     }
@@ -63,7 +63,7 @@ const generate_spec_passed = (input: Array<string>) => {
     const body = it_bodies.get(id) ?? default_body
     items.push(`
   it('${id}', async () => {${body}${it_bodies.has(id) ? "" : "  // TODO\n    "}})
-    `);
+`);
   }
 
   const output = `/* DO NOT EDIT, GENERATED FILE */
@@ -91,9 +91,8 @@ set_mockup()
 
 describe('passed', async () => {
 ${(items.map(x => x)).join('')}
-})
-  `
-  fs.writeFileSync('./tests/passed.actual.spec.ts', output)
+})`
+  fs.writeFileSync('./tests/passed.spec.ts', output)
 }
 
 const generate_spec_error = (input: Array<string>, name: string, path: string, code: number) => {
