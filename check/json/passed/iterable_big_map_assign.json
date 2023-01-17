@@ -1,1 +1,171 @@
-{"name":"iterable_big_map_assign","parameters":[],"types":{"assets":[],"enums":[],"records":[],"events":[]},"storage":[{"name":"my_map","type":{"node":"iterable_big_map","name":null,"int_value":null,"args":[{"node":"string","name":null,"int_value":null,"args":[]},{"node":"bytes","name":null,"int_value":null,"args":[]}]},"const":false}],"storage_type":{"value":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"big_map","int":null,"bytes":null,"string":null,"args":[{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%index"],"array":[],"var_id":null,"var_type":null},{"prim":"bytes","int":null,"bytes":null,"string":null,"args":[],"annots":["%value"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%values"],"array":[],"var_id":null,"var_type":null},{"prim":"big_map","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%keys"],"array":[],"var_id":null,"var_type":null},{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%size"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[]}
+{
+  "name": "iterable_big_map_assign",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "my_map",
+      "type": {
+        "node": "iterable_big_map",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "bytes",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%index"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "bytes",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%value"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%values"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%keys"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%size"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

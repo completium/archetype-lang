@@ -1,1 +1,44 @@
-{"name":"arith_tez","parameters":[],"types":{"assets":[],"enums":[],"records":[],"events":[]},"storage":[],"storage_type":{"value":{"prim":"unit","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[{"name":"r","type":{"node":"address","name":null,"int_value":null,"args":[]}}]}],"getters":[],"views":[],"errors":[]}
+{
+  "name": "arith_tez",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": [
+        {
+          "name": "r",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

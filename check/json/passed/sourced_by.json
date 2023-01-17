@@ -1,1 +1,205 @@
-{"name":"sourced_by","parameters":[],"types":{"assets":[{"name":"my_asset","container_kind":"map","fields":[{"name":"id","type":{"node":"address","name":null,"int_value":null,"args":[]},"is_key":true},{"name":"v","type":{"node":"string","name":null,"int_value":null,"args":[]},"is_key":false}],"container_type_michelson":{"prim":"map","int":null,"bytes":null,"string":null,"args":[{"prim":"address","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null},"key_type_michelson":{"prim":"address","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"value_type_michelson":{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}],"enums":[],"records":[],"events":[]},"storage":[{"name":"my_asset","type":{"node":"asset","name":"my_asset","int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"map","int":null,"bytes":null,"string":null,"args":[{"prim":"address","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"e0","args":[]},{"name":"e1","args":[]},{"name":"e2","args":[]}],"getters":[],"views":[],"errors":[{"kind":"InvalidSource","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_SOURCE","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}},{"kind":"InvalidSource","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_SOURCE","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}},{"kind":"InvalidSource","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_SOURCE","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}]}
+{
+  "name": "sourced_by",
+  "parameters": [],
+  "types": {
+    "assets": [
+      {
+        "name": "my_asset",
+        "container_kind": "map",
+        "fields": [
+          {
+            "name": "id",
+            "type": {
+              "node": "address",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "v",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "my_asset",
+      "type": {
+        "node": "asset",
+        "name": "my_asset",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "map",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "e0",
+      "args": []
+    },
+    {
+      "name": "e1",
+      "args": []
+    },
+    {
+      "name": "e2",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "InvalidSource",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_SOURCE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidSource",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_SOURCE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidSource",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_SOURCE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

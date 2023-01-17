@@ -3,12 +3,31 @@ import { RawContractInterface } from "@completium/archetype-binder-ts/build/src/
 
 const fs = require('fs')
 const path = require('path')
+const spawn = require('cross-spawn');
 
 const skip: Array<string> = []
 
-const write_binding = (input: string) => {
-  const filename = input + '.json';
-  const json = fs.readFileSync(filename);
+const compile = (args: string[]) => {
+  const bin = '../_build/default/src/compiler.exe'
+  const res = spawn.sync(bin, args, {});
+  return res
+}
+
+const generation_interface_contract = (i: string) : string => {
+  const arl_path = i + '.arl'
+  const res = compile(['--show-contract-interface', arl_path])
+  if (res.status != 0) {
+    throw new Error(res.stderr.toString())
+  }
+  const content = JSON.parse(res.stdout.toString())
+  const output = JSON.stringify(content, null, 2);
+  const json_path = './json/passed/' + path.basename(arl_path.replace('.arl', '.json'))
+  fs.writeFileSync(json_path, output)
+  return json_path
+}
+
+const write_binding = (json_path: string) => {
+  const json = fs.readFileSync(json_path);
   let rci: RawContractInterface = JSON.parse(json);
   const settings: BindingSettings = {
     language: Language.Archetype,
@@ -16,7 +35,7 @@ const write_binding = (input: string) => {
     path: '../tests/passed/'
   }
   const output = generate_binding(rci, settings);
-  const out_ts = './bindings/passed/' + path.basename(filename.replace('.json', '.ts'));
+  const out_ts = './bindings/passed/' + path.basename(json_path.replace('.json', '.ts'));
   fs.writeFileSync(out_ts, output)
 }
 
@@ -30,7 +49,7 @@ const generate_spec_passed = (input: Array<string>) => {
     if (fr == null) {
       throw new Error("error");
     }
-    const aaa : string = fr[0]
+    const aaa: string = fr[0]
     const aa = aaa.split('\n  it')
     for (let idx = 0; idx < aa.length; ++idx) {
       const b = aa[idx]
@@ -143,11 +162,13 @@ const extract_file_dir = (path: string, ext: string): Array<string> => {
 
 describe('Generate binding', async () => {
   describe('passed', async () => {
-    const p = './json/passed'
-    const filenames = extract_file_dir(p, '.json')
+    const p = '../tests/passed'
+    const filenames = extract_file_dir(p, '.arl')
     for (const filename of filenames) {
       it(filename, () => {
-        write_binding(p + '/' + filename)
+        const filepath = p + '/' + filename
+        const json_path = generation_interface_contract(filepath)
+        write_binding(json_path)
       });
     }
     it('Generate passed.spec.ts', async () => {
@@ -155,23 +176,23 @@ describe('Generate binding', async () => {
     })
   })
 
-    describe('Generate spec.ts files', async () => {
-      const items: Array<[string, string, number]> = [
-        ['syntax-errors', '../tests/syntax-errors', 1],
-        ['type-errors', '../tests/type-errors', 3],
-        ['model-errors', '../tests/model-errors', 5],
-        ['proposal-type-errors', '../tests/proposal-type-errors', 3],
-        ['proposal-model-errors', '../tests/proposal-model-errors', 5]
-      ]
-      for (const item of items) {
-        const name = item[0]
-        const path = item[1]
-        const code = item[2]
+  describe('Generate spec.ts files', async () => {
+    const items: Array<[string, string, number]> = [
+      ['syntax-errors', '../tests/syntax-errors', 1],
+      ['type-errors', '../tests/type-errors', 3],
+      ['model-errors', '../tests/model-errors', 5],
+      ['proposal-type-errors', '../tests/proposal-type-errors', 3],
+      ['proposal-model-errors', '../tests/proposal-model-errors', 5]
+    ]
+    for (const item of items) {
+      const name = item[0]
+      const path = item[1]
+      const code = item[2]
 
-        it(name, () => {
-          const filenames = extract_file_dir(path, ".arl")
-          generate_spec_error(filenames, name, path, code)
-        })
-      }
-    })
+      it(name, () => {
+        const filenames = extract_file_dir(path, ".arl")
+        generate_spec_error(filenames, name, path, code)
+      })
+    }
+  })
 })

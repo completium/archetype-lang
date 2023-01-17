@@ -1,1 +1,71 @@
-{"name":"simple_record_assign1","parameters":[],"types":{"assets":[],"enums":[],"records":[{"name":"my_record","fields":[{"name":"v","type":{"node":"nat","name":null,"int_value":null,"args":[]}}],"type_michelson":{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}],"events":[]},"storage":[{"name":"r","type":{"node":"record","name":"my_record","int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[]}
+{
+  "name": "simple_record_assign1",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [
+      {
+        "name": "my_record",
+        "fields": [
+          {
+            "name": "v",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "r",
+      "type": {
+        "node": "record",
+        "name": "my_record",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "nat",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

@@ -1,1 +1,245 @@
-{"name":"section_constant_transition","parameters":[],"types":{"assets":[],"enums":[{"name":"state","constructors":[{"name":"First","types":[]},{"name":"Second","types":[]},{"name":"Third","types":[]}],"type_michelson":{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}],"records":[],"events":[]},"storage":[{"name":"_state","type":{"node":"int","name":null,"int_value":null,"args":[]},"const":false},{"name":"res2","type":{"node":"nat","name":null,"int_value":null,"args":[]},"const":false},{"name":"res3","type":{"node":"nat","name":null,"int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%res2"],"array":[],"var_id":null,"var_type":null},{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%res3"],"array":[],"var_id":null,"var_type":null},{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":["%_state"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[{"kind":"InvalidState","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_STATE","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}},{"kind":"InvalidCondition","args":["r2"],"expr":{"prim":"Pair","int":null,"bytes":null,"string":null,"args":[{"prim":null,"int":null,"bytes":null,"string":"INVALID_CONDITION","args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":null,"int":null,"bytes":null,"string":"r2","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}},{"kind":"InvalidCondition","args":["r1"],"expr":{"prim":"Pair","int":null,"bytes":null,"string":null,"args":[{"prim":null,"int":null,"bytes":null,"string":"INVALID_CONDITION","args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":null,"int":null,"bytes":null,"string":"r1","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}},{"kind":"Invalid","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"ERROR","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}]}
+{
+  "name": "section_constant_transition",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [
+      {
+        "name": "state",
+        "constructors": [
+          {
+            "name": "First",
+            "types": []
+          },
+          {
+            "name": "Second",
+            "types": []
+          },
+          {
+            "name": "Third",
+            "types": []
+          }
+        ],
+        "type_michelson": {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "_state",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res2",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res3",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res2"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res3"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%_state"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r2"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r2",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r1"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r1",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "ERROR",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

@@ -1,1 +1,112 @@
-{"name":"test_caller_getter","parameters":[],"types":{"assets":[],"enums":[],"records":[],"events":[]},"storage":[{"name":"n","type":{"node":"nat","name":null,"int_value":null,"args":[]},"const":false},{"name":"res","type":{"node":"nat","name":null,"int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%n"],"array":[],"var_id":null,"var_type":null},{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%res"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"callback","args":[{"name":"k","type":{"node":"nat","name":null,"int_value":null,"args":[]}}]},{"name":"main","args":[]}],"getters":[],"views":[],"errors":[{"kind":"Invalid","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_ENTRY","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}]}
+{
+  "name": "test_caller_getter",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "n",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%n"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "callback",
+      "args": [
+        {
+          "name": "k",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "main",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_ENTRY",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

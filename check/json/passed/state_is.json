@@ -1,1 +1,86 @@
-{"name":"state_is","parameters":[],"types":{"assets":[],"enums":[{"name":"state","constructors":[{"name":"Init","types":[]},{"name":"Running","types":[]}],"type_michelson":{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}],"records":[],"events":[]},"storage":[{"name":"_state","type":{"node":"int","name":null,"int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[{"kind":"InvalidState","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"INVALID_STATE","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}]}
+{
+  "name": "state_is",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [
+      {
+        "name": "state",
+        "constructors": [
+          {
+            "name": "Init",
+            "types": []
+          },
+          {
+            "name": "Running",
+            "types": []
+          }
+        ],
+        "type_michelson": {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "_state",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "int",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

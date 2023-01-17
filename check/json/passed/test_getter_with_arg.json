@@ -1,1 +1,64 @@
-{"name":"test_getter_with_arg","parameters":[],"types":{"assets":[],"enums":[],"records":[],"events":[]},"storage":[],"storage_type":{"value":{"prim":"unit","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[],"getters":[{"name":"getArg","args":[{"name":"s","type":{"node":"string","name":null,"int_value":null,"args":[]}}],"return":{"node":"string","name":null,"int_value":null,"args":[]},"return_michelson":{"value":{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true}}],"views":[],"errors":[]}
+{
+  "name": "test_getter_with_arg",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [],
+  "getters": [
+    {
+      "name": "getArg",
+      "args": [
+        {
+          "name": "s",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "string",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "views": [],
+  "errors": []
+}

@@ -1,1 +1,227 @@
-{"name":"record_in_enum","parameters":[],"types":{"assets":[],"enums":[{"name":"myenum","constructors":[{"name":"abc","types":[{"node":"record","name":"myrecord","int_value":null,"args":[]}]},{"name":"xyz","types":[{"node":"record","name":"myrecord","int_value":null,"args":[]}]}],"type_michelson":{"prim":"or","int":null,"bytes":null,"string":null,"args":[{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%a"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%b"],"array":[],"var_id":null,"var_type":null}],"annots":["%abc"],"array":[],"var_id":null,"var_type":null},{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%a"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%b"],"array":[],"var_id":null,"var_type":null}],"annots":["%xyz"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}}],"records":[{"name":"myrecord","fields":[{"name":"a","type":{"node":"nat","name":null,"int_value":null,"args":[]}},{"name":"b","type":{"node":"string","name":null,"int_value":null,"args":[]}}],"type_michelson":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%a"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%b"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}}],"events":[]},"storage":[{"name":"res","type":{"node":"nat","name":null,"int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[]}
+{
+  "name": "record_in_enum",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [
+      {
+        "name": "myenum",
+        "constructors": [
+          {
+            "name": "abc",
+            "types": [
+              {
+                "node": "record",
+                "name": "myrecord",
+                "int_value": null,
+                "args": []
+              }
+            ]
+          },
+          {
+            "name": "xyz",
+            "types": [
+              {
+                "node": "record",
+                "name": "myrecord",
+                "int_value": null,
+                "args": []
+              }
+            ]
+          }
+        ],
+        "type_michelson": {
+          "prim": "or",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%a"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%b"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%abc"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%a"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%b"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%xyz"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [
+      {
+        "name": "myrecord",
+        "fields": [
+          {
+            "name": "a",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "b",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%a"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%b"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "res",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "nat",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

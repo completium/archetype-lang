@@ -1,1 +1,1032 @@
-{"name":"event_all","parameters":[],"types":{"assets":[],"enums":[{"name":"my_enum","constructors":[{"name":"aaa","types":[]},{"name":"bbb","types":[]}],"type_michelson":{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}},{"name":"eaparam","constructors":[{"name":"xxx","types":[{"node":"nat","name":null,"int_value":null,"args":[]}]},{"name":"yyy","types":[{"node":"string","name":null,"int_value":null,"args":[]}]}],"type_michelson":{"prim":"or","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%xxx"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%yyy"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}}],"records":[{"name":"rtype","fields":[{"name":"f1","type":{"node":"nat","name":null,"int_value":null,"args":[]}},{"name":"f2","type":{"node":"string","name":null,"int_value":null,"args":[]}}],"type_michelson":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%f1"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%f2"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}}],"events":[{"name":"ev","fields":[{"name":"u","type":{"node":"unit","name":null,"int_value":null,"args":[]}},{"name":"b","type":{"node":"bool","name":null,"int_value":null,"args":[]}},{"name":"i","type":{"node":"int","name":null,"int_value":null,"args":[]}},{"name":"n","type":{"node":"nat","name":null,"int_value":null,"args":[]}},{"name":"r","type":{"node":"rational","name":null,"int_value":null,"args":[]}},{"name":"date_","type":{"node":"date","name":null,"int_value":null,"args":[]}},{"name":"du","type":{"node":"duration","name":null,"int_value":null,"args":[]}},{"name":"str","type":{"node":"string","name":null,"int_value":null,"args":[]}},{"name":"addr","type":{"node":"address","name":null,"int_value":null,"args":[]}},{"name":"cur","type":{"node":"currency","name":null,"int_value":null,"args":[]}},{"name":"sig","type":{"node":"signature","name":null,"int_value":null,"args":[]}},{"name":"k","type":{"node":"key","name":null,"int_value":null,"args":[]}},{"name":"kh","type":{"node":"key_hash","name":null,"int_value":null,"args":[]}},{"name":"byt","type":{"node":"bytes","name":null,"int_value":null,"args":[]}},{"name":"cid","type":{"node":"chain_id","name":null,"int_value":null,"args":[]}},{"name":"s","type":{"node":"set","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]}]}},{"name":"l","type":{"node":"list","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]}]}},{"name":"m","type":{"node":"map","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]},{"node":"string","name":null,"int_value":null,"args":[]}]}},{"name":"o","type":{"node":"option","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]}]}},{"name":"tu","type":{"node":"tuple","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]},{"node":"string","name":null,"int_value":null,"args":[]}]}},{"name":"oal","type":{"node":"or","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]},{"node":"string","name":null,"int_value":null,"args":[]}]}},{"name":"oar","type":{"node":"or","name":null,"int_value":null,"args":[{"node":"nat","name":null,"int_value":null,"args":[]},{"node":"string","name":null,"int_value":null,"args":[]}]}},{"name":"rr","type":{"node":"record","name":"rtype","int_value":null,"args":[]}},{"name":"ee","type":{"node":"enum","name":"my_enum","int_value":null,"args":[]}},{"name":"eee","type":{"node":"enum","name":"eaparam","int_value":null,"args":[]}}],"type_michelson":{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"unit","int":null,"bytes":null,"string":null,"args":[],"annots":["%u"],"array":[],"var_id":null,"var_type":null},{"prim":"bool","int":null,"bytes":null,"string":null,"args":[],"annots":["%b"],"array":[],"var_id":null,"var_type":null},{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":["%i"],"array":[],"var_id":null,"var_type":null},{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%n"],"array":[],"var_id":null,"var_type":null},{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%r"],"array":[],"var_id":null,"var_type":null},{"prim":"timestamp","int":null,"bytes":null,"string":null,"args":[],"annots":["%date_"],"array":[],"var_id":null,"var_type":null},{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":["%du"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%str"],"array":[],"var_id":null,"var_type":null},{"prim":"address","int":null,"bytes":null,"string":null,"args":[],"annots":["%addr"],"array":[],"var_id":null,"var_type":null},{"prim":"mutez","int":null,"bytes":null,"string":null,"args":[],"annots":["%cur"],"array":[],"var_id":null,"var_type":null},{"prim":"signature","int":null,"bytes":null,"string":null,"args":[],"annots":["%sig"],"array":[],"var_id":null,"var_type":null},{"prim":"key","int":null,"bytes":null,"string":null,"args":[],"annots":["%k"],"array":[],"var_id":null,"var_type":null},{"prim":"key_hash","int":null,"bytes":null,"string":null,"args":[],"annots":["%kh"],"array":[],"var_id":null,"var_type":null},{"prim":"bytes","int":null,"bytes":null,"string":null,"args":[],"annots":["%byt"],"array":[],"var_id":null,"var_type":null},{"prim":"chain_id","int":null,"bytes":null,"string":null,"args":[],"annots":["%cid"],"array":[],"var_id":null,"var_type":null},{"prim":"set","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%s"],"array":[],"var_id":null,"var_type":null},{"prim":"list","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%l"],"array":[],"var_id":null,"var_type":null},{"prim":"map","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%m"],"array":[],"var_id":null,"var_type":null},{"prim":"option","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%o"],"array":[],"var_id":null,"var_type":null},{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%tu"],"array":[],"var_id":null,"var_type":null},{"prim":"or","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%oal"],"array":[],"var_id":null,"var_type":null},{"prim":"or","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null}],"annots":["%oar"],"array":[],"var_id":null,"var_type":null},{"prim":"pair","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%f1"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%f2"],"array":[],"var_id":null,"var_type":null}],"annots":["%rr"],"array":[],"var_id":null,"var_type":null},{"prim":"int","int":null,"bytes":null,"string":null,"args":[],"annots":["%ee"],"array":[],"var_id":null,"var_type":null},{"prim":"or","int":null,"bytes":null,"string":null,"args":[{"prim":"nat","int":null,"bytes":null,"string":null,"args":[],"annots":["%xxx"],"array":[],"var_id":null,"var_type":null},{"prim":"string","int":null,"bytes":null,"string":null,"args":[],"annots":["%yyy"],"array":[],"var_id":null,"var_type":null}],"annots":["%eee"],"array":[],"var_id":null,"var_type":null}],"annots":[],"array":[],"var_id":null,"var_type":null}}]},"storage":[],"storage_type":{"value":{"prim":"unit","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[]}
+{
+  "name": "event_all",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [
+      {
+        "name": "my_enum",
+        "constructors": [
+          {
+            "name": "aaa",
+            "types": []
+          },
+          {
+            "name": "bbb",
+            "types": []
+          }
+        ],
+        "type_michelson": {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      },
+      {
+        "name": "eaparam",
+        "constructors": [
+          {
+            "name": "xxx",
+            "types": [
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              }
+            ]
+          },
+          {
+            "name": "yyy",
+            "types": [
+              {
+                "node": "string",
+                "name": null,
+                "int_value": null,
+                "args": []
+              }
+            ]
+          }
+        ],
+        "type_michelson": {
+          "prim": "or",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%xxx"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%yyy"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [
+      {
+        "name": "rtype",
+        "fields": [
+          {
+            "name": "f1",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "f2",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%f1"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%f2"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "events": [
+      {
+        "name": "ev",
+        "fields": [
+          {
+            "name": "u",
+            "type": {
+              "node": "unit",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "b",
+            "type": {
+              "node": "bool",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "i",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "n",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "r",
+            "type": {
+              "node": "rational",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "date_",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "du",
+            "type": {
+              "node": "duration",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "str",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "addr",
+            "type": {
+              "node": "address",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "cur",
+            "type": {
+              "node": "currency",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "sig",
+            "type": {
+              "node": "signature",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "k",
+            "type": {
+              "node": "key",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "kh",
+            "type": {
+              "node": "key_hash",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "byt",
+            "type": {
+              "node": "bytes",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "cid",
+            "type": {
+              "node": "chain_id",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "s",
+            "type": {
+              "node": "set",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "l",
+            "type": {
+              "node": "list",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "m",
+            "type": {
+              "node": "map",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "string",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "o",
+            "type": {
+              "node": "option",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "tu",
+            "type": {
+              "node": "tuple",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "string",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "oal",
+            "type": {
+              "node": "or",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "string",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "oar",
+            "type": {
+              "node": "or",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "string",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          },
+          {
+            "name": "rr",
+            "type": {
+              "node": "record",
+              "name": "rtype",
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "ee",
+            "type": {
+              "node": "enum",
+              "name": "my_enum",
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "eee",
+            "type": {
+              "node": "enum",
+              "name": "eaparam",
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "unit",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%u"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "bool",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%b"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%i"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%n"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%r"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%date_"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%du"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%str"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%addr"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "mutez",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%cur"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "signature",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%sig"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "key",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%k"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "key_hash",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%kh"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "bytes",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%byt"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "chain_id",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%cid"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "set",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%s"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "list",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%l"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "map",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%m"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "option",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%o"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%tu"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "or",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%oal"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "or",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%oar"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%f1"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%f2"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%rr"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%ee"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "or",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%xxx"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%yyy"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%eee"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ]
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

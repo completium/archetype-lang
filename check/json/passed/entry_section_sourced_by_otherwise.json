@@ -1,1 +1,61 @@
-{"name":"entry_section_sourced_by_otherwise","parameters":[],"types":{"assets":[],"enums":[],"records":[],"events":[]},"storage":[{"name":"owner","type":{"node":"address","name":null,"int_value":null,"args":[]},"const":false}],"storage_type":{"value":{"prim":"address","int":null,"bytes":null,"string":null,"args":[],"annots":[],"array":[],"var_id":null,"var_type":null},"is_storable":true},"entrypoints":[{"name":"exec","args":[]}],"getters":[],"views":[],"errors":[{"kind":"Invalid","args":[],"expr":{"prim":null,"int":null,"bytes":null,"string":"NOT_OWNER","args":[],"annots":[],"array":[],"var_id":null,"var_type":null}}]}
+{
+  "name": "entry_section_sourced_by_otherwise",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "owner",
+      "type": {
+        "node": "address",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "address",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "NOT_OWNER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}
