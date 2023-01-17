@@ -2137,8 +2137,8 @@ describe('passed', async () => {
   })
 
   it('asset_simple_to_iterable_big_map', async () => {
-      await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.deploy({ as: alice })
-      // TODO
+    await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.deploy({ as: alice })
+    // TODO
   })
 
   it('asset_tern_opt', async () => {

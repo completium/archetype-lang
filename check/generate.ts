@@ -76,11 +76,11 @@ const generate_spec_passed = (input: Array<string>) => {
     imports.push(`import * as ${id} from '../bindings/passed/${id}'\n`)
 
     const default_body = `
-      await ${id}.${id}.deploy({ as: alice })
+    await ${id}.${id}.deploy({ as: alice })
     `
     const body = it_bodies.get(id) ?? default_body
     items.push(`
-  it('${id}', async () => {${body}${it_bodies.has(id) ? "" : "  // TODO\n    "}})
+  it('${id}', async () => {${body}${it_bodies.has(id) ? "" : "// TODO\n  "}})
 `);
   }
 
