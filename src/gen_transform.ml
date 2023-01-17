@@ -6337,7 +6337,7 @@ let remove_iterable_big_map (model : model) : model =
             let instr_assign : mterm =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
             in
-            seq [remove_content; put_index; update_last_value; remove_index_counter; dec; instr_assign]
+            seq [put_index; update_last_value; remove_index_counter; dec; remove_content; instr_assign]
             |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt, Some vvt, x, None)) tunit)
             |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt, Some kt, x, None)) tunit)
             |> (fun x -> mk_mterm (Mletin ([idx_id_loced], mk_tupleaccess 0 tmp_var, Some tnat, x, None)) tunit)
