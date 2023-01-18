@@ -9,5 +9,5 @@ asset my_asset to iterable_big_map {
 }
 
 entry exec () {
-  my_asset.add({4});
+  my_asset.add({3});
 }
