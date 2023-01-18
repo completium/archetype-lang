@@ -428,7 +428,7 @@ let replace_update_by_set (model : model) : model =
         let asset : mterm = mk_mterm (Masset lassetitems) type_asset in
 
         let letinasset : mterm = mk_mterm (Mletin ([var_name],
-                                                   asset,
+                                                   LVsimple asset,
                                                    Some (type_asset),
                                                    set_mterm,
                                                    None
@@ -444,7 +444,7 @@ let replace_update_by_set (model : model) : model =
         let get_mterm : mterm = build_get an key_mterm in
 
         let letinasset : mterm = mk_mterm (Mletin ([var_name],
-                                                   get_mterm,
+                                                   LVsimple get_mterm,
                                                    Some (type_asset),
                                                    letinasset,
                                                    None
@@ -1014,9 +1014,8 @@ let move_partition_init_asset (model : model) : model =
 
 let replace_declvar_by_letin (model : model) : model =
   let empty : mterm = mk_mterm (Mseq []) tunit in
-  let process_declvar (ids, t, v) f accu =
+  let process_declvar (ids, t, init) accu =
     begin
-      let init = f v in
       let body =
         match accu with
         | [] -> empty
@@ -1027,12 +1026,21 @@ let replace_declvar_by_letin (model : model) : model =
     end
   in
   let rec aux c (mt : mterm) : mterm =
+    let to_klv ty =
+    match get_ntype ty with
+    | Toption ty -> KLVoption ty
+    | Tlist _ -> KLVlist
+    | _ -> assert false
+    in
     match mt.node with
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
           match x.node with
           | Mdeclvar (ids, t, v, _) ->
-            let res =  process_declvar (ids, t, v) (aux c) accu in
+            let res =  process_declvar (ids, t, LVsimple (aux c v)) accu in
+            [ res ]
+          | Mdetach (id, va, tya, fa) ->
+            let res = process_declvar ([id], Some tya, LVreplace (va, to_klv tya, aux c fa)) accu in
             [ res ]
           | _ ->
             begin
@@ -1041,7 +1049,8 @@ let replace_declvar_by_letin (model : model) : model =
             end
         ) l [] in
       { mt with node = Mseq ll }
-    | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, v) (aux c) []
+    | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, LVsimple (aux c v)) []
+    | Mdetach (id, va, tya, fa) -> process_declvar ([id], Some tya, LVreplace (va, to_klv tya, aux c fa)) []
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -2093,7 +2102,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
         mk_mterm (Mmin(a, b)) (process_type t)
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
-          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
+          node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (id, k, fa) -> LVreplace (id, k, aux fa)), Option.map process_type t, aux body, Option.map aux o)
         }
       | Mdeclvar (ids, t, v, c), _ ->
         { mt with
@@ -2479,7 +2488,7 @@ let extract_term_from_instruction f (model : model) : model =
     let process (mt : mterm) l : mterm =
       List.fold_right
         (fun (id, v) accu ->
-           mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
+           mk_mterm (Mletin ([id], LVsimple v, Some v.type_, accu, None)) accu.type_
         ) l mt
     in
 
@@ -2487,7 +2496,7 @@ let extract_term_from_instruction f (model : model) : model =
     (* lambda *)
 
     | Mletin (i, a, t, b, o) ->
-      let ae, aa = f a in
+      let ae, aa = match a with | LVsimple a -> let e, a = f a in (LVsimple e, a) | LVreplace (id, k, fa) -> let e, a = f fa in (LVreplace (id, k, e), a) in
       let be = aux ctx b in
       let oe = Option.map (aux ctx) o in
       process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa
@@ -2745,7 +2754,7 @@ let remove_letin_from_expr (model : model) : model =
   let aux (mt: mterm) : mterm * (mident * mterm) list =
     let rec f (accu : (mident * mterm) list) (mt : mterm) : mterm * (mident * mterm) list =
       match mt.node with
-      | Mletin ([i], a, _, b, None) ->
+      | Mletin ([i], LVsimple a, _, b, None) ->
         let b, accu = f accu b in
         b, (i, a)::accu
       | _ ->
@@ -2799,11 +2808,11 @@ let add_contain_on_get (model : model) : model =
       let gg = g env in
       match mt.node with
 
-      | Mletin (i, a, t, b, o) ->
+      | Mletin (i, LVsimple a, t, b, o) ->
         let accu = f accu a in
         let be = aux b in
         let oe = Option.map aux o in
-        gg accu (mk_mterm (Mletin (i, a, t, be, oe)) mt.type_)
+        gg accu (mk_mterm (Mletin (i, LVsimple a, t, be, oe)) mt.type_)
 
       | Mdeclvar (_i, _t, v, _) ->
         let accu = f accu v in
@@ -3116,7 +3125,7 @@ let replace_for_to_iter (model : model) : model =
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (mk_mident (dumloc idx_id), Vlocal, Tnone, Dnone)) tint in
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
-      let letin = mk_mterm (Mletin (ids, nth, Some t, nbody, None)) tunit in
+      let letin = mk_mterm (Mletin (ids, LVsimple nth, Some t, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mlistlength (t, col)) tint in
       let strict = false in
@@ -3157,7 +3166,7 @@ let replace_for_to_iter (model : model) : model =
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (mk_mident (dumloc idx_id), Vlocal, Tnone, Dnone)) tint in
       let nth = mk_mterm (Mnth(an, ck, idx)) type_asset in
-      let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) tunit in
+      let letin = mk_mterm (Mletin ([id], LVsimple nth, Some type_asset, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mcount (an, ck)) tint in
       let nat = false in
@@ -3479,7 +3488,7 @@ let create_var_before_for (model : model) : model =
           | _ -> assert false
         in
         let newfor : mterm  = mk_mterm (Mfor (id, ickvar, body, Some lbl)) mt.type_ in
-        mk_mterm (Mletin ([mk_mident (dumloc var_id)], c, Some c.type_, newfor, None)) mt.type_
+        mk_mterm (Mletin ([mk_mident (dumloc var_id)], LVsimple c, Some c.type_, newfor, None)) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4233,7 +4242,7 @@ let remove_asset (model : model) : model =
                 let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
 
                 if with_value
-                then let act : mterm = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                then let act : mterm = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], LVsimple g, Some g.type_, act, None)) tr
                 else mk vid None vaccu
               end
             | None -> begin
@@ -4270,7 +4279,7 @@ let remove_asset (model : model) : model =
                 let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
 
                 if with_value
-                then let act = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                then let act = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], LVsimple g, Some g.type_, act, None)) tr
                 else mk vid None vaccu
               end
             | None -> begin
@@ -4649,7 +4658,7 @@ let remove_asset (model : model) : model =
                     let cond = fm ctx (mk_cond aan vkey (Some vval) b) in
                     let remove = remove_field (fm ctx) (an, fn, k, vkey) in
                     let body = mk_mterm (Mif (cond, remove, None)) tunit in
-                    mk_mterm (Mletin([ival], g, Some g.type_, body, None)) tunit
+                    mk_mterm (Mletin([ival], LVsimple g, Some g.type_, body, None)) tunit
                   end
                 | None -> begin
                     let cond = fm ctx (mk_cond aan vkey None b) in
@@ -4777,7 +4786,7 @@ let remove_asset (model : model) : model =
 
           let mk_letin x =
             let get = mk_mterm (Mmapget(mkm, kt, tasset, va, k, Some an)) tasset in
-            mk_mterm (Mletin ([var_id], get, Some tasset, x, None)) tunit
+            mk_mterm (Mletin ([var_id], LVsimple get, Some tasset, x, None)) tunit
           in
 
           let get_val (id : mident) =
@@ -6268,8 +6277,8 @@ let remove_iterable_big_map (model : model) : model =
         let body : mterm = seq [matchinstr; update_map; instr_assign] in
 
         body
-        |> (fun x -> mk_mterm (Mletin ([idx_id_loced], init_value, Some tnat, x, None)) tunit)
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([idx_id_loced], LVsimple init_value, Some tnat, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     | { node = Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar _ | Avarstore _) as assign_value),
@@ -6338,15 +6347,15 @@ let remove_iterable_big_map (model : model) : model =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
             in
             seq [put_index; update_last_value; remove_index_counter; dec; remove_content; instr_assign]
-            |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt, Some vvt, x, None)) tunit)
-            |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt, Some kt, x, None)) tunit)
-            |> (fun x -> mk_mterm (Mletin ([idx_id_loced], mk_tupleaccess 0 tmp_var, Some tnat, x, None)) tunit)
+            |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], LVsimple (mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt), Some vvt, x, None)) tunit)
+            |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], LVsimple (mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt), Some kt, x, None)) tunit)
+            |> (fun x -> mk_mterm (Mletin ([idx_id_loced], LVsimple (mk_tupleaccess 0 tmp_var), Some tnat, x, None)) tunit)
           in
           let none_value : mterm = seq [] in
           mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
         in
         matchinstr
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     (* expression *)
@@ -6371,7 +6380,7 @@ let remove_iterable_big_map (model : model) : model =
     | { node = Mmapfold (MKIterableBigMap, kt, ikid, ivid, iaccu, map, init, act); type_ = vt } -> begin
         let body = mk_mterm (Mfor (FIdouble(ikid, ivid), ICKmap map, mk_mterm (Massign (ValueAssign, kt, Avar iaccu, act)) tunit, None)) tunit in
         seq [aux ctx body; mk_mvar iaccu kt]
-        |> (fun x -> mk_mterm (Mletin ([iaccu], init, Some vt, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([iaccu], LVsimple init, Some vt, x, None)) tunit)
       end
 
     (* control *)
@@ -6394,12 +6403,12 @@ let remove_iterable_big_map (model : model) : model =
         let value_v = mk_mterm (Mmapget (MKBigMap, kt, ttuple [tnat; vt], map_content, var_k, None)) (ttuple [tnat; vt]) |> mk_tupleaccess 1 in
         let letin =
           aux ctx body
-          |> (fun x -> mk_mterm (Mletin ([id_v], value_v, Some vt, x, None)) tunit)
-          |> (fun x -> mk_mterm (Mletin ([id_k], value_k, Some kt, x, None)) tunit)
+          |> (fun x -> mk_mterm (Mletin ([id_v], LVsimple value_v, Some vt, x, None)) tunit)
+          |> (fun x -> mk_mterm (Mletin ([id_k], LVsimple value_k, Some kt, x, None)) tunit)
         in
 
         mk_mterm (Miter (idx_id, bound_min, bound_max, letin, lbl, true)) tunit
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     | { node = Mlitmap (MKIterableBigMap, original_values); type_ = (Titerable_big_map (kt, vt), _)} -> begin

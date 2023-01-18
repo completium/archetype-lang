@@ -355,6 +355,10 @@ and builtin =
   | Bsimplify_rational
 [@@deriving show {with_path = false}]
 
+and klv =
+| KLVoption of type_
+| KLVlist
+
 and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
@@ -387,6 +391,7 @@ and instruction =
   | Ireverse     of type_ * instruction
   | Imichelson   of instruction list * code * ident list
   | Iwildcard    of type_ * ident
+  | Ireplace     of ident * ident * klv * instruction
 [@@deriving show {with_path = false}]
 
 and ritem =

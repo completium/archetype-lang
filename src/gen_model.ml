@@ -343,7 +343,7 @@ let to_model (ast : A.ast) : M.model =
         end
       | A.Precord l                         -> M.Masset         (List.map f l)
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
-      | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([M.mk_mident id], f init, Option.map type_to_type typ, f body, Option.map f o)
+      | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([M.mk_mident id], LVsimple (f init), Option.map type_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([M.mk_mident  i], Option.map type_to_type t, f v, c)
 
       (* enum value *)
@@ -1176,7 +1176,7 @@ let to_model (ast : A.ast) : M.model =
         end
       | A.Iiter (i, a, b, body)   -> M.Miter (M.mk_mident i, f a, f b, g body, instr.label, false)
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
-      | A.Iletin (i, init, cont)  -> M.Mletin ([M.mk_mident i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
+      | A.Iletin (i, init, cont)  -> M.Mletin ([M.mk_mident i], LVsimple (f init), Option.map type_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([M.mk_mident i], Option.map type_to_type v.type_, f v, c) (* TODO *)
       | A.Ideclvaropt (i, v, fa, c)-> M.Mdeclvaropt ([M.mk_mident i], Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
@@ -1224,6 +1224,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Ilabel  i -> M.Mlabel (M.mk_mident i)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
+      | A.Idetach (id, v, ty, fa) -> M.Mdetach (M.mk_mident id, M.mk_mident v, type_to_type ty, (match fa with | Some v -> f v | None -> (M.mk_string M.fail_msg_DETACH_ERROR)))
+
 
       | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 

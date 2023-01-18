@@ -222,9 +222,19 @@ type michelson_struct = {
 }
 [@@deriving show {with_path = false}]
 
+type klv =
+  | KLVoption of type_
+  | KLVlist
+[@@deriving show {with_path = false}]
+
+type 'term letin_value_gen =
+  | LVsimple of 'term
+  | LVreplace of mident * klv * 'term
+[@@deriving show {with_path = false}]
+
 type 'term mterm_node  =
   (* lambda *)
-  | Mletin            of mident list * 'term * type_ option * 'term * 'term option
+  | Mletin            of mident list * 'term letin_value_gen * type_ option * 'term * 'term option
   | Mdeclvar          of mident list * type_ option * 'term * bool
   | Mdeclvaropt       of mident list * type_ option * 'term * 'term option * bool
   | Mapp              of mident * 'term list
@@ -249,6 +259,7 @@ type 'term mterm_node  =
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
+  | Mdetach           of mident * mident * type_ * 'term
   (* entrypoint *)
   | Mgetentrypoint    of type_ * mident * 'term                 (* type * address * string *)
   | Mcallview         of type_ * 'term * mident * 'term         (* type * address * string * argument *)
@@ -643,6 +654,9 @@ and security_role   = lident
 and security_entry =
   | Sany
   | Sentry of lident list
+[@@deriving show {with_path = false}]
+
+and letin_value = mterm letin_value_gen
 [@@deriving show {with_path = false}]
 
 type label_term = {
@@ -1225,7 +1239,7 @@ let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
 
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
 
-let mk_letin id v b = mk_mterm (Mletin([id], v, Some v.type_, b, None)) b.type_
+let mk_letin id v b = mk_mterm (Mletin([id], LVsimple v, Some v.type_, b, None)) b.type_
 
 let mk_tupleaccess n (x : mterm) =
   match get_ntype x.type_ with
@@ -1285,6 +1299,7 @@ let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 (* -------------------------------------------------------------------- *)
 
 let fail_msg_ASSET_NOT_FOUND         = "ASSET_NOT_FOUND"
+let fail_msg_DETACH_ERROR            = "DETACH_ERROR"
 let fail_msg_DIV_BY_ZERO             = "DIV_BY_ZERO"
 let fail_msg_INVALID_CALLER          = "INVALID_CALLER"
 let fail_msg_INVALID_CONDITION       = "INVALID_CONDITION"
@@ -1501,10 +1516,16 @@ let cmp_mterm_node
   let cmp_michelson_struct (lhs : michelson_struct) (rhs : michelson_struct) : bool =
     lhs = rhs
   in
+  let cmp_letin_value (lhs : letin_value) (rhs : letin_value) : bool =
+    match lhs, rhs with
+    | LVsimple v1, LVsimple v2 -> cmp v1 v2
+    | LVreplace (id1, k1, fa1), LVreplace (id2, k2, fa2) -> cmpi id1 id2 && k1 = k2 && cmp fa1 fa2
+    | _, _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
-    | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
+    | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp_letin_value a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
     | Mdeclvar (i1, t1, v1, c1), Mdeclvar (i2, t2, v2, c2)                             -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2 && cmp_bool c1 c2
     | Mdeclvaropt (i1, t1, v1, f1, c1), Mdeclvaropt (i2, t2, v2, f2, c2)               -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2 && Option.cmp cmp f1 f2 && cmp_bool c1 c2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
@@ -1529,6 +1550,7 @@ let cmp_mterm_node
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
+    | Mdetach (id1, v1, ty1, f1), Mdetach (id2, v2, ty2, f2)                           -> cmpi id1 id2 && cmpi v1 v2 && cmp_type ty1 ty2 && cmp f1 f2
     (* entrypoint *)
     | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
@@ -1980,7 +2002,7 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
-  | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map ft t, f b, Option.map f o)
+  | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, (match a with | LVsimple a -> LVsimple (f a) | LVreplace (id, k, fa) -> LVreplace (g id, k, f fa)), Option.map ft t, f b, Option.map f o)
   | Mdeclvar (i, t, v, c)          -> Mdeclvar (List.map g i, Option.map ft t, f v, c)
   | Mdeclvaropt (i, t, v, fa, c)   -> Mdeclvaropt (List.map g i, Option.map ft t, f v, Option.map f fa, c)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
@@ -2005,6 +2027,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
+  | Mdetach (id, v, ty, fa)        -> Mdetach (g id, g v, ft ty, f fa)
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -2453,7 +2476,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
   (* lambda *)
-  | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
+  | Mletin (_, a, _, b, o)                -> let tmp = f (match a with | LVsimple a -> f accu a | LVreplace (_, _, a) -> f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v, _)                 -> f accu v
   | Mdeclvaropt (_, _, v, fa, _)          -> let tmp = f accu v in Option.map_dfl (f tmp) tmp fa
   | Mapp (_, args)                        -> List.fold_left f accu args
@@ -2478,6 +2501,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
+  | Mdetach (_, _, _, x)                  -> f accu x
   (* entrypoint *)
   | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
@@ -2836,7 +2860,7 @@ let fold_map_term
   (* lambda *)
 
   | Mletin (idd, i, t, b, o) ->
-    let ie, ia = f accu i in
+    let ie, ia = (match i with | LVsimple a -> let e, a = f accu a in (LVsimple e, a) | LVreplace (id, k, a) -> let e, a = f accu a in (LVreplace (id, k, e), a)) in
     let be, ba = f ia b in
     let oe, oa =
       match o with
@@ -2980,6 +3004,10 @@ let fold_map_term
   | Memit (e, x) ->
     let xe, xa = f accu x in
     g (Memit (e, xe)), xa
+
+  | Mdetach (id, v, ty, fa) ->
+    let fae, faa = f accu fa in
+    g (Mdetach (id, v, ty, fae)), faa
 
 
   (* entrypoint *)
@@ -6073,7 +6101,7 @@ end = struct
       match mt.node with
       | Mletin (_, x, ot, b, o) -> begin
           accu
-          |> (fun accu -> aux accu x)
+          |> (fun accu -> (match x with | LVsimple v -> aux accu v | LVreplace (_, _, fa) -> aux accu fa))
           |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
           |> (fun accu -> aux accu b)
           |> (fun accu -> Option.map_dfl (aux accu) accu o)
@@ -6275,7 +6303,7 @@ end = struct
       match t.node with
       | Mletin (ids, a, _, b, o) ->
         let f = aux (env @ (List.map unloc_mident ids)) in
-        let tmp = f (f accu a) b in
+        let tmp = f (match a with | LVsimple x -> f accu x |  LVreplace (_, _, x) -> f accu x) b in
         Option.map_dfl (f tmp) tmp o
       | Mforall (id, _, c, b) ->
         let f = aux (env @ [unloc_mident id]) in

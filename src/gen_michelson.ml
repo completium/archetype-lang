@@ -647,7 +647,11 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in T.IletIn (M.unloc_mident id, f v, f b, is_unit)
+    | Mletin ([id], v, _, b, _) -> begin
+        let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
+        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, k, fa) -> T.Ireplace(M.unloc_mident id, M.unloc_mident idv, (match k with | KLVoption ty -> T.KLVoption (ft ty) | KLVlist -> T.KLVlist) , f fa) in
+        T.IletIn (M.unloc_mident id, v, f b, is_unit)
+      end
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mdeclvaropt _             -> emit_error (UnsupportedTerm ("Mdeclvaropt"))
@@ -765,6 +769,7 @@ let to_ir (model : M.model) : T.ir =
         let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e))), f value) in
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
+    | Mdetach _  -> emit_error (UnsupportedTerm ("Mdetach"))
 
     (* entrypoint *)
 
@@ -2159,6 +2164,16 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let id = "const_" ^ id ^ "__" in
       let data : T.data = T.Dvar(id, ty, true) in
       T.cpush (ty, data), inc_env env
+    end
+
+  | Ireplace (id, v, k, fa) -> begin
+      print_env ~str:"Ireplace before" env;
+      let n = get_sp_for_id env v in
+      let a, _ = fe (inc_env env) fa in
+      let nenv = add_var_env env id in
+      print_env ~str:"Ireplace after" nenv;
+      let b = match k with | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])] | KLVlist -> [T.cifcons ([], [a; T.cfailwith])] in
+      T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
     end
 
 and process_data (d : T.data) : T.data =

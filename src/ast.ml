@@ -470,6 +470,7 @@ and instruction_node =
   | Ilabel of lident
   | Ifail of pterm
   | Ifailsome of pterm
+  | Idetach of lident * lident * type_ * pterm option
 [@@deriving show {with_path = false}]
 
 and for_ident = FIsimple of lident | FIdouble of lident * lident

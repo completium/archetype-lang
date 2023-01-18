@@ -1583,11 +1583,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     match mt.node with
     (* lambda *)
 
-    | Mletin ([id], v, _, b, None) ->
+    | Mletin ([id], LVsimple v, _, b, None) ->
       let ctx = add_local (M.unloc_mident id) ctx in
       Tletin (M.Utils.is_local_assigned (M.unloc_mident id) b, map_mident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
-    | Mletin ([id], { node = M.Mget (a, CKcoll (t,d), k); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], LVsimple { node = M.Mget (a, CKcoll (t,d), k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       Tmatch (Tget (loc_ident a,
                     map_mterm m ctx k,
@@ -1595,7 +1595,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_mident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mmapget (_, _kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], LVsimple { node = M.Mmapget (_, _kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       let map_id = mk_map_name m container.type_ in
       (* let t, d =
@@ -1610,14 +1610,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_mident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mnth (n, CKview c,k); type_ = _ }, _, b, Some e) ->
+    | Mletin ([id], LVsimple { node = M.Mnth (n, CKview c,k); type_ = _ }, _, b, Some e) ->
       Tmatch (Tnth (dl (mk_view_id n),
                     map_mterm m ctx k,
                     map_mterm m ctx c) |> dl,[
                 Tpsome (map_mident id),  map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mnth (n, CKcoll (t,d),k); type_ = _ }, _, b, Some e) ->
+    | Mletin ([id], LVsimple { node = M.Mnth (n, CKcoll (t,d),k); type_ = _ }, _, b, Some e) ->
       Tmatch (
         Tnth (
           dl (mk_view_id n),
@@ -1627,13 +1627,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Twild, map_mterm m ctx e
         ])
 
-    | Mletin ([id], v, _, b, Some o) ->
+    | Mletin ([id], LVsimple v, _, b, Some o) ->
       let ctx = ctx in
       Tmatch (map_mterm m ctx v,[
           Tpsome (map_mident id), map_mterm m ctx b;
           Twild, map_mterm m ctx o
         ])
-    | Mletin (l, v, _, b, None) ->
+    | Mletin (l, LVsimple v, _, b, None) ->
       let ctx = List.fold_left (fun acc id -> add_local (M.unloc_mident id) acc) ctx l in
       let id = "("^(l |> List.map M.unloc_mident |> String.concat ",")^")" in
       Tletin (false, dl id , None, map_mterm m ctx v, map_mterm m ctx b)
@@ -1819,6 +1819,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfailsome _ -> assert false
 
     | Memit (_e, _v) -> assert false
+
+    | Mdetach (_id, _v, _ty, _fa) -> assert false
 
     (* entrypoint *)
 

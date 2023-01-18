@@ -1,0 +1,12 @@
+archetype ticket_store_option
+
+variable ot : option<ticket<string>> = none
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  ot := some(create_ticket("info", 1));
+
+  detach t from my_ticket : "ERROR";
+  info := some(read_ticket(t))
+}

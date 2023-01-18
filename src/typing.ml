@@ -654,7 +654,7 @@ type namespace =
   | Current
   | Named  of ident
 
-  [@@deriving show {with_path = false}]
+[@@deriving show {with_path = false}]
 
 let uknm = Current
 
@@ -715,6 +715,8 @@ type error_desc =
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
+  | DetachInvalidType                       of ident
+  | DetachVarNotFound                       of ident
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
   | DivergentExpr
   | DoesNotSupportMethodCall
@@ -977,6 +979,8 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
+  | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
+  | DetachVarNotFound id               -> pp "Variable `%s' not found" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
   | DivergentExpr                      -> pp "Divergent expression"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
@@ -2040,7 +2044,7 @@ end = struct
 
   let push (env : t) ?(loc : Location.t option) (name : ident) (entry : entry) =
     let env = { env with
-      env_bindings = Mid.add name (loc, entry) env.env_bindings } in
+                env_bindings = Mid.add name (loc, entry) env.env_bindings } in
 
     match entry with
     | `Local _ -> { env with env_locals = Sid.add name env.env_locals }
@@ -2112,7 +2116,7 @@ end = struct
           | `Full decl -> Some (A.Tevent decl.rd_name)
         end
       | _ ->
-          None
+        None
 
     let lookup (env : t) (name : longident) =
       lookup_gen proj env name
@@ -2150,15 +2154,15 @@ end = struct
     let push (env : t) (decl : state) =
       match decl with
       | `Pre nm ->
-          push env ~loc:(loc nm) (unloc nm) (`State decl)
+        push env ~loc:(loc nm) (unloc nm) (`State decl)
       | `Full sd ->
-          (* FIXME: namespace = current namespace *)
-          let _, id = sd.sd_name in
-          let env = push env ~loc:(loc id) (unloc id) (`State decl) in
-          List.fold_left
-            (fun env (name, _, _) ->
-              (push env ~loc:(loc name) (unloc name) (`StateByCtor (sd, name))))
-            env sd.sd_ctors
+        (* FIXME: namespace = current namespace *)
+        let _, id = sd.sd_name in
+        let env = push env ~loc:(loc id) (unloc id) (`State decl) in
+        List.fold_left
+          (fun env (name, _, _) ->
+             (push env ~loc:(loc name) (unloc name) (`StateByCtor (sd, name))))
+          env sd.sd_ctors
   end
 
   module Local = struct
@@ -2303,16 +2307,16 @@ end = struct
     let push (env : t) (decl : asset) : t =
       match decl with
       | `Pre nm ->
-          push env ~loc:(loc nm) (unloc nm) (`Asset decl)
+        push env ~loc:(loc nm) (unloc nm) (`Asset decl)
       | `Full decl ->
-          (* FIXME: namespace = current namespace *)
-          let _, id  = decl.as_name in
-          let env = push env ~loc:(loc id) (unloc id) (`Asset (`Full decl)) in
-          List.fold_left
-            (fun env fd ->
-              push env ~loc:(loc fd.fd_name)
-                (unloc fd.fd_name) (`Field (unloc id, `Asset)))
-            env decl.as_fields
+        (* FIXME: namespace = current namespace *)
+        let _, id  = decl.as_name in
+        let env = push env ~loc:(loc id) (unloc id) (`Asset (`Full decl)) in
+        List.fold_left
+          (fun env fd ->
+             push env ~loc:(loc fd.fd_name)
+               (unloc fd.fd_name) (`Field (unloc id, `Asset)))
+          env decl.as_fields
   end
 
   module Record = struct
@@ -2340,16 +2344,16 @@ end = struct
     let push (env : t) (decl : record) : t =
       match decl with
       | `Pre nm ->
-          push env ~loc:(loc nm) (unloc nm) (`Record decl)
+        push env ~loc:(loc nm) (unloc nm) (`Record decl)
       | `Full fd ->
-          (* FIXME: namespace = current namespace *)
-          let _, id = fd.rd_name in
-          let env = push env ~loc:(loc id) (unloc id) (`Record decl) in
-          List.fold_left
-            (fun env fd ->
-              push env ~loc:(loc fd.rfd_name)
-                (unloc fd.rfd_name) (`Field (unloc id, `Record)))
-            env fd.rd_fields
+        (* FIXME: namespace = current namespace *)
+        let _, id = fd.rd_name in
+        let env = push env ~loc:(loc id) (unloc id) (`Record decl) in
+        List.fold_left
+          (fun env fd ->
+             push env ~loc:(loc fd.rfd_name)
+               (unloc fd.rfd_name) (`Field (unloc id, `Record)))
+          env fd.rd_fields
   end
 
   module Event = struct
@@ -2377,16 +2381,16 @@ end = struct
     let push (env : t) (decl : record) : t =
       match decl with
       | `Pre nm ->
-          push env ~loc:(loc nm) (unloc nm) (`Event decl)
+        push env ~loc:(loc nm) (unloc nm) (`Event decl)
       | `Full fd ->
-          (* FIXME: namespace = current namespace *)
-          let _, id = fd.rd_name in
-          let env = push env ~loc:(loc id) (unloc id) (`Event decl) in
-          List.fold_left
-            (fun env fd ->
-              push env ~loc:(loc fd.rfd_name)
-                (unloc fd.rfd_name) (`Field (unloc id, `Event)))
-            env fd.rd_fields
+        (* FIXME: namespace = current namespace *)
+        let _, id = fd.rd_name in
+        let env = push env ~loc:(loc id) (unloc id) (`Event decl) in
+        List.fold_left
+          (fun env fd ->
+             push env ~loc:(loc fd.rfd_name)
+               (unloc fd.rfd_name) (`Field (unloc id, `Event)))
+          env fd.rd_fields
   end
 
   module Tentry = struct
@@ -2411,9 +2415,9 @@ end = struct
     let push (env : t) (asset : longident) =
       let asset = as_full (Asset.get env asset) in
       { env with
-          env_context  = asset :: env.env_context;
-          env_bindings =
-            List.fold_left (fun bds fd ->
+        env_context  = asset :: env.env_context;
+        env_bindings =
+          List.fold_left (fun bds fd ->
               Mid.add (unloc fd.fd_name)
                 (None, `Context (asset, Some (unloc fd.fd_name))) bds
             ) env.env_bindings asset.as_fields;
@@ -2635,7 +2639,7 @@ let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
 let ty_of_init_ty (env : env) (ty : A.ptyp) =
   match ty with
   | A.Tcontainer (A.Tasset asset, ctn)
-      when Env.Asset.exists env (mknm (A.unloc_longident asset))
+    when Env.Asset.exists env (mknm (A.unloc_longident asset))
     ->
     let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
     let pk = List.map
@@ -2653,21 +2657,21 @@ let check_and_emit_name_free (env : env) ?(pre : prekind option) (x : A.lident) 
   let default () =
     match Env.name_free env (unloc x) with
     | `Free ->
-        true
+      true
     | `Clash olc ->
-        Env.emit_error env (loc x, NameIsAlreadyBound (unloc x, olc));
-        false
+      Env.emit_error env (loc x, NameIsAlreadyBound (unloc x, olc));
+      false
   in
 
   match pre with
   | Some `Record when is_pre (Env.Record.lookup env (Current, unloc x)) ->
-      true
+    true
   | Some `Event when is_pre (Env.Event.lookup env (Current, unloc x)) ->
-      true
+    true
   | Some `Asset when is_pre (Env.Asset.lookup env (Current, unloc x)) ->
-      true
+    true
   | Some `Enum when is_pre (Env.State.lookup env (Current, unloc x)) ->
-      true
+    true
   | _ -> default ()
 
 (* --------------------------------------------------------------------- *)
@@ -3797,9 +3801,9 @@ let rec for_xexpr
             end
 
           | {
-              type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue)));
-              node  = A.Pcall (Some e, A.Cconst A.Cgetopt, [], [A.AExpr pk]);
-            } -> begin
+            type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue)));
+            node  = A.Pcall (Some e, A.Cconst A.Cgetopt, [], [A.AExpr pk]);
+          } -> begin
               mk_sp
                 (Some (A.Tcontainer (A.Tasset asset, AssetValue)))
                 (A.Pcall (Some e, A.Cconst A.Cget, [], [A.AExpr pk]))
@@ -3835,7 +3839,7 @@ let rec for_xexpr
         let c = for_xexpr env c in
         let env_a = match c with
           | { node = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]); type_ = Some (A.Tcontainer (Tasset an, AssetValue))} ->
-              Some (Env.Context.push env (mknm (A.unloc_longident an)))
+            Some (Env.Context.push env (mknm (A.unloc_longident an)))
           | { type_ = Some (A.Tbuiltin VTbool)} -> Some env
           | { type_ = Some (A.Toption xty)} -> Some (Env.Local.push env (dumloc "the", xty))
           | _ -> None
@@ -4020,7 +4024,7 @@ let rec for_xexpr
 
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, [], args))
 
-      (* FIXME:NM: WTF? *)
+    (* FIXME:NM: WTF? *)
     | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (uknm, unloc f)) ->
       let decl = Option.get (Env.State.byctor env (uknm, unloc f)) in
       let _, cty, _ = Option.get (get_ctor (unloc f) decl.sd_ctors) in
@@ -4593,6 +4597,7 @@ let rec for_xexpr
     | Ereturn    _
     | Eseq       _
     | Etransfer  _
+    | Edetach    _
     | Eemit      _
     | Eany
     | Einvalid ->
@@ -5540,7 +5545,7 @@ let rec for_instruction_r
                   | Pconst Coperations -> check_side_effect(); assign (`Var (mkloc the.loc "operations"))
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
                   | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) ->
-                      check_side_effect(); assign (`Asset (an, k, fn))
+                    check_side_effect(); assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
                   | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else
@@ -5709,6 +5714,24 @@ let rec for_instruction_r
           A.TToperation (e)
 
       in env, mki (Itransfer tr)
+
+    | Edetach (id, v, f) -> begin
+        match Env.Var.lookup env (Current, unloc v) with
+        | Some vdecl -> begin
+            let _ = check_and_emit_name_free env id in
+            let ty = match vdecl.vr_type with
+              | A.Toption ((A.Tticket _) as tty) -> tty
+              | A.Tlist ((A.Tticket _) as tty) -> tty
+              | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
+            in
+            let env = Env.Local.push env (id, ty) ~kind:`Const in
+            env, mki (A.Idetach (id, v, vdecl.vr_type, Option.map (for_expr kind env) f))
+          end
+        | None -> begin
+            Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+            bailout()
+          end
+      end
 
     | Eemit (ty, arg) ->
 
@@ -6015,7 +6038,7 @@ let for_specification_item
     let decl =
       Option.map (fun (asset, arg, f) ->
           { df_name = (fst asset, x); df_arg = arg; df_asset = snd asset; df_body = f; }
-      ) def in                  (* FIXME: namespace *)
+        ) def in                  (* FIXME: namespace *)
 
     let poenv =
       if not (check_and_emit_name_free poenv x) then poenv else
@@ -6570,12 +6593,12 @@ let for_vardecl_init (env : env) (decl : PT.variable_decl loced) =
 
   match Env.Var.lookup env (Current, unloc x) with
   | None ->
-      env, None
+    env, None
 
   | Some v ->
-      let e = Option.map (for_expr (`Concrete `Init) env ~ety:v.vr_type) pe in
-      let v = { v with vr_def = Option.map (fun e -> (e, `Std)) e; } in
-      (Env.Var.push env v, Some v)
+    let e = Option.map (for_expr (`Concrete `Init) env ~ety:v.vr_type) pe in
+    let v = { v with vr_def = Option.map (fun e -> (e, `Std)) e; } in
+    (Env.Var.push env v, Some v)
 
 (* -------------------------------------------------------------------- *)
 let for_vardecls_init (env : env) (decls : PT.variable_decl loced list) =
@@ -7562,7 +7585,7 @@ let transentrys_of_tdecls tdecls =
               fun (e : A.pterm) ->
                 match e with
                 | { node = Pvar (VTnone, Vnone, _); type_= Some (A.Tcontainer(Tasset an, Collection)) } ->
-                    A.Rasset an
+                  A.Rasset an
                 | _ -> A.Rexpr e) (unloc x))
         in A.mk_sp ~loc:(loc x) node in
 
@@ -7921,16 +7944,16 @@ and pretype (env : env) (cmd : PT.declaration list) =
   let for1 (env : env) (decl : PT.declaration) =
     match unloc decl with
     | Drecord (name, _, _, _) when Env.name_free env (unloc name) = `Free ->
-        Env.Record.push env (`Pre name)
+      Env.Record.push env (`Pre name)
 
     | Drecord (name, _, _, _) when Env.name_free env (unloc name) = `Free ->
-        Env.Event.push env (`Pre name)
+      Env.Event.push env (`Pre name)
 
     | Denum (EKenum name, _) when Env.name_free env (unloc name) = `Free ->
-        Env.State.push env (`Pre name)
+      Env.State.push env (`Pre name)
 
     | Dasset (name, _, _, _, _, _, _) when Env.name_free env (unloc name) = `Free ->
-        Env.Asset.push env (`Pre name)
+      Env.Asset.push env (`Pre name)
 
     | _ -> env
   in

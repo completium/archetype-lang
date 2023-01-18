@@ -137,6 +137,7 @@ and expr_unloc =
   | Eappt          of function_ * type_t list * expr list
   | Emethod        of expr * lident * expr list
   | Etransfer      of transfer_t
+  | Edetach        of lident * lident * expr option
   | Edorequire     of expr * expr
   | Edofailif      of expr * expr
   | Efail          of expr
