@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -1147,6 +1147,7 @@ import * as test_tuple_access_3 from '../bindings/passed/test_tuple_access_3'
 import * as test_update from '../bindings/passed/test_update'
 import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
+import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
 import * as transfer_entrypoint2 from '../bindings/passed/transfer_entrypoint2'
@@ -8464,6 +8465,15 @@ describe('passed', async () => {
   it('test_voting', async () => {
     await test_voting.test_voting.deploy({ as: alice })
     // TODO
+  })
+
+  it('ticket_create_ticket', async () => {
+    await ticket_create_ticket.ticket_create_ticket.deploy({ as: alice })
+    const t_before = await ticket_create_ticket.ticket_create_ticket.get_t();
+    assert(t_before.equals(Option.None()))
+    await ticket_create_ticket.ticket_create_ticket.exec({as: alice});
+    const t_after = await ticket_create_ticket.ticket_create_ticket.get_t();
+    assert(t_after.equals(Option.Some(new Ticket<string>(ticket_create_ticket.ticket_create_ticket.get_address(), "mystr", new Nat(10)))))
   })
 
   it('transfer_call', async () => {

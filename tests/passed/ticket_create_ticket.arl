@@ -1,0 +1,7 @@
+archetype ticket_create_ticket
+
+variable t : option<ticket<string>> = none
+
+entry exec () {
+  t := create_ticket("mystr", 10)
+}

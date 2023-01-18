@@ -1606,7 +1606,7 @@ let lambdaops : opinfo list = [
 let ticket_ops : opinfo list =
   [
     op "create_ticket" A.Ccreateticket `Total None[A.Tnamed 0; A.vtnat]
-      (`Ty (A.Tticket (A.Tnamed 0))) Mint.empty;
+      (`Ty (A.Toption (A.Tticket (A.Tnamed 0)))) Mint.empty;
     op "read_ticket" A.Creadticket `Total None [A.Tticket (A.Tnamed 0)]
       (`Ty (A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat])) Mint.empty;
     op "split_ticket" A.Csplitticket `Total None [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat]
