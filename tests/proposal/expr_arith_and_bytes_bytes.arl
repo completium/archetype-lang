@@ -1,0 +1,12 @@
+archetype expr_arith_and_bytes_bytes
+
+variable res : bytes = 0x
+
+entry exec () {
+  specification {
+    s0: res = 0x01
+  }
+  effect {
+    res := 0x01 and 0x03
+  }
+}

@@ -1247,7 +1247,9 @@ let opsigs =
       PT.Arith PT.Mult       , ([A.VTnat; A.VTnat], A.VTnat) ;
       PT.Arith PT.DivEuc     , ([A.VTnat; A.VTnat], A.VTnat) ;
       PT.Arith PT.ShiftLeft  , ([A.VTnat; A.VTnat], A.VTnat) ;
-      PT.Arith PT.ShiftRight , ([A.VTnat; A.VTnat], A.VTnat) ] in
+      PT.Arith PT.ShiftRight , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.ShiftLeft  , ([A.VTbytes; A.VTnat], A.VTbytes) ;
+      PT.Arith PT.ShiftRight , ([A.VTbytes; A.VTnat], A.VTbytes) ] in
 
   let bools : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
@@ -1281,11 +1283,15 @@ let opsigs =
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
       PT.Logical PT.And  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
       PT.Logical PT.And  , ([A.VTint     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Logical PT.And  , ([A.VTbytes   ; A.VTbytes         ], A.VTbytes   )  ;
       PT.Logical PT.Or   , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Logical PT.Or   , ([A.VTbytes   ; A.VTbytes         ], A.VTbytes   )  ;
       PT.Logical PT.Xor  , ([A.VTbool    ; A.VTbool          ], A.VTbool    )  ;
       PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Logical PT.Xor  , ([A.VTbytes   ; A.VTbytes         ], A.VTbytes   )  ;
       PT.Unary PT.Not    , ([A.VTnat                         ], A.VTint     )  ;
       PT.Unary PT.Not    , ([A.VTint                         ], A.VTint     )  ;
+      PT.Unary PT.Not    , ([A.VTbytes                       ], A.VTbytes   )  ;
     ] in
 
   let bls_curves : (PT.operator * (A.vtyp list * A.vtyp)) list =

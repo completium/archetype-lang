@@ -1,0 +1,12 @@
+archetype expr_arith_lsr_nat_nat
+
+variable res : bytes = 0x
+
+entry exec () {
+  specification {
+    s0: res = 0x02;
+  }
+  effect {
+    res := 0x04 |>> 1
+  }
+}

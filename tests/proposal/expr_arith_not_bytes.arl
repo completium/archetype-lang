@@ -1,0 +1,12 @@
+archetype expr_arith_not_bytes
+
+variable res : bytes = 0x
+
+entry exec () {
+  specification {
+    s0: res = 0xfe
+  }
+  effect {
+    res := not 0x01
+  }
+}
