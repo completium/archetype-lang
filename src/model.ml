@@ -4666,6 +4666,7 @@ module Utils : sig
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * type_)
+  val get_asset_value                    : model -> ident -> type_
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
@@ -4752,6 +4753,7 @@ end = struct
   type error_desc =
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
+    | AssetValueTypeNotFound of string
     | ContainerNotFound
     | NotaRecord of mterm
     | NotanAssetType
@@ -4946,11 +4948,28 @@ end = struct
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
 
+  let get_asset_values (m : model) (asset_name : ident) : (ident * type_) list =
+    try
+      let asset : asset = get_asset m asset_name in
+      List.fold_right(fun (x : asset_item) accu ->
+          if (List.exists(fun y -> String.equal y (unloc_mident x.name)) asset.keys)
+          then accu
+          else (unloc_mident x.name, x.type_)::accu)
+        asset.values []
+    with
+    | Not_found -> emit_error (AssetValueTypeNotFound (asset_name))
+
   let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
     match get_asset_keys m asset_name with
     | []  -> emit_error (EmptyAssetKeys (asset_name))
     | [x] -> x
     | _ -> emit_error (SeveralAssetKeys (asset_name))
+
+  let get_asset_value (m : model) (asset_name : ident) : type_ =
+    match get_asset_keys m asset_name with
+    | []  -> tunit
+    | [x] -> snd x
+    | l -> ttuple (List.map (fun x -> snd x) l)
 
   let get_field_container model asset_name field_name : ident * container =
     let seek_original_type () : type_ =

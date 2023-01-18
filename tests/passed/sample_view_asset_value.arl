@@ -1,0 +1,14 @@
+archetype sample_view_asset_value
+
+asset my_asset to big_map {
+  k : string;
+  v : nat;
+} initialized by {
+  { "id0"; 0 };
+  { "id1"; 1 }
+}
+
+view getPrice(c : asset_key<my_asset>) : asset_value<my_asset> {
+  const data ?= my_asset[c] : "ERROR";
+  return data
+}

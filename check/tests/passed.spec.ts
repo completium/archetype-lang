@@ -852,6 +852,7 @@ import * as rf_failif_with from '../bindings/passed/rf_failif_with'
 import * as rf_require_otherwise from '../bindings/passed/rf_require_otherwise'
 import * as same_varname_in_two_distinct_scope from '../bindings/passed/same_varname_in_two_distinct_scope'
 import * as sample_asset_view from '../bindings/passed/sample_asset_view'
+import * as sample_view_asset_value from '../bindings/passed/sample_view_asset_value'
 import * as sapling_empty_state from '../bindings/passed/sapling_empty_state'
 import * as sapling_var from '../bindings/passed/sapling_var'
 import * as sapling_verify_update from '../bindings/passed/sapling_verify_update'
@@ -6981,6 +6982,16 @@ describe('passed', async () => {
   it('sample_asset_view', async () => {
     await sample_asset_view.sample_asset_view.deploy({ as: alice })
     // TODO
+  })
+
+  it('sample_view_asset_value', async () => {
+    await sample_view_asset_value.sample_view_asset_value.deploy({ as: alice })
+    const res_0 = await sample_view_asset_value.sample_view_asset_value.get_my_asset_value("id0")
+    assert(res_0?.equals(new Nat(0)))
+    const res_1 = await sample_view_asset_value.sample_view_asset_value.get_my_asset_value("id1")
+    assert(res_1?.equals(new Nat(1)))
+    const res_2 = await sample_view_asset_value.sample_view_asset_value.get_my_asset_value("id2")
+    assert(res_2 == undefined)
   })
 
   it('sapling_empty_state', async () => {
