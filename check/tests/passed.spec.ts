@@ -3041,22 +3041,78 @@ describe('passed', async () => {
 
   it('asset_put_single', async () => {
     await asset_put_single.asset_put_single.deploy({ as: alice })
-    // TODO
+    const abc_before = await asset_put_single.asset_put_single.get_abc()
+    assert(abc_before.length == 1)
+    assert(abc_before[0][0].equals(new Nat(0)))
+    assert(abc_before[0][1].equals(new asset_put_single.abc_value("mystr", new Bytes(""))))
+    await asset_put_single.asset_put_single.exec({ as: alice })
+    const abc_after = await asset_put_single.asset_put_single.get_abc()
+    assert(abc_after.length == 1)
+    assert(abc_after[0][0].equals(new Nat(0)))
+    assert(abc_after[0][1].equals(new asset_put_single.abc_value("toto", new Bytes("02"))))
   })
 
   it('asset_simple', async () => {
     await asset_simple.asset_simple.deploy({ as: alice })
-    // TODO
+    const my_asset_before = await asset_simple.asset_simple.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "mystr_0")
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1] == "mystr_1")
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1] == "mystr_2")
+    await asset_simple.asset_simple.exec({ as: alice })
+    const my_asset_after = await asset_simple.asset_simple.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "mystr_0")
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1] == "mystr_1")
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1] == "mystr_2")
   })
 
   it('asset_simple_to_big_map', async () => {
     await asset_simple_to_big_map.asset_simple_to_big_map.deploy({ as: alice })
-    // TODO
+    const id_0_before = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(0))
+    assert(id_0_before == "mystr_0")
+    const id_1_before = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(1))
+    assert(id_1_before == "mystr_1")
+    const id_2_before = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(2))
+    assert(id_2_before == "mystr_2")
+    const id_3_before = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(3))
+    assert(id_3_before == undefined)
+    await asset_simple_to_big_map.asset_simple_to_big_map.exec({ as: alice })
+    const id_0_after = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(0))
+    assert(id_0_after == "mystr_0")
+    const id_1_after = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(1))
+    assert(id_1_after == "mystr_1")
+    const id_2_after = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(2))
+    assert(id_2_after == "mystr_2")
+    const id_3_after = await asset_simple_to_big_map.asset_simple_to_big_map.get_my_asset_value(new Nat(3))
+    assert(id_3_after == undefined)
   })
 
   it('asset_simple_to_iterable_big_map', async () => {
     await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.deploy({ as: alice })
-    // TODO
+    const id_0_before = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(0))
+    assert(id_0_before == "mystr_0")
+    const id_1_before = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(1))
+    assert(id_1_before == "mystr_1")
+    const id_2_before = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(2))
+    assert(id_2_before == "mystr_2")
+    const id_3_before = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(3))
+    assert(id_3_before == undefined)
+    await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.exec({ as: alice })
+    const id_0_after = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(0))
+    assert(id_0_after == "mystr_0")
+    const id_1_after = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(1))
+    assert(id_1_after == "mystr_1")
+    const id_2_after = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(2))
+    assert(id_2_after == "mystr_2")
+    const id_3_after = await asset_simple_to_iterable_big_map.asset_simple_to_iterable_big_map.get_my_asset_value(new Nat(3))
+    assert(id_3_after == undefined)
   })
 
   it('asset_tern_opt', async () => {
@@ -8471,7 +8527,7 @@ describe('passed', async () => {
     await ticket_create_ticket.ticket_create_ticket.deploy({ as: alice })
     const t_before = await ticket_create_ticket.ticket_create_ticket.get_t();
     assert(t_before.equals(Option.None()))
-    await ticket_create_ticket.ticket_create_ticket.exec({as: alice});
+    await ticket_create_ticket.ticket_create_ticket.exec({ as: alice });
     const t_after = await ticket_create_ticket.ticket_create_ticket.get_t();
     assert(t_after.equals(Option.Some(new Ticket<string>(ticket_create_ticket.ticket_create_ticket.get_address(), "mystr", new Nat(10)))))
   })
