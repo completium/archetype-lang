@@ -1,0 +1,7 @@
+archetype expr_fun_bytes_to_int
+
+variable res : int = 0i
+
+entry exec(x : bytes) {
+  res := bytes_to_int(x)
+}

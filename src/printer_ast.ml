@@ -277,6 +277,8 @@ let to_const = function
   | CtoContainer           -> "to_container"
   | Cnattostring           -> "nat_to_string"
   | Cbytestonat            -> "bytes_to_nat"
+  | Cinttobytes            -> "int_to_bytes"
+  | Cbytestoint            -> "bytes_to_int"
   | Cnattobytes            -> "nat_to_bytes"
   | Cexec                  -> "exec"
   | Capply                 -> "apply"

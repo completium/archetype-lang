@@ -513,12 +513,28 @@ and op_IMPLICIT_ACCOUNT (stack : stack) =
   Some (M.tcontract M.tunit :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_NAT (stack : stack) =
+  let ty, stack = Stack.pop stack in
+  begin match ty.node with
+  | M.Tbytes -> ()
+  | _ -> raise MichelsonTypingError end;
+  Some (M.tnat :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_INT (stack : stack) =
   let ty, stack = Stack.pop stack in
   begin match ty.node with
-  | M.Tnat | M.Tbls12_381_fr -> ()
+  | M.Tbytes | M.Tnat | M.Tbls12_381_fr -> ()
   | _ -> raise MichelsonTypingError end;
   Some (M.tint :: stack)
+
+(* -------------------------------------------------------------------- *)
+and op_BYTES (stack : stack) =
+  let ty, stack = Stack.pop stack in
+  begin match ty.node with
+  | M.Tnat | M.Tint -> ()
+  | _ -> raise MichelsonTypingError end;
+  Some (M.tbytes :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_ISNAT (stack : stack) =
@@ -1115,8 +1131,14 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | GT ->
       op_GT stack
 
+  | NAT ->
+      op_NAT stack
+
   | INT ->
       op_INT stack
+
+  | BYTES ->
+      op_BYTES stack
 
   | ISNAT ->
       op_ISNAT stack

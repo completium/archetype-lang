@@ -200,6 +200,8 @@ type const =
   | Cnattostring
   | Cbytestonat
   | Cnattobytes
+  | Cbytestoint
+  | Cinttobytes
   | Cexec
   | Capply
   | Cinttodate

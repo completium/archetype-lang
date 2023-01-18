@@ -1840,6 +1840,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnattostring _x     -> assert false
     | Mbytestonat _x      -> assert false
     | Mnattobytes _x      -> assert false
+    | Mbytestoint _x      -> assert false
+    | Minttobytes _x      -> assert false
     | Mpack _x            -> assert false
     | Munpack (_t, _x)    -> assert false
     | Msetdelegate _x     -> assert false

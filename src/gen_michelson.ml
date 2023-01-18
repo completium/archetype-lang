@@ -1067,6 +1067,8 @@ let to_ir (model : M.model) : T.ir =
     | Mnattostring x     -> let b = T.Bnattostring in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mbytestonat x      -> let b = T.Bbytestonat  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mnattobytes x      -> let b = T.Bnattobytes  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mbytestoint x      -> T.Iunop (Uint, f x)
+    | Minttobytes x      -> T.Iunop (Ubytes, f x)
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
@@ -1736,7 +1738,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Uleft t          -> T.cleft (rar t)
     | T.Uright t         -> T.cright (rar t)
     | T.Uneg             -> T.cneg
+    | T.Unat             -> T.cnat
     | T.Uint             -> T.cint
+    | T.Ubytes           -> T.cbytes
     | T.Unot             -> T.cnot
     | T.Uabs             -> T.cabs
     | T.Uisnat           -> T.cisnat

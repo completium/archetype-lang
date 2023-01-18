@@ -122,7 +122,9 @@ and code_node =
   | EQ
   | GE
   | GT
+  | NAT
   | INT
+  | BYTES
   | ISNAT
   | LE
   | LSL
@@ -244,7 +246,9 @@ and un_operator =
   | Uleft  of type_
   | Uright of type_
   | Uneg
+  | Unat
   | Uint
+  | Ubytes
   | Unot
   | Uabs
   | Uisnat
@@ -715,7 +719,9 @@ let cediv                         = mk_code  EDIV
 let ceq                           = mk_code  EQ
 let cge                           = mk_code  GE
 let cgt                           = mk_code  GT
+let cnat                          = mk_code  NAT
 let cint                          = mk_code  INT
+let cbytes                        = mk_code  BYTES
 let cisnat                        = mk_code  ISNAT
 let cle                           = mk_code  LE
 let clsl                          = mk_code  LSL
@@ -897,7 +903,9 @@ let cmp_un_operator lhs rhs =
   | Uleft t1, Uleft t2                     -> cmp_type t1 t2
   | Uright t1, Uright t2                   -> cmp_type t1 t2
   | Uneg, Uneg                             -> true
+  | Unat, Unat                             -> true
   | Uint, Uint                             -> true
+  | Ubytes, Ubytes                         -> true
   | Unot, Unot                             -> true
   | Uabs, Uabs                             -> true
   | Uisnat, Uisnat                         -> true
@@ -986,7 +994,9 @@ let cmp_code (lhs : code) (rhs : code) =
     | EQ, EQ                                         -> true
     | GE, GE                                         -> true
     | GT, GT                                         -> true
+    | NAT, NAT                                       -> true
     | INT, INT                                       -> true
+    | BYTES, BYTES                                   -> true
     | ISNAT, ISNAT                                   -> true
     | LE, LE                                         -> true
     | LSL, LSL                                       -> true
@@ -1219,7 +1229,9 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | EQ                       -> EQ
     | GE                       -> GE
     | GT                       -> GT
+    | NAT                      -> NAT
     | INT                      -> INT
+    | BYTES                    -> BYTES
     | ISNAT                    -> ISNAT
     | LE                       -> LE
     | LSL                      -> LSL
@@ -1688,7 +1700,9 @@ end = struct
     | EQ                       -> mk "EQ"
     | GE                       -> mk "GE"
     | GT                       -> mk "GT"
+    | NAT                      -> mk "NAT"
     | INT                      -> mk "INT"
+    | BYTES                    -> mk "BYTES"
     | ISNAT                    -> mk "ISNAT"
     | LE                       -> mk "LE"
     | LSL                      -> mk "LSL"

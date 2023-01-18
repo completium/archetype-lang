@@ -2412,6 +2412,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnattostring s -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
     | Mbytestonat _s -> assert false
     | Mnattobytes _s -> assert false
+    | Mbytestoint _s -> assert false
+    | Minttobytes _s -> assert false
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])

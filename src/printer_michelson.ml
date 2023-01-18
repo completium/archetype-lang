@@ -177,6 +177,7 @@ and pp_code fmt (i : code) =
   (* Arthmetic operations *)
   | ABS                      -> pp "ABS"
   | ADD                      -> pp "ADD"
+  | BYTES                    -> pp "BYTES"
   | COMPARE                  -> pp "COMPARE"
   | EDIV                     -> pp "EDIV"
   | EQ                       -> pp "EQ"
@@ -189,6 +190,7 @@ and pp_code fmt (i : code) =
   | LSR                      -> pp "LSR"
   | LT                       -> pp "LT"
   | MUL                      -> pp "MUL"
+  | NAT                      -> pp "NAT"
   | NEG                      -> pp "NEG"
   | NEQ                      -> pp "NEQ"
   | SUB                      -> pp "SUB"
@@ -429,7 +431,9 @@ let pp_uop f fmt (op, e) =
   | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
   | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
   | Uneg        -> pp "neg(%a)"          f e
+  | Unat        -> pp "nat(%a)"          f e
   | Uint        -> pp "int(%a)"          f e
+  | Ubytes      -> pp "bytes(%a)"        f e
   | Unot        -> pp "not(%a)"          f e
   | Uabs        -> pp "abs(%a)"          f e
   | Uisnat      -> pp "isnat(%a)"        f e
@@ -548,7 +552,9 @@ let rec pp_instruction fmt (i : instruction) =
       | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
       | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
+      | Unat        -> pp "nat(%a)"          f e
       | Uint        -> pp "int(%a)"          f e
+      | Ubytes      -> pp "bytes(%a)"        f e
       | Unot        -> pp "not(%a)"          f e
       | Uabs        -> pp "abs(%a)"          f e
       | Uisnat      -> pp "is_nat(%a)"       f e
