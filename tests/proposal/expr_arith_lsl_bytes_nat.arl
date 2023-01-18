@@ -1,4 +1,4 @@
-archetype expr_arith_lsl_nat_nat
+archetype expr_arith_lsl_bytes_nat
 
 variable res : bytes = 0x
 
