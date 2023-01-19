@@ -251,6 +251,7 @@ module List : sig
   val pop            : 'a list -> 'a * 'a list
   val split_at       : int -> 'a list -> 'a list * 'a list
   val remove_if      : ('a -> bool) -> 'a list -> 'a list
+  val remove_idx     : int -> 'a list -> 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -446,6 +447,12 @@ end = struct
 
   let remove_if  (f : 'a -> bool) (l : 'a list) : 'a list =
     List.fold_right (fun i accu -> if f i then accu else i::accu) l []
+
+  let rec remove_idx n (l : 'a list) : 'a list =
+    match l with
+    | _::t when n = 0 -> t
+    | i::t -> i::(remove_idx (n - 1) t)
+    | [] -> []
 
   module Exn = struct
     let assoc x xs =

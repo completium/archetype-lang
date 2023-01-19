@@ -363,6 +363,7 @@ and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
   | Ivar         of ident
+  | Ivar_no_dup  of ident
   | Icall        of ident * instruction list * bool
   | Iassign      of ident * instruction
   | Iassigntuple of ident * int * int * instruction

@@ -38,6 +38,19 @@ let emit_error (desc : error_desc) =
 
 let is_rat t = match M.get_ntype t with | M.Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false
 
+let is_ticket_type (model : M.model) ty =
+  let rec aux (accu : bool) (ty : M.type_) : bool =
+    match fst ty with
+    | M.Tticket _ -> true
+    | M.Tcontract _ -> accu
+    | M.Trecord id -> begin
+        let r = M.Utils.get_record model (M.unloc_mident id) in
+        List.fold_left (fun accu (x : M.record_field) -> accu || aux accu (x.type_)) accu r.fields
+      end
+    | _ -> M.fold_typ aux accu ty
+  in
+  aux false ty
+
 let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
 
 let operations = "_ops"
@@ -1142,16 +1155,21 @@ let to_ir (model : M.model) : T.ir =
 
     (* variable *)
 
-    | Mvar (_an, Vassetstate _k, _, _) -> assert false
-    | Mvar (v, Vstorevar, _, _)        -> T.Ivar (M.unloc_mident v)
-    | Mvar (v, Vstorecol, _, _)        -> T.Ivar (M.unloc_mident v)
-    | Mvar (_v, Vdefinition, _, _)     -> assert false
-    | Mvar (v, Vlocal, _, _)           -> T.Ivar (M.unloc_mident v)
-    | Mvar (v, Vparam, _, _)           -> T.Ivar (M.unloc_mident v)
-    | Mvar (_v, Vfield, _, _)          -> assert false
-    | Mvar (_, Vthe, _, _)             -> assert false
-    | Mvar (_, Vstate, _, _)           -> assert false
-    | Mvar (v, Vparameter, _, _)       -> T.Iwildcard (ft mtt.type_, M.unloc_mident v)
+    | Mvar (v, kind, _, _) -> begin
+        let f = if is_ticket_type model mtt.type_ then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
+
+        match kind with
+        | Vassetstate _k   -> assert false
+        | Vstorevar        -> f (M.unloc_mident v)
+        | Vstorecol        -> f (M.unloc_mident v)
+        | Vdefinition      -> assert false
+        | Vlocal           -> f (M.unloc_mident v)
+        | Vparam           -> f (M.unloc_mident v)
+        | Vfield           -> assert false
+        | Vthe             -> assert false
+        | Vstate           -> assert false
+        | Vparameter       -> T.Iwildcard (ft mtt.type_, M.unloc_mident v)
+      end
     | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
@@ -1652,15 +1670,21 @@ let concrete_michelson b : T.code =
 
 type env = {
   vars : ident list;
+  vars_no_dup  : ident list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(vars=[]) () = { vars = vars; fail = false }
+let mk_env ?(vars=[]) () = { vars = vars; fail = false; vars_no_dup = [] }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
+let dig_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
+let is_var_no_dup (id : ident) (env : env) : bool = List.mem id env.vars_no_dup
+let add_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = id::env.vars_no_dup }
+let add_vars_no_dup (ids : ident list) (env : env) : env = {env with vars_no_dup = ids @ env.vars_no_dup }
+let remove_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = (List.remove_if (fun x -> String.equal x id) env.vars_no_dup)}
 let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
@@ -1850,6 +1874,14 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         else T.cdup_n (n + 1)
       in
       c, inc_env env
+    end
+
+  | Ivar_no_dup id -> begin
+      let n = get_sp_for_id env id in
+      let c = T.cdig n in
+      let nenv = dig_env n env |> add_var_no_dup id in
+      print_env ~str:"Ivar_no_dup" nenv;
+      c, nenv
     end
 
   | Icall (id, args, inline)   -> begin
@@ -2072,7 +2104,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq ((T.cempty_set t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.cseq [T.ctrue; x; T.cupdate ] ))), inc_env env
     end
   | Ilist (t, l) -> begin
-      T.cseq ((T.cnil t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env env) x in T.cseq [ x; T.ccons ] ))), inc_env env
+      let l, nenv =
+        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) l ([], inc_env env)
+      in
+      (* print_env ~str:"Ilist" nenv; *)
+      (T.cseq ((T.cnil t)::l), nenv)
     end
   | Imap (b, k, v, l) -> begin
       let a = if b then T.cempty_big_map (k, v) else T.cempty_map (k, v) in
