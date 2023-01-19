@@ -86,7 +86,7 @@ const generate_spec_passed = (input: Array<string>) => {
 
   const output = `/* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'

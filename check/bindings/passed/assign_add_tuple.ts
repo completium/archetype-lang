@@ -36,6 +36,19 @@ export class Assign_add_tuple {
         }
         throw new Error("Contract not initialised");
     }
+    async get_res(): Promise<[
+        att.Nat,
+        att.Nat,
+        att.Nat
+    ]> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return (p => {
+                return [att.Nat.from_mich((p as att.Mpair).args[0]), att.Nat.from_mich((p as att.Mpair).args[1]), att.Nat.from_mich((p as att.Mpair).args[2])];
+            })(storage);
+        }
+        throw new Error("Contract not initialised");
+    }
     errors = {};
 }
 export const assign_add_tuple = new Assign_add_tuple();

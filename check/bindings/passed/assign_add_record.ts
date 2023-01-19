@@ -55,6 +55,13 @@ export class Assign_add_record {
         }
         throw new Error("Contract not initialised");
     }
+    async get_res(): Promise<r> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return r.from_mich(storage);
+        }
+        throw new Error("Contract not initialised");
+    }
     errors = {};
 }
 export const assign_add_record = new Assign_add_record();

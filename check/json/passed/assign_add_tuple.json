@@ -7,14 +7,78 @@
     "records": [],
     "events": []
   },
-  "storage": [],
+  "storage": [
+    {
+      "name": "res",
+      "type": {
+        "node": "tuple",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false
+    }
+  ],
   "storage_type": {
     "value": {
-      "prim": "unit",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
-      "args": [],
+      "args": [
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
       "annots": [],
       "array": [],
       "var_id": null,
