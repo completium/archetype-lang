@@ -12,9 +12,22 @@ record my_record {
 }
 
 variable r: my_record = {"mystr"; 2; 0xff; 1i;"mystr2"; 4; 0xa0ff; 3i}
-variable res : nat = 0
-
+variable res_a: string = ""
+variable res_b: nat = 0
+variable res_c: bytes = 0x
+variable res_d: int = 0
+variable res_e: string = ""
+variable res_f: nat = 0
+variable res_g: bytes = 0x
+variable res_h: int = 0
 
 entry exec () {
-  res := r.f
+  res_a := r.a;
+  res_b := r.b;
+  res_c := r.c;
+  res_d := r.d;
+  res_e := r.e;
+  res_f := r.f;
+  res_g := r.g;
+  res_h := r.h
 }

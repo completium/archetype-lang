@@ -68,10 +68,59 @@ export class Record_access {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<att.Nat> {
+    async get_res_a(): Promise<string> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Nat.from_mich((storage as att.Mpair).args[1]);
+            return att.mich_to_string((storage as att.Mpair).args[1]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_b(): Promise<att.Nat> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Nat.from_mich((storage as att.Mpair).args[2]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_c(): Promise<att.Bytes> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Bytes.from_mich((storage as att.Mpair).args[3]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_d(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[4]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_e(): Promise<string> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_string((storage as att.Mpair).args[5]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_f(): Promise<att.Nat> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Nat.from_mich((storage as att.Mpair).args[6]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_g(): Promise<att.Bytes> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Bytes.from_mich((storage as att.Mpair).args[7]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_h(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[8]);
         }
         throw new Error("Contract not initialised");
     }

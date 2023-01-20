@@ -7438,26 +7438,118 @@ describe('passed', async () => {
     await record_access.record_access.deploy({ as: alice })
     const r_before = await record_access.record_access.get_r();
     assert(r_before.equals(new record_access.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new Nat(4), new Bytes("a0ff"), new Int(3))))
-    const res_before = await record_access.record_access.get_res();
-    assert(res_before.equals(new Nat(0)))
+    const res_a_before = await record_access.record_access.get_res_a();
+    assert(res_a_before == "")
+    const res_b_before = await record_access.record_access.get_res_b();
+    assert(res_b_before.equals(new Nat(0)))
+    const res_c_before = await record_access.record_access.get_res_c();
+    assert(res_c_before.equals(new Bytes("")))
+    const res_d_before = await record_access.record_access.get_res_d();
+    assert(res_d_before.equals(new Int(0)))
+    const res_e_before = await record_access.record_access.get_res_e();
+    assert(res_e_before == "")
+    const res_f_before = await record_access.record_access.get_res_f();
+    assert(res_f_before.equals(new Nat(0)))
+    const res_g_before = await record_access.record_access.get_res_g();
+    assert(res_g_before.equals(new Bytes("")))
+    const res_h_before = await record_access.record_access.get_res_h();
+    assert(res_h_before.equals(new Int(0)))
     await record_access.record_access.exec({ as: alice });
     const r_after = await record_access.record_access.get_r();
     assert(r_after.equals(new record_access.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new Nat(4), new Bytes("a0ff"), new Int(3))))
-    const res_after = await record_access.record_access.get_res();
-    assert(res_after.equals(new Nat(4)))
+    const res_a_after = await record_access.record_access.get_res_a();
+    assert(res_a_after == "mystr")
+    const res_b_after = await record_access.record_access.get_res_b();
+    assert(res_b_after.equals(new Nat(2)))
+    const res_c_after = await record_access.record_access.get_res_c();
+    assert(res_c_after.equals(new Bytes("ff")))
+    const res_d_after = await record_access.record_access.get_res_d();
+    assert(res_d_after.equals(new Int(1)))
+    const res_e_after = await record_access.record_access.get_res_e();
+    assert(res_e_after == "mystr2")
+    const res_f_after = await record_access.record_access.get_res_f();
+    assert(res_f_after.equals(new Nat(4)))
+    const res_g_after = await record_access.record_access.get_res_g();
+    assert(res_g_after.equals(new Bytes("a0ff")))
+    const res_h_after = await record_access.record_access.get_res_h();
+    assert(res_h_after.equals(new Int(3)))
   })
 
   it('record_access2', async () => {
     await record_access2.record_access2.deploy({ as: alice })
     const r_before = await record_access2.record_access2.get_r();
-    assert(r_before.equals(new record_access2.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new Int(3))))
-    const res_before = await record_access2.record_access2.get_res();
-    assert(res_before.equals(new Nat(0)))
+    assert(r_before.equals(new record_access2.my_record(new record_access2.my_record3("mystr7", new Nat(7)), new record_access2.my_record3("mystr0", new Nat(5)), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new record_access2.my_record3("mystr8", new Nat(8)))))
+    const res_a_before = await record_access2.record_access2.get_res_a();
+    assert(res_a_before.equals(new record_access2.my_record3("", new Nat(0))))
+    const res_b_before = await record_access2.record_access2.get_res_b();
+    assert(res_b_before.equals(new record_access2.my_record3("", new Nat(0))))
+    const res_c_before = await record_access2.record_access2.get_res_c();
+    assert(res_c_before.equals(new Bytes("")))
+    const res_d_before = await record_access2.record_access2.get_res_d();
+    assert(res_d_before.equals(new Int(0)))
+    const res_e_before = await record_access2.record_access2.get_res_e();
+    assert(res_e_before == "")
+    const res_f_before = await record_access2.record_access2.get_res_f();
+    assert(res_f_before.equals(new record_access2.my_record2("", new Nat(0), new Bytes(""))))
+    const res_g_before = await record_access2.record_access2.get_res_g();
+    assert(res_g_before.equals(new Bytes("")))
+    const res_h_before = await record_access2.record_access2.get_res_h();
+    assert(res_h_before.equals(new record_access2.my_record3("", new Nat(0))))
+    const res_a_alpha_before = await record_access2.record_access2.get_res_a_alpha();
+    assert(res_a_alpha_before == "")
+    const res_a_beta_before = await record_access2.record_access2.get_res_a_beta();
+    assert(res_a_beta_before.equals(new Nat(0)))
+    const res_b_alpha_before = await record_access2.record_access2.get_res_b_alpha();
+    assert(res_b_alpha_before == "")
+    const res_b_beta_before = await record_access2.record_access2.get_res_b_beta();
+    assert(res_b_beta_before.equals(new Nat(0)))
+    const res_f_x_before = await record_access2.record_access2.get_res_f_x();
+    assert(res_f_x_before == "")
+    const res_f_y_before = await record_access2.record_access2.get_res_f_y();
+    assert(res_f_y_before.equals(new Nat(0)))
+    const res_f_z_before = await record_access2.record_access2.get_res_f_z();
+    assert(res_f_z_before.equals(new Bytes("")))
+    const res_h_alpha_before = await record_access2.record_access2.get_res_h_alpha();
+    assert(res_h_alpha_before == "")
+    const res_h_beta_before = await record_access2.record_access2.get_res_h_beta();
+    assert(res_h_beta_before.equals(new Nat(0)))
     await record_access2.record_access2.exec({ as: alice });
     const r_after = await record_access2.record_access2.get_r();
-    assert(r_after.equals(new record_access2.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new Int(3))))
-    const res_after = await record_access2.record_access2.get_res();
-    assert(res_after.equals(new Nat(4)))
+    assert(r_after.equals(new record_access2.my_record(new record_access2.my_record3("mystr7", new Nat(7)), new record_access2.my_record3("mystr0", new Nat(5)), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new record_access2.my_record3("mystr8", new Nat(8)))))
+    const res_a_after = await record_access2.record_access2.get_res_a();
+    assert(res_a_after.equals(new record_access2.my_record3("mystr7", new Nat(7))))
+    const res_b_after = await record_access2.record_access2.get_res_b();
+    assert(res_b_after.equals(new record_access2.my_record3("mystr0", new Nat(5))))
+    const res_c_after = await record_access2.record_access2.get_res_c();
+    assert(res_c_after.equals(new Bytes("ff")))
+    const res_d_after = await record_access2.record_access2.get_res_d();
+    assert(res_d_after.equals(new Int(1)))
+    const res_e_after = await record_access2.record_access2.get_res_e();
+    assert(res_e_after == "mystr2")
+    const res_f_after = await record_access2.record_access2.get_res_f();
+    assert(res_f_after.equals(new record_access2.my_record2("", new Nat(4), new Bytes(""))))
+    const res_g_after = await record_access2.record_access2.get_res_g();
+    assert(res_g_after.equals(new Bytes("a0ff")))
+    const res_h_after = await record_access2.record_access2.get_res_h();
+    assert(res_h_after.equals(new record_access2.my_record3("mystr8", new Nat(8))))
+    const res_a_alpha_after = await record_access2.record_access2.get_res_a_alpha();
+    assert(res_a_alpha_after == "mystr7")
+    const res_a_beta_after = await record_access2.record_access2.get_res_a_beta();
+    assert(res_a_beta_after.equals(new Nat(7)))
+    const res_b_alpha_after = await record_access2.record_access2.get_res_b_alpha();
+    assert(res_b_alpha_after == "mystr0")
+    const res_b_beta_after = await record_access2.record_access2.get_res_b_beta();
+    assert(res_b_beta_after.equals(new Nat(5)))
+    const res_f_x_after = await record_access2.record_access2.get_res_f_x();
+    assert(res_f_x_after == "")
+    const res_f_y_after = await record_access2.record_access2.get_res_f_y();
+    assert(res_f_y_after.equals(new Nat(4)))
+    const res_f_z_after = await record_access2.record_access2.get_res_f_z();
+    assert(res_f_z_after.equals(new Bytes("")))
+    const res_h_alpha_after = await record_access2.record_access2.get_res_h_alpha();
+    assert(res_h_alpha_after == "mystr8")
+    const res_h_beta_after = await record_access2.record_access2.get_res_h_beta();
+    assert(res_h_beta_after.equals(new Nat(8)))
   })
 
   it('record_container', async () => {

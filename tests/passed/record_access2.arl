@@ -6,21 +6,59 @@ record my_record2 {
   z: bytes;
 }
 
+record my_record3 {
+  alpha: string;
+  beta: nat;
+}
+
 record my_record {
-  a: string;
-  b: nat;
+  a: my_record3;
+  b: my_record3;
   c: bytes;
   d: int;
   e: string;
   f: my_record2;
   g: bytes;
-  h: int;
+  h: my_record3;
 }
 
-variable r: my_record = {"mystr"; 2; 0xff; 1i; "mystr2"; {""; 4; 0x}; 0xa0ff; 3i}
-variable res : nat = 0
+variable res_a : my_record3 = {alpha = ""; beta = 0}
+variable res_b : my_record3 = {alpha = ""; beta = 0}
+variable res_c : bytes = 0x
+variable res_d : int = 0
+variable res_e : string = ""
+variable res_f : my_record2 = {x = ""; y = 0; z = 0x}
+variable res_g : bytes = 0x
+variable res_h : my_record3 = {alpha = ""; beta = 0}
 
+variable res_a_alpha : string = ""
+variable res_a_beta  : nat = 0
+variable res_b_alpha : string = ""
+variable res_b_beta  : nat = 0
+variable res_f_x     : string = ""
+variable res_f_y     : nat = 0
+variable res_f_z     : bytes = 0x
+variable res_h_alpha : string = ""
+variable res_h_beta  : nat = 0
+
+variable r: my_record = {{alpha = "mystr7"; beta = 7}; {alpha = "mystr0"; beta = 5}; 0xff; 1i; "mystr2"; {""; 4; 0x}; 0xa0ff; {alpha = "mystr8"; beta = 8}}
 
 entry exec () {
-  res := r.f.y
+  res_a       := r.a;
+  res_b       := r.b;
+  res_c       := r.c;
+  res_d       := r.d;
+  res_e       := r.e;
+  res_f       := r.f;
+  res_g       := r.g;
+  res_h       := r.h;
+  res_a_alpha := r.a.alpha;
+  res_a_beta  := r.a.beta;
+  res_b_alpha := r.b.alpha;
+  res_b_beta  := r.b.beta;
+  res_f_x     := r.f.x;
+  res_f_y     := r.f.y;
+  res_f_z     := r.f.z;
+  res_h_alpha := r.h.alpha;
+  res_h_beta  := r.h.beta
 }
