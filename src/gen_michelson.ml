@@ -1156,7 +1156,16 @@ let to_ir (model : M.model) : T.ir =
     (* variable *)
 
     | Mvar (v, kind, _, _) -> begin
-        let f = if is_ticket_type model mtt.type_ then fun x -> T.Ivar_no_dup x else fun x -> T.Ivar x in
+        let f =
+          if is_ticket_type model mtt.type_
+          then fun x -> T.Ivar_access {
+              av_ident = x;
+              av_path = [];
+              av_source_no_dup = true;
+              av_value_no_dup = true
+            }
+          else fun x -> T.Ivar x
+        in
 
         match kind with
         | Vassetstate _k   -> assert false
@@ -1876,12 +1885,23 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       c, inc_env env
     end
 
-  | Ivar_no_dup id -> begin
-      let n = get_sp_for_id env id in
-      let c = T.cdig n in
-      let nenv = dig_env n env |> add_var_no_dup id in
-      print_env ~str:"Ivar_no_dup" nenv;
-      c, nenv
+  | Ivar_access av -> begin
+      let n = get_sp_for_id env av.av_ident in
+      if (av.av_source_no_dup)
+      then begin
+        let c = T.cdig n in
+        let nenv = dig_env n env in
+        print_env ~str:"Ivar_no_dup" nenv;
+        c, nenv
+      end
+      else begin
+        let c =
+          if n = 0
+          then T.cdup
+          else T.cdup_n (n + 1)
+        in
+        c, inc_env env
+      end
     end
 
   | Icall (id, args, inline)   -> begin

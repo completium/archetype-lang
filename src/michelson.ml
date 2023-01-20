@@ -358,12 +358,27 @@ and builtin =
 and klv =
 | KLVoption of type_
 | KLVlist
+[@@deriving show {with_path = false}]
+
+and access_item = {
+  ai_index: int;
+  ai_length: int
+}
+[@@deriving show {with_path = false}]
+
+and access_value = {
+  av_ident : ident;
+  av_path: access_item list;
+  av_source_no_dup: bool;
+  av_value_no_dup: bool;
+}
+[@@deriving show {with_path = false}]
 
 and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
   | Ivar         of ident
-  | Ivar_no_dup  of ident
+  | Ivar_access  of access_value
   | Icall        of ident * instruction list * bool
   | Iassign      of ident * instruction
   | Iassigntuple of ident * int * int * instruction
