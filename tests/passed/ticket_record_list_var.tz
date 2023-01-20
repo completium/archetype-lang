@@ -8,7 +8,7 @@
                    (string %s)) ;
          PUSH string "" ;
          NONE address ;
-         PUSH nat 1 ;
+         PUSH nat 3 ;
          PAIR ;
          NONE string ;
          PAIR ;
@@ -32,7 +32,7 @@
          CONS ;
          PUSH string "" ;
          NONE address ;
-         PUSH nat 5 ;
+         PUSH nat 1 ;
          PAIR ;
          NONE string ;
          PAIR ;
@@ -42,12 +42,18 @@
          NONE (ticket string) ;
          PAIR ;
          CONS ;
-         FAILWITH  } }
-#         ITER { UNPAIR 4 ;
-#                DIG 2 ;
-#                UNPAIR 3 ;
-#                DIG 1 ;
-#                DUP ;
-#                FAILWITH } ;
-#         NIL operation ;
-#         PAIR } }
+         ITER { UNPAIR 4 ;
+                DIG 2 ;
+                UNPAIR 3 ;
+                DIG 1 ;
+                DUP ;
+                DIP 1 { DUG 1 ; PAIR 3 ; DUG 2 ; PAIR 4 } ;
+                DUP ;
+                DUP 5 ;
+                ADD ;
+                DIP 1 { DIG 3 ; DROP 1 } ;
+                DUG 3 ;
+                DROP 2 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

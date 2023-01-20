@@ -1956,8 +1956,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             if n = 0
             then []
             else [T.cdig n] in
-          let p = List.map (fun (ai : T.access_item) -> ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_length - ai.ai_index)]))) av.av_path |> List.flatten in
-          let r = List.map (fun (ai : T.access_item) -> ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_length - ai.ai_index + 1)]) @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
+          let p = List.map (fun (ai : T.access_item) ->
+              ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_index)]))) av.av_path |> List.flatten in
+          let r = List.map (fun (ai : T.access_item) ->
+              ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_index)]) @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
           (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), inc_env env
         end
       end
