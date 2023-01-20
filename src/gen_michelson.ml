@@ -1947,11 +1947,19 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         then ai.ai_index * 2
         else (1 + ai.ai_index * 2)
       in
-      if (av.av_source_no_dup)
+      if av.av_source_no_dup
       then begin
-        let c = T.cdig n in
-        let nenv = dig_env n env in
-        c, nenv
+        if av.av_value_no_dup
+        then (T.cseq []), env
+        else begin
+          let c =
+            if n = 0
+            then []
+            else [T.cdig n] in
+          let p = List.map (fun (ai : T.access_item) -> ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_length - ai.ai_index)]))) av.av_path |> List.flatten in
+          let r = List.map (fun (ai : T.access_item) -> ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_length - ai.ai_index + 1)]) @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
+          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), inc_env env
+        end
       end
       else begin
         let c =
@@ -2185,7 +2193,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
   | Ilist (t, l) -> begin
       let l, nenv =
-        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) l ([], inc_env env)
+        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) (List.rev l) ([], inc_env env)
       in
       (* print_env ~str:"Ilist" nenv; *)
       (T.cseq ((T.cnil t)::l), nenv)

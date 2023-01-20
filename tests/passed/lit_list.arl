@@ -1,0 +1,7 @@
+archetype lit_list
+
+variable res : list<nat> = []
+
+entry exec() {
+  res := [0; 1; 2]
+}
