@@ -656,6 +656,55 @@ let to_ir (model : M.model) : T.ir =
       | None -> res
     in
 
+    let gen_var_access (mt : M.mterm) : T.instruction option =
+      let original_type = mt.type_ in
+      let rec aux (accu : T.access_item list) (mt : M.mterm) : T.instruction option =
+        match mt.node with
+        | M.Mdot (x, id) -> begin
+            let fn = M.unloc_mident id in
+            match M.get_ntype x.type_ with
+            | M.Trecord rn -> begin
+                let rn = M.unloc_mident rn in
+                let pos = M.Utils.get_record_pos model rn fn in
+                let path = List.map (fun (idx, length) -> T.{ai_index = idx; ai_length = length}) pos in
+                aux (path @ accu) x
+              end
+            | _ -> None
+          end
+        | M.Mtupleaccess (x, n) -> begin
+            let idx : int = Big_int.int_of_big_int n in
+            let length = match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0 in
+            aux (T.{ai_index = idx; ai_length = length}::accu) x
+          end
+        | M.Mvar (id, kind, _, _) -> begin
+
+            let f x =
+              T.Ivar_access {
+                av_ident = x;
+                av_path = accu;
+                av_source_no_dup = is_ticket_type model mt.type_;
+                av_value_no_dup = is_ticket_type model original_type;
+              }
+            in
+
+            match kind with
+            | Vassetstate _k   -> None
+            | Vstorevar        -> Some (f (M.unloc_mident id))
+            | Vstorecol        -> Some (f (M.unloc_mident id))
+            | Vdefinition      -> None
+            | Vlocal           -> Some (f (M.unloc_mident id))
+            | Vparam           -> Some (f (M.unloc_mident id))
+            | Vfield           -> None
+            | Vthe             -> None
+            | Vstate           -> None
+            | Vparameter       -> None
+
+          end
+        | _ -> None
+      in
+      aux [] mt
+    in
+
     match mtt.node with
 
     (* lambda *)
@@ -922,7 +971,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* access *)
 
-    | Mdot (e, i)           -> access_record e i
+    | Mdot (e, i)           -> (match gen_var_access mtt with | Some v -> v | _ -> access_record e i)
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
     | Mquestionoption _     -> emit_error (UnsupportedTerm ("Mquestionoption"))
 
@@ -1004,7 +1053,13 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
-    | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_tuple s (Big_int.int_of_big_int n) (f x)
+    | Mtupleaccess (x, n) -> begin
+        match gen_var_access mtt with
+        | Some v -> v
+        | _ -> begin
+            let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_tuple s (Big_int.int_of_big_int n) (f x)
+          end
+      end
     | Mrecupdate (x, l) ->
       let t = mtt.type_ in
       let rn =

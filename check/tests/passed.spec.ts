@@ -842,6 +842,7 @@ import * as rational_tez_rat_mult from '../bindings/passed/rational_tez_rat_mult
 import * as rec_update from '../bindings/passed/rec_update'
 import * as rec_update2 from '../bindings/passed/rec_update2'
 import * as record_access from '../bindings/passed/record_access'
+import * as record_access2 from '../bindings/passed/record_access2'
 import * as record_container from '../bindings/passed/record_container'
 import * as record_double_key from '../bindings/passed/record_double_key'
 import * as record_in_enum from '../bindings/passed/record_in_enum'
@@ -7439,10 +7440,23 @@ describe('passed', async () => {
     assert(r_before.equals(new record_access.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new Nat(4), new Bytes("a0ff"), new Int(3))))
     const res_before = await record_access.record_access.get_res();
     assert(res_before.equals(new Nat(0)))
-    await record_access.record_access.exec({as : alice});
+    await record_access.record_access.exec({ as: alice });
     const r_after = await record_access.record_access.get_r();
     assert(r_after.equals(new record_access.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new Nat(4), new Bytes("a0ff"), new Int(3))))
     const res_after = await record_access.record_access.get_res();
+    assert(res_after.equals(new Nat(4)))
+  })
+
+  it('record_access2', async () => {
+    await record_access2.record_access2.deploy({ as: alice })
+    const r_before = await record_access2.record_access2.get_r();
+    assert(r_before.equals(new record_access2.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new Int(3))))
+    const res_before = await record_access2.record_access2.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await record_access2.record_access2.exec({ as: alice });
+    const r_after = await record_access2.record_access2.get_r();
+    assert(r_after.equals(new record_access2.my_record("mystr", new Nat(2), new Bytes("ff"), new Int(1), "mystr2", new record_access2.my_record2("", new Nat(4), new Bytes("")), new Bytes("a0ff"), new Int(3))))
+    const res_after = await record_access2.record_access2.get_res();
     assert(res_after.equals(new Nat(4)))
   })
 
