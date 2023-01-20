@@ -1,0 +1,20 @@
+archetype record_access
+
+record my_record {
+  a: string;
+  b: nat;
+  c: bytes;
+  d: int;
+  e: string;
+  f: nat;
+  g: bytes;
+  h: int;
+}
+
+variable r: my_record = {"mystr"; 2; 0xff; 1i;"mystr2"; 4; 0xa0ff; 3i}
+variable res : nat = 0
+
+
+entry exec () {
+  res := r.f
+}

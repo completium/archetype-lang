@@ -1887,11 +1887,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Ivar_access av -> begin
       let n = get_sp_for_id env av.av_ident in
+      let compute_path_n (ai : T.access_item) =
+        if ai.ai_index == ai.ai_length - 1
+        then ai.ai_index * 2
+        else (1 + ai.ai_index * 2)
+      in
       if (av.av_source_no_dup)
       then begin
         let c = T.cdig n in
         let nenv = dig_env n env in
-        print_env ~str:"Ivar_no_dup" nenv;
         c, nenv
       end
       else begin
@@ -1900,7 +1904,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           then T.cdup
           else T.cdup_n (n + 1)
         in
-        c, inc_env env
+        let p = List.map (fun ai -> T.cget_n (compute_path_n ai)) av.av_path in
+        (T.cseq (c::p)), inc_env env
       end
     end
 
