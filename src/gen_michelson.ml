@@ -2185,7 +2185,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
   | Ilist (t, l) -> begin
       let l, nenv =
-        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) l ([], inc_env env)
+        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) (List.rev l) ([], inc_env env)
       in
       (* print_env ~str:"Ilist" nenv; *)
       (T.cseq ((T.cnil t)::l), nenv)
