@@ -1,0 +1,16 @@
+{ storage bytes ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL bytes ;
+         PUSH bytes 0xef ;
+         CONS ;
+         PUSH bytes 0x12 ;
+         CONS ;
+         DUP ;
+         CONCAT ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

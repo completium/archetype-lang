@@ -1,0 +1,106 @@
+{ storage (pair int nat) ;
+  parameter (pair %exec int nat) ;
+  code { LAMBDA
+           (pair int nat)
+           (pair int nat)
+           { PUSH unit Unit ;
+             DUP 2 ;
+             CAR ;
+             DUP 3 ;
+             CDR ;
+             DUP 2 ;
+             DUP 2 ;
+             PUSH nat 0 ;
+             DUP 2 ;
+             COMPARE ;
+             NEQ ;
+             LOOP { DUP ;
+                    DUP 2 ;
+                    INT ;
+                    DUP 4 ;
+                    EDIV ;
+                    IF_NONE
+                      { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                      { DUP ; CDR ; SWAP ; DROP 1 } ;
+                    DIP 1 { DIG 1 ; DROP 1 } ;
+                    DUG 1 ;
+                    DUP ;
+                    INT ;
+                    DIP 1 { DIG 2 ; DROP 1 } ;
+                    DUG 2 ;
+                    DROP 1 ;
+                    PUSH nat 0 ;
+                    DUP 2 ;
+                    COMPARE ;
+                    NEQ } ;
+             PUSH nat 1 ;
+             DUP 3 ;
+             DUP 5 ;
+             INT ;
+             EDIV ;
+             IF_NONE
+               { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+               { DUP ; CAR ; SWAP ; DROP 1 } ;
+             PAIR ;
+             PUSH nat 1 ;
+             DUP 4 ;
+             DUP 7 ;
+             EDIV ;
+             IF_NONE
+               { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+               { DUP ; CAR ; SWAP ; DROP 1 } ;
+             PAIR ;
+             PAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DIG 3 ;
+             DUP ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             MUL ;
+             PUSH nat 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+             PUSH int 0 ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             COMPARE ;
+             GE ;
+             IF { INT } { NEG } ;
+             MUL ;
+             DIP 1 { MUL ; ABS } ;
+             PAIR ;
+             DIP 1 { DIG 4 ; DROP 1 } ;
+             DUG 4 ;
+             DROP 4 ;
+             DUG 1 ;
+             DROP 1 } ;
+         LAMBDA
+           (pair (pair int nat) (lambda (pair int nat) (pair int nat)))
+           (pair int nat)
+           { UNPAIR 2 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 3 ;
+             EXEC ;
+             SWAP ;
+             DROP 1 ;
+             DUG 2 ;
+             DROP 2 } ;
+         DIG 2 ;
+         UNPAIR ;
+         DUP 3 ;
+         DUP 5 ;
+         DUP 3 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 2 } } }

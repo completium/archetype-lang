@@ -1,0 +1,89 @@
+{ storage (pair (map %my_asset nat (pair int nat)) (list %res nat)) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+           bool
+           { UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DUG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             SWAP ;
+             COMPARE ;
+             SWAP ;
+             IF_LEFT
+               { DROP 1 ; EQ }
+               { IF_LEFT
+                   { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
+                   { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
+         DIG 1 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         NIL nat ;
+         DUP 2 ;
+         ITER { UNPAIR ;
+                NIL nat ;
+                DUP 2 ;
+                SOME ;
+                PAIR ;
+                DUP 4 ;
+                ITER { DUP 2 ;
+                       GET 1 ;
+                       DUP 3 ;
+                       GET 2 ;
+                       DUP 2 ;
+                       IF_NONE
+                         { DUP ; DUP 4 ; CONS ; DUP 3 ; PAIR }
+                         { PUSH int 0 ;
+                           DUP 10 ;
+                           DUP 6 ;
+                           GET ;
+                           IF_NONE
+                             { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                             {} ;
+                           DUP 13 ;
+                           UNIT ;
+                           LEFT unit ;
+                           LEFT (or unit unit) ;
+                           RIGHT unit ;
+                           DUP 11 ;
+                           DUP 4 ;
+                           PAIR ;
+                           PAIR ;
+                           EXEC ;
+                           IF { PUSH int 1 } { PUSH int 0 } ;
+                           DIP 1 { DROP 1 } ;
+                           COMPARE ;
+                           GT ;
+                           IF { DUP 2 ; DUP 7 ; CONS ; DUP 5 ; CONS ; NONE nat ; PAIR }
+                              { DUP 2 ; DUP 5 ; CONS ; DUP 4 ; PAIR } ;
+                           SWAP ;
+                           DROP 1 } ;
+                       DIP 1 { DROP 1 } ;
+                       DIP 1 { DROP 1 } ;
+                       DIP 1 { DIG 1 ; DROP 1 } ;
+                       DUG 1 ;
+                       DROP 1 } ;
+                DUP ;
+                GET 1 ;
+                DUP 2 ;
+                GET 2 ;
+                NIL nat ;
+                DUP 3 ;
+                IF_NONE { DUP 2 } { DUP 3 ; DUP 7 ; CONS ; SWAP ; DROP 1 } ;
+                ITER { CONS } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

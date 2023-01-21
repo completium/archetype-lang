@@ -1,0 +1,3 @@
+{ storage (pair (or %r (nat %abc) (nat %xyz)) (nat %z)) ;
+  parameter (list %exec (or (nat %abc) (nat %xyz))) ;
+  code { UNPAIR ; DIP 1 { UNPAIR 2 } ; DROP 1 ; PAIR 2 ; NIL operation ; PAIR } }

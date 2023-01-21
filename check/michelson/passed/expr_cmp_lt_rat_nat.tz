@@ -1,0 +1,42 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+           bool
+           { UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DUG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             SWAP ;
+             COMPARE ;
+             SWAP ;
+             IF_LEFT
+               { DROP 1 ; EQ }
+               { IF_LEFT
+                   { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
+                   { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         UNIT ;
+         LEFT unit ;
+         LEFT (or unit unit) ;
+         RIGHT unit ;
+         PUSH nat 1 ;
+         PUSH int 2 ;
+         PAIR ;
+         PUSH nat 1 ;
+         PUSH int 1 ;
+         PAIR ;
+         PAIR ;
+         PAIR ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

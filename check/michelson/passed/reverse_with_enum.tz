@@ -1,0 +1,16 @@
+{ storage (list (or (int %entry1) (string %entry2))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL (or (int %entry1) (string %entry2)) ;
+         NIL (or (int %entry1) (string %entry2)) ;
+         DUP 2 ;
+         ITER { CONS } ;
+         SWAP ;
+         DROP 1 ;
+         DUP ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,19 @@
+{ storage (option string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bytes 0x050100000009617263686574797065 ;
+         UNPACK string ;
+         SWAP ;
+         DROP 1 ;
+         DUP ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH string "archetype" ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

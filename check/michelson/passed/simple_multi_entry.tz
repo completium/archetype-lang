@@ -1,0 +1,6 @@
+{ storage nat ;
+  parameter (or (unit %e1) (unit %e2)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DROP 1 ; PUSH nat 1 ; DUP 2 ; ADD ; SWAP ; DROP 1 ; NIL operation ; PAIR }
+           { DROP 1 ; PUSH nat 2 ; SWAP ; DROP 1 ; NIL operation ; PAIR } } }

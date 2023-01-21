@@ -1,0 +1,41 @@
+{ storage
+    (pair (bool %x)
+          (bool %y)
+          (nat %n)
+          (int %i)
+          (int %j)
+          (nat %n_)
+          (int %i_)
+          (pair %f int nat)
+          (pair %g int nat)
+          (pair %r int nat)
+          (pair %t int nat)
+          (pair %u int nat)
+          (string %s)
+          (mutez %ctz)
+          (mutez %cmtz)
+          (mutez %cutz)
+          (address %a)
+          (int %d)
+          (timestamp %date0)
+          (timestamp %date1)
+          (timestamp %date2)
+          (timestamp %date3)
+          (timestamp %date4)
+          (set %myset nat)
+          (list %mylist nat)
+          (map %mymap nat string)
+          (pair %mytuple int int)
+          (option %op1 int)
+          (option %op2 nat)
+          (bytes %b)
+          (unit %vunit)
+          (or %oleft string nat)
+          (or %oright string nat)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 33 } ;
+         DROP 1 ;
+         PAIR 33 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,20 @@
+{ storage int ;
+  parameter (or (int %set_value) (pair %add_value (int %a) (int %b))) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DUP ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR }
+           { UNPAIR ;
+             SWAP ;
+             DUP ;
+             DUP 3 ;
+             ADD ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 2 ;
+             NIL operation ;
+             PAIR } } }

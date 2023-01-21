@@ -1,0 +1,21 @@
+{ storage (option string) ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         PUSH key "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj" ;
+         DUP ;
+         HASH_KEY ;
+         DUP ;
+         SOME ;
+         DUP ;
+         SET_DELEGATE ;
+         DUP 6 ;
+         DUP 2 ;
+         CONS ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DROP 4 ;
+         DIG 1 ;
+         PAIR } }

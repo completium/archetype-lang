@@ -1,0 +1,59 @@
+{ storage (pair (map %my_asset nat string) (nat %n) (nat %r) (int %_state)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 4 } ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH unit Unit ;
+         VIEW "getN" nat ;
+         IF_NONE
+           { PUSH string "not_found" ; FAILWITH }
+           { DUP ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 1 } ;
+         PAIR 4 ;
+         NIL operation ;
+         PAIR } ;
+  view "getN"
+       unit
+       nat
+       { CDR ;
+         CDR ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         UNIT ;
+         DUP 2 ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 1 } } ;
+  view "getMyasset0"
+       unit
+       string
+       { CDR ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         UNIT ;
+         DUP 2 ;
+         PUSH nat 0 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 1 } } ;
+  view "getMyasset"
+       nat
+       string
+       { UNPAIR ;
+         DIP 1 { UNPAIR ; SWAP ; DROP 1 } ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

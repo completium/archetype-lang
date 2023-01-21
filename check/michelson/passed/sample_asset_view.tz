@@ -1,0 +1,80 @@
+{ storage (pair (map %my_asset nat string) (list %res nat)) ;
+  parameter (or (pair %my_getter unit (contract %callback (list nat))) (list %exec nat)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         IF_LEFT
+           { UNPAIR ;
+             DROP 1 ;
+             NIL operation ;
+             NIL operation ;
+             DUP 6 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             AMOUNT ;
+             NIL nat ;
+             NIL nat ;
+             DUP 8 ;
+             ITER { UNPAIR ;
+                    PUSH nat 0 ;
+                    PUSH int 2 ;
+                    DUP 3 ;
+                    INT ;
+                    EDIV ;
+                    IF_NONE
+                      { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                      { DUP ; CDR ; SWAP ; DROP 1 } ;
+                    COMPARE ;
+                    EQ ;
+                    IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                    DIP 1 { DIG 2 ; DROP 1 } ;
+                    DUG 2 ;
+                    DROP 2 } ;
+             ITER { CONS } ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 1 ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR }
+           { DUP ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR } } ;
+  view "my_view"
+       unit
+       (list nat)
+       { CDR ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         UNIT ;
+         NIL nat ;
+         NIL nat ;
+         DUP 4 ;
+         ITER { UNPAIR ;
+                PUSH nat 0 ;
+                PUSH int 2 ;
+                DUP 3 ;
+                INT ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CDR ; SWAP ; DROP 1 } ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { CONS } ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 1 } } }

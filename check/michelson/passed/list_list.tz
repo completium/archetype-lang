@@ -1,0 +1,13 @@
+{ storage (list (list nat)) ;
+  parameter (unit %default) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         NIL nat ;
+         PUSH nat 1 ;
+         CONS ;
+         CONS ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

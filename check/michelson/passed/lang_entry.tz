@@ -1,0 +1,25 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         SENDER ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+         PUSH nat 0 ;
+         PUSH nat 0 ;
+         SOME ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH bool True ;
+         NOT ;
+         IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+         PUSH bool False ;
+         IF { PUSH string "f1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         SWAP ;
+         DROP 4 ;
+         NIL operation ;
+         PAIR } }

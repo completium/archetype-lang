@@ -1,0 +1,15 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         DUP ;
+         DUP 3 ;
+         COMPARE ;
+         NEQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

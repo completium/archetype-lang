@@ -1,0 +1,92 @@
+{ storage (pair int nat) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+           bool
+           { UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DUG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             SWAP ;
+             COMPARE ;
+             SWAP ;
+             IF_LEFT
+               { DROP 1 ; EQ }
+               { IF_LEFT
+                   { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
+                   { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         PUSH int 1 ;
+         PAIR ;
+         PUSH nat 3 ;
+         PUSH int 1 ;
+         PAIR ;
+         DUP 4 ;
+         UNIT ;
+         LEFT unit ;
+         RIGHT (or unit unit) ;
+         RIGHT unit ;
+         DUP 3 ;
+         DUP 5 ;
+         PAIR ;
+         PAIR ;
+         EXEC ;
+         IF { DUP 2 } { DUP } ;
+         DIP 1 { DROP 1 } ;
+         DIP 1 { DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         DUP 2 ;
+         UNIT ;
+         LEFT (or (or unit unit) (or unit unit)) ;
+         PUSH nat 2 ;
+         PUSH int 1 ;
+         PAIR ;
+         DUP 4 ;
+         PAIR ;
+         PAIR ;
+         EXEC ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE_1" ; FAILWITH } {} ;
+         PUSH nat 2 ;
+         PUSH int 1 ;
+         PAIR ;
+         PUSH nat 5 ;
+         PUSH int 2 ;
+         PAIR ;
+         DUP 4 ;
+         UNIT ;
+         LEFT unit ;
+         RIGHT (or unit unit) ;
+         RIGHT unit ;
+         DUP 3 ;
+         DUP 5 ;
+         PAIR ;
+         PAIR ;
+         EXEC ;
+         IF { DUP 2 } { DUP } ;
+         DIP 1 { DROP 1 } ;
+         DIP 1 { DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         DUP 2 ;
+         UNIT ;
+         LEFT (or (or unit unit) (or unit unit)) ;
+         PUSH nat 2 ;
+         PUSH int 1 ;
+         PAIR ;
+         DUP 4 ;
+         PAIR ;
+         PAIR ;
+         EXEC ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE_2" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

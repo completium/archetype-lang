@@ -1,0 +1,48 @@
+{ storage (map address (pair (nat %b) (nat %c))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         SENDER ;
+         DUP 2 ;
+         DUP 2 ;
+         MEM ;
+         IF { DUP 2 ;
+              DUP 2 ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              DUP 3 ;
+              DUP 4 ;
+              DUP 4 ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              UNPAIR ;
+              DROP 1 ;
+              PUSH nat 2 ;
+              DUP 4 ;
+              GET 1 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              DUP 4 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 ;
+              DROP 1 }
+            { DUP 2 ;
+              PUSH nat 0 ;
+              PUSH nat 2 ;
+              PUSH nat 0 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              DUP 3 ;
+              UPDATE ;
+              DIP 1 { DIG 1 ; DROP 1 } ;
+              DUG 1 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

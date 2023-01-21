@@ -1,0 +1,17 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         SOME ;
+         DUP ;
+         IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+         PUSH nat 2 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

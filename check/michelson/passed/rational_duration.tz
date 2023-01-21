@@ -1,0 +1,32 @@
+{ storage timestamp ;
+  parameter (address %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         PUSH int 604800 ;
+         DUP 3 ;
+         ADD ;
+         NOW ;
+         COMPARE ;
+         GT ;
+         IF { NOW ;
+              DIP 1 { DIG 1 ; DROP 1 } ;
+              DUG 1 ;
+              NIL operation ;
+              NIL operation ;
+              DUP 5 ;
+              ITER { CONS } ;
+              DUP 3 ;
+              CONTRACT unit ;
+              IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
+              AMOUNT ;
+              UNIT ;
+              TRANSFER_TOKENS ;
+              CONS ;
+              ITER { CONS } ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 }
+            {} ;
+         DROP 1 ;
+         DIG 1 ;
+         PAIR } }

@@ -1,0 +1,14 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL nat ;
+         PUSH nat 1 ;
+         CONS ;
+         DUP ;
+         IF_CONS
+           { DUP ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 2 }
+           { PUSH string "KO" ; FAILWITH } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,18 @@
+{ storage (map nat (pair (string %b) (bytes %c))) ;
+  parameter (unit %get_value) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         PUSH nat 0 ;
+         GET ;
+         DUP ;
+         IF_NONE { PUSH string "ERROR" } { DUP ; GET 1 ; SWAP ; DROP 1 } ;
+         PUSH string "mystr" ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

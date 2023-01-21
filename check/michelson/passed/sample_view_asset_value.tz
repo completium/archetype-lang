@@ -1,0 +1,17 @@
+{ storage (big_map string nat) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } ;
+  view "getPrice"
+       string
+       nat
+       { UNPAIR ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

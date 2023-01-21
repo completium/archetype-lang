@@ -1,0 +1,12 @@
+{ storage bytes ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH string "test" ;
+         PUSH nat 1 ;
+         PAIR ;
+         PACK ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,23 @@
+{ storage (pair (int %v0) (int %v1) (int %v2)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         PUSH nat 1 ;
+         COMPARE ;
+         SWAP ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         PUSH nat 1 ;
+         COMPARE ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PUSH nat 1 ;
+         PUSH nat 2 ;
+         COMPARE ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

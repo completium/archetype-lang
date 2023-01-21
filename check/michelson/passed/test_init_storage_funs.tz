@@ -1,0 +1,25 @@
+{ storage
+    (pair (int %min_int_int)
+          (int %max_int_int)
+          (int %min_dur_dur)
+          (int %max_dur_dur)
+          (mutez %min_tez_tez)
+          (mutez %max_tez_tez)
+          (int %floor_rat)
+          (int %ceil_rat)
+          (int %nfloor_rat)
+          (int %nceil_rat)
+          (int %abs_int)
+          (pair %abs_rat int nat)
+          (string %concat_str)
+          (option %slice_str string)
+          (nat %length_str)
+          (bytes %concat_byt)
+          (option %slice_byt bytes)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 17 } ;
+         DROP 1 ;
+         PAIR 17 ;
+         NIL operation ;
+         PAIR } }

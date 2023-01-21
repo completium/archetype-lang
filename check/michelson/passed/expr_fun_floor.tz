@@ -1,0 +1,24 @@
+{ storage (pair (int %r0) (int %r1)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH nat 3 ;
+         PUSH int 5 ;
+         PAIR ;
+         UNPAIR ;
+         EDIV ;
+         IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
+         SWAP ;
+         DROP 1 ;
+         PUSH nat 3 ;
+         PUSH int -5 ;
+         PAIR ;
+         UNPAIR ;
+         EDIV ;
+         IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

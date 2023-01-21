@@ -1,0 +1,16 @@
+{ storage (pair (option %n nat) (big_map %metadata string bytes)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH unit Unit ;
+         VIEW "get" nat ;
+         SWAP ;
+         DROP 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } ;
+  view "get" unit nat { DROP 1 ; UNIT ; PUSH nat 0 ; SWAP ; DROP 1 } ;
+  view "getonchain" unit nat { DROP 1 ; UNIT ; PUSH nat 0 ; SWAP ; DROP 1 } ;
+  view "getonoffchain" unit nat { DROP 1 ; UNIT ; PUSH nat 0 ; SWAP ; DROP 1 } }

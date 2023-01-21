@@ -1,0 +1,360 @@
+{ storage
+    (pair (map %asset_0 string int)
+          (map %my_asset string (pair (int %value) (set %col string)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH string "id0" ;
+         PUSH string "id" ;
+         DUP 4 ;
+         DUP 2 ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 4 ;
+              EMPTY_SET string ;
+              PUSH int 0 ;
+              PAIR ;
+              SOME ;
+              DUP 3 ;
+              UPDATE ;
+              DIP 1 { DIG 3 ; DROP 1 } ;
+              DUG 3 } ;
+         DUP 4 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         ITER { DUP 4 ;
+                NONE int ;
+                DUP 3 ;
+                UPDATE ;
+                DIP 1 { DIG 3 ; DROP 1 } ;
+                DUG 3 ;
+                DROP 1 } ;
+         DUP 4 ;
+         NONE (pair int (set string)) ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 4 ;
+         ITER { UNPAIR ;
+                PUSH string "id" ;
+                DUP 2 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 6 ;
+                     DUP 2 ;
+                     GET ;
+                     IF_NONE
+                       { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       {} ;
+                     CDR ;
+                     ITER { DUP 6 ;
+                            NONE int ;
+                            DUP 3 ;
+                            UPDATE ;
+                            DIP 1 { DIG 5 ; DROP 1 } ;
+                            DUG 5 ;
+                            DROP 1 } ;
+                     DUP 6 ;
+                     NONE (pair int (set string)) ;
+                     DUP 3 ;
+                     UPDATE ;
+                     DIP 1 { DIG 5 ; DROP 1 } ;
+                     DUG 5 }
+                   {} ;
+                DROP 2 } ;
+         DUP 3 ;
+         DUP 3 ;
+         MEM ;
+         IF { PUSH string "asset_0" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 3 ;
+              PUSH int 0 ;
+              SOME ;
+              DUP 4 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
+         DUP 4 ;
+         DUP 5 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         DUP 6 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         PUSH bool True ;
+         DUP 6 ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         SOME ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 3 ;
+         NONE int ;
+         DUP 4 ;
+         UPDATE ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP 4 ;
+         DUP 5 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         DUP 6 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         PUSH bool False ;
+         DUP 6 ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         SOME ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 4 ;
+         PUSH string "key" ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DUP 5 ;
+         DUP 6 ;
+         PUSH string "key" ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         DROP 1 ;
+         PUSH int 2 ;
+         DUP 4 ;
+         GET 1 ;
+         ADD ;
+         PAIR ;
+         SOME ;
+         PUSH string "key" ;
+         UPDATE ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 1 ;
+         DUP 4 ;
+         PUSH string "key" ;
+         MEM ;
+         IF { DUP 4 ;
+              PUSH string "key" ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              DUP 5 ;
+              DUP 6 ;
+              PUSH string "key" ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              UNPAIR ;
+              DROP 1 ;
+              PUSH int 3 ;
+              DUP 4 ;
+              GET 1 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              PUSH string "key" ;
+              UPDATE ;
+              DIP 1 { DIG 4 ; DROP 1 } ;
+              DUG 4 ;
+              DROP 1 }
+            { DUP 4 ;
+              EMPTY_SET string ;
+              PUSH int 3 ;
+              PUSH int 0 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              PUSH string "key" ;
+              UPDATE ;
+              DIP 1 { DIG 3 ; DROP 1 } ;
+              DUG 3 } ;
+         DUP 4 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CAR ;
+         NIL string ;
+         NIL string ;
+         DUP 7 ;
+         ITER { UNPAIR ;
+                PUSH int 0 ;
+                DUP 3 ;
+                GET 1 ;
+                COMPARE ;
+                GT ;
+                IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { CONS } ;
+         NIL string ;
+         DUP 7 ;
+         ITER { UNPAIR ;
+                NIL string ;
+                DUP 2 ;
+                SOME ;
+                PAIR ;
+                DUP 4 ;
+                ITER { DUP 2 ;
+                       GET 1 ;
+                       DUP 3 ;
+                       GET 2 ;
+                       DUP 2 ;
+                       IF_NONE
+                         { DUP ; DUP 4 ; CONS ; DUP 3 ; PAIR }
+                         { PUSH int 0 ;
+                           DUP 15 ;
+                           DUP 6 ;
+                           GET ;
+                           IF_NONE
+                             { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                             {} ;
+                           DUP 9 ;
+                           GET 1 ;
+                           DUP 2 ;
+                           GET 1 ;
+                           COMPARE ;
+                           GT ;
+                           IF { PUSH int 1 } { PUSH int 0 } ;
+                           DIP 1 { DROP 1 } ;
+                           COMPARE ;
+                           GT ;
+                           IF { DUP 2 ; DUP 7 ; CONS ; DUP 5 ; CONS ; NONE string ; PAIR }
+                              { DUP 2 ; DUP 5 ; CONS ; DUP 4 ; PAIR } ;
+                           SWAP ;
+                           DROP 1 } ;
+                       DIP 1 { DROP 1 } ;
+                       DIP 1 { DROP 1 } ;
+                       DIP 1 { DIG 1 ; DROP 1 } ;
+                       DUG 1 ;
+                       DROP 1 } ;
+                DUP ;
+                GET 1 ;
+                DUP 2 ;
+                GET 2 ;
+                NIL string ;
+                DUP 3 ;
+                IF_NONE { DUP 2 } { DUP 3 ; DUP 7 ; CONS ; SWAP ; DROP 1 } ;
+                ITER { CONS } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         DUP 7 ;
+         DUP 5 ;
+         MEM ;
+         NONE string ;
+         PUSH nat 0 ;
+         PAIR ;
+         DUP 9 ;
+         ITER { UNPAIR ;
+                PUSH nat 0 ;
+                DUP 4 ;
+                GET 1 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP ; SOME ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
+                   { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         CDR ;
+         IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
+         DUP 9 ;
+         SIZE ;
+         PUSH int 0 ;
+         DUP 11 ;
+         ITER { UNPAIR ;
+                DUP 2 ;
+                GET 1 ;
+                DUP 4 ;
+                ADD ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         NIL string ;
+         NIL string ;
+         PUSH nat 0 ;
+         PAIR ;
+         DUP 13 ;
+         ITER { UNPAIR ;
+                PUSH nat 2 ;
+                DUP 4 ;
+                GET 1 ;
+                COMPARE ;
+                LT ;
+                IF { DUP 3 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
+                   { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         CDR ;
+         ITER { CONS } ;
+         NIL string ;
+         PUSH nat 0 ;
+         PAIR ;
+         NIL string ;
+         DUP 14 ;
+         ITER { UNPAIR ;
+                DUP 3 ;
+                DUP 2 ;
+                CONS ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { PUSH nat 2 ;
+                DUP 3 ;
+                GET 1 ;
+                COMPARE ;
+                LT ;
+                IF { DUP 2 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
+                   { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
+         CDR ;
+         DROP 11 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

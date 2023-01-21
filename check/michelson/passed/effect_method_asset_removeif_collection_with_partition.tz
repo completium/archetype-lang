@@ -1,0 +1,38 @@
+{ storage
+    (pair (set %o_asset nat) (map %my_asset string (pair (int %value) (set %c nat)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP 2 ;
+         ITER { UNPAIR ;
+                PUSH int 1 ;
+                DUP 3 ;
+                GET 1 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 4 ;
+                     DUP 2 ;
+                     GET ;
+                     IF_NONE
+                       { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       {} ;
+                     CDR ;
+                     ITER { DUP 4 ;
+                            PUSH bool False ;
+                            DUP 3 ;
+                            UPDATE ;
+                            DIP 1 { DIG 3 ; DROP 1 } ;
+                            DUG 3 ;
+                            DROP 1 } ;
+                     DUP 4 ;
+                     NONE (pair int (set nat)) ;
+                     DUP 3 ;
+                     UPDATE ;
+                     DIP 1 { DIG 3 ; DROP 1 } ;
+                     DUG 3 }
+                   {} ;
+                DROP 2 } ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

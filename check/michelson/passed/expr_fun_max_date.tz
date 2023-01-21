@@ -1,0 +1,16 @@
+{ storage timestamp ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH timestamp 1577923200 ;
+         PUSH timestamp 1546300800 ;
+         PAIR ;
+         DUP ;
+         UNPAIR ;
+         COMPARE ;
+         LT ;
+         IF { CDR } { CAR } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

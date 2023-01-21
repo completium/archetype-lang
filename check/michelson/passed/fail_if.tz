@@ -1,0 +1,6 @@
+{ storage unit ;
+  parameter (unit %f) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool True ;
+         IF { PUSH string "OK" ; FAILWITH } { PUSH string "KO" ; FAILWITH } } }

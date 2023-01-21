@@ -1,0 +1,16 @@
+{ storage
+    (pair (big_map %values nat (pair (nat %index) (unit %value)))
+          (big_map %keys nat nat)
+          (nat %size)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 0 ;
+         EMPTY_BIG_MAP nat nat ;
+         PAIR ;
+         EMPTY_BIG_MAP nat (pair nat unit) ;
+         PAIR ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

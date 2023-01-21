@@ -1,0 +1,11 @@
+{ storage (option (ticket string)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 10 ;
+         PUSH string "mystr" ;
+         TICKET ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

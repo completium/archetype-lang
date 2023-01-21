@@ -1,0 +1,11 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool True ;
+         SWAP ;
+         DROP 1 ;
+         DUP ;
+         LOOP { PUSH bool False ; SWAP ; DROP 1 ; DUP } ;
+         NIL operation ;
+         PAIR } }

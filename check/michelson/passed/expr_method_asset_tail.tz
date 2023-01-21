@@ -1,0 +1,56 @@
+{ storage (pair (map %my_asset string int) (int %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         NIL string ;
+         PUSH nat 0 ;
+         PAIR ;
+         NIL string ;
+         DUP 3 ;
+         ITER { UNPAIR ;
+                DUP 3 ;
+                DUP 2 ;
+                CONS ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { PUSH nat 2 ;
+                DUP 3 ;
+                GET 1 ;
+                COMPARE ;
+                LT ;
+                IF { DUP 2 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
+                   { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
+         CDR ;
+         NONE string ;
+         PUSH nat 0 ;
+         PAIR ;
+         DUP 2 ;
+         ITER { PUSH nat 0 ;
+                DUP 3 ;
+                GET 1 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP ; SOME ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
+                   { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
+         CDR ;
+         IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
+         DUP 3 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

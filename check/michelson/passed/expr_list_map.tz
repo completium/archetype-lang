@@ -1,0 +1,18 @@
+{ storage (list nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL int ;
+         PUSH int 2 ;
+         CONS ;
+         PUSH int 1 ;
+         CONS ;
+         PUSH int 0 ;
+         CONS ;
+         DUP ;
+         MAP { PUSH nat 2 ; DUP 2 ; ABS ; ADD ; SWAP ; DROP 1 } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

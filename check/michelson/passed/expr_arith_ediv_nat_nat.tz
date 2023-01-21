@@ -1,0 +1,14 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         PUSH nat 4 ;
+         EDIV ;
+         IF_NONE
+           { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+           { DUP ; CAR ; SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

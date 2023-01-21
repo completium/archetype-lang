@@ -1,0 +1,16 @@
+{ storage mutez ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH mutez 2000000 ;
+         PUSH mutez 1000000 ;
+         PAIR ;
+         DUP ;
+         UNPAIR ;
+         COMPARE ;
+         LT ;
+         IF { CDR } { CAR } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

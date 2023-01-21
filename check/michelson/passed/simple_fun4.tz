@@ -1,0 +1,34 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair int string nat)
+           int
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 4 ;
+             INT ;
+             DUP 4 ;
+             SIZE ;
+             INT ;
+             DUP 4 ;
+             ADD ;
+             ADD ;
+             SWAP ;
+             DROP 1 ;
+             DUG 3 ;
+             DROP 3 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         PUSH nat 5 ;
+         PUSH string "mystr" ;
+         PAIR ;
+         PUSH int 1 ;
+         PAIR ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

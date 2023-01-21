@@ -1,0 +1,38 @@
+{ storage (list nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL nat ;
+         PUSH nat 3 ;
+         CONS ;
+         PUSH nat 2 ;
+         CONS ;
+         PUSH nat 1 ;
+         CONS ;
+         NIL nat ;
+         DUP 2 ;
+         DUP 2 ;
+         PAIR ;
+         LEFT (list nat) ;
+         DUP ;
+         LOOP_LEFT
+           { DUP ;
+             GET 2 ;
+             IF_CONS
+               { DUP 2 ;
+                 DUP 4 ;
+                 GET 1 ;
+                 DUP 3 ;
+                 CONS ;
+                 PAIR ;
+                 LEFT (list nat) ;
+                 DUG 2 ;
+                 DROP 2 }
+               { DUP ; GET 1 ; RIGHT (pair (list nat) (list nat)) } ;
+             SWAP ;
+             DROP 1 } ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 3 ;
+         NIL operation ;
+         PAIR } }

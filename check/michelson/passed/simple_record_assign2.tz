@@ -1,0 +1,25 @@
+{ storage (pair (nat %p) (pair %r (string %id) (nat %a) (nat %b) (nat %v)) (nat %q)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         DUP 2 ;
+         UNPAIR ;
+         SWAP ;
+         UNPAIR ;
+         SWAP ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

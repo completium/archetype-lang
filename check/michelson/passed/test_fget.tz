@@ -1,0 +1,54 @@
+{ storage
+    (pair (map %mile string (pair (timestamp %expiration) (int %quantity)))
+          (map %owner address (set string))) ;
+  parameter (address %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         NIL string ;
+         NIL string ;
+         DUP 5 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         ITER { DUP 5 ;
+                DUP 2 ;
+                GET ;
+                IF_NONE
+                  { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                  {} ;
+                NOW ;
+                DUP 2 ;
+                GET 1 ;
+                COMPARE ;
+                GT ;
+                IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
+                DIP 1 { DROP 1 } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
+         ITER { CONS } ;
+         DUP 4 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         ITER { PUSH int 0 ;
+                DUP 5 ;
+                DUP 3 ;
+                GET ;
+                IF_NONE
+                  { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                  {} ;
+                CDR ;
+                COMPARE ;
+                GT ;
+                NOT ;
+                IF { PUSH string "ko" ; FAILWITH } {} ;
+                DROP 1 } ;
+         DROP 2 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

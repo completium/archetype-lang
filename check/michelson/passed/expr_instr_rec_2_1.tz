@@ -1,0 +1,20 @@
+{ storage (pair (nat %id) (map %m nat string)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         PUSH nat 2 ;
+         PUSH string "str" ;
+         DIG 3 ;
+         UNPAIR ;
+         SWAP ;
+         DUP 3 ;
+         SOME ;
+         DUP 6 ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         DUG 3 ;
+         DROP 3 ;
+         NIL operation ;
+         PAIR } }

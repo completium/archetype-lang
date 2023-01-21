@@ -1,0 +1,34 @@
+{ storage int ;
+  parameter (or (or (unit %mytr) (unit %mytr_a)) (unit %mytr_b)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP 1 ;
+                 DUP ;
+                 DUP ;
+                 PUSH int 0 ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True ;
+                      IF { PUSH int 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 } {} }
+                    { PUSH string "INVALID_STATE" ; FAILWITH } ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR }
+               { DROP 1 ; PUSH int 2 ; SWAP ; DROP 1 ; NIL operation ; PAIR } }
+           { DROP 1 ;
+             DUP ;
+             DUP ;
+             PUSH int 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH int 2 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+                { DUP ;
+                  PUSH int 1 ;
+                  COMPARE ;
+                  EQ ;
+                  IF { PUSH int 2 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+                     { PUSH string "INVALID_STATE" ; FAILWITH } } ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }

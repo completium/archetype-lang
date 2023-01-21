@@ -1,0 +1,3 @@
+{ storage (pair (pair %g int nat) (mutez %dtz) (mutez %dmtz) (mutez %dutz)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ; DIP 1 { UNPAIR 4 } ; DROP 1 ; PAIR 4 ; NIL operation ; PAIR } }

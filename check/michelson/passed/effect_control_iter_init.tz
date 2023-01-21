@@ -1,0 +1,27 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 3 ;
+         PUSH int 2 ;
+         DUP 2 ;
+         DUP 2 ;
+         COMPARE ;
+         LE ;
+         LOOP { DUP ;
+                DUP 4 ;
+                ADD ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                PUSH int 1 ;
+                DUP 2 ;
+                ADD ;
+                SWAP ;
+                DROP 1 ;
+                DUP 2 ;
+                DUP 2 ;
+                COMPARE ;
+                LE } ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

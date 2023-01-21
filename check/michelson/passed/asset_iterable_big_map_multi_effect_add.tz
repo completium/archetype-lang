@@ -1,0 +1,59 @@
+{ storage
+    (pair (big_map %values string (pair (nat %index) (pair %value (nat %value) (bytes %data))))
+          (big_map %keys nat string)
+          (nat %size)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         GET 1 ;
+         PUSH string "id3" ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP ;
+              PUSH nat 1 ;
+              DUP 2 ;
+              GET 4 ;
+              ADD ;
+              DUP 2 ;
+              GET 1 ;
+              PUSH string "id3" ;
+              GET ;
+              IF_NONE
+                { DUP 2 ;
+                  DUP 2 ;
+                  UPDATE 4 ;
+                  DIP 1 { DIG 1 ; DROP 1 } ;
+                  DUG 1 ;
+                  DUP 2 ;
+                  DUP 3 ;
+                  GET 3 ;
+                  PUSH string "id3" ;
+                  SOME ;
+                  DUP 5 ;
+                  GET 4 ;
+                  UPDATE ;
+                  UPDATE 3 ;
+                  DIP 1 { DIG 1 ; DROP 1 } ;
+                  DUG 1 }
+                { DUP ; GET 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+              DUP 2 ;
+              DUP 3 ;
+              GET 1 ;
+              PUSH bytes 0x03 ;
+              PUSH nat 3 ;
+              PAIR ;
+              DUP 4 ;
+              PAIR ;
+              SOME ;
+              PUSH string "id3" ;
+              UPDATE ;
+              UPDATE 1 ;
+              DIP 1 { DIG 1 ; DROP 1 } ;
+              DUG 1 ;
+              DUP 2 ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 ;
+              DROP 2 } ;
+         NIL operation ;
+         PAIR } }

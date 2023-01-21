@@ -1,0 +1,26 @@
+{ storage (set string) ;
+  parameter (unit %e) ;
+  code { LAMBDA
+           unit
+           bool
+           { PUSH unit Unit ;
+             PUSH nat 1 ;
+             PUSH nat 0 ;
+             PAIR ;
+             DUP ;
+             UNPAIR ;
+             COMPARE ;
+             LT ;
+             IF { CAR } { CDR } ;
+             PUSH bool True ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             DROP 1 ;
+             SWAP ;
+             DROP 1 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

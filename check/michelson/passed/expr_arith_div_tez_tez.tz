@@ -1,0 +1,22 @@
+{ storage (pair int nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH mutez 3000000 ;
+         PUSH mutez 1 ;
+         SWAP ;
+         EDIV ;
+         IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+         CAR ;
+         PUSH mutez 4000000 ;
+         PUSH mutez 1 ;
+         SWAP ;
+         EDIV ;
+         IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+         CAR ;
+         INT ;
+         PAIR ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

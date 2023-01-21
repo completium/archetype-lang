@@ -1,0 +1,62 @@
+{ storage (pair (bool %rt) (bool %rf) (bool %rt2)) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (list string) string)
+           bool
+           { UNPAIR ;
+             PUSH bool False ;
+             SWAP ;
+             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
+             DIP 1 { DROP 1 } } ;
+         LAMBDA
+           (pair (list nat) nat)
+           bool
+           { UNPAIR ;
+             PUSH bool False ;
+             SWAP ;
+             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
+             DIP 1 { DROP 1 } } ;
+         DIG 2 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         NIL string ;
+         PUSH string "3" ;
+         CONS ;
+         PUSH string "2" ;
+         CONS ;
+         PUSH string "1" ;
+         CONS ;
+         DUP 6 ;
+         PUSH string "2" ;
+         DUP 3 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP 6 ;
+         PUSH string "0" ;
+         DUP 3 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         NIL nat ;
+         PUSH nat 3 ;
+         CONS ;
+         PUSH nat 2 ;
+         CONS ;
+         PUSH nat 1 ;
+         CONS ;
+         DUP 6 ;
+         PUSH nat 2 ;
+         DUP 3 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 2 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 2 } } }

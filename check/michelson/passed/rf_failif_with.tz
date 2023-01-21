@@ -1,0 +1,8 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool False ;
+         IF { PUSH string "fail" ; PUSH nat 2 ; PAIR ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

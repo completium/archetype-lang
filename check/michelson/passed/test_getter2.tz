@@ -1,0 +1,24 @@
+{ storage nat ;
+  parameter (or (pair %getN unit (contract %callback nat)) (unit %a)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         IF_LEFT
+           { UNPAIR ;
+             DROP 1 ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             AMOUNT ;
+             DUP 6 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR }
+           { DROP 1 ; DIG 1 ; PAIR } } }

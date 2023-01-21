@@ -1,0 +1,12 @@
+{ storage mutez ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH mutez 1000000 ;
+         PUSH mutez 2000000 ;
+         SUB_MUTEZ ;
+         IF_NONE { PUSH string "NAT_NEG_ASSIGN" ; FAILWITH } {} ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

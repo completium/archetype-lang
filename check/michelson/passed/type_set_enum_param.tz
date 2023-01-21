@@ -1,0 +1,11 @@
+{ storage (set (or (unit %e_1) (or (nat %e_2) (or (string %e_3) (pair %e_4 bytes bool))))) ;
+  parameter
+    (set %set_value
+       (or (unit %e_1) (or (nat %e_2) (or (string %e_3) (pair %e_4 bytes bool))))) ;
+  code { UNPAIR ;
+         DUP ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

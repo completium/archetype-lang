@@ -1,0 +1,11 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH string "ERROR" ;
+         SOME ;
+         DUP ;
+         IF_NONE {} { DUP ; FAILWITH } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,9 @@
+{ storage int ;
+  parameter (int %assign) ;
+  code { UNPAIR ;
+         DUP ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

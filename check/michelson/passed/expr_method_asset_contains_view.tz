@@ -1,0 +1,37 @@
+{ storage (pair (map %my_asset string int) (bool %res)) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (list string) string)
+           bool
+           { UNPAIR ;
+             PUSH bool False ;
+             SWAP ;
+             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
+             DIP 1 { DROP 1 } } ;
+         DIG 1 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP 3 ;
+         PUSH string "id0" ;
+         NIL string ;
+         NIL string ;
+         DUP 5 ;
+         ITER { UNPAIR ;
+                PUSH int 0 ;
+                DUP 3 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { CONS } ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

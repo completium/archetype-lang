@@ -1,0 +1,27 @@
+{ storage (pair (option %res nat) (nat %i) (nat %n)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH unit Unit ;
+         VIEW "get" nat ;
+         SWAP ;
+         DROP 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } ;
+  view "get"
+       unit
+       nat
+       { CDR ;
+         CDR ;
+         UNPAIR ;
+         SWAP ;
+         UNIT ;
+         DUP 2 ;
+         DUP 4 ;
+         ADD ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

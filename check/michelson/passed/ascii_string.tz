@@ -1,0 +1,10 @@
+{ storage string ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH string
+              " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{}~" ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

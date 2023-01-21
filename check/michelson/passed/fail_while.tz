@@ -1,0 +1,8 @@
+{ storage unit ;
+  parameter (unit %f) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool True ;
+         LOOP { PUSH string "OK" ; FAILWITH } ;
+         NIL operation ;
+         PAIR } }

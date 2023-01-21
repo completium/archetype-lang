@@ -1,0 +1,59 @@
+{ storage (pair (string %str) (nat %n) (int %i)) ;
+  parameter (or (or (nat %e1) (pair %e2 (nat %a) (nat %b))) (unit %e3)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         IF_LEFT
+           { IF_LEFT
+               { DUP ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 DUP 4 ;
+                 DUP 4 ;
+                 INT ;
+                 ADD ;
+                 DIP 1 { DIG 3 ; DROP 1 } ;
+                 DUG 3 ;
+                 PUSH nat 2 ;
+                 DUP 4 ;
+                 ADD ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 DROP 1 ;
+                 PAIR 3 ;
+                 NIL operation ;
+                 PAIR }
+               { UNPAIR ;
+                 SWAP ;
+                 PUSH string "mystring" ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 DUP ;
+                 DUP 3 ;
+                 ADD ;
+                 DIP 1 { DIG 3 ; DROP 1 } ;
+                 DUG 3 ;
+                 DUP 4 ;
+                 INT ;
+                 PUSH int 9 ;
+                 SUB ;
+                 DIP 1 { DIG 4 ; DROP 1 } ;
+                 DUG 4 ;
+                 DROP 2 ;
+                 PAIR 3 ;
+                 NIL operation ;
+                 PAIR } }
+           { DROP 1 ;
+             PUSH nat 3 ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             PUSH string "mystring" ;
+             SWAP ;
+             DROP 1 ;
+             PUSH nat 2 ;
+             DUP 3 ;
+             ADD ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR } } }

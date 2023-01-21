@@ -1,0 +1,112 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         LEFT string ;
+         PUSH int 0 ;
+         PAIR ;
+         PUSH string "m1" ;
+         PUSH nat 6 ;
+         PAIR ;
+         PAIR ;
+         PUSH string "m0" ;
+         RIGHT nat ;
+         PAIR ;
+         PUSH nat 5 ;
+         LEFT string ;
+         PAIR ;
+         PUSH string "mystring" ;
+         PUSH nat 4 ;
+         PAIR ;
+         PAIR ;
+         NONE nat ;
+         PAIR ;
+         EMPTY_MAP nat string ;
+         PUSH string "mystr" ;
+         SOME ;
+         PUSH nat 3 ;
+         UPDATE ;
+         PAIR ;
+         NIL nat ;
+         PUSH nat 2 ;
+         CONS ;
+         PAIR ;
+         EMPTY_SET nat ;
+         PUSH bool True ;
+         PUSH nat 1 ;
+         UPDATE ;
+         PAIR ;
+         PUSH chain_id "NetXdQprcVkpaWU" ;
+         PAIR ;
+         PUSH bytes 0x01 ;
+         PAIR ;
+         PUSH key_hash "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         PAIR ;
+         PUSH key "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn" ;
+         PAIR ;
+         PUSH signature
+              "edsigtvwtJaiM7phNNkZjazqKtthDxc3WswYNL961GKgz7VxvPJmWJ8WEkmEZd9oFM1RvwABYW3uYgwGRP7nuBns5WrqyfYsUaB" ;
+         PAIR ;
+         PUSH mutez 1000000 ;
+         PAIR ;
+         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         PAIR ;
+         PUSH string "string" ;
+         PAIR ;
+         PUSH int 1 ;
+         PAIR ;
+         PUSH timestamp 1577836800 ;
+         PAIR ;
+         PUSH nat 5 ;
+         PUSH int 4 ;
+         PAIR ;
+         PAIR ;
+         PUSH nat 2 ;
+         PAIR ;
+         PUSH int 1 ;
+         PAIR ;
+         PUSH bool True ;
+         PAIR ;
+         PUSH unit Unit ;
+         PAIR ;
+         NIL operation ;
+         NIL operation ;
+         DUP 5 ;
+         ITER { CONS } ;
+         DUP 3 ;
+         EMIT %ev
+           (pair (unit %u)
+                 (bool %b)
+                 (int %i)
+                 (nat %n)
+                 (pair %r int nat)
+                 (timestamp %date_)
+                 (int %du)
+                 (string %str)
+                 (address %addr)
+                 (mutez %cur)
+                 (signature %sig)
+                 (key %k)
+                 (key_hash %kh)
+                 (bytes %byt)
+                 (chain_id %cid)
+                 (set %s nat)
+                 (list %l nat)
+                 (map %m nat string)
+                 (option %o nat)
+                 (pair %tu nat string)
+                 (or %oal nat string)
+                 (or %oar nat string)
+                 (pair %rr (nat %f1) (string %f2))
+                 (int %ee)
+                 (or %eee (nat %xxx) (string %yyy))) ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         DIG 1 ;
+         PAIR } }

@@ -1,0 +1,15 @@
+{ storage timestamp ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH timestamp 1609372800 ;
+         SWAP ;
+         DROP 1 ;
+         PUSH timestamp 1609372800 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "error" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

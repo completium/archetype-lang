@@ -1,0 +1,3 @@
+{ storage (map string (pair (int %value) (nat %v2))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ; DROP 1 ; NIL operation ; PAIR } }

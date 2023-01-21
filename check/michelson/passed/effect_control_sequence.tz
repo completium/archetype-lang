@@ -1,0 +1,15 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 1 ;
+         SWAP ;
+         DROP 1 ;
+         PUSH int 2 ;
+         SWAP ;
+         DROP 1 ;
+         PUSH int 3 ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

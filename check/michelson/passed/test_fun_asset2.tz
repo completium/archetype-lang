@@ -1,0 +1,47 @@
+{ storage (pair (set %my_asset nat) (nat %res) (nat %v) (pair %r (nat %n) (int %k))) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (set nat) (pair (nat %n) (int %k)))
+           nat
+           { UNPAIR 2 ;
+             PUSH unit Unit ;
+             DUP 2 ;
+             SIZE ;
+             DUP 4 ;
+             GET 1 ;
+             ADD ;
+             SWAP ;
+             DROP 1 ;
+             DUG 2 ;
+             DROP 2 } ;
+         LAMBDA
+           (pair (set nat) (pair (nat %n) (int %k)) (lambda (pair (set nat) (pair (nat %n) (int %k))) nat))
+           nat
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 4 ;
+             DUP 4 ;
+             DUP 4 ;
+             PAIR ;
+             EXEC ;
+             SWAP ;
+             DROP 1 ;
+             DUG 3 ;
+             DROP 3 } ;
+         DIG 2 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 4 } ;
+         DROP 1 ;
+         DUP 5 ;
+         DUP 7 ;
+         DUP 6 ;
+         PAIR ;
+         DUP 3 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PAIR 4 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 2 } } }

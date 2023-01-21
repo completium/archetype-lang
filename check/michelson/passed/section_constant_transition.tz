@@ -1,0 +1,45 @@
+{ storage (pair (nat %res2) (nat %res3) (int %_state)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         PUSH nat 3 ;
+         SOME ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH nat 2 ;
+         DUP 3 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+         PUSH nat 3 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "r2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+         DUP 5 ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH nat 2 ;
+              DUP 4 ;
+              COMPARE ;
+              EQ ;
+              IF { DUP 3 ;
+                   DIP 1 { DIG 3 ; DROP 1 } ;
+                   DUG 3 ;
+                   DUP 2 ;
+                   DIP 1 { DIG 4 ; DROP 1 } ;
+                   DUG 4 ;
+                   PUSH int 1 ;
+                   DIP 1 { DIG 5 ; DROP 1 } ;
+                   DUG 5 }
+                 {} }
+            { PUSH string "INVALID_STATE" ; FAILWITH } ;
+         DROP 3 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

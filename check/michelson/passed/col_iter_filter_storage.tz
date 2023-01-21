@@ -1,0 +1,34 @@
+{ storage (map int string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL int ;
+         NIL int ;
+         DUP 3 ;
+         ITER { UNPAIR ;
+                PUSH nat 0 ;
+                PUSH int 2 ;
+                DUP 3 ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CDR ; SWAP ; DROP 1 } ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         ITER { CONS } ;
+         DUP ;
+         ITER { DUP 3 ;
+                PUSH string "val" ;
+                SOME ;
+                DUP 3 ;
+                UPDATE ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 1 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

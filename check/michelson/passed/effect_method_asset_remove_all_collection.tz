@@ -1,0 +1,9 @@
+{ storage (map string int) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_MAP string int ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

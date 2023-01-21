@@ -1,0 +1,17 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         SOME ;
+         DUP ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH nat 1 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

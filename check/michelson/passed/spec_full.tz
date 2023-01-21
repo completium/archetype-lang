@@ -1,0 +1,18 @@
+{ storage (pair (map %myasset string bool) (set %col1 string) (set %col2 string)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         PUSH int 0 ;
+         PUSH int 0 ;
+         DUP 4 ;
+         ITER { DROP 1 } ;
+         PUSH int 0 ;
+         DUP 3 ;
+         COMPARE ;
+         NEQ ;
+         IF { PUSH string "error" ; FAILWITH } {} ;
+         DROP 2 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

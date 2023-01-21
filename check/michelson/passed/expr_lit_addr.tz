@@ -1,0 +1,9 @@
+{ storage address ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH address "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB" ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,11 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         SOME ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

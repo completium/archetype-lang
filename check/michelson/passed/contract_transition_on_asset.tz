@@ -1,0 +1,42 @@
+{ storage (map string (pair (int %val) (int %state_my_asset))) ;
+  parameter (pair %exec (int %v) (string %a)) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         DUP 3 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH bool True ;
+              IF { DUP 4 ;
+                   DUP 5 ;
+                   DUP 4 ;
+                   GET ;
+                   IF_NONE
+                     { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                     {} ;
+                   UNPAIR ;
+                   DROP 1 ;
+                   DUP 5 ;
+                   SWAP ;
+                   DROP 1 ;
+                   PUSH int 1 ;
+                   SWAP ;
+                   PAIR ;
+                   SOME ;
+                   DUP 4 ;
+                   UPDATE ;
+                   DIP 1 { DIG 3 ; DROP 1 } ;
+                   DUG 3 }
+                 {} }
+            { PUSH string "INVALID_STATE" ; FAILWITH } ;
+         DROP 3 ;
+         NIL operation ;
+         PAIR } }

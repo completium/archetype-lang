@@ -1,0 +1,16 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 0 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         SWAP ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

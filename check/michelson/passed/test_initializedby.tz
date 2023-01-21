@@ -1,0 +1,3 @@
+{ storage (map string (pair (int %v1) (int %v2))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ; DROP 1 ; PUSH string "nothing" ; FAILWITH } }

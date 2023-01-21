@@ -1,0 +1,11 @@
+{ storage nat ;
+  parameter (pair %exec (pair (int %x) nat) (address %z)) ;
+  code { UNPAIR ;
+         DUP ;
+         GET 1 ;
+         GET 2 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

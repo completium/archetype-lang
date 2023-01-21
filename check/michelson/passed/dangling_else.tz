@@ -1,0 +1,14 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool True ;
+         IF { PUSH bool False ; IF {} { PUSH nat 42 ; SWAP ; DROP 1 } } {} ;
+         PUSH nat 42 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

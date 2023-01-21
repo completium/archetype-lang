@@ -1,0 +1,11 @@
+{ storage (map address string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         SENDER ;
+         MEM ;
+         NOT ;
+         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

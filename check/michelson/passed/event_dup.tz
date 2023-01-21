@@ -1,0 +1,42 @@
+{ storage unit ;
+  parameter (nat %e1) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         PUSH nat 0 ;
+         PUSH int 2 ;
+         DUP 3 ;
+         INT ;
+         EDIV ;
+         IF_NONE
+           { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+           { DUP ; CDR ; SWAP ; DROP 1 } ;
+         COMPARE ;
+         EQ ;
+         IF { NIL operation ;
+              NIL operation ;
+              DUP 5 ;
+              ITER { CONS } ;
+              NOW ;
+              SENDER ;
+              PAIR ;
+              EMIT %even (pair (address %from_) (timestamp %time)) ;
+              CONS ;
+              ITER { CONS } ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 }
+            { NIL operation ;
+              NIL operation ;
+              DUP 5 ;
+              ITER { CONS } ;
+              NOW ;
+              SENDER ;
+              PAIR ;
+              EMIT %odd (pair (address %from_) (timestamp %time)) ;
+              CONS ;
+              ITER { CONS } ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
+         DROP 1 ;
+         DIG 1 ;
+         PAIR } }

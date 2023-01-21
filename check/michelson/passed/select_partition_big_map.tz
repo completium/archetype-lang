@@ -1,0 +1,67 @@
+{ storage
+    (pair (big_map %o_asset string nat)
+          (big_map %my_asset string (set string))
+          (list %res string)) ;
+  parameter (or (unit %init) (unit %exec)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         IF_LEFT
+           { DROP 1 ;
+             DUP 2 ;
+             PUSH string "toto" ;
+             MEM ;
+             IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                { DUP ;
+                  PUSH string "tutu" ;
+                  MEM ;
+                  IF { PUSH string "o_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                     { DUP 2 ;
+                       EMPTY_SET string ;
+                       PUSH bool True ;
+                       PUSH string "tutu" ;
+                       UPDATE ;
+                       SOME ;
+                       PUSH string "toto" ;
+                       UPDATE ;
+                       DIP 1 { DIG 1 ; DROP 1 } ;
+                       DUG 1 ;
+                       DUP ;
+                       PUSH nat 2 ;
+                       SOME ;
+                       PUSH string "tutu" ;
+                       UPDATE ;
+                       SWAP ;
+                       DROP 1 } } ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             NIL string ;
+             NIL string ;
+             DUP 4 ;
+             PUSH string "toto" ;
+             GET ;
+             IF_NONE
+               { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             ITER { DUP 4 ;
+                    DUP 2 ;
+                    GET ;
+                    IF_NONE
+                      { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                      {} ;
+                    PUSH nat 2 ;
+                    DUP 2 ;
+                    COMPARE ;
+                    EQ ;
+                    IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
+                    DIP 1 { DROP 1 } ;
+                    DIP 1 { DIG 1 ; DROP 1 } ;
+                    DUG 1 ;
+                    DROP 1 } ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR } } }

@@ -1,0 +1,10 @@
+{ storage (option (pair nat string chain_id)) ;
+  parameter (bytes %exec) ;
+  code { UNPAIR ;
+         DUP ;
+         UNPACK (pair nat string chain_id) ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

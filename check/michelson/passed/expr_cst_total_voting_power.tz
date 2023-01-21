@@ -1,0 +1,9 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         TOTAL_VOTING_POWER ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,143 @@
+{ storage (pair int nat) ;
+  parameter (pair %exec (pair %i int nat) (pair %j int nat)) ;
+  code { LAMBDA
+           (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+           bool
+           { UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DUG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             SWAP ;
+             COMPARE ;
+             SWAP ;
+             IF_LEFT
+               { DROP 1 ; EQ }
+               { IF_LEFT
+                   { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
+                   { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
+         LAMBDA
+           (pair (pair int nat)
+                 (pair int nat)
+                 (lambda
+                    (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+                    bool))
+           (pair int nat)
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 3 ;
+             PAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DIG 3 ;
+             DUP ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             MUL ;
+             PUSH nat 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+             PUSH int 0 ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             COMPARE ;
+             GE ;
+             IF { INT } { NEG } ;
+             MUL ;
+             DIP 1 { MUL ; ABS } ;
+             PAIR ;
+             DUP 5 ;
+             UNIT ;
+             LEFT unit ;
+             RIGHT (or unit unit) ;
+             RIGHT unit ;
+             PUSH nat 1 ;
+             PUSH int 0 ;
+             PAIR ;
+             DUP 4 ;
+             PAIR ;
+             PAIR ;
+             EXEC ;
+             IF { DUP ;
+                  UNPAIR ;
+                  EDIV ;
+                  IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } }
+                { DUP ;
+                  UNPAIR ;
+                  EDIV ;
+                  IF_NONE
+                    { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                    { UNPAIR ; SWAP ; INT ; EQ ; IF {} { PUSH int 1 ; ADD } } } ;
+             UNIT ;
+             RIGHT unit ;
+             DUP 6 ;
+             PUSH nat 1 ;
+             DUP 4 ;
+             PAIR ;
+             PAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DIP 1 { SWAP } ;
+             MUL ;
+             DIP 1
+                 { MUL ;
+                   DUP ;
+                   PUSH nat 0 ;
+                   COMPARE ;
+                   EQ ;
+                   IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} } ;
+             PAIR ;
+             DUP 6 ;
+             PAIR ;
+             PAIR ;
+             UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR ; SWAP ; DUP } ;
+             UNPAIR ;
+             SWAP ;
+             DUP ;
+             DIG 3 ;
+             MUL ;
+             DUP ;
+             PUSH nat 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+             DUG 4 ;
+             DIG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             DIG 3 ;
+             IF_LEFT { DROP 1 ; ADD } { DROP 1 ; SWAP ; SUB } ;
+             PAIR ;
+             DUP ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 3 ;
+             DUG 3 ;
+             DROP 3 } ;
+         DIG 2 ;
+         UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         DUP 4 ;
+         DUP 6 ;
+         DUP 3 ;
+         PAIR ;
+         DUP 4 ;
+         PAIR ;
+         EXEC ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 2 } } }

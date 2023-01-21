@@ -1,0 +1,11 @@
+{ storage (map string int) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         PUSH string "id3" ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP ; PUSH int 3 ; SOME ; PUSH string "id3" ; UPDATE ; SWAP ; DROP 1 } ;
+         NIL operation ;
+         PAIR } }

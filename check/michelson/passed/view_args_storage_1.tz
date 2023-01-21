@@ -1,0 +1,40 @@
+{ storage (pair (option %res nat) (int %k) (string %str)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH bytes 0x123456 ;
+         PUSH string "toto" ;
+         PAIR ;
+         PUSH nat 1 ;
+         PAIR ;
+         VIEW "get" nat ;
+         SWAP ;
+         DROP 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } ;
+  view "get"
+       (pair nat string bytes)
+       nat
+       { UNPAIR ;
+         DIP 1 { CDR ; UNPAIR ; SWAP } ;
+         UNPAIR 3 ;
+         UNIT ;
+         DUP 5 ;
+         SIZE ;
+         DUP 7 ;
+         ABS ;
+         DUP 6 ;
+         SIZE ;
+         DUP 6 ;
+         SIZE ;
+         DUP 6 ;
+         ADD ;
+         ADD ;
+         ADD ;
+         ADD ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 5 } } }

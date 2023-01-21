@@ -1,0 +1,20 @@
+{ storage unit ;
+  parameter
+    (or (or (or (unit %e1) (unit %e2)) (or (unit %e3) (unit %e4)))
+        (or (or (unit %e5) (unit %e6)) (or (unit %e7) (unit %e8)))) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { IF_LEFT
+                   { DROP 1 ; NIL operation ; PAIR }
+                   { DROP 1 ; NIL operation ; PAIR } }
+               { IF_LEFT
+                   { DROP 1 ; NIL operation ; PAIR }
+                   { DROP 1 ; NIL operation ; PAIR } } }
+           { IF_LEFT
+               { IF_LEFT
+                   { DROP 1 ; NIL operation ; PAIR }
+                   { DROP 1 ; NIL operation ; PAIR } }
+               { IF_LEFT
+                   { DROP 1 ; NIL operation ; PAIR }
+                   { DROP 1 ; NIL operation ; PAIR } } } } }

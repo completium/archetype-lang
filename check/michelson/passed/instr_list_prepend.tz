@@ -1,0 +1,11 @@
+{ storage (list string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         PUSH string "0" ;
+         CONS ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

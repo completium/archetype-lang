@@ -1,0 +1,54 @@
+{ storage
+    (pair (pair %my_map
+             (big_map %values string (pair (nat %index) (bytes %value)))
+             (big_map %keys nat string)
+             (nat %size))
+          (bytes %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP ;
+         DUP ;
+         GET 4 ;
+         PUSH nat 1 ;
+         DUP 2 ;
+         DUP 2 ;
+         COMPARE ;
+         LE ;
+         LOOP { DUP 3 ;
+                GET 3 ;
+                DUP 2 ;
+                GET ;
+                IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+                DUP 4 ;
+                GET 1 ;
+                DUP 2 ;
+                GET ;
+                IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+                CDR ;
+                DUP ;
+                DUP 8 ;
+                CONCAT ;
+                DIP 1 { DIG 6 ; DROP 1 } ;
+                DUG 6 ;
+                DROP 2 ;
+                PUSH nat 1 ;
+                DUP 2 ;
+                ADD ;
+                SWAP ;
+                DROP 1 ;
+                DUP 2 ;
+                DUP 2 ;
+                COMPARE ;
+                LE } ;
+         DROP 3 ;
+         PUSH bytes 0x00010203 ;
+         DUP 3 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

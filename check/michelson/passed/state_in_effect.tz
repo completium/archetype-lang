@@ -1,0 +1,31 @@
+{ storage (pair (int %_state) (int %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH int 1 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         IF {} {} ;
+         DUP ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH int 0 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+            { DUP ;
+              PUSH int 1 ;
+              COMPARE ;
+              EQ ;
+              IF { PUSH int 0 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+                 { DUP ;
+                   PUSH int 2 ;
+                   COMPARE ;
+                   EQ ;
+                   IF { PUSH int 1 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+                      { PUSH int 2 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 } } } ;
+         DROP 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }
