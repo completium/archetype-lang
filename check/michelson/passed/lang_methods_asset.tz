@@ -222,8 +222,8 @@
                 COMPARE ;
                 GT ;
                 IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
                 DROP 2 } ;
          ITER { CONS } ;
          NIL string ;
@@ -302,8 +302,8 @@
                 EQ ;
                 IF { DUP ; SOME ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
                    { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
                 DROP 2 } ;
          CDR ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
@@ -332,8 +332,8 @@
                 LT ;
                 IF { DUP 3 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
                    { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
                 DROP 2 } ;
          CDR ;
          ITER { CONS } ;
@@ -356,8 +356,9 @@
                 LT ;
                 IF { DUP 2 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
                    { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
-                SWAP ;
-                DROP 2 } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
          CDR ;
          DROP 11 ;
          PAIR 2 ;

@@ -55,9 +55,11 @@
                     COMPARE ;
                     EQ ;
                     IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
-                    DROP 1 ;
                     SWAP ;
-                    DROP 2 } ;
+                    DROP 1 ;
+                    DIP 1 { DIG 1 ; DROP 1 } ;
+                    DUG 1 ;
+                    DROP 1 } ;
              ITER { CONS } ;
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;

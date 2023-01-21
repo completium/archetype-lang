@@ -2029,33 +2029,38 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       assign (dec_env env) id (T.cseq [fid; v; T.cupdate_n n])
     end
 
-  | Iif (c, t, e, ty) -> begin
+  | Iif (c, t, e, _ty) -> begin
       let c, env0 = fe env c in
       let t, envt = fe (dec_env env0) t in
       let e, enve = fe (dec_env env0) e in
 
       let env =
         match envt.fail, enve.fail with
-        | true, true  -> {env with fail = true}
-        | _           -> env
-      in
-      let env =
-        match ty.node with
-        | T.Tunit -> env
-        | _ -> inc_env env
+        | true, true  -> {envt with fail = true}
+        | true, _     -> enve
+        | _, true     -> envt
+        | _           -> enve
       in
       T.cseq [ c; T.cif ([t], [e]) ], env
     end
 
   | Iifnone (v, t, id, s, ty) -> begin
-      let v, _ = fe env v in
-      let t, _ = fe env t in
-      let e, _ = fe (add_var_env env id) s in
+      let v, env0 = fe env v in
+      let t, env1 = fe (dec_env env0) t in
+      let e, env2 = fe (add_var_env (dec_env env0) id) s in
+
+      let env =
+        match env1.fail, env2.fail with
+        | true, true  -> {env2 with fail = true}
+        | true, _     -> dec_env env2
+        | _, true     -> env1
+        | _           -> dec_env env2
+      in
 
       let ee, env =
         match ty.node with
         | T.Tunit -> [T.cdrop 1], env
-        | _       -> [T.cswap; T.cdrop 1], inc_env env
+        | _       -> [T.cswap; T.cdrop 1], env
       in
 
       T.cseq [ v; T.cifnone ([t], [e] @ ee) ], env

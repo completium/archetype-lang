@@ -12,8 +12,9 @@
                 COMPARE ;
                 GE ;
                 IF { DUP 2 ; DUP 2 ; CONS } { DUP 2 } ;
-                SWAP ;
-                DROP 2 } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
          ITER { CONS } ;
          ITER { DUP ; DUP 3 ; ADD ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
          DIP 1 { DIG 1 ; DROP 1 } ;

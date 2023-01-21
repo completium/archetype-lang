@@ -16,8 +16,8 @@
                 LT ;
                 IF { DUP 3 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
                    { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
                 DROP 2 } ;
          CDR ;
          ITER { CONS } ;
