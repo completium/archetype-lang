@@ -1767,6 +1767,9 @@ let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
 (* Format.eprintf "var %s: %i@." id n; *)
 
+let print_code ?(str="") (code : T.code) =
+  Format.eprintf "%s: %a@." str Printer_michelson.pp_code code
+
 let rec instruction_to_code env (i : T.instruction) : T.code * env =
   let fe env = instruction_to_code env in
   let f = fe env in
@@ -1922,11 +1925,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Iseq l               -> seq env l
 
   | IletIn (id, v, b, u)    -> begin
-      let v, _ = f v in
-      let env0 = add_var_env env id in
-      let b, _ = fe env0 b in
+      let v, env = f v in
+      let env = add_var_env (dec_env env) id in
+      (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
+      let b, env = fe env b in
+      (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
+      let not_consumed = List.exists (String.equal id) env.vars in
+      (* Format.eprintf "not_consumed %s: %b@." id not_consumed; *)
       if u
-      then T.cseq [v; b; T.cdrop 1], env
+      then T.cseq ([v; b] @ (if not_consumed then [T.cdrop 1] else [])), env
       else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env
     end
 
@@ -1950,7 +1957,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       if av.av_source_no_dup
       then begin
         if av.av_value_no_dup
-        then (T.cseq []), env
+        then (T.cseq (if n == 0 then [] else [T.cdig n])), dig_env n env
         else begin
           let c =
             if n = 0
@@ -1960,7 +1967,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
               ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_index)]))) av.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
               ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_index)]) @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
-          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), inc_env env
+          let nenv = inc_env env in
+          print_env ~str:"Ivar_access" nenv;
+          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), nenv
         end
       end
       else begin
@@ -2070,17 +2079,19 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iiter (ids, c, b) -> begin
-      let c, _ = f c in
+      let c, env = f c in
       match ids with
       | [id] -> begin
-          let env0 = add_var_env env id in
-          let b, _ = fe env0 b in
-          T.cseq T.[c; citer [b; cdrop 1]] , env
+          let nenv = dec_env env in
+          let env_body = add_var_env nenv id in
+          let b, _ = fe env_body b in
+          T.cseq T.[c; citer [b; cdrop 1]], nenv
         end
       | [k; v] -> begin
-          let env0 = add_var_env (add_var_env env v) k in
-          let b, _ = fe env0 b in
-          T.cseq T.[c; citer [cunpair; b; cdrop 2]] , env
+          let nenv = dec_env env in
+          let env_body = add_var_env (add_var_env nenv v) k in
+          let b, _ = fe env_body b in
+          T.cseq T.[c; citer [cunpair; b; cdrop 2]] , nenv
         end
       | _ -> assert false
     end
