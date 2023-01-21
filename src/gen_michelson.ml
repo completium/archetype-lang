@@ -2104,9 +2104,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Ilambda (rt, id, at, e) -> begin
-      let e, _env = fe (add_var_env env id) e in
+      let e, env = fe (add_var_env env id) e in
 
-      T.clambda (rt, at, T.[e; cswap; cdrop 1]), env
+      T.clambda (rt, at, T.[e; cswap; cdrop 1]), dec_env env
     end
 
   | Izop op -> begin
