@@ -49,7 +49,8 @@
              COMPARE ;
              EQ ;
              IF { DUP 4 ; GET 1 ; GET 3 } { DUP 4 ; GET 1 ; GET 3 } ;
-             DIP 1 { DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
              DUP 4 ;
              PAIR ;
              EXEC ;

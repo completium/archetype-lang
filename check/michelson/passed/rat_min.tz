@@ -38,8 +38,10 @@
          PAIR ;
          EXEC ;
          IF { DUP 2 } { DUP } ;
-         DIP 1 { DROP 1 } ;
-         DIP 1 { DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
          SWAP ;
          DROP 1 ;
          DUP 2 ;
@@ -71,8 +73,10 @@
          PAIR ;
          EXEC ;
          IF { DUP 2 } { DUP } ;
-         DIP 1 { DROP 1 } ;
-         DIP 1 { DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
          SWAP ;
          DROP 1 ;
          DUP 2 ;

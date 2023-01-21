@@ -47,7 +47,8 @@
                 DUP ;
                 DUP 4 ;
                 ADD ;
-                DIP 1 { DROP 1 } ;
+                SWAP ;
+                DROP 1 ;
                 DIP 1 { DIG 1 ; DROP 1 } ;
                 DUG 1 ;
                 DROP 1 } ;

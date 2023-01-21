@@ -10,9 +10,8 @@
                 COMPARE ;
                 LE ;
                 IF { DUP 2 ; DUP 2 ; CONS } { DUP 2 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
-                DROP 1 } ;
+                SWAP ;
+                DROP 2 } ;
          ITER { CONS } ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;

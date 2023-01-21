@@ -1734,25 +1734,26 @@ let concrete_michelson b : T.code =
 
 type env = {
   vars : ident list;
-  vars_no_dup  : ident list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(vars=[]) () = { vars = vars; fail = false; vars_no_dup = [] }
+let mk_env ?(vars=[]) () = { vars = vars; fail = false; }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
 let dig_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
-let is_var_no_dup (id : ident) (env : env) : bool = List.mem id env.vars_no_dup
-let add_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = id::env.vars_no_dup }
-let add_vars_no_dup (ids : ident list) (env : env) : env = {env with vars_no_dup = ids @ env.vars_no_dup }
-let remove_var_no_dup (id : ident) (env : env) : env = {env with vars_no_dup = (List.remove_if (fun x -> String.equal x id) env.vars_no_dup)}
 let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
   | v -> v
+let index_of_id_in_env (env : env) id =
+  List.index_of (String.equal id) env.vars
+let rm_var_env (env : env) id =
+  let n = get_sp_for_id env id in
+  let vars = Tools.List.remove_idx n env.vars in
+  { env with vars = vars }
 let head_env (env : env) id =
   let i = get_sp_for_id env id in
   let rec remove i = function
@@ -1798,12 +1799,16 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   let assign env id v =
     let n = get_sp_for_id env id in
-    let c =
-      if n <= 0
-      then T.cseq [ v; T.cswap; T.cdrop 1 ]
-      else T.cseq [ v; (T.cdip (1, [T.cdig n; T.cdrop 1])); T.cdug n]
+    print_env ~str:("assign:before " ^ id) env;
+    Format.eprintf "assign n: %d@." n;
+    let c, nenv =
+      match n with
+      | 0 -> T.cseq [], env
+      | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
+      | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
     in
-    c, env
+    print_env ~str:("assign:after " ^ id) nenv;
+    c, nenv
   in
 
   let z_op_to_code = function
@@ -1924,17 +1929,27 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   match i with
   | Iseq l               -> seq env l
 
-  | IletIn (id, v, b, u)    -> begin
+  | IletIn (id, v, b, _u)    -> begin
       let v, env = f v in
       let env = add_var_env (dec_env env) id in
-      (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
+      print_env ~str:("IletIn " ^ id ^ " before") env;
       let b, env = fe env b in
-      (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
-      let not_consumed = List.exists (String.equal id) env.vars in
-      (* Format.eprintf "not_consumed %s: %b@." id not_consumed; *)
-      if u
-      then T.cseq ([v; b] @ (if not_consumed then [T.cdrop 1] else [])), env
-      else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env
+      print_env ~str:("IletIn " ^ id ^ " after") env;
+      let idx = index_of_id_in_env env id in
+      let c, nenv =
+        match idx with
+        | -1 -> T.cseq [v; b], env
+        | 0 -> T.cseq [v; b; T.cdrop 1], dec_env env
+        | 1 -> T.cseq [v; b; T.cswap; T.cdrop 1 ], rm_var_env env id
+        | _ -> T.cseq [v; b; T.cdip (idx, [T.cdrop 1])], rm_var_env env id
+      in
+      print_env ~str:("IletIn " ^ id ^ " final") nenv;
+      c, nenv
+      (* let not_consumed = List.exists (String.equal id) env.vars in
+         Format.eprintf "not_consumed %s: %b@." id not_consumed;
+         if u
+         then T.cseq ([v; b] @ (if not_consumed then [T.cdrop 1] else [])), (if not_consumed then dec_env env else env)
+         else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env *)
     end
 
   | Ivar id -> begin
@@ -2001,13 +2016,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iassign (id, v)  -> begin
-      let v, _ = f v in
+      print_env ~str:("Iassign:before " ^ id) env;
+      let v, env = f v in
+      print_env ~str:("Iassign:after " ^ id) env;
       assign env id v
     end
 
   | Iassigntuple (id, i, l, v) -> begin
-      let fid, env0   = fe env (Ivar id) in
-      let v, _ = fe env0 v in
+      let fid, env = f (Ivar id) in
+      let v, env = fe env v in
       let n = if i = l - 1 then i * 2 else i * 2 + 1 in
       assign env id (T.cseq [fid; v; T.cupdate_n n])
     end

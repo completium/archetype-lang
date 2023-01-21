@@ -20,7 +20,8 @@
                        COMPARE ;
                        EQ ;
                        IF { PUSH int 2592000 } { PUSH int 7776000 } } } ;
-             DIP 1 { DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
              SWAP ;
              DROP 1 ;
              DUG 1 ;

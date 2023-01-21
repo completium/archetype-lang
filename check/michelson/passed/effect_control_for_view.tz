@@ -11,9 +11,8 @@
                 COMPARE ;
                 GT ;
                 IF { DUP 2 ; DUP 2 ; CONS } { DUP 2 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
-                DROP 1 } ;
+                SWAP ;
+                DROP 2 } ;
          ITER { CONS } ;
          PUSH int 0 ;
          DIP 1 { DIG 2 ; DROP 1 } ;

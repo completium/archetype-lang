@@ -29,8 +29,10 @@
                               { DUP 2 ; DUP 5 ; CONS ; DUP 4 ; PAIR } ;
                            SWAP ;
                            DROP 1 } ;
-                       DIP 1 { DROP 1 } ;
-                       DIP 1 { DROP 1 } ;
+                       SWAP ;
+                       DROP 1 ;
+                       SWAP ;
+                       DROP 1 ;
                        DIP 1 { DIG 1 ; DROP 1 } ;
                        DUG 1 ;
                        DROP 1 } ;
@@ -42,9 +44,12 @@
                 DUP 3 ;
                 IF_NONE { DUP 2 } { DUP 3 ; DUP 7 ; CONS ; SWAP ; DROP 1 } ;
                 ITER { CONS } ;
-                DIP 1 { DROP 1 } ;
-                DIP 1 { DROP 1 } ;
-                DIP 1 { DROP 1 } ;
+                SWAP ;
+                DROP 1 ;
+                SWAP ;
+                DROP 1 ;
+                SWAP ;
+                DROP 1 ;
                 DIP 1 { DIG 1 ; DROP 1 } ;
                 DUG 1 ;
                 DROP 1 } ;
@@ -59,9 +64,8 @@
                 EQ ;
                 IF { DUP ; SOME ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
                    { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
-                DROP 1 } ;
+                SWAP ;
+                DROP 2 } ;
          CDR ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
          DUP ;

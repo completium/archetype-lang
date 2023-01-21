@@ -45,15 +45,18 @@
                                      COMPARE ;
                                      LT ;
                                      IF { PUSH int 1 } { PUSH int 0 } } } ;
-                           DIP 1 { DROP 1 } ;
+                           SWAP ;
+                           DROP 1 ;
                            COMPARE ;
                            GT ;
                            IF { DUP 2 ; DUP 7 ; CONS ; DUP 5 ; CONS ; NONE string ; PAIR }
                               { DUP 2 ; DUP 5 ; CONS ; DUP 4 ; PAIR } ;
                            SWAP ;
                            DROP 1 } ;
-                       DIP 1 { DROP 1 } ;
-                       DIP 1 { DROP 1 } ;
+                       SWAP ;
+                       DROP 1 ;
+                       SWAP ;
+                       DROP 1 ;
                        DIP 1 { DIG 1 ; DROP 1 } ;
                        DUG 1 ;
                        DROP 1 } ;
@@ -65,9 +68,12 @@
                 DUP 3 ;
                 IF_NONE { DUP 2 } { DUP 3 ; DUP 7 ; CONS ; SWAP ; DROP 1 } ;
                 ITER { CONS } ;
-                DIP 1 { DROP 1 } ;
-                DIP 1 { DROP 1 } ;
-                DIP 1 { DROP 1 } ;
+                SWAP ;
+                DROP 1 ;
+                SWAP ;
+                DROP 1 ;
+                SWAP ;
+                DROP 1 ;
                 DIP 1 { DIG 2 ; DROP 1 } ;
                 DUG 2 ;
                 DROP 2 } ;

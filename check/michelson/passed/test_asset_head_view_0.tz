@@ -14,9 +14,8 @@
                 COMPARE ;
                 GE ;
                 IF { DUP 2 ; DUP 2 ; CONS } { DUP 2 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
-                DROP 1 } ;
+                SWAP ;
+                DROP 2 } ;
          ITER { CONS } ;
          ITER { DUP 4 ;
                 DUP 3 ;
@@ -25,9 +24,8 @@
                 LT ;
                 IF { DUP 2 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
                    { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
-                DROP 1 } ;
+                SWAP ;
+                DROP 2 } ;
          CDR ;
          ITER { CONS } ;
          DIP 1 { DIG 2 ; DROP 1 } ;
