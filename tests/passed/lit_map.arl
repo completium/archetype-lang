@@ -1,0 +1,7 @@
+archetype lit_map
+
+variable res : map<nat, string> = []
+
+entry exec() {
+  res := [(0, "0"); (1, "1"); (2, "2")]
+}

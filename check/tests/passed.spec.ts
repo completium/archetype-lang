@@ -787,6 +787,7 @@ import * as list_nth_out_of_bound from '../bindings/passed/list_nth_out_of_bound
 import * as list_option from '../bindings/passed/list_option'
 import * as list_or from '../bindings/passed/list_or'
 import * as lit_list from '../bindings/passed/lit_list'
+import * as lit_map from '../bindings/passed/lit_map'
 import * as lit_set from '../bindings/passed/lit_set'
 import * as lit_tez_underscore from '../bindings/passed/lit_tez_underscore'
 import * as literal_in_argument from '../bindings/passed/literal_in_argument'
@@ -1152,6 +1153,7 @@ import * as test_update from '../bindings/passed/test_update'
 import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
+import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_record_list_var from '../bindings/passed/ticket_record_list_var'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
@@ -7167,6 +7169,21 @@ describe('passed', async () => {
     assert(res_after[2].equals(new Nat(2)))
   })
 
+  it('lit_map', async () => {
+    await lit_map.lit_map.deploy({ as: alice })
+    const res_before = await lit_map.lit_map.get_res();
+    assert(res_before.length == 0)
+    await lit_map.lit_map.exec({ as: alice })
+    const res_after = await lit_map.lit_map.get_res();
+    assert(res_after.length == 3)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
+    assert(res_after[1][0].equals(new Nat(1)))
+    assert(res_after[1][1] == "1")
+    assert(res_after[2][0].equals(new Nat(2)))
+    assert(res_after[2][1] == "2")
+  })
+
   it('lit_set', async () => {
     await lit_set.lit_set.deploy({ as: alice })
     const res_before = await lit_set.lit_set.get_res();
@@ -9126,6 +9143,19 @@ describe('passed', async () => {
     await ticket_create_ticket.ticket_create_ticket.exec({ as: alice });
     const t_after = await ticket_create_ticket.ticket_create_ticket.get_t();
     assert(t_after.equals(Option.Some(new Ticket<string>(ticket_create_ticket.ticket_create_ticket.get_address(), "mystr", new Nat(10)))))
+  })
+
+  it('ticket_read_ticket', async () => {
+    await ticket_read_ticket.ticket_read_ticket.deploy({ as: alice })
+    const res_before = await ticket_read_ticket.ticket_read_ticket.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat (0)))
+    await ticket_read_ticket.ticket_read_ticket.exec({ as: alice })
+    // const res_after = await ticket_read_ticket.ticket_read_ticket.get_res()
+    // assert(res_after[0].equals(ticket_read_ticket.ticket_read_ticket.get_address()))
+    // assert(res_after[1] == "my_ticket")
+    // assert(res_after[2].equals(new Nat (10)))
   })
 
   it('ticket_record_list_var', async () => {
