@@ -1,0 +1,49 @@
+{ storage (big_map int nat) ;
+  parameter (pair %transfer (int %from_) (pair (int %to_) (nat %value))) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         UNPAIR ;
+         SWAP ;
+         DUP 4 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DUP 5 ;
+         PUSH nat 1 ;
+         DUP 4 ;
+         ADD ;
+         DUP 3 ;
+         ADD ;
+         SOME ;
+         DUP 5 ;
+         UPDATE ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 1 ;
+         DUP 4 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DUP 5 ;
+         PUSH int 0 ;
+         DUP 4 ;
+         INT ;
+         DUP 4 ;
+         SUB ;
+         COMPARE ;
+         GE ;
+         IF { DUP 3 ; INT ; DUP 3 ; SUB ; ABS }
+            { PUSH string "NAT_NEG_ASSIGN" ; FAILWITH } ;
+         SOME ;
+         DUP 6 ;
+         UPDATE ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 4 ;
+         NIL operation ;
+         PAIR } }

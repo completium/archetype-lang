@@ -1,0 +1,17 @@
+{ storage (pair (nat %total) (nat %power)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH key_hash "tz1MZrh8CvYkp7BfLQMcm6mg5FvL5HRZfACw" ;
+         TOTAL_VOTING_POWER ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP ;
+         VOTING_POWER ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

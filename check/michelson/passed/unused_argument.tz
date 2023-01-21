@@ -1,0 +1,11 @@
+{ storage nat ;
+  parameter (pair %e (string %s) (nat %i)) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         DUP ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,28 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 0 ;
+         SWAP ;
+         DROP 1 ;
+         PUSH int 3 ;
+         DUP 2 ;
+         COMPARE ;
+         LT ;
+         LOOP { PUSH int 1 ;
+                DUP 2 ;
+                ADD ;
+                SWAP ;
+                DROP 1 ;
+                PUSH int 3 ;
+                DUP 2 ;
+                COMPARE ;
+                LT } ;
+         PUSH int 3 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

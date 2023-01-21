@@ -1,0 +1,26 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 3600 ;
+         PUSH nat 2 ;
+         PUSH int 1 ;
+         PAIR ;
+         PAIR ;
+         UNPAIR ;
+         UNPAIR ;
+         DIG 2 ;
+         MUL ;
+         EDIV ;
+         IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+         CAR ;
+         SWAP ;
+         DROP 1 ;
+         PUSH int 1800 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

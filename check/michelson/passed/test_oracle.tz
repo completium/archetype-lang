@@ -1,0 +1,34 @@
+{ storage (pair string timestamp nat) ;
+  parameter (or (pair %update_value string timestamp nat) (unit %exec)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         IF_LEFT
+           { DUP ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { DROP 1 ;
+             PUSH address "KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r" ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             CONTRACT %get (pair string (contract (pair string timestamp nat))) ;
+             IF_NONE
+               { PUSH string "get" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             SELF_ADDRESS ;
+             CONTRACT %update_value (pair string timestamp nat) ;
+             IF_NONE
+               { PUSH string "update_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH string "XTZ-USD" ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR } } }

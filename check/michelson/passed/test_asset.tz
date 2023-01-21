@@ -1,0 +1,20 @@
+{ storage
+    (pair (map %my_asset_simple string int)
+          (map %my_asset int (set string))
+          (map %my_asset_all address (pair (int %k) (bool %b)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         DUP 3 ;
+         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset_all" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

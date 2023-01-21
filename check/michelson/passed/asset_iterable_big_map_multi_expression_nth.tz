@@ -1,0 +1,65 @@
+{ storage
+    (pair (pair %my_asset
+             (big_map %values string (pair (nat %index) (pair %value (nat %value) (bytes %data))))
+             (big_map %keys nat string)
+             (nat %size))
+          (string %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         NONE string ;
+         PUSH nat 0 ;
+         PAIR ;
+         DUP 2 ;
+         DUP ;
+         GET 4 ;
+         PUSH nat 1 ;
+         DUP 2 ;
+         DUP 2 ;
+         COMPARE ;
+         LE ;
+         LOOP { DUP 3 ;
+                GET 3 ;
+                DUP 2 ;
+                GET ;
+                IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+                DUP 4 ;
+                GET 1 ;
+                DUP 2 ;
+                GET ;
+                IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+                CDR ;
+                PUSH nat 1 ;
+                DUP 7 ;
+                GET 1 ;
+                COMPARE ;
+                EQ ;
+                IF { DUP 2 ; SOME ; PUSH nat 1 ; DUP 8 ; GET 1 ; ADD ; PAIR }
+                   { DUP 6 ; GET 2 ; PUSH nat 1 ; DUP 8 ; GET 1 ; ADD ; PAIR } ;
+                DIP 1 { DIG 5 ; DROP 1 } ;
+                DUG 5 ;
+                DROP 2 ;
+                PUSH nat 1 ;
+                DUP 2 ;
+                ADD ;
+                SWAP ;
+                DROP 1 ;
+                DUP 2 ;
+                DUP 2 ;
+                COMPARE ;
+                LE } ;
+         DROP 3 ;
+         CDR ;
+         IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PUSH string "id1" ;
+         DUP 3 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

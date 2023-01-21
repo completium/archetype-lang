@@ -1,0 +1,40 @@
+{ storage
+    (pair (set %my_asset_simple nat)
+          (map %my_asset string (pair (int %value) (set %myaggregate nat)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP ;
+         PUSH nat 1 ;
+         MEM ;
+         DUP 2 ;
+         PUSH nat 2 ;
+         MEM ;
+         AND ;
+         DUP 2 ;
+         PUSH nat 3 ;
+         MEM ;
+         AND ;
+         IF { DUP 2 ;
+              EMPTY_SET nat ;
+              PUSH bool True ;
+              PUSH nat 1 ;
+              UPDATE ;
+              PUSH bool True ;
+              PUSH nat 2 ;
+              UPDATE ;
+              PUSH bool True ;
+              PUSH nat 3 ;
+              UPDATE ;
+              PUSH int 3 ;
+              PAIR ;
+              SOME ;
+              PUSH string "my_id" ;
+              UPDATE ;
+              DIP 1 { DIG 1 ; DROP 1 } ;
+              DUG 1 }
+            { PUSH string "NOT_FOUND" ; FAILWITH } ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

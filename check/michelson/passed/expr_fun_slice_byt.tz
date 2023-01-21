@@ -1,0 +1,12 @@
+{ storage (option bytes) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bytes 0xabcdef01 ;
+         PUSH nat 2 ;
+         PUSH nat 1 ;
+         SLICE ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

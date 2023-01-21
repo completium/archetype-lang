@@ -1,0 +1,3 @@
+{ storage chain_id ;
+  parameter (unit %exec) ;
+  code { UNPAIR ; DROP 1 ; CHAIN_ID ; SWAP ; DROP 1 ; NIL operation ; PAIR } }

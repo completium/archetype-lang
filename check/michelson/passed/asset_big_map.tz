@@ -1,0 +1,202 @@
+{ storage
+    (pair (map %o_asset int string)
+          (big_map %my_asset string (pair (int %value) (set %col int)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH string "id3" ;
+         DUP 3 ;
+         DUP 2 ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 3 ;
+              EMPTY_SET int ;
+              PUSH int 0 ;
+              PAIR ;
+              SOME ;
+              DUP 3 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
+         DUP 3 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DUP 4 ;
+         DUP 5 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         DROP 1 ;
+         PUSH int 2 ;
+         DUP 4 ;
+         GET 1 ;
+         ADD ;
+         PAIR ;
+         SOME ;
+         DUP 4 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 1 ;
+         DUP 3 ;
+         DUP 2 ;
+         MEM ;
+         IF { DUP 3 ;
+              DUP 2 ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              DUP 4 ;
+              DUP 5 ;
+              DUP 4 ;
+              GET ;
+              IF_NONE
+                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                {} ;
+              UNPAIR ;
+              DROP 1 ;
+              PUSH int 3 ;
+              DUP 4 ;
+              GET 1 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              DUP 4 ;
+              UPDATE ;
+              DIP 1 { DIG 3 ; DROP 1 } ;
+              DUG 3 ;
+              DROP 1 }
+            { DUP 3 ;
+              EMPTY_SET int ;
+              PUSH int 3 ;
+              PUSH int 0 ;
+              ADD ;
+              PAIR ;
+              SOME ;
+              DUP 3 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
+         DUP 3 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         ITER { DUP 3 ;
+                NONE string ;
+                DUP 3 ;
+                UPDATE ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 1 } ;
+         DUP 3 ;
+         NONE (pair int (set int)) ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         PUSH string "id0" ;
+         DUP 3 ;
+         PUSH int 0 ;
+         MEM ;
+         IF { PUSH string "o_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 3 ;
+              PUSH string "ovalue" ;
+              SOME ;
+              PUSH int 0 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
+         DUP 4 ;
+         DUP 5 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         DUP 6 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         PUSH bool True ;
+         PUSH int 0 ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         SOME ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 3 ;
+         NONE string ;
+         PUSH int 0 ;
+         UPDATE ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP 4 ;
+         DUP 5 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         UNPAIR ;
+         SWAP ;
+         DROP 1 ;
+         DUP 6 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         PUSH bool False ;
+         PUSH int 0 ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         SOME ;
+         DUP 3 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 4 ;
+         DUP 2 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CAR ;
+         PUSH int 0 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DUP 5 ;
+         DUP 3 ;
+         MEM ;
+         DUP ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DROP 4 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

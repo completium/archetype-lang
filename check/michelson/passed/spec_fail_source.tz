@@ -1,0 +1,12 @@
+{ storage address ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         SOURCE ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_SOURCE" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,6 @@
+{ storage
+    (pair (big_map %values string (pair (nat %index) (nat %value)))
+          (big_map %keys nat string)
+          (nat %size)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

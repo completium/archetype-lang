@@ -1,0 +1,40 @@
+{ storage
+    (pair (pair (nat %a) (nat %b))
+          (pair (pair (nat %c) (nat %d)) (pair (nat %e) (nat %f) (nat %g) (nat %h)) (nat %i))
+          (nat %j)
+          (pair (nat %k) (nat %l))
+          (nat %m)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 15 ;
+         PUSH nat 12 ;
+         PUSH nat 11 ;
+         PUSH nat 10 ;
+         PAIR ;
+         PAIR ;
+         PUSH nat 9 ;
+         PAIR ;
+         PUSH nat 8 ;
+         PUSH nat 7 ;
+         PUSH nat 6 ;
+         PAIR ;
+         PUSH nat 5 ;
+         PAIR ;
+         DUP 4 ;
+         PAIR ;
+         PAIR ;
+         PUSH nat 3 ;
+         PUSH nat 2 ;
+         PAIR ;
+         PAIR ;
+         PAIR ;
+         PUSH nat 1 ;
+         PUSH nat 0 ;
+         PAIR ;
+         PAIR ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,43 @@
+{ storage (map int nat) ;
+  parameter (int %update) ;
+  code { LAMBDA
+           int
+           int
+           { PUSH unit Unit ;
+             DUP 2 ;
+             DUP ;
+             PUSH int 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH int 0 }
+                { DUP ;
+                  PUSH int 1 ;
+                  COMPARE ;
+                  EQ ;
+                  IF { PUSH int 604800 }
+                     { DUP ;
+                       PUSH int 2 ;
+                       COMPARE ;
+                       EQ ;
+                       IF { PUSH int 2592000 } { PUSH int 7776000 } } } ;
+             DIP 1 { DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             DUG 1 ;
+             DROP 1 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DUP 3 ;
+         DUP 2 ;
+         EXEC ;
+         DUP 3 ;
+         PUSH nat 0 ;
+         SOME ;
+         DUP 4 ;
+         UPDATE ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

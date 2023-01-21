@@ -1,0 +1,10 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bool True ;
+         DUP ;
+         DIP 1 { DROP 1 } ;
+         IF { PUSH bool True ; SWAP ; DROP 1 } { PUSH string "ERROR" ; FAILWITH } ;
+         NIL operation ;
+         PAIR } }

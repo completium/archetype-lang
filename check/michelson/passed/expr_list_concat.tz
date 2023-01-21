@@ -1,0 +1,28 @@
+{ storage (list string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL string ;
+         PUSH string "3" ;
+         CONS ;
+         PUSH string "2" ;
+         CONS ;
+         PUSH string "1" ;
+         CONS ;
+         NIL string ;
+         PUSH string "6" ;
+         CONS ;
+         PUSH string "5" ;
+         CONS ;
+         PUSH string "4" ;
+         CONS ;
+         DUP ;
+         NIL string ;
+         DUP 4 ;
+         ITER { CONS } ;
+         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

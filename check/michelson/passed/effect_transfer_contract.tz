@@ -1,0 +1,24 @@
+{ storage address ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         NIL operation ;
+         NIL operation ;
+         DUP 4 ;
+         ITER { CONS } ;
+         DUP 3 ;
+         CONTRACT %set_value int ;
+         IF_NONE
+           { PUSH string "set_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         PUSH mutez 1000000 ;
+         PUSH int 1 ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DIG 1 ;
+         PAIR } }

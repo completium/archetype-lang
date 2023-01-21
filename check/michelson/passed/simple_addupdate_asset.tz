@@ -1,0 +1,20 @@
+{ storage (map nat (pair (nat %value1) (string %value2))) ;
+  parameter
+    (pair %update (nat %idToChange) (pair (nat %newValue1) (string %newValue2))) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         UNPAIR ;
+         SWAP ;
+         DUP 4 ;
+         DUP 2 ;
+         DUP 4 ;
+         PAIR ;
+         SOME ;
+         DUP 5 ;
+         UPDATE ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 3 ;
+         NIL operation ;
+         PAIR } }

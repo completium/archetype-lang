@@ -1,0 +1,16 @@
+{ storage (map nat string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         PUSH nat 2 ;
+         PUSH string "str" ;
+         DIG 3 ;
+         DUP 2 ;
+         SOME ;
+         DUP 5 ;
+         UPDATE ;
+         DUG 3 ;
+         DROP 3 ;
+         NIL operation ;
+         PAIR } }

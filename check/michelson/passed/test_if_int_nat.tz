@@ -1,0 +1,12 @@
+{ storage int ;
+  parameter (pair %exec (nat %a) (int %b)) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         PUSH bool True ;
+         IF { DUP 2 ; INT } { DUP } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

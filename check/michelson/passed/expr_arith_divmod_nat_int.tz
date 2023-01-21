@@ -1,0 +1,11 @@
+{ storage (option (pair int nat)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 2 ;
+         PUSH nat 9 ;
+         EDIV ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

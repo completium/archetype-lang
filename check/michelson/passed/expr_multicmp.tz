@@ -1,0 +1,18 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         PUSH nat 1 ;
+         COMPARE ;
+         LT ;
+         IF { PUSH nat 3 ;
+              PUSH nat 2 ;
+              COMPARE ;
+              LE ;
+              IF { PUSH bool True } { PUSH bool False } }
+            { PUSH bool False } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

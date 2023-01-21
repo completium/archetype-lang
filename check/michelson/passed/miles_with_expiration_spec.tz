@@ -1,0 +1,388 @@
+{ storage
+    (pair (address %admin)
+          (map %mile string (pair (int %amount) (timestamp %expiration)))
+          (map %owner address (set string))) ;
+  parameter
+    (or (or (pair %add
+               (address %ow)
+               (pair (string %newmile_id)
+                     (pair (int %newmile_amount) (timestamp %newmile_expiration))))
+            (pair %consume (address %a) (int %quantity)))
+        (unit %clear_expired)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         IF_LEFT
+           { IF_LEFT
+               { UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 DUP 5 ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                 PUSH int 0 ;
+                 DUP 3 ;
+                 COMPARE ;
+                 GT ;
+                 NOT ;
+                 IF { PUSH string "c1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                 DUP 6 ;
+                 DUP 4 ;
+                 MEM ;
+                 IF { PUSH string "c2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                 DUP 7 ;
+                 DUP 5 ;
+                 MEM ;
+                 IF { DUP 6 ;
+                      DUP 4 ;
+                      MEM ;
+                      NOT ;
+                      IF { DUP 7 ;
+                           DUP 5 ;
+                           GET ;
+                           IF_NONE
+                             { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                             {} ;
+                           DUP 8 ;
+                           DUP 2 ;
+                           PUSH bool True ;
+                           DUP 7 ;
+                           UPDATE ;
+                           SOME ;
+                           DUP 7 ;
+                           UPDATE ;
+                           DIP 1 { DIG 7 ; DROP 1 } ;
+                           DUG 7 ;
+                           DUP 7 ;
+                           DUP 3 ;
+                           DUP 5 ;
+                           PAIR ;
+                           SOME ;
+                           DUP 6 ;
+                           UPDATE ;
+                           DIP 1 { DIG 6 ; DROP 1 } ;
+                           DUG 6 ;
+                           DROP 1 }
+                         { PUSH string "owner" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH } }
+                    { DUP 6 ;
+                      DUP 4 ;
+                      MEM ;
+                      IF { PUSH string "mile" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                         { DUP 7 ;
+                           EMPTY_SET string ;
+                           PUSH bool True ;
+                           DUP 6 ;
+                           UPDATE ;
+                           SOME ;
+                           DUP 6 ;
+                           UPDATE ;
+                           DIP 1 { DIG 6 ; DROP 1 } ;
+                           DUG 6 ;
+                           DUP 6 ;
+                           DUP 2 ;
+                           DUP 4 ;
+                           PAIR ;
+                           SOME ;
+                           DUP 5 ;
+                           UPDATE ;
+                           DIP 1 { DIG 5 ; DROP 1 } ;
+                           DUG 5 } } ;
+                 DROP 4 ;
+                 PAIR 3 ;
+                 NIL operation ;
+                 PAIR }
+               { UNPAIR ;
+                 SWAP ;
+                 DUP 3 ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                 PUSH int 0 ;
+                 DUP 2 ;
+                 COMPARE ;
+                 GE ;
+                 NOT ;
+                 IF { PUSH string "r2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                 NIL string ;
+                 NIL string ;
+                 NIL string ;
+                 DUP 8 ;
+                 DUP 6 ;
+                 GET ;
+                 IF_NONE
+                   { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                   {} ;
+                 ITER { DUP 8 ;
+                        DUP 2 ;
+                        GET ;
+                        IF_NONE
+                          { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                          {} ;
+                        NIL string ;
+                        DUP 3 ;
+                        SOME ;
+                        PAIR ;
+                        DUP 4 ;
+                        ITER { DUP 2 ;
+                               GET 1 ;
+                               DUP 3 ;
+                               GET 2 ;
+                               DUP 2 ;
+                               IF_NONE
+                                 { DUP ; DUP 4 ; CONS ; DUP 3 ; PAIR }
+                                 { PUSH int 0 ;
+                                   DUP 15 ;
+                                   DUP 6 ;
+                                   GET ;
+                                   IF_NONE
+                                     { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                     {} ;
+                                   DUP 8 ;
+                                   GET 2 ;
+                                   DUP 2 ;
+                                   GET 2 ;
+                                   COMPARE ;
+                                   GT ;
+                                   IF { PUSH int 1 } { PUSH int 0 } ;
+                                   DIP 1 { DROP 1 } ;
+                                   COMPARE ;
+                                   GT ;
+                                   IF { DUP 2 ; DUP 8 ; CONS ; DUP 5 ; CONS ; NONE string ; PAIR }
+                                      { DUP 2 ; DUP 5 ; CONS ; DUP 4 ; PAIR } ;
+                                   SWAP ;
+                                   DROP 1 } ;
+                               DIP 1 { DROP 1 } ;
+                               DIP 1 { DROP 1 } ;
+                               DIP 1 { DIG 1 ; DROP 1 } ;
+                               DUG 1 ;
+                               DROP 1 } ;
+                        DUP ;
+                        GET 1 ;
+                        DUP 2 ;
+                        GET 2 ;
+                        NIL string ;
+                        DUP 3 ;
+                        IF_NONE { DUP 2 } { DUP 3 ; DUP 8 ; CONS ; SWAP ; DROP 1 } ;
+                        ITER { CONS } ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DIG 1 ; DROP 1 } ;
+                        DUG 1 ;
+                        DROP 1 } ;
+                 ITER { DUP 7 ;
+                        DUP 2 ;
+                        GET ;
+                        IF_NONE
+                          { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                          {} ;
+                        NOW ;
+                        DUP 2 ;
+                        GET 2 ;
+                        COMPARE ;
+                        GT ;
+                        IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DIG 1 ; DROP 1 } ;
+                        DUG 1 ;
+                        DROP 1 } ;
+                 ITER { CONS } ;
+                 DUP 2 ;
+                 PUSH int 0 ;
+                 DUP 3 ;
+                 ITER { DUP 8 ;
+                        DUP 2 ;
+                        GET ;
+                        IF_NONE
+                          { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                          {} ;
+                        DUP ;
+                        GET 1 ;
+                        DUP 4 ;
+                        ADD ;
+                        DIP 1 { DROP 1 } ;
+                        DIP 1 { DIG 1 ; DROP 1 } ;
+                        DUG 1 ;
+                        DROP 1 } ;
+                 COMPARE ;
+                 GE ;
+                 NOT ;
+                 IF { PUSH string "NotEnoughMiles" ; FAILWITH } {} ;
+                 DUP 2 ;
+                 DUP 2 ;
+                 ITER { PUSH int 0 ;
+                        DUP 3 ;
+                        COMPARE ;
+                        GT ;
+                        IF { DUP 2 ;
+                             DUP 8 ;
+                             DUP 3 ;
+                             GET ;
+                             IF_NONE
+                               { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                               {} ;
+                             CAR ;
+                             COMPARE ;
+                             GT ;
+                             IF { DUP 7 ;
+                                  DUP 2 ;
+                                  GET ;
+                                  IF_NONE
+                                    { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                    {} ;
+                                  DUP 8 ;
+                                  DUP 9 ;
+                                  DUP 4 ;
+                                  GET ;
+                                  IF_NONE
+                                    { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                    {} ;
+                                  UNPAIR ;
+                                  DROP 1 ;
+                                  DUP 5 ;
+                                  DUP 4 ;
+                                  GET 1 ;
+                                  SUB ;
+                                  PAIR ;
+                                  SOME ;
+                                  DUP 4 ;
+                                  UPDATE ;
+                                  DIP 1 { DIG 7 ; DROP 1 } ;
+                                  DUG 7 ;
+                                  DROP 1 ;
+                                  PUSH int 0 ;
+                                  DIP 1 { DIG 1 ; DROP 1 } ;
+                                  DUG 1 }
+                                { DUP 2 ;
+                                  DUP 8 ;
+                                  DUP 3 ;
+                                  GET ;
+                                  IF_NONE
+                                    { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                    {} ;
+                                  CAR ;
+                                  COMPARE ;
+                                  EQ ;
+                                  IF { PUSH int 0 ;
+                                       DIP 1 { DIG 1 ; DROP 1 } ;
+                                       DUG 1 ;
+                                       DUP 7 ;
+                                       NONE (pair int timestamp) ;
+                                       DUP 3 ;
+                                       UPDATE ;
+                                       DIP 1 { DIG 6 ; DROP 1 } ;
+                                       DUG 6 ;
+                                       DUP 8 ;
+                                       DUP 9 ;
+                                       DUP 7 ;
+                                       GET ;
+                                       IF_NONE
+                                         { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                         {} ;
+                                       PUSH bool False ;
+                                       DUP 4 ;
+                                       UPDATE ;
+                                       SOME ;
+                                       DUP 7 ;
+                                       UPDATE ;
+                                       DIP 1 { DIG 7 ; DROP 1 } ;
+                                       DUG 7 }
+                                     { DUP 7 ;
+                                       DUP 2 ;
+                                       GET ;
+                                       IF_NONE
+                                         { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                         {} ;
+                                       CAR ;
+                                       DUP 3 ;
+                                       SUB ;
+                                       DIP 1 { DIG 1 ; DROP 1 } ;
+                                       DUG 1 ;
+                                       DUP 7 ;
+                                       NONE (pair int timestamp) ;
+                                       DUP 3 ;
+                                       UPDATE ;
+                                       DIP 1 { DIG 6 ; DROP 1 } ;
+                                       DUG 6 ;
+                                       DUP 8 ;
+                                       DUP 9 ;
+                                       DUP 7 ;
+                                       GET ;
+                                       IF_NONE
+                                         { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                         {} ;
+                                       PUSH bool False ;
+                                       DUP 4 ;
+                                       UPDATE ;
+                                       SOME ;
+                                       DUP 7 ;
+                                       UPDATE ;
+                                       DIP 1 { DIG 7 ; DROP 1 } ;
+                                       DUG 7 } } }
+                           {} ;
+                        DROP 1 } ;
+                 DROP 4 ;
+                 PAIR 3 ;
+                 NIL operation ;
+                 PAIR } }
+           { DROP 1 ;
+             DUP ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+             DUP 3 ;
+             ITER { UNPAIR ;
+                    DUP 5 ;
+                    DUP 2 ;
+                    GET ;
+                    IF_NONE
+                      { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                      {} ;
+                    ITER { DUP 5 ;
+                           DUP 2 ;
+                           GET ;
+                           IF_NONE
+                             { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                             {} ;
+                           NOW ;
+                           DUP 2 ;
+                           GET 2 ;
+                           COMPARE ;
+                           LT ;
+                           IF { DUP 6 ;
+                                NONE (pair int timestamp) ;
+                                DUP 4 ;
+                                UPDATE ;
+                                DIP 1 { DIG 5 ; DROP 1 } ;
+                                DUG 5 ;
+                                DUP 7 ;
+                                DUP 8 ;
+                                DUP 5 ;
+                                GET ;
+                                IF_NONE
+                                  { PUSH string "owner" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                  {} ;
+                                PUSH bool False ;
+                                DUP 5 ;
+                                UPDATE ;
+                                SOME ;
+                                DUP 5 ;
+                                UPDATE ;
+                                DIP 1 { DIG 6 ; DROP 1 } ;
+                                DUG 6 }
+                              {} ;
+                           DROP 2 } ;
+                    DROP 2 } ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR } } }

@@ -1,0 +1,12 @@
+{ storage (option nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH unit Unit ;
+         VIEW "get" nat ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } ;
+  view "get" unit nat { DROP 1 ; UNIT ; PUSH nat 2 ; SWAP ; DROP 1 } }

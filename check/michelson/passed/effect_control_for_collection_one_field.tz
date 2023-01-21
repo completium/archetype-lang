@@ -1,0 +1,13 @@
+{ storage (pair (set %myasset nat) (int %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH int 0 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP ;
+         ITER { DUP ; INT ; DUP 4 ; ADD ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 ; DROP 1 } ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

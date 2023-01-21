@@ -1,0 +1,11 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH timestamp 1577836800 ;
+         PUSH timestamp 1609372800 ;
+         SUB ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

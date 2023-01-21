@@ -1,0 +1,24 @@
+{ storage (map nat string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         PUSH string "mystr" ;
+         SOME ;
+         PUSH nat 0 ;
+         UPDATE ;
+         SWAP ;
+         DROP 1 ;
+         PUSH string "mystr" ;
+         DUP 2 ;
+         PUSH nat 0 ;
+         GET ;
+         IF_NONE
+           { PUSH string "myasset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

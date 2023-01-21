@@ -1,0 +1,28 @@
+{ storage (option nat) ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair nat nat)
+           (option nat)
+           { UNPAIR 2 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 3 ;
+             SUB ;
+             ISNAT ;
+             SWAP ;
+             DROP 1 ;
+             DUG 2 ;
+             DROP 2 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         PUSH nat 2 ;
+         PUSH nat 3 ;
+         PAIR ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

@@ -1,0 +1,22 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         NIL operation ;
+         NIL operation ;
+         DUP 4 ;
+         ITER { CONS } ;
+         SENDER ;
+         CONTRACT unit ;
+         IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
+         PUSH mutez 1000000 ;
+         UNIT ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DIG 1 ;
+         PAIR } }

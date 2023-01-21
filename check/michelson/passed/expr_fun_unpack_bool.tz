@@ -1,0 +1,16 @@
+{ storage (option bool) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH bytes 0x05030a ;
+         UNPACK bool ;
+         SWAP ;
+         DROP 1 ;
+         DUP ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         DUP ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

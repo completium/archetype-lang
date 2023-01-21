@@ -1,0 +1,47 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL (or (pair %abc (nat %a) (string %b)) (pair %xyz (nat %a) (string %b))) ;
+         PUSH string "wxyz" ;
+         PUSH nat 2 ;
+         PAIR ;
+         RIGHT (pair nat string) ;
+         CONS ;
+         PUSH string "abc" ;
+         PUSH nat 1 ;
+         PAIR ;
+         LEFT (pair nat string) ;
+         CONS ;
+         PUSH nat 0 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP ;
+         ITER { DUP ;
+                IF_LEFT
+                  { DUP ;
+                    GET 2 ;
+                    SIZE ;
+                    DUP 2 ;
+                    GET 1 ;
+                    ADD ;
+                    DUP 5 ;
+                    ADD ;
+                    DIP 1 { DIG 3 ; DROP 1 } ;
+                    DUG 3 ;
+                    DROP 1 }
+                  { DUP ;
+                    GET 2 ;
+                    SIZE ;
+                    DUP 2 ;
+                    GET 1 ;
+                    ADD ;
+                    DUP 5 ;
+                    ADD ;
+                    DIP 1 { DIG 3 ; DROP 1 } ;
+                    DUG 3 ;
+                    DROP 1 } ;
+                DROP 1 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

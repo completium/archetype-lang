@@ -1,0 +1,23 @@
+{ storage (set string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_SET string ;
+         PUSH bool True ;
+         PUSH string "3" ;
+         UPDATE ;
+         PUSH bool True ;
+         PUSH string "2" ;
+         UPDATE ;
+         PUSH bool True ;
+         PUSH string "1" ;
+         UPDATE ;
+         DUP ;
+         PUSH bool False ;
+         PUSH string "1" ;
+         UPDATE ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

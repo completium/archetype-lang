@@ -1,0 +1,20 @@
+{ storage (pair (nat %a) (nat %b)) ;
+  parameter (nat %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         PUSH nat 2 ;
+         DUP 2 ;
+         COMPARE ;
+         GT ;
+         IF { PUSH nat 1 ;
+              DUP ;
+              PUSH nat 2 ;
+              ADD ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 ;
+              DROP 1 }
+            { PUSH nat 4 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 } ;
+         DROP 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

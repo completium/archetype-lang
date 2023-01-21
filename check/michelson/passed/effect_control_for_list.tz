@@ -1,0 +1,19 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL nat ;
+         PUSH nat 3 ;
+         CONS ;
+         PUSH nat 2 ;
+         CONS ;
+         PUSH nat 1 ;
+         CONS ;
+         PUSH nat 0 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP ;
+         ITER { DUP ; DUP 4 ; ADD ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 ; DROP 1 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

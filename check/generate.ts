@@ -26,6 +26,17 @@ const generation_interface_contract = (i: string) : string => {
   return json_path
 }
 
+const generation_tz_file = (i: string) : string => {
+  const arl_path = i + '.arl'
+  const res = compile([arl_path])
+  if (res.status != 0) {
+    throw new Error(res.stderr.toString())
+  }
+  const output_path = './michelson/passed/' + path.basename(arl_path.replace('.arl', '.tz'))
+  fs.writeFileSync(output_path, res.stdout.toString())
+  return output_path
+}
+
 const write_binding = (json_path: string) => {
   const json = fs.readFileSync(json_path);
   let rci: RawContractInterface = JSON.parse(json);
@@ -168,6 +179,7 @@ describe('Generate binding', async () => {
       it(filename, () => {
         const filepath = p + '/' + filename
         const json_path = generation_interface_contract(filepath)
+        generation_tz_file(filepath)
         write_binding(json_path)
       });
     }

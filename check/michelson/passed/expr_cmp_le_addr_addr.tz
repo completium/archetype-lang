@@ -1,0 +1,12 @@
+{ storage bool ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH address "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB" ;
+         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         COMPARE ;
+         LE ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

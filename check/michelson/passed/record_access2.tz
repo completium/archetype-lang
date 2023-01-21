@@ -1,0 +1,111 @@
+{ storage
+    (pair (pair %res_a (string %alpha) (nat %beta))
+          (pair %res_b (string %alpha) (nat %beta))
+          (bytes %res_c)
+          (int %res_d)
+          (string %res_e)
+          (pair %res_f (string %x) (nat %y) (bytes %z))
+          (bytes %res_g)
+          (pair %res_h (string %alpha) (nat %beta))
+          (string %res_a_alpha)
+          (nat %res_a_beta)
+          (string %res_b_alpha)
+          (nat %res_b_beta)
+          (string %res_f_x)
+          (nat %res_f_y)
+          (bytes %res_f_z)
+          (string %res_h_alpha)
+          (nat %res_h_beta)
+          (pair %r
+             (pair %a (string %alpha) (nat %beta))
+             (pair %b (string %alpha) (nat %beta))
+             (bytes %c)
+             (int %d)
+             (string %e)
+             (pair %f (string %x) (nat %y) (bytes %z))
+             (bytes %g)
+             (pair %h (string %alpha) (nat %beta)))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 18 } ;
+         DROP 1 ;
+         DUP 18 ;
+         GET 1 ;
+         SWAP ;
+         DROP 1 ;
+         DUP 18 ;
+         GET 3 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP 18 ;
+         GET 5 ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP 18 ;
+         GET 7 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 18 ;
+         GET 9 ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DUP 18 ;
+         GET 11 ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DUP 18 ;
+         GET 13 ;
+         DIP 1 { DIG 6 ; DROP 1 } ;
+         DUG 6 ;
+         DUP 18 ;
+         GET 14 ;
+         DIP 1 { DIG 7 ; DROP 1 } ;
+         DUG 7 ;
+         DUP 18 ;
+         GET 1 ;
+         GET 1 ;
+         DIP 1 { DIG 8 ; DROP 1 } ;
+         DUG 8 ;
+         DUP 18 ;
+         GET 1 ;
+         GET 2 ;
+         DIP 1 { DIG 9 ; DROP 1 } ;
+         DUG 9 ;
+         DUP 18 ;
+         GET 3 ;
+         GET 1 ;
+         DIP 1 { DIG 10 ; DROP 1 } ;
+         DUG 10 ;
+         DUP 18 ;
+         GET 3 ;
+         GET 2 ;
+         DIP 1 { DIG 11 ; DROP 1 } ;
+         DUG 11 ;
+         DUP 18 ;
+         GET 11 ;
+         GET 1 ;
+         DIP 1 { DIG 12 ; DROP 1 } ;
+         DUG 12 ;
+         DUP 18 ;
+         GET 11 ;
+         GET 3 ;
+         DIP 1 { DIG 13 ; DROP 1 } ;
+         DUG 13 ;
+         DUP 18 ;
+         GET 11 ;
+         GET 4 ;
+         DIP 1 { DIG 14 ; DROP 1 } ;
+         DUG 14 ;
+         DUP 18 ;
+         GET 14 ;
+         GET 1 ;
+         DIP 1 { DIG 15 ; DROP 1 } ;
+         DUG 15 ;
+         DUP 18 ;
+         GET 14 ;
+         GET 2 ;
+         DIP 1 { DIG 16 ; DROP 1 } ;
+         DUG 16 ;
+         PAIR 18 ;
+         NIL operation ;
+         PAIR } }

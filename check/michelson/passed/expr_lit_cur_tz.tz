@@ -1,0 +1,9 @@
+{ storage mutez ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH mutez 1000000 ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

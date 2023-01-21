@@ -1,0 +1,31 @@
+{ storage (option nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         SELF_ADDRESS ;
+         PUSH bytes 0x123456 ;
+         PUSH string "toto" ;
+         PAIR ;
+         PUSH nat 1 ;
+         PAIR ;
+         VIEW "get" nat ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } ;
+  view "get"
+       (pair nat string bytes)
+       nat
+       { CAR ;
+         UNPAIR 3 ;
+         UNIT ;
+         DUP 4 ;
+         SIZE ;
+         DUP 4 ;
+         SIZE ;
+         DUP 4 ;
+         ADD ;
+         ADD ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 3 } } }

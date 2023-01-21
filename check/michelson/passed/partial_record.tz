@@ -1,0 +1,19 @@
+{ storage (pair (int %v) (map %asset1 string int)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP 2 ;
+         PUSH string "myid" ;
+         MEM ;
+         IF { PUSH string "asset1" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 2 ;
+              PUSH int 0 ;
+              SOME ;
+              PUSH string "myid" ;
+              UPDATE ;
+              DIP 1 { DIG 1 ; DROP 1 } ;
+              DUG 1 } ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

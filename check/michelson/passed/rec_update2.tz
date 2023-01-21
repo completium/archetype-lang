@@ -1,0 +1,110 @@
+{ storage
+    (pair (nat %fa)
+          (nat %fb)
+          (nat %fc)
+          (nat %fd)
+          (nat %fe)
+          (nat %ff)
+          (nat %fg)
+          (nat %fh)
+          (nat %fi)
+          (nat %fj)
+          (nat %fk)
+          (nat %fl)
+          (nat %fm)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 0 ;
+         PUSH nat 1 ;
+         PUSH nat 2 ;
+         PUSH nat 3 ;
+         PUSH nat 4 ;
+         PUSH nat 5 ;
+         PUSH nat 6 ;
+         PUSH nat 7 ;
+         PUSH nat 8 ;
+         PUSH nat 9 ;
+         PUSH nat 10 ;
+         PUSH nat 11 ;
+         PUSH nat 12 ;
+         DUP 14 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 14 ;
+         SWAP ;
+         DROP 1 ;
+         DUP 13 ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         SWAP ;
+         PAIR ;
+         DIP 1 { DIG 13 ; DROP 1 } ;
+         DUG 13 ;
+         DROP 13 ;
+         NIL operation ;
+         PAIR } }

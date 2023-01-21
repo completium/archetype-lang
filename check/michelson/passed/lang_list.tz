@@ -1,0 +1,73 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           (pair (list string) string)
+           bool
+           { UNPAIR ;
+             PUSH bool False ;
+             SWAP ;
+             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
+             DIP 1 { DROP 1 } } ;
+         LAMBDA
+           (pair (list string) nat)
+           (option string)
+           { UNPAIR ;
+             PUSH nat 0 ;
+             PUSH (option string) None ;
+             DIG 2 ;
+             ITER { DUP 3 ;
+                    DUP 5 ;
+                    COMPARE ;
+                    EQ ;
+                    IF { SOME ; SWAP ; DROP 1 } { DROP 1 } ;
+                    SWAP ;
+                    PUSH nat 1 ;
+                    ADD ;
+                    SWAP } ;
+             DIP 1 { DROP 2 } } ;
+         DIG 2 ;
+         UNPAIR ;
+         DROP 1 ;
+         NIL string ;
+         PUSH string "3" ;
+         CONS ;
+         PUSH string "2" ;
+         CONS ;
+         PUSH string "1" ;
+         CONS ;
+         DUP ;
+         PUSH string "2" ;
+         CONS ;
+         DUP 2 ;
+         SIZE ;
+         DUP 6 ;
+         PUSH string "2" ;
+         DUP 5 ;
+         PAIR ;
+         EXEC ;
+         DUP 6 ;
+         PUSH nat 0 ;
+         DUP 6 ;
+         PAIR ;
+         EXEC ;
+         NIL string ;
+         DUP 6 ;
+         ITER { CONS } ;
+         DUP 6 ;
+         NIL string ;
+         DUP 8 ;
+         ITER { CONS } ;
+         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         PUSH nat 0 ;
+         DUP 8 ;
+         ITER { DUP ; SIZE ; DUP 3 ; ADD ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         PUSH nat 3 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DROP 8 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 2 } } }

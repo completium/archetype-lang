@@ -1,0 +1,47 @@
+{ storage int ;
+  parameter (or (unit %a1) (unit %a2)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DROP 1 ;
+             PUSH nat 2 ;
+             PUSH nat 1 ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "c1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             PUSH bool True ;
+             NOT ;
+             IF { PUSH string "c2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             PUSH nat 4 ;
+             PUSH nat 3 ;
+             PUSH nat 1 ;
+             ADD ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "c3" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             PUSH nat 2 ;
+             PUSH nat 1 ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "c4" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             PUSH bool True ;
+             NOT ;
+             IF { PUSH string "c5" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             PUSH nat 4 ;
+             PUSH nat 3 ;
+             PUSH nat 1 ;
+             ADD ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "c6" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+             PUSH int 1 ;
+             SWAP ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }

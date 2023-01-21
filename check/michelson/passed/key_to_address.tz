@@ -1,0 +1,16 @@
+{ storage (option address) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH key "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn" ;
+         DUP ;
+         HASH_KEY ;
+         IMPLICIT_ACCOUNT ;
+         ADDRESS ;
+         DUP ;
+         SOME ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

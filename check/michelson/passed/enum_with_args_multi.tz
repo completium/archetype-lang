@@ -1,0 +1,48 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH string "toto" ;
+         PUSH nat 1 ;
+         PAIR ;
+         LEFT (or (pair nat string) (pair int nat string)) ;
+         DUP ;
+         IF_LEFT
+           { DUP ;
+             GET 1 ;
+             DUP 2 ;
+             GET 2 ;
+             DUP ;
+             SIZE ;
+             DUP 3 ;
+             ADD ;
+             DIP 1 { DIG 4 ; DROP 1 } ;
+             DUG 4 ;
+             DROP 3 }
+           { DUP ;
+             IF_LEFT
+               { DUP ;
+                 GET 1 ;
+                 DUP 2 ;
+                 GET 2 ;
+                 DUP ;
+                 SIZE ;
+                 DUP 3 ;
+                 ADD ;
+                 DIP 1 { DIG 5 ; DROP 1 } ;
+                 DUG 5 ;
+                 DROP 3 }
+               { DUP ;
+                 GET 1 ;
+                 DUP 2 ;
+                 GET 3 ;
+                 DUP 3 ;
+                 GET 4 ;
+                 DUP 2 ;
+                 DIP 1 { DIG 6 ; DROP 1 } ;
+                 DUG 6 ;
+                 DROP 4 } ;
+             DROP 1 } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

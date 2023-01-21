@@ -1,0 +1,46 @@
+{ storage address ;
+  parameter (or (int %update_value) (int %add_one)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         IF_LEFT
+           { NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 4 ;
+             CONTRACT %set_value int ;
+             IF_NONE
+               { PUSH string "set_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             DUP 5 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR }
+           { NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 4 ;
+             CONTRACT %add_value (pair int int) ;
+             IF_NONE
+               { PUSH string "add_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             PUSH int 2 ;
+             DUP 6 ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR } } }

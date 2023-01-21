@@ -1,0 +1,22 @@
+{ storage
+    (pair (pair %my_asset
+             (big_map %values string (pair (nat %index) (nat %value)))
+             (big_map %keys nat string)
+             (nat %size))
+          (bool %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP ;
+         GET 1 ;
+         PUSH string "id1" ;
+         MEM ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP 2 ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

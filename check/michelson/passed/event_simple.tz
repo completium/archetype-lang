@@ -1,0 +1,22 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         NOW ;
+         SENDER ;
+         PAIR ;
+         NIL operation ;
+         NIL operation ;
+         DUP 5 ;
+         ITER { CONS } ;
+         DUP 3 ;
+         EMIT %even (pair (address %from_) (timestamp %time)) ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         DIG 1 ;
+         PAIR } }

@@ -1,0 +1,57 @@
+{ storage
+    (pair (pair %r
+             (string %a)
+             (nat %b)
+             (bytes %c)
+             (int %d)
+             (string %e)
+             (nat %f)
+             (bytes %g)
+             (int %h))
+          (string %res_a)
+          (nat %res_b)
+          (bytes %res_c)
+          (int %res_d)
+          (string %res_e)
+          (nat %res_f)
+          (bytes %res_g)
+          (int %res_h)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 9 } ;
+         DROP 1 ;
+         DUP ;
+         GET 1 ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP ;
+         GET 3 ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP ;
+         GET 5 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP ;
+         GET 7 ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DUP ;
+         GET 9 ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DUP ;
+         GET 11 ;
+         DIP 1 { DIG 6 ; DROP 1 } ;
+         DUG 6 ;
+         DUP ;
+         GET 13 ;
+         DIP 1 { DIG 7 ; DROP 1 } ;
+         DUG 7 ;
+         DUP ;
+         GET 14 ;
+         DIP 1 { DIG 8 ; DROP 1 } ;
+         DUG 8 ;
+         PAIR 9 ;
+         NIL operation ;
+         PAIR } }

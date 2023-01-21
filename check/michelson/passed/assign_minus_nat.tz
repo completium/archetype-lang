@@ -1,0 +1,22 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         DUP 3 ;
+         SUB ;
+         COMPARE ;
+         GE ;
+         IF { PUSH int 1 ; DUP 2 ; SUB ; ABS }
+            { PUSH string "NAT_NEG_ASSIGN" ; FAILWITH } ;
+         SWAP ;
+         DROP 1 ;
+         PUSH nat 9 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

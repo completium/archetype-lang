@@ -1,0 +1,41 @@
+{ storage (pair int nat) ;
+  parameter (unit %e) ;
+  code { LAMBDA
+           (pair int nat)
+           (pair int nat)
+           { PUSH unit Unit ;
+             DUP 2 ;
+             PUSH nat 2 ;
+             PUSH int 1 ;
+             PAIR ;
+             PAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DIP 1 { SWAP } ;
+             MUL ;
+             DIP 1
+                 { MUL ;
+                   DUP ;
+                   PUSH nat 0 ;
+                   COMPARE ;
+                   EQ ;
+                   IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} } ;
+             PAIR ;
+             SWAP ;
+             DROP 1 ;
+             DUG 1 ;
+             DROP 1 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         PUSH nat 10 ;
+         PUSH int 3 ;
+         PAIR ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

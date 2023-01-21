@@ -1,0 +1,49 @@
+{ storage
+    (pair (bool %bool_bool_and)
+          (bool %bool_bool_or)
+          (bool %bool_bool_not)
+          (nat %nat_nat_plus)
+          (int %nat_nat_minus)
+          (nat %nat_nat_mult)
+          (nat %nat_nat_ediv)
+          (nat %nat_nat_modulo)
+          (int %int_int_plus)
+          (int %int_int_minus)
+          (int %int_int_mult)
+          (int %int_int_ediv)
+          (nat %int_int_modulo)
+          (pair %rat_rat_plus int nat)
+          (pair %rat_rat_minus int nat)
+          (pair %rat_rat_mult int nat)
+          (pair %rat_rat_div int nat)
+          (pair %int_rat_plus int nat)
+          (pair %int_rat_minus int nat)
+          (pair %int_rat_mult int nat)
+          (pair %int_rat_div int nat)
+          (pair %rat_int_plus int nat)
+          (pair %rat_int_minus int nat)
+          (pair %rat_int_mult int nat)
+          (pair %rat_int_div int nat)
+          (int %date_date_minus)
+          (int %dur_dur_plus)
+          (int %dur_dur_minus)
+          (pair %dur_dur_div int nat)
+          (int %dur_dur_ediv)
+          (int %int_dur_mult)
+          (int %dur_int_ediv)
+          (timestamp %date_dur_plus)
+          (timestamp %date_dur_minus)
+          (timestamp %dur_date_plus)
+          (string %str_str_plus)
+          (mutez %tez_tez_plus)
+          (mutez %tez_tez_minus)
+          (mutez %int_tez_mult)
+          (mutez %rat_tez_mult)
+          (mutez %int_tez_ediv)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 41 } ;
+         DROP 1 ;
+         PAIR 41 ;
+         NIL operation ;
+         PAIR } }

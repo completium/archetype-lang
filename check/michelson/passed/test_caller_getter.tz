@@ -1,0 +1,44 @@
+{ storage (pair (nat %n) (nat %res)) ;
+  parameter (or (nat %callback) (unit %main)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         IF_LEFT
+           { DUP 2 ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR }
+           { DROP 1 ;
+             PUSH nat 1 ;
+             SWAP ;
+             DROP 1 ;
+             PUSH address "KT1V6R5EQRfipGY1AgigYrgbb1tfbGBJ9B4s" ;
+             CONTRACT %getN (pair unit (contract nat)) ;
+             IF_NONE
+               { PUSH string "INVALID_ENTRY" ; FAILWITH }
+               { NIL operation ;
+                 NIL operation ;
+                 DUP 6 ;
+                 ITER { CONS } ;
+                 DUP 3 ;
+                 PUSH mutez 0 ;
+                 SELF_ADDRESS ;
+                 CONTRACT %callback nat ;
+                 IF_NONE
+                   { PUSH string "callback" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                   {} ;
+                 PUSH unit Unit ;
+                 PAIR ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 3 ; DROP 1 } ;
+                 DUG 3 ;
+                 DROP 1 } ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR } } }

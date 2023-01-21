@@ -1,0 +1,26 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH int 0 ;
+              DUP 2 ;
+              COMPARE ;
+              NEQ ;
+              IF { PUSH bool True } { PUSH bool False } }
+            { PUSH bool False } ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         DUP ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH int 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+            { PUSH string "" ; FAILWITH } ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

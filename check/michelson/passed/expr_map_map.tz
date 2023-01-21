@@ -1,0 +1,24 @@
+{ storage (map string nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_MAP string int ;
+         PUSH int 2 ;
+         SOME ;
+         PUSH string "ijk" ;
+         UPDATE ;
+         PUSH int 1 ;
+         SOME ;
+         PUSH string "def" ;
+         UPDATE ;
+         PUSH int 0 ;
+         SOME ;
+         PUSH string "abc" ;
+         UPDATE ;
+         DUP ;
+         MAP { PUSH nat 2 ; DUP 2 ; GET 2 ; ABS ; ADD ; SWAP ; DROP 1 } ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

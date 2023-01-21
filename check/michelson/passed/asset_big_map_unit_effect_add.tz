@@ -1,0 +1,11 @@
+{ storage (big_map nat unit) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         DUP ;
+         PUSH nat 3 ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP ; PUSH unit Unit ; SOME ; PUSH nat 3 ; UPDATE ; SWAP ; DROP 1 } ;
+         NIL operation ;
+         PAIR } }

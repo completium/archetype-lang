@@ -1,0 +1,28 @@
+{ storage nat ;
+  parameter (or (nat %otherentry) (unit %exec)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         IF_LEFT
+           { DUP ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { DROP 1 ;
+             SELF_ADDRESS ;
+             CONTRACT %otherentry nat ;
+             IF_NONE
+               { PUSH string "otherentry" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             PUSH mutez 0 ;
+             PUSH nat 3 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR } } }

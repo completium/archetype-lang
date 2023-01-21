@@ -1,0 +1,19 @@
+{ storage int ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         LAMBDA
+           (pair nat string)
+           int
+           { DUP ; GET 1 ; INT ; DUP 2 ; GET 2 ; SIZE ; INT ; SUB ; SWAP ; DROP 1 } ;
+         DUP ;
+         PUSH nat 2 ;
+         APPLY ;
+         DUP ;
+         PUSH string "mystring" ;
+         EXEC ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,66 @@
+{ storage
+    (pair (nat %res) (or %r (string %A) (or (nat %B) (or (unit %C) (or (address %D) (int %E)))))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         LEFT (or unit (or address int)) ;
+         RIGHT string ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PUSH unit Unit ;
+         LEFT (or address int) ;
+         RIGHT nat ;
+         RIGHT string ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         LEFT int ;
+         RIGHT unit ;
+         RIGHT nat ;
+         RIGHT string ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         PUSH int 2 ;
+         RIGHT address ;
+         RIGHT unit ;
+         RIGHT nat ;
+         RIGHT string ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DUP 2 ;
+         IF_LEFT
+           { DUP ; SIZE ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 }
+           { DUP ;
+             IF_LEFT
+               { DUP ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 ; DROP 1 }
+               { DUP ;
+                 IF_LEFT
+                   { PUSH nat 0 ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 1 }
+                   { DUP ;
+                     IF_LEFT
+                       { PUSH nat 1 ; DIP 1 { DIG 4 ; DROP 1 } ; DUG 4 ; DROP 1 }
+                       { DUP ; ABS ; DIP 1 { DIG 4 ; DROP 1 } ; DUG 4 ; DROP 1 } ;
+                     DROP 1 } ;
+                 DROP 1 } ;
+             DROP 1 } ;
+         DUP 2 ;
+         IF_LEFT
+           { PUSH nat 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 }
+           { DUP ;
+             IF_LEFT
+               { PUSH nat 1 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 ; DROP 1 }
+               { DUP ;
+                 IF_LEFT
+                   { PUSH nat 0 ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 1 }
+                   { DUP ;
+                     IF_LEFT
+                       { PUSH nat 1 ; DIP 1 { DIG 4 ; DROP 1 } ; DUG 4 ; DROP 1 }
+                       { PUSH nat 1 ; DIP 1 { DIG 4 ; DROP 1 } ; DUG 4 ; DROP 1 } ;
+                     DROP 1 } ;
+                 DROP 1 } ;
+             DROP 1 } ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

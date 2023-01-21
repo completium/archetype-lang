@@ -1,0 +1,9 @@
+{ storage (set string) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_SET string ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

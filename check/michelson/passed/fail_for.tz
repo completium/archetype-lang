@@ -1,0 +1,19 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_SET nat ;
+         PUSH bool True ;
+         PUSH nat 3 ;
+         UPDATE ;
+         PUSH bool True ;
+         PUSH nat 2 ;
+         UPDATE ;
+         PUSH bool True ;
+         PUSH nat 1 ;
+         UPDATE ;
+         DUP ;
+         ITER { PUSH string "KO" ; FAILWITH } ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

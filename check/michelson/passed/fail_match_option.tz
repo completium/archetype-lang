@@ -1,0 +1,8 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         SOME ;
+         DUP ;
+         IF_NONE { PUSH string "KO" ; FAILWITH } { PUSH string "OK" ; FAILWITH } } }

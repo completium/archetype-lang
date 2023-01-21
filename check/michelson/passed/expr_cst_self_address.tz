@@ -1,0 +1,3 @@
+{ storage address ;
+  parameter (unit %exec) ;
+  code { UNPAIR ; DROP 1 ; SELF_ADDRESS ; SWAP ; DROP 1 ; NIL operation ; PAIR } }

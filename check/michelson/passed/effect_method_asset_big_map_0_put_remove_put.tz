@@ -1,0 +1,13 @@
+{ storage (big_map nat unit) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DUP 2 ;
+         DUP 2 ;
+         SOME ;
+         PUSH nat 0 ;
+         UPDATE ;
+         DIP 1 { DIG 1 ; DROP 1 } ;
+         DUG 1 ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

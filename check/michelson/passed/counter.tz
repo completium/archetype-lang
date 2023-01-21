@@ -1,0 +1,27 @@
+{ storage int ;
+  parameter (or (or (int %incr) (int %decr)) (int %reset)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { DUP ;
+                 DUP 3 ;
+                 ADD ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR }
+               { DUP ;
+                 DUP 3 ;
+                 SUB ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR } }
+           { PUSH int 0 ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }

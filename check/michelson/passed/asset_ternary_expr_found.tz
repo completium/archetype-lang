@@ -1,0 +1,21 @@
+{ storage (pair (map %abc nat nat) (bool %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         DROP 1 ;
+         DUP ;
+         PUSH nat 0 ;
+         GET ;
+         IF_NONE
+           { PUSH bool False }
+           { PUSH nat 1 ; DUP 2 ; COMPARE ; GT ; SWAP ; DROP 1 } ;
+         DUP ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         PAIR 2 ;
+         NIL operation ;
+         PAIR } }

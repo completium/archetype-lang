@@ -1,0 +1,33 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           int
+           int
+           { PUSH unit Unit ;
+             DUP 2 ;
+             DUP ;
+             PUSH int 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH int 0 }
+                { DUP ;
+                  PUSH int 1 ;
+                  COMPARE ;
+                  EQ ;
+                  IF { PUSH int 604800 }
+                     { DUP ;
+                       PUSH int 2 ;
+                       COMPARE ;
+                       EQ ;
+                       IF { PUSH int 2592000 } { PUSH int 7776000 } } } ;
+             DIP 1 { DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             DUG 1 ;
+             DROP 1 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

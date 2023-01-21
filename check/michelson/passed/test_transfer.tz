@@ -1,0 +1,72 @@
+{ storage nat ;
+  parameter (or (nat %f) (unit %exec)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         IF_LEFT
+           { PUSH nat 0 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { DROP 1 ;
+             NIL operation ;
+             NIL operation ;
+             DUP 4 ;
+             ITER { CONS } ;
+             PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+             CONTRACT unit ;
+             IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
+             PUSH mutez 1000000 ;
+             UNIT ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             NIL operation ;
+             NIL operation ;
+             DUP 4 ;
+             ITER { CONS } ;
+             PUSH address "KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm" ;
+             CONTRACT %set_value nat ;
+             IF_NONE
+               { PUSH string "set_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             PUSH nat 1 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 1 ; DROP 1 } ;
+             DUG 1 ;
+             PUSH address "KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm" ;
+             CONTRACT %set_value nat ;
+             IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             PUSH mutez 0 ;
+             PUSH nat 1 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             SELF_ADDRESS ;
+             CONTRACT %f nat ;
+             IF_NONE
+               { PUSH string "f" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             PUSH nat 1 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             DIG 1 ;
+             PAIR } } }

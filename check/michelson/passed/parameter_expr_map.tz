@@ -1,0 +1,31 @@
+{ storage (pair (map %smap string nat) (list %slist nat)) ;
+  parameter
+    (or (or (unit %e0) (pair %put (map %m string nat) (pair (string %k) (nat %v))))
+        (list %e2 nat)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP 1 ; PAIR 2 ; NIL operation ; PAIR }
+               { UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 DUP 3 ;
+                 DUP 2 ;
+                 SOME ;
+                 DUP 4 ;
+                 UPDATE ;
+                 DIP 1 { DIG 3 ; DROP 1 } ;
+                 DUG 3 ;
+                 DROP 3 ;
+                 PAIR 2 ;
+                 NIL operation ;
+                 PAIR } }
+           { DUP ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             PAIR 2 ;
+             NIL operation ;
+             PAIR } } }

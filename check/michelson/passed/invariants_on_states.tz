@@ -1,0 +1,21 @@
+{ storage (pair (set %my_asset string) (int %v) (int %_state)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         DUP 3 ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH int 1 ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 ;
+              PUSH int 1 ;
+              DIP 1 { DIG 3 ; DROP 1 } ;
+              DUG 3 }
+            { PUSH string "INVALID_STATE" ; FAILWITH } ;
+         DROP 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

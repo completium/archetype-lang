@@ -1,0 +1,24 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { LAMBDA
+           unit
+           nat
+           { PUSH unit Unit ;
+             PUSH bool True ;
+             IF { PUSH string "error" ; FAILWITH } {} ;
+             PUSH nat 1 ;
+             SWAP ;
+             DROP 1 ;
+             SWAP ;
+             DROP 1 } ;
+         DIG 1 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         UNIT ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

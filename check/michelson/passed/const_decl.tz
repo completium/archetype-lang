@@ -1,0 +1,14 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         SENDER ;
+         SENDER ;
+         DUP 2 ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

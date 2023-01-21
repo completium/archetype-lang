@@ -1,0 +1,37 @@
+{ storage (map address string) ;
+  parameter (or (or (unit %e0) (unit %e1)) (unit %e2)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP 1 ;
+                 PUSH address "tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk" ;
+                 SOURCE ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_SOURCE" ; FAILWITH } {} ;
+                 NIL operation ;
+                 PAIR }
+               { DROP 1 ;
+                 PUSH address "tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk" ;
+                 SOURCE ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True }
+                    { PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+                      SOURCE ;
+                      COMPARE ;
+                      EQ ;
+                      IF { PUSH bool True } { PUSH bool False } } ;
+                 NOT ;
+                 IF { PUSH string "INVALID_SOURCE" ; FAILWITH } {} ;
+                 NIL operation ;
+                 PAIR } }
+           { DROP 1 ;
+             DUP ;
+             SOURCE ;
+             MEM ;
+             NOT ;
+             IF { PUSH string "INVALID_SOURCE" ; FAILWITH } {} ;
+             NIL operation ;
+             PAIR } } }

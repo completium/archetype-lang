@@ -1,0 +1,20 @@
+{ storage (pair int int) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH int 1 ;
+         DUP 2 ;
+         GET 1 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH int 2 ;
+              DUP 2 ;
+              GET 2 ;
+              COMPARE ;
+              EQ ;
+              IF { PUSH bool True } { PUSH bool False } }
+            { PUSH bool False } ;
+         NOT ;
+         IF { PUSH string "ko" ; FAILWITH } {} ;
+         NIL operation ;
+         PAIR } }

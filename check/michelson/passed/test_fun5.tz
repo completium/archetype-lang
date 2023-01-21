@@ -1,0 +1,44 @@
+{ storage nat ;
+  parameter (unit %e) ;
+  code { LAMBDA nat nat { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
+         LAMBDA
+           (pair nat (lambda nat nat))
+           nat
+           { UNPAIR 2 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 3 ;
+             EXEC ;
+             SWAP ;
+             DROP 1 ;
+             DUG 2 ;
+             DROP 2 } ;
+         LAMBDA
+           (pair nat (lambda (pair nat (lambda nat nat)) nat) (lambda nat nat))
+           nat
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 5 ;
+             DUP 4 ;
+             PAIR ;
+             EXEC ;
+             SWAP ;
+             DROP 1 ;
+             DUG 3 ;
+             DROP 3 } ;
+         DIG 3 ;
+         UNPAIR ;
+         DROP 1 ;
+         DUP 2 ;
+         DUP 5 ;
+         DUP 5 ;
+         PAIR ;
+         PUSH nat 1 ;
+         PAIR ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 3 } } }

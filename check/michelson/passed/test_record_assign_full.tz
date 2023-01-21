@@ -1,0 +1,68 @@
+{ storage (pair (string %v0) (nat %v1) (int %v2) (bool %v3)) ;
+  parameter (or (or (string %setv0) (nat %setv1)) (or (int %setv2) (bool %setv3))) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { DUP 2 ;
+                 UNPAIR ;
+                 DROP 1 ;
+                 DUP 2 ;
+                 PAIR ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR }
+               { DUP 2 ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 DROP 1 ;
+                 DUP 3 ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR } }
+           { IF_LEFT
+               { DUP 2 ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 DROP 1 ;
+                 DUP 4 ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR }
+               { DUP 2 ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 DROP 1 ;
+                 DUP 4 ;
+                 SWAP ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 DIP 1 { DIG 1 ; DROP 1 } ;
+                 DUG 1 ;
+                 DROP 1 ;
+                 NIL operation ;
+                 PAIR } } } }

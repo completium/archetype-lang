@@ -1,0 +1,9 @@
+{ storage (big_map nat unit) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         EMPTY_BIG_MAP nat unit ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

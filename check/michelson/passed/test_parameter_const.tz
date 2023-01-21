@@ -1,0 +1,9 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat const_c__ ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }
