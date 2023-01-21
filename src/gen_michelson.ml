@@ -1803,7 +1803,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     Format.eprintf "assign n: %d@." n;
     let c, nenv =
       match n with
-      | 0 -> T.cseq [], env
+      | 0 -> T.cseq [ v ], env
       | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
       | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
     in
@@ -2026,7 +2026,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let fid, env = f (Ivar id) in
       let v, env = fe env v in
       let n = if i = l - 1 then i * 2 else i * 2 + 1 in
-      assign env id (T.cseq [fid; v; T.cupdate_n n])
+      assign (dec_env env) id (T.cseq [fid; v; T.cupdate_n n])
     end
 
   | Iif (c, t, e, ty) -> begin
@@ -2114,10 +2114,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iloopleft (l, i, b) -> begin
-      let l, _ = f l in
-      let b, env = fe (add_var_env env i) b in
+      let l, env0 = f l in
+      let b, _ = fe (add_var_env (dec_env env0) i) b in
 
-      T.cseq T.[l; cloop_left [b; cswap; cdrop 1]], env
+      T.cseq T.[l; cloop_left [b; cswap; cdrop 1]], inc_env (dec_env env0)
     end
 
   | Ilambda (rt, id, at, e) -> begin
