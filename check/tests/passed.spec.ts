@@ -1160,6 +1160,7 @@ import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
+import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_record from '../bindings/passed/ticket_read_ticket_record'
 import * as ticket_read_ticket_record_list from '../bindings/passed/ticket_read_ticket_record_list'
 import * as ticket_record_list_var from '../bindings/passed/ticket_record_list_var'
@@ -9216,6 +9217,19 @@ describe('passed', async () => {
     await ticket_read_ticket.ticket_read_ticket.exec({ as: alice })
     const res_after = await ticket_read_ticket.ticket_read_ticket.get_res()
     assert(res_after[0].equals(ticket_read_ticket.ticket_read_ticket.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_arg', async () => {
+    await ticket_read_ticket_arg.ticket_read_ticket_arg.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_arg.ticket_read_ticket_arg.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_arg.ticket_read_ticket_arg.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg.ticket_read_ticket_arg.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg.ticket_read_ticket_arg.get_address()))
     assert(res_after[1] == "my_ticket")
     assert(res_after[2].equals(new Nat(10)))
   })
