@@ -1,3 +1,11 @@
 { storage (pair address string nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ; DROP 1 ; NIL operation ; PAIR } }
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 10 ;
+         PUSH string "my_ticket" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

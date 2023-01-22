@@ -49,6 +49,8 @@ export class Ticket_read_ticket {
         }
         throw new Error("Contract not initialised");
     }
-    errors = {};
+    errors = {
+        ERROR: att.string_to_mich("\"ERROR\"")
+    };
 }
 export const ticket_read_ticket = new Ticket_read_ticket();
