@@ -1,0 +1,8 @@
+archetype expr_var_match_list_head
+
+variable res : string = ""
+
+entry exec() {
+  const v = match ["mystr"] with | hd::tl -> hd | [] -> "" end;
+  res := v
+}

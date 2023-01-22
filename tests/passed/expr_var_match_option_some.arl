@@ -1,0 +1,8 @@
+archetype expr_var_match_option_some
+
+variable res : string = ""
+
+entry exec() {
+  const v = match some("mystr") with | some v -> v | none -> "" end;
+  res := v
+}

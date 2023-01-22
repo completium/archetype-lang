@@ -717,6 +717,12 @@ import * as expr_set_remove from '../bindings/passed/expr_set_remove'
 import * as expr_set_update from '../bindings/passed/expr_set_update'
 import * as expr_tuple_access from '../bindings/passed/expr_tuple_access'
 import * as expr_tuple_access_simple from '../bindings/passed/expr_tuple_access_simple'
+import * as expr_var_match_list_empty from '../bindings/passed/expr_var_match_list_empty'
+import * as expr_var_match_list_head from '../bindings/passed/expr_var_match_list_head'
+import * as expr_var_match_option_none from '../bindings/passed/expr_var_match_option_none'
+import * as expr_var_match_option_some from '../bindings/passed/expr_var_match_option_some'
+import * as expr_var_match_or_left from '../bindings/passed/expr_var_match_or_left'
+import * as expr_var_match_or_right from '../bindings/passed/expr_var_match_or_right'
 import * as fa12_false from '../bindings/passed/fa12_false'
 import * as fa12_simple from '../bindings/passed/fa12_simple'
 import * as fail_ from '../bindings/passed/fail_'
@@ -6799,6 +6805,60 @@ describe('passed', async () => {
     // TODO
   })
 
+  it('expr_var_match_list_empty', async () => {
+    await expr_var_match_list_empty.expr_var_match_list_empty.deploy({ as: alice })
+    const res_before = await expr_var_match_list_empty.expr_var_match_list_empty.get_res();
+    assert(res_before == "")
+    await expr_var_match_list_empty.expr_var_match_list_empty.exec({ as: alice })
+    const res_after = await expr_var_match_list_empty.expr_var_match_list_empty.get_res();
+    assert(res_after == "mystr")
+  })
+
+  it('expr_var_match_list_head', async () => {
+    await expr_var_match_list_head.expr_var_match_list_head.deploy({ as: alice })
+    const res_before = await expr_var_match_list_head.expr_var_match_list_head.get_res();
+    assert(res_before == "")
+    await expr_var_match_list_head.expr_var_match_list_head.exec({ as: alice })
+    const res_after = await expr_var_match_list_head.expr_var_match_list_head.get_res();
+    assert(res_after == "mystr")
+  })
+
+  it('expr_var_match_option_none', async () => {
+    await expr_var_match_option_none.expr_var_match_option_none.deploy({ as: alice })
+    const res_before = await expr_var_match_option_none.expr_var_match_option_none.get_res();
+    assert(res_before == "")
+    await expr_var_match_option_none.expr_var_match_option_none.exec({ as: alice })
+    const res_after = await expr_var_match_option_none.expr_var_match_option_none.get_res();
+    assert(res_after == "mystr")
+  })
+
+  it('expr_var_match_option_some', async () => {
+    await expr_var_match_option_some.expr_var_match_option_some.deploy({ as: alice })
+    const res_before = await expr_var_match_option_some.expr_var_match_option_some.get_res();
+    assert(res_before == "")
+    await expr_var_match_option_some.expr_var_match_option_some.exec({ as: alice })
+    const res_after = await expr_var_match_option_some.expr_var_match_option_some.get_res();
+    assert(res_after == "mystr")
+  })
+
+  it('expr_var_match_or_left', async () => {
+    await expr_var_match_or_left.expr_var_match_or_left.deploy({ as: alice })
+    const res_before = await expr_var_match_or_left.expr_var_match_or_left.get_res();
+    assert(res_before == "")
+    await expr_var_match_or_left.expr_var_match_or_left.exec({ as: alice })
+    const res_after = await expr_var_match_or_left.expr_var_match_or_left.get_res();
+    assert(res_after == "mystr")
+  })
+
+  it('expr_var_match_or_right', async () => {
+    await expr_var_match_or_right.expr_var_match_or_right.deploy({ as: alice })
+    const res_before = await expr_var_match_or_right.expr_var_match_or_right.get_res();
+    assert(res_before == "")
+    await expr_var_match_or_right.expr_var_match_or_right.exec({ as: alice })
+    const res_after = await expr_var_match_or_right.expr_var_match_or_right.get_res();
+    assert(res_after == "mystr")
+  })
+
   it('fa12_false', async () => {
     await fa12_false.fa12_false.deploy({ as: alice })
     // TODO
@@ -9150,7 +9210,7 @@ describe('passed', async () => {
     const res_before = await ticket_read_ticket.ticket_read_ticket.get_res()
     assert(res_before[0].equals(alice.get_address()))
     assert(res_before[1] == "")
-    assert(res_before[2].equals(new Nat (0)))
+    assert(res_before[2].equals(new Nat(0)))
     await ticket_read_ticket.ticket_read_ticket.exec({ as: alice })
     // const res_after = await ticket_read_ticket.ticket_read_ticket.get_res()
     // assert(res_after[0].equals(ticket_read_ticket.ticket_read_ticket.get_address()))

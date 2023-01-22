@@ -1,0 +1,8 @@
+archetype expr_var_match_list_empty
+
+variable res : string = ""
+
+entry exec() {
+  const v = match make_list<string>([]) with | hd::tl -> hd | [] -> "mystr" end;
+  res := v
+}

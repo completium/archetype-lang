@@ -1,0 +1,8 @@
+archetype expr_var_match_or_left
+
+variable res : string = ""
+
+entry exec() {
+  const v = match left<string, never>("mystr") with | left v -> v | right v -> "" end;
+  res := v
+}
