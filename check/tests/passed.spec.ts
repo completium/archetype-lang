@@ -1160,6 +1160,8 @@ import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
+import * as ticket_read_ticket_record from '../bindings/passed/ticket_read_ticket_record'
+import * as ticket_read_ticket_record_list from '../bindings/passed/ticket_read_ticket_record_list'
 import * as ticket_record_list_var from '../bindings/passed/ticket_record_list_var'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
@@ -9212,10 +9214,36 @@ describe('passed', async () => {
     assert(res_before[1] == "")
     assert(res_before[2].equals(new Nat(0)))
     await ticket_read_ticket.ticket_read_ticket.exec({ as: alice })
-    // const res_after = await ticket_read_ticket.ticket_read_ticket.get_res()
-    // assert(res_after[0].equals(ticket_read_ticket.ticket_read_ticket.get_address()))
-    // assert(res_after[1] == "my_ticket")
-    // assert(res_after[2].equals(new Nat (10)))
+    const res_after = await ticket_read_ticket.ticket_read_ticket.get_res()
+    assert(res_after[0].equals(ticket_read_ticket.ticket_read_ticket.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_record', async () => {
+    await ticket_read_ticket_record.ticket_read_ticket_record.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_record.ticket_read_ticket_record.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_record.ticket_read_ticket_record.exec({ as: alice })
+    const res_after = await ticket_read_ticket_record.ticket_read_ticket_record.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_record.ticket_read_ticket_record.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_record_list', async () => {
+    await ticket_read_ticket_record_list.ticket_read_ticket_record_list.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_record_list.ticket_read_ticket_record_list.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_record_list.ticket_read_ticket_record_list.exec({ as: alice })
+    const res_after = await ticket_read_ticket_record_list.ticket_read_ticket_record_list.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_record_list.ticket_read_ticket_record_list.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
   })
 
   it('ticket_record_list_var', async () => {

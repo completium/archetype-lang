@@ -408,6 +408,7 @@ and instruction =
   | Imichelson   of instruction list * code * ident list
   | Iwildcard    of type_ * ident
   | Ireplace     of ident * ident * klv * instruction
+  | Ireadticket  of instruction
 [@@deriving show {with_path = false}]
 
 and ritem =

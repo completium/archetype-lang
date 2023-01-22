@@ -1,0 +1,35 @@
+{ storage (pair address string nat) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         PUSH nat 10 ;
+         PUSH string "my_ticket" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         NIL (pair (option %u (ticket string))
+                   (bytes %n)
+                   (pair %v (option string) (ticket string) (option address))
+                   (string %s)) ;
+         PUSH string "" ;
+         NONE address ;
+         DIG 3 ;
+         PAIR ;
+         NONE string ;
+         PAIR ;
+         PAIR ;
+         PUSH bytes 0x ;
+         PAIR ;
+         NONE (ticket string) ;
+         PAIR ;
+         CONS ;
+         ITER { UNPAIR 4 ;
+                DIG 2 ;
+                UNPAIR 3 ;
+                DIG 1 ;
+                READ_TICKET ;
+                DIP 1 { DUG 2 ; PAIR 3 ; DUG 3 ; PAIR 4 } ;
+                DIP 1 { DIG 1 ; DROP 1 } ;
+                DUG 1 ;
+                DROP 1 } ;
+         NIL operation ;
+         PAIR } }

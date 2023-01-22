@@ -1173,7 +1173,7 @@ let to_ir (model : M.model) : T.ir =
     (* ticket *)
 
     | Mcreateticket (x, a)   -> T.Ibinop (Bcreateticket, f x, f a)
-    | Mreadticket x          -> T.Imichelson ([Iunop (Ureadticket, f x)], T.cseq [T.cswap; T.cdrop 1], [])
+    | Mreadticket x          -> T.Ireadticket (f x)
     | Msplitticket (x, a, b) -> T.Ibinop (Bsplitticket,  f x, mk_tuple [f a; f b])
     | Mjointickets (x, y)    -> T.Iunop  (Ujointickets,  mk_tuple [f x; f y])
 
@@ -1742,6 +1742,7 @@ let mk_env ?(vars=[]) () = { vars = vars; fail = false; }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
 let dig_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
+let dug_env n (env : env) = let s = List.nth env.vars n in let vars = Tools.List.remove_idx n env.vars in { env with vars = s::vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
 let get_sp_for_id (env : env) id =
@@ -2352,6 +2353,25 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       print_env ~str:"Ireplace after" nenv;
       let b = match k with | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])] | KLVlist -> [T.cifcons ([], [a; T.cfailwith])] in
       T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
+    end
+
+  | Ireadticket (x) -> begin
+      print_env ~str:"Ireadticket" env;
+      match x with
+      | T.Ivar_access v -> begin
+          let n = get_sp_for_id env v.av_ident in
+          let ccdig, _nenv = (if n == 0 then [] else [T.cdig n]), dig_env n env in
+          let p = List.map (fun (ai : T.access_item) ->
+              ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_index)]))) v.av_path |> List.flatten in
+          let r = List.map (fun (ai : T.access_item) ->
+              ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_index + 1)]) @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
+
+          T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r)]), inc_env env
+        end
+      | _ -> begin
+          let v, env = f x in
+          T.cseq [v; T.cread_ticket; T.cswap; T.cdrop 1], inc_env env
+        end
     end
 
 and process_data (d : T.data) : T.data =

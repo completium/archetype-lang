@@ -1,0 +1,18 @@
+archetype ticket_read_ticket_record_list
+
+record my_record {
+  u : option<ticket<string>>;
+  n : bytes;
+  v : (option<string> * ticket<string> * option<address>);
+  s : string;
+}
+
+variable res : (address * string * nat) = (tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb, "", 0)
+
+entry exec() {
+  const t ?= create_ticket("my_ticket", 10) : "ERROR";
+  const l : list<my_record> = [{u = none; n = 0x; v = ((none<string>, t, none<address>)); s = ""}];
+  for r in l do
+    res := read_ticket(r.v[1])
+  done
+}

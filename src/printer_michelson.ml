@@ -648,6 +648,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
   | Iwildcard (_, id)       -> pp "$$%s$$" id
   | Ireplace (id, v, _, fa) -> Format.fprintf fmt "replace %s, %s : %a" id v f fa
+  | Ireadticket (x)         -> pp "read_ticket(%a)" f x
 
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l

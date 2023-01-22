@@ -4,5 +4,5 @@ variable res : (address * string * nat) = (tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb,
 
 entry exec() {
   const t ?= create_ticket("my_ticket", 10) : "ERROR";
-  // res := read_ticket(t)
+  res := read_ticket(t)
 }
