@@ -46,8 +46,6 @@
            { PUSH string "anasset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          DUP 9 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -66,8 +64,6 @@
          DIG 3 ;
          IF_LEFT { DROP 1 ; ADD } { DROP 1 ; SWAP ; SUB } ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -136,8 +132,6 @@
          PUSH nat 2 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -164,8 +158,6 @@
          PUSH mutez 1000000 ;
          PUSH nat 10 ;
          PUSH int 3 ;
-         PAIR ;
-         UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
                SWAP ;

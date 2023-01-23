@@ -7,8 +7,6 @@
          PUSH mutez 1000000 ;
          PUSH nat 1 ;
          DUP 3 ;
-         PAIR ;
-         UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
                SWAP ;

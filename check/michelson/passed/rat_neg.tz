@@ -46,8 +46,6 @@
          LEFT unit ;
          DUP 5 ;
          DUP 7 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -70,8 +68,6 @@
          LEFT unit ;
          DUP 5 ;
          DUP 9 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -94,8 +90,6 @@
          LEFT unit ;
          DUP 5 ;
          DUP 11 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -118,8 +112,6 @@
          LEFT unit ;
          DUP 5 ;
          DUP 13 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;

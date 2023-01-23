@@ -24,8 +24,6 @@
          PAIR ;
          DUP 5 ;
          GET 1 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -53,8 +51,6 @@
          PAIR ;
          DUP 6 ;
          GET 3 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;

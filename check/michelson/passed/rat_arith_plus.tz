@@ -7,8 +7,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 3 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;

@@ -29,8 +29,6 @@
          PUSH int 3 ;
          PAIR ;
          DUP 3 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;

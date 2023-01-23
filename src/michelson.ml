@@ -1549,27 +1549,32 @@ end = struct
   let factorize_instrs (c : code) : code =
     let f l =
       let rec aux accu (l : code list) =
+        let g accu l =
+          match accu with
+          | x::tl -> aux tl (x::l)
+          | [] -> aux accu l
+        in
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
         (* | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t) *)
-        | ({node = UNPAIR})::({node = PAIR})::t   -> aux accu t
-        | ({node = PAIR})::({node = UNPAIR})::t   -> aux accu t
-        | ({node = UNPAIR_N x})::({node = PAIR_N y})::t when x = y -> aux accu t
-        | ({node = PAIR_N x})::({node = UNPAIR_N y})::t when x = y -> aux accu t
-        | ({node = PAIR_N 2})::t                  -> aux accu ((mk_code (PAIR))::t)
-        | ({node = UNPAIR_N 2})::t                -> aux accu ((mk_code (UNPAIR))::t)
-        | ({node = UNPAIR})::({node = DROP 1})::t -> aux accu ((mk_code (CDR))::t)
-        | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
-        | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
-        | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code (DUP))::t)
-        | ({node = DROP 0})::t                    -> aux accu t
-        | ({node = DIG 0})::t                     -> aux accu t
-        | ({node = DUG 0})::t                     -> aux accu t
-        | ({node = DIP (_, [])})::t               -> aux accu t
-        | ({node = DIG 1})::t                     -> aux accu ((mk_code (SWAP))::t)
-        | ({node = DUG 1})::t                     -> aux accu ((mk_code (SWAP))::t)
-        | ({node = SWAP})::({node = SWAP})::t     -> aux accu t
+        | ({node = UNPAIR})::({node = PAIR})::t   -> g accu t
+        | ({node = PAIR})::({node = UNPAIR})::t   -> g accu t
+        | ({node = UNPAIR_N x})::({node = PAIR_N y})::t when x = y -> g accu t
+        | ({node = PAIR_N x})::({node = UNPAIR_N y})::t when x = y -> g accu t
+        | ({node = PAIR_N 2})::t                  -> g accu ((mk_code (PAIR))::t)
+        | ({node = UNPAIR_N 2})::t                -> g accu ((mk_code (UNPAIR))::t)
+        | ({node = UNPAIR})::({node = DROP 1})::t -> g accu ((mk_code (CDR))::t)
+        | ({node = DROP x})::({node = DROP y})::t -> g accu ((mk_code (DROP (x + y)))::t)
+        | ({node = DUP})::({node = DROP x})::t    -> g accu ((mk_code (DROP (x - 1)))::t)
+        | ({node = DUP})::({node = SWAP})::t      -> g accu ((mk_code (DUP))::t)
+        | ({node = DROP 0})::t                    -> g accu t
+        | ({node = DIG 0})::t                     -> g accu t
+        | ({node = DUG 0})::t                     -> g accu t
+        | ({node = DIP (_, [])})::t               -> g accu t
+        | ({node = DIG 1})::t                     -> g accu ((mk_code (SWAP))::t)
+        | ({node = DUG 1})::t                     -> g accu ((mk_code (SWAP))::t)
+        | ({node = SWAP})::({node = SWAP})::t     -> g accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in

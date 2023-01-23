@@ -4,8 +4,6 @@
          PUSH mutez 9223372036854775807 ;
          PUSH nat 3 ;
          PUSH int 2 ;
-         PAIR ;
-         UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
                SWAP ;

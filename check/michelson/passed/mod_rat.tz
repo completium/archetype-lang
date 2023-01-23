@@ -92,8 +92,6 @@
                    IF { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} } ;
              PAIR ;
              DUP 6 ;
-             PAIR ;
-             UNPAIR ;
              DIP 1 { UNPAIR ; SWAP ; DUP } ;
              UNPAIR ;
              SWAP ;

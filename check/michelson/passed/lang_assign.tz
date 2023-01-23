@@ -54,8 +54,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -82,8 +80,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -157,8 +153,6 @@
          INT ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -186,8 +180,6 @@
          INT ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -262,8 +254,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -290,8 +280,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 5 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
