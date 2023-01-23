@@ -1,0 +1,9 @@
+archetype ticket_join_tickets
+
+variable t : option<ticket<string>> = none
+
+entry exec() {
+  const t1 ?= create_ticket("mystr", 2) : "ERROR";
+  const t2 ?= create_ticket("mystr", 1) : "ERROR";
+  t := join_tickets(t1, t2);
+}

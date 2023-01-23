@@ -1,0 +1,18 @@
+{ storage (option (ticket string)) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 2 ;
+         PUSH string "mystr" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH nat 1 ;
+         PUSH string "mystr" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         SWAP ;
+         PAIR ;
+         JOIN_TICKETS ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }
