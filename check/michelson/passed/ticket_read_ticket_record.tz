@@ -22,7 +22,7 @@
          UNPAIR 3 ;
          DIG 1 ;
          READ_TICKET ;
-         DIP 1 { DUG 2 ; PAIR 3 ; DUG 3 ; PAIR 4 } ;
+         DIP 1 { DUG 1 ; PAIR 3 ; DUG 2 ; PAIR 4 } ;
          DIP 1 { DIG 1 ; DROP 1 } ;
          DUG 1 ;
          DROP 1 ;

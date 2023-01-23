@@ -45,8 +45,9 @@
          ITER { UNPAIR 4 ;
                 DIG 1 ;
                 UNPAIR 3 ;
+                DIG 2 ;
                 DUP ;
-                DIP 1 { PAIR 3 ; DUG 1 ; PAIR 4 } ;
+                DIP 1 { DUG 2 ; PAIR 3 ; DUG 1 ; PAIR 4 } ;
                 DUP ;
                 DUP 4 ;
                 ADD ;

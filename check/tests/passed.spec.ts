@@ -1162,6 +1162,7 @@ import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
+import * as ticket_read_ticket_arg_record_list from '../bindings/passed/ticket_read_ticket_arg_record_list'
 import * as ticket_read_ticket_arg_tuple_2_list from '../bindings/passed/ticket_read_ticket_arg_tuple_2_list'
 import * as ticket_read_ticket_arg_tuple_3_list from '../bindings/passed/ticket_read_ticket_arg_tuple_3_list'
 import * as ticket_read_ticket_record from '../bindings/passed/ticket_read_ticket_record'
@@ -9259,6 +9260,11 @@ describe('passed', async () => {
     assert(res_after[0].equals(ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.get_address()))
     assert(res_after[1] == "my_ticket")
     assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_arg_record_list', async () => {
+    await ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.deploy({ as: alice })
+    // TODO
   })
 
   it('ticket_read_ticket_arg_tuple_2_list', async () => {

@@ -2364,7 +2364,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let p = List.map (fun (ai : T.access_item) ->
               ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) v.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
-              ([T.cdug (ai.ai_index + 1)] @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
+              ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
 
           T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r)]), inc_env env
         end

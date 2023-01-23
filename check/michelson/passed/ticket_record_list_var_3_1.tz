@@ -43,10 +43,11 @@
          PAIR ;
          CONS ;
          ITER { UNPAIR 4 ;
+                DIG 3 ;
                 UNPAIR 3 ;
                 DIG 1 ;
                 DUP ;
-                DIP 1 { DUG 1 ; PAIR 3 ; PAIR 4 } ;
+                DIP 1 { DUG 1 ; PAIR 3 ; DUG 3 ; PAIR 4 } ;
                 DUP ;
                 DUP 4 ;
                 ADD ;
