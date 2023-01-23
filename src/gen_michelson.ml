@@ -18,6 +18,7 @@ type error_desc =
   | UnsupportedTerm of string
   | StackEmptyDec
   | StackIdNotFound of string * string list
+  | StackIdNotPopulated of string * string list
   | NoConcreteImplementationFor of string
   | TODO
 [@@deriving show {with_path = false}]
@@ -25,12 +26,13 @@ type error_desc =
 let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
   match e with
-  | TODO                          -> pp "TODO"
-  | FieldNotFoundFor (rn, fn)     -> pp "Field not found for record '%s' and field '%s'" rn fn
-  | UnsupportedTerm s             -> pp "UnsupportedTerm: %s" s
-  | StackEmptyDec                 -> pp "StackEmptyDec"
-  | StackIdNotFound (id, stack)   -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) stack
-  | NoConcreteImplementationFor s -> pp "No concrete implementation for: %s" s
+  | TODO                            -> pp "TODO"
+  | FieldNotFoundFor (rn, fn)       -> pp "Field not found for record '%s' and field '%s'" rn fn
+  | UnsupportedTerm s               -> pp "UnsupportedTerm: %s" s
+  | StackEmptyDec                   -> pp "StackEmptyDec"
+  | StackIdNotFound (id, stack)     -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) stack
+  | StackIdNotPopulated (id, stack) -> pp "StackIdNotPopulated: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) stack
+  | NoConcreteImplementationFor s   -> pp "No concrete implementation for: %s" s
 
 let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
@@ -1732,25 +1734,40 @@ let concrete_michelson b : T.code =
   | T.Bmuteztonat     -> T.cseq (get_implem b)
   | T.Bsimplify_rational -> T.cseq (get_implem b)
 
+type stack_item = {
+  id: string;
+  populated: bool
+}
+[@@deriving show {with_path = false}]
+
 type env = {
-  stack : ident list;
+  stack : stack_item list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
 let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
 let fail_env (env : env) = { env with fail = true }
-let inc_env (env : env) = { env with stack = "_"::env.stack }
+let inc_env (env : env) = { env with stack = {id = "_"; populated = true}::env.stack }
 let dig_env n (env : env) = let s = List.nth env.stack n in let stack = Tools.List.remove_idx n env.stack in { env with stack = s::stack }
-let dug_env n (env : env) = let s = List.nth env.stack n in let stack = Tools.List.remove_idx n env.stack in { env with stack = s::stack }
 let dec_env (env : env) = { env with stack = match env.stack with | _::t -> t | _ -> emit_error StackEmptyDec }
-let add_var_env (env : env) id = { env with stack = id::env.stack }
+let add_var_env (env : env) id = { env with stack = {id= id; populated= true}::env.stack }
 let get_sp_for_id (env : env) id =
-  match List.index_of (String.equal id) env.stack with
-  | -1 -> emit_error (StackIdNotFound (id, env.stack))
-  | v -> v
+  let rec aux accu l =
+    match l with
+    | x::_ when String.equal x.id id -> if x.populated then accu else (emit_error (StackIdNotPopulated (id, List.map (fun x -> x.id) env.stack)))
+    | x::tl -> aux (accu + (if x.populated then 1 else 0)) tl
+    | [] -> emit_error (StackIdNotFound (id, List.map (fun x -> x.id) env.stack))
+  in
+  aux 0 env.stack
 let index_of_id_in_env (env : env) id =
-  List.index_of (String.equal id) env.stack
+    let rec aux accu l =
+    match l with
+    | x::_ when String.equal x.id id -> if x.populated then accu else -1
+    | x::tl -> aux (accu + (if x.populated then 1 else 0)) tl
+    | [] -> -1
+  in
+  aux 0 env.stack
 let rm_var_env (env : env) id =
   let n = get_sp_for_id env id in
   let stack = Tools.List.remove_idx n env.stack in
@@ -1763,7 +1780,7 @@ let head_env (env : env) id =
     | _ -> assert false
   in
   let l = remove i env.stack in
-  { env with stack = id::l }
+  { env with stack = {id = id; populated = true}::l }
 
 let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
@@ -2328,7 +2345,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Imichelson (a, c, v) -> begin
       let a, _ = seq env a in
-      T.cseq [a; c], { env with stack = v @ env.stack }
+      T.cseq [a; c], { env with stack = (List.map (fun id -> {id = id; populated = true}) v) @ env.stack }
     end
 
   | Iwildcard (ty, id) -> begin
@@ -2440,14 +2457,14 @@ and build_view storage_list (v : T.func) : T.view_struct =
 
     | args, [] ->
       let code = [T.ccar] @ unfold_all args in
-      let env = { env with stack = List.map fst args @ env.stack } in
+      let env = { env with stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
       code, env, List.length args
 
     | [], stovars ->
       let scode, svs = extract_storage_vars stovars in
       (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
       let code = [T.ccdr] @ scode in
-      let env = { env with stack = svs @ env.stack } in
+      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
       code, env, List.length svs
 
     | args, stovars ->
@@ -2456,7 +2473,7 @@ and build_view storage_list (v : T.func) : T.view_struct =
       let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
       let code = [T.cunpair] @ scode @ acode in
       let avs = List.map fst args in
-      let env = { env with stack = avs @ svs @ env.stack } in
+      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
       code, env, List.length (svs @ avs)
 
   in
@@ -2513,7 +2530,7 @@ and to_michelson (ir : T.ir) : T.michelson =
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~stack:(args |> List.map fst) () in
+                let env = mk_env ~stack:(args |> List.map (fun x -> {id = fst x; populated = true})) () in
                 let nb_args = List.length args in
                 (* let nb_as = nb_args - 1 in *)
                 let unfold_args = unfold_n nb_args in
@@ -2540,7 +2557,7 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.cdig n] else []), (if df > 0 then [T.cdip (1, [T.cdrop df]) ] else []) in
 
-    let stack            = (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map (fun (x, _, _) -> x) l) @ ops_var @ List.rev funids in
+    let stack            = (let l = ir.storage_list in if List.is_empty l then [{id = "_"; populated = true}] else List.map (fun (x, _, _) -> {id = x; populated = true}) l) @ (List.map (fun x -> {id = x; populated = true}) ops_var) @ (List.rev (List.map (fun x -> {id = x; populated = true}) funids)) in
     let env             = mk_env () ~stack in
     let nb_storage_item = List.length ir.storage_list in
     let unfold_storage  = unfold_n nb_storage_item  in
@@ -2569,7 +2586,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           let nb_as = nb_args - 1 in
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
-          let env = { env with stack = args @ eargs @ env.stack } in
+          let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
           let code, nenv = instruction_to_code env e.body in
           let diff = List.length env.stack - List.length nenv.stack in
           Format.eprintf "diff: %n\n" diff;
