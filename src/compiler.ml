@@ -119,6 +119,7 @@ let main () : unit =
       "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
       "--event-well-address", Arg.String (fun s -> Options.opt_event_well_address := Some s), " Deprecated";
       "--debug", Arg.Set Options.debug, " Debug";
+      "-g", Arg.Set Options.opt_g, " No michelson optimization";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [

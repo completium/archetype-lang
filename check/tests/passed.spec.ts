@@ -1163,6 +1163,7 @@ import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
 import * as ticket_read_ticket_arg_record_list from '../bindings/passed/ticket_read_ticket_arg_record_list'
+import * as ticket_read_ticket_arg_record_list2 from '../bindings/passed/ticket_read_ticket_arg_record_list2'
 import * as ticket_read_ticket_arg_tuple_2_list from '../bindings/passed/ticket_read_ticket_arg_tuple_2_list'
 import * as ticket_read_ticket_arg_tuple_3_list from '../bindings/passed/ticket_read_ticket_arg_tuple_3_list'
 import * as ticket_read_ticket_record from '../bindings/passed/ticket_read_ticket_record'
@@ -9264,7 +9265,32 @@ describe('passed', async () => {
 
   it('ticket_read_ticket_arg_record_list', async () => {
     await ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.deploy({ as: alice })
-    // TODO
+    const res_before = await ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg_record_list.ticket_read_ticket_arg_record_list.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_arg_record_list2', async () => {
+    await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    const ra_before = await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.get_ra();
+    assert(ra_before.equals(new Nat(0)))
+    await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+    const ra_after = await ticket_read_ticket_arg_record_list2.ticket_read_ticket_arg_record_list2.get_ra();
+    assert(ra_after.equals(new Nat(2)))
   })
 
   it('ticket_read_ticket_arg_tuple_2_list', async () => {

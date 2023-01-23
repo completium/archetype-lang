@@ -1946,11 +1946,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       in
       print_env ~str:("IletIn " ^ id ^ " final") nenv;
       c, nenv
-      (* let not_consumed = List.exists (String.equal id) env.vars in
-         Format.eprintf "not_consumed %s: %b@." id not_consumed;
-         if u
-         then T.cseq ([v; b] @ (if not_consumed then [T.cdrop 1] else [])), (if not_consumed then dec_env env else env)
-         else T.cseq [v; b; T.cdip (1, [T.cdrop 1])], inc_env env *)
     end
 
   | Ivar id -> begin
@@ -1979,13 +1974,17 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             if n = 0
             then []
             else [T.cdig n] in
+          let d =
+            if n = 0
+            then []
+            else [T.cdug n] in
           let p = List.map (fun (ai : T.access_item) ->
               ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) av.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
               ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
           let nenv = inc_env env in
           print_env ~str:"Ivar_access" nenv;
-          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), nenv
+          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r @ d)])), nenv
         end
       end
       else begin
@@ -2361,12 +2360,13 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       | T.Ivar_access v -> begin
           let n = get_sp_for_id env v.av_ident in
           let ccdig, _nenv = (if n == 0 then [] else [T.cdig n]), dig_env n env in
+          let ccdug = if n = 0 then [] else [T.cdug n] in
           let p = List.map (fun (ai : T.access_item) ->
               ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) v.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
               ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
 
-          T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r)]), inc_env env
+          T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r @ ccdug)]), inc_env env
         end
       | _ -> begin
           let v, env = f x in

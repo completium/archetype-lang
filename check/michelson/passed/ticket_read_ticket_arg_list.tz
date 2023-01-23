@@ -4,7 +4,7 @@
          DIG 1 ;
          UNPAIR ;
          IF_LEFT
-           { ITER { READ_TICKET ; DIP 1 {} ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+           { ITER { READ_TICKET ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
              DIG 1 ;
              PAIR }
            { DROP 1 ;

@@ -1,0 +1,54 @@
+{ storage (pair (pair %res address string nat) (nat %ra)) ;
+  parameter (or (list %callback (pair nat (ticket string))) (unit %exec)) ;
+  code { NIL operation ;
+         DIG 1 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 2 } ;
+         IF_LEFT
+           { ITER { UNPAIR 2 ;
+                    DIG 1 ;
+                    READ_TICKET ;
+                    DIP 1 { DUG 1 ; PAIR 2 } ;
+                    DIG 1 ;
+                    UNPAIR 2 ;
+                    DUP ;
+                    DIP 1 { PAIR 2 ; DUG 1 } ;
+                    DUP ;
+                    DIP 1 { DIG 4 ; DROP 1 } ;
+                    DUG 4 ;
+                    DUP 2 ;
+                    DIP 1 { DIG 3 ; DROP 1 } ;
+                    DUG 3 ;
+                    DROP 3 } ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR }
+           { DROP 1 ;
+             PUSH nat 10 ;
+             PUSH string "my_ticket" ;
+             TICKET ;
+             IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+             NIL (pair nat (ticket string)) ;
+             DIG 1 ;
+             PUSH nat 2 ;
+             PAIR ;
+             CONS ;
+             NIL operation ;
+             NIL operation ;
+             DUP 6 ;
+             ITER { CONS } ;
+             SELF_ADDRESS ;
+             CONTRACT %callback (list (pair nat (ticket string))) ;
+             IF_NONE
+               { PUSH string "callback" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             DIG 4 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             PAIR 2 ;
+             DIG 1 ;
+             PAIR } } }

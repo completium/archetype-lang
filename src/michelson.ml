@@ -356,8 +356,8 @@ and builtin =
 [@@deriving show {with_path = false}]
 
 and klv =
-| KLVoption of type_
-| KLVlist
+  | KLVoption of type_
+  | KLVlist
 [@@deriving show {with_path = false}]
 
 and access_item = {
@@ -1562,7 +1562,11 @@ end = struct
         | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
         | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
         | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code DUP)::t)
-        | ({node = DROP 0})::t           -> aux accu t
+        | ({node = DROP 0})::t                    -> aux accu t
+        | ({node = DIG 0})::t                     -> aux accu t
+        | ({node = DUG 0})::t                     -> aux accu t
+        | ({node = DIP (_, [])})::t               -> aux accu t
+        (* | ({node = (UNPAIR | UNPAIR_N 2)})::({node = DROP 1})::t -> aux accu ((mk_code CDR)::t) *)
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in
@@ -1571,9 +1575,12 @@ end = struct
     map_seq f c
 
   let optim c =
-    c
-    |> handle_failwith
-    |> factorize_instrs
+    let code = c |> handle_failwith in
+    if !Options.opt_g
+    then code
+    else
+      code
+      |> factorize_instrs
 
   let replace_macro (c : code) : code =
     let rec aux (c : code) : code  =

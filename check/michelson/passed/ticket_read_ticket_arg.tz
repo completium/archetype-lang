@@ -5,7 +5,6 @@
          UNPAIR ;
          IF_LEFT
            { READ_TICKET ;
-             DIP 1 {} ;
              DIP 1 { DIG 1 ; DROP 1 } ;
              DUG 1 ;
              DROP 1 ;
