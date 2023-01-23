@@ -1961,6 +1961,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Tcreate_contract c -> T.ccreate_contract c
   in
 
+  let get_remove_code env id =
+    let n, si = get_pos_stack_item env id in
+    match n with
+    | -1 -> []
+    | 0  -> ((if si.populated then [T.cdrop 1] else []))
+    | 1  -> ((if si.populated then [T.cswap; T.cdrop 1 ] else []))
+    | _  -> ((if si.populated then [T.cdip (n, [T.cdrop 1])] else []))
+  in
+
   match i with
   | Iseq l               -> seq env l
 
@@ -2089,52 +2098,39 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq [ c; T.cif ([t], [e]) ], env
     end
 
-  | Iifnone (v, t, id, s, ty) -> begin
+  | Iifnone (v, t, id, s, _ty) -> begin
       let v, env0 = fe env v in
-      let env1b = dec_env env0 in
-      let t, env1 = fe env1b t in
-      let env2b = add_var_env (dec_env env0) id in
-      let e, env2 = fe env2b s in
+      let t, env_none = fe (dec_env env0) t in
+      let e, env_some = fe (add_var_env (dec_env env0) id) s in
 
-      let benv, nenv =
-        match env1.fail, env2.fail with
-        | true, true  -> env2b, {env2 with fail = true}
-        | true, _     -> env2b, env2
-        | _, true     -> env1b, env1
-        | _           -> env2b, env2
+      let rm = get_remove_code env_some id in
+      let nenv =
+        match env_none.fail, env_some.fail with
+        | true, true  -> {env_none with fail = true}
+        | true, _     -> rm_var_env env_some id
+        | _, true     -> env_none
+        | _           -> rm_var_env env_some id
       in
-
-      let n_b = List.count (fun x -> x.populated) benv.stack in
-      let n_n = List.count (fun x -> x.populated) nenv.stack in
-
-      let ee, nenv =
-        if (n_b - n_n == 0)
-        then begin
-          match ty.node with
-          | T.Tunit -> [T.cdrop 1], dec_env nenv
-          | _       -> [], nenv
-        end
-        else begin
-          match ty.node with
-          | T.Tunit -> [T.cdrop 1], dec_env nenv
-          | _       -> [T.cswap; T.cdrop 1], dec_env nenv
-        end
-      in
-      T.cseq [ v; T.cifnone ([t], [e] @ ee) ], nenv
+      T.cseq [ v; T.cifnone ([t], [e] @ rm) ], nenv
     end
 
-  | Iifleft (v, lid, le, rid, re, ty) -> begin
-      let v, _ = fe env v in
-      let l, _ = fe (add_var_env env lid) le in
-      let r, _ = fe (add_var_env env rid) re in
+  | Iifleft (v, lid, le, rid, re, _ty) -> begin
+      let v, env0 = fe env v in
+      let l, env_left = fe (add_var_env (dec_env env0) lid) le in
+      let r, env_right = fe (add_var_env (dec_env env0) rid) re in
 
-      let ee, env =
-        match ty.node with
-        | T.Tunit -> T.[cdrop 1], env
-        | _       -> T.[cswap; cdrop 1], inc_env env
+      let rm_left = get_remove_code env_left lid in
+      let rm_right = get_remove_code env_right rid in
+
+      let nenv =
+        match env_left.fail, env_right.fail with
+        | true, true  -> {env_left with fail = true}
+        | true, _     -> rm_var_env env_right rid
+        | _, true     -> rm_var_env env_left lid
+        | _           -> rm_var_env env_right rid
       in
 
-      T.cseq [ v; T.cifleft ([l] @ ee, [r] @ ee) ], env
+      T.cseq [ v; T.cifleft ([l] @ rm_left, [r] @ rm_right) ], nenv
     end
 
   | Iifcons (x, hd, tl, hte, ne, ty) -> begin
@@ -2391,7 +2387,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Imap_ (x, id, e) -> begin
       let x, _env0 = fe env x in
       let e, _env1 = fe (add_var_env env id) e in
-      T.cseq [x; T.cmap [e; T.cswap; T.cdrop 1]], inc_env env
+      let rm = get_remove_code _env1 id in
+      T.cseq [x; T.cmap (e::rm)], inc_env env
     end
 
   | Ireverse (t, x) -> begin

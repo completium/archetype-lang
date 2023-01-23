@@ -10,7 +10,7 @@
            { PUSH nat 0 }
            { DUP 2 ;
              IF_NONE { PUSH nat 0 } { DUP ; PUSH nat 2 ; MUL ; SWAP ; DROP 1 } ;
-             DUP ;
+             DUP 2 ;
              ADD ;
              SWAP ;
              DROP 1 } ;
