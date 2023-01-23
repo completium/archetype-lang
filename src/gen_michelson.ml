@@ -1748,10 +1748,9 @@ type env = {
 
 let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
 let fail_env (env : env) = { env with fail = true }
-let inc_env (env : env) = { env with stack = {id = "_"; populated = true}::env.stack }
-let dig_env n (env : env) = let s = List.nth env.stack n in let stack = Tools.List.remove_idx n env.stack in { env with stack = s::stack }
+let inc_env (env : env) = { env with stack = { id = "_"; populated = true}::env.stack }
 let dec_env (env : env) = { env with stack = match env.stack with | _::t -> t | _ -> emit_error StackEmptyDec }
-let add_var_env (env : env) id = { env with stack = {id= id; populated= true}::env.stack }
+let add_var_env (env : env) id = { env with stack = { id = id; populated= true}::env.stack }
 let get_sp_for_id (env : env) id =
   let rec aux accu l =
     match l with
@@ -1761,7 +1760,7 @@ let get_sp_for_id (env : env) id =
   in
   aux 0 env.stack
 let index_of_id_in_env (env : env) id =
-    let rec aux accu l =
+  let rec aux accu l =
     match l with
     | x::_ when String.equal x.id id -> if x.populated then accu else -1
     | x::tl -> aux (accu + (if x.populated then 1 else 0)) tl
@@ -1769,18 +1768,51 @@ let index_of_id_in_env (env : env) id =
   in
   aux 0 env.stack
 let rm_var_env (env : env) id =
-  let n = get_sp_for_id env id in
-  let stack = Tools.List.remove_idx n env.stack in
-  { env with stack = stack }
-let head_env (env : env) id =
-  let i = get_sp_for_id env id in
-  let rec remove i = function
-    | _::tl when i = 0 -> tl
-    | e::tl -> e::(remove (i - 1) tl)
+  let nstack =
+    let rec aux accu a =
+      match a with
+      | x::tl when String.equal id x.id -> accu @ tl
+      | x::tl -> aux (accu @ [x]) tl
+      | [] -> assert false
+    in
+    aux [] env.stack
+  in
+  { env with stack = nstack }
+
+let dig_env env id =
+  let nstack =
+    let rec aux accu a =
+      match a with
+      | x::tl when String.equal id x.id -> [{id = "_"; populated = true}] @ accu @ [{ x with populated = false }] @ tl
+      | x::tl -> aux (accu @ [x]) tl
+      | [] -> assert false
+    in
+    aux [] env.stack
+  in
+  { env with stack = nstack }
+
+let dug_env env id =
+  let nstack =
+    let rec aux accu a =
+      match a with
+      | x::tl when String.equal id x.id -> (match accu with _::tl -> tl | [] -> assert false) @ [{ x with populated = true }] @ tl
+      | x::tl -> aux (accu @ [x]) tl
+      | [] -> assert false
+    in
+    aux [] env.stack
+  in
+  { env with stack = nstack }
+
+let get_pos_stack_item env id =
+  let b = List.exists (fun x -> String.equal x.id id) env.stack in
+  if (not b) then assert false;
+  let rec aux accu l =
+    match l with
+    | x::_ when String.equal x.id id -> accu, x
+    | x::tl -> aux (accu + (if x.populated then 1 else 0)) tl
     | _ -> assert false
   in
-  let l = remove i env.stack in
-  { env with stack = {id = id; populated = true}::l }
+  aux 0 env.stack
 
 let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
@@ -1929,21 +1961,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Tcreate_contract c -> T.ccreate_contract c
   in
 
-  let aop_to_code env = function
-    | T.Aunop   op       ->
-      let op = un_op_to_code op in
-      [op]
-    | T.Abinop (op, a) ->
-      let a, _env = fe env a in
-      let op = bin_op_to_code op in
-      [a; op]
-    | T.Aterop (op, a1, a2) ->
-      let a2, env  = fe env a2 in
-      let a1, _env = fe env a1 in
-      let op = ter_op_to_code op in
-      [a2; a1; op]
-  in
-
   match i with
   | Iseq l               -> seq env l
 
@@ -1953,13 +1970,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       print_env ~str:("IletIn " ^ id ^ " before") env;
       let b, env = fe env b in
       print_env ~str:("IletIn " ^ id ^ " after") env;
-      let idx = index_of_id_in_env env id in
-      let c, nenv =
+      let idx, si = get_pos_stack_item env id in
+      Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si;
+      let nenv = rm_var_env env id in
+      let c =
         match idx with
-        | -1 -> T.cseq [v; b], env
-        | 0 -> T.cseq [v; b; T.cdrop 1], dec_env env
-        | 1 -> T.cseq [v; b; T.cswap; T.cdrop 1 ], rm_var_env env id
-        | _ -> T.cseq [v; b; T.cdip (idx, [T.cdrop 1])], rm_var_env env id
+        | -1 -> T.cseq [v; b]
+        | 0  -> T.cseq ([v; b] @ (if si.populated then [T.cdrop 1] else []))
+        | 1  -> T.cseq ([v; b] @ (if si.populated then [T.cswap; T.cdrop 1 ] else []))
+        | _  -> T.cseq ([v; b] @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else []))
       in
       print_env ~str:("IletIn " ^ id ^ " final") nenv;
       c, nenv
@@ -1985,7 +2004,14 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       if av.av_source_no_dup
       then begin
         if av.av_value_no_dup
-        then (T.cseq (if n == 0 then [] else [T.cdig n])), dig_env n env
+        then begin
+          if n == 0
+          then (T.cseq [], env)
+          else begin
+            let nenv = dig_env env av.av_ident in
+            (T.cseq ([T.cdig n]), nenv)
+          end
+        end
         else begin
           let c =
             if n = 0
@@ -2184,16 +2210,37 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq [a3; a2; a1; op], (dec_env (dec_env env))
     end
   | Iupdate (ku, aop) -> begin
+      let aop_to_code env = function
+        | T.Aunop   op       ->
+          let op = un_op_to_code op in
+          [op], env
+        | T.Abinop (op, a) ->
+          let op = bin_op_to_code op in
+          let a, env = fe env a in
+          [a; op], dec_env env
+        | T.Aterop (op, a1, a2) ->
+          let op = ter_op_to_code op in
+          let a2, env = fe env a2 in
+          let a1, env = fe env a1 in
+          [a2; a1; op], dec_env (dec_env env)
+      in
       match ku with
       | Uvar id -> begin
           let n = get_sp_for_id env id in
-          let f env = aop_to_code env aop in
-          let c =
-            if n <= 0
-            then T.cseq (f env)
-            else T.cseq ([ T.cdig n ] @ (f (head_env env id)) @ [ T.cdug n ])
-          in
-          c, env
+          if n <= 0
+          then begin
+            let a, env = aop_to_code env aop in
+            T.cseq a, env
+          end
+          else begin
+            let tenv = dig_env env id in
+            let c, ntenv = aop_to_code tenv aop in
+            print_env ~str:"ntenv" ntenv;
+            let nn = get_pos_stack_item (dec_env ntenv) id |> fst in
+            Format.eprintf "id=%s nn=%d\n" id nn;
+            let nenv = dug_env ntenv id in
+            T.cseq ([ T.cdig n ] @ c @ [ T.cdug nn ]), nenv
+          end
         end
       | Urec (id, l) -> begin
           let rec g env l x =
@@ -2206,7 +2253,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
                 let swap   x = [T.cswap]   @ x @ [T.cswap] in
                 let h env =
                   match q with
-                  | [] -> aop_to_code env aop
+                  | [] -> aop_to_code env aop |> fst
                   | _  -> g env q 0
                 in
                 if x = k
@@ -2227,13 +2274,17 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
               end
           in
 
-          let c =
-            let n = get_sp_for_id env id in
-            if n <= 0
-            then T.cseq (g env l 0)
-            else T.cseq ([ T.cdig n ] @ (g (head_env env id) l 0) @ [ T.cdug n ])
-          in
-          c, env
+          let n = get_sp_for_id env id in
+          if n <= 0
+          then begin
+            T.cseq (g env l 0), env
+          end
+          else begin
+            let tenv = dig_env env id in
+            let c = g tenv l 0 in
+            let nn = get_pos_stack_item tenv id |> fst in
+            T.cseq ([ T.cdig n ] @ c @ [ T.cdug nn ]), env
+          end
         end
     end
   | Iconst (t, e) -> T.cpush (rar t, e), inc_env env
@@ -2369,8 +2420,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       match x with
       | T.Ivar_access v -> begin
           let n = get_sp_for_id env v.av_ident in
-          let ccdig, _nenv = (if n == 0 then [] else [T.cdig n]), dig_env n env in
-          let ccdug = if n = 0 then [] else [T.cdug n] in
+          let ccdig = if n == 0 then [] else [T.cdig n] in
+          let ccdug = if n == 0 then [] else [T.cdug n] in
           let p = List.map (fun (ai : T.access_item) ->
               ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) v.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
