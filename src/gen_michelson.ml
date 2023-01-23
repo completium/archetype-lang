@@ -2075,13 +2075,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           | _       -> [T.cswap; T.cdrop 1], dec_env nenv
         end
       in
-
-      (* let ee, nenv =
-         match ty.node with
-         | T.Tunit -> [T.cdrop 1], nenv
-         | _       -> [T.cswap; T.cdrop 1], nenv
-         in *)
-
       T.cseq [ v; T.cifnone ([t], [e] @ ee) ], nenv
     end
 
