@@ -29,8 +29,6 @@
              PUSH unit Unit ;
              DUP 3 ;
              DUP 3 ;
-             PAIR ;
-             UNPAIR ;
              DIP 1 { UNPAIR } ;
              UNPAIR ;
              DIG 3 ;
@@ -81,8 +79,6 @@
              PUSH nat 1 ;
              DUP 4 ;
              PAIR ;
-             PAIR ;
-             UNPAIR ;
              DIP 1 { UNPAIR } ;
              UNPAIR ;
              DIP 1 { SWAP } ;
@@ -97,8 +93,6 @@
              PAIR ;
              DUP 6 ;
              PAIR ;
-             PAIR ;
-             UNPAIR ;
              UNPAIR ;
              DIP 1 { UNPAIR ; SWAP ; DUP } ;
              UNPAIR ;

@@ -5,8 +5,6 @@
          PUSH nat 1000 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;

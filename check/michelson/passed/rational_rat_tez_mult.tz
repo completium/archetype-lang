@@ -7,8 +7,6 @@
          PUSH nat 5 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;

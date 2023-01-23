@@ -5,8 +5,6 @@
          DROP 1 ;
          PUSH nat 3 ;
          PUSH int 5 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE
            { PUSH string "DIV_BY_ZERO" ; FAILWITH }
@@ -15,8 +13,6 @@
          DROP 1 ;
          PUSH nat 3 ;
          PUSH int -5 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE
            { PUSH string "DIV_BY_ZERO" ; FAILWITH }

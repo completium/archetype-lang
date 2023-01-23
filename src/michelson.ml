@@ -1552,9 +1552,11 @@ end = struct
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
-        (* | (PAIR)::(UNPAIR)::t     -> aux accu t *)
-        (* | (UNPAIR)::(PAIR)::t     -> aux accu t *)
         (* | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t) *)
+        | ({node = UNPAIR})::({node = PAIR})::t   -> aux accu t
+        | ({node = PAIR})::({node = UNPAIR})::t   -> aux accu t
+        | ({node = UNPAIR_N x})::({node = PAIR_N y})::t when x = y -> aux accu t
+        | ({node = PAIR_N x})::({node = UNPAIR_N y})::t when x = y -> aux accu t
         | ({node = PAIR_N 2})::t                  -> aux accu ((mk_code (PAIR))::t)
         | ({node = UNPAIR_N 2})::t                -> aux accu ((mk_code (UNPAIR))::t)
         | ({node = UNPAIR})::({node = DROP 1})::t -> aux accu ((mk_code (CDR))::t)

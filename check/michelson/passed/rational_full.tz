@@ -47,8 +47,6 @@
            {} ;
          DUP 9 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -69,8 +67,6 @@
          IF_LEFT { DROP 1 ; ADD } { DROP 1 ; SWAP ; SUB } ;
          PAIR ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -103,8 +99,6 @@
          PUSH nat 1 ;
          INT ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIG 3 ;
@@ -127,8 +121,6 @@
          MUL ;
          DIP 1 { MUL ; ABS } ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIP 1 { SWAP } ;
@@ -145,8 +137,6 @@
          PUSH int 1 ;
          PAIR ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -175,8 +165,6 @@
          PUSH nat 10 ;
          PUSH int 3 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;

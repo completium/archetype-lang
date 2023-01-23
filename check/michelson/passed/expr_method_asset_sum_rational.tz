@@ -13,8 +13,6 @@
                 DUP 3 ;
                 DUP 5 ;
                 PAIR ;
-                PAIR ;
-                UNPAIR ;
                 UNPAIR ;
                 DIP 1 { UNPAIR ; SWAP ; DUP } ;
                 UNPAIR ;

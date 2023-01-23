@@ -190,8 +190,6 @@
          PUSH nat 1 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIG 2 ;
          MUL ;
@@ -202,8 +200,6 @@
          PUSH nat 1 ;
          PUSH int 2 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIG 2 ;
          MUL ;
@@ -226,8 +222,6 @@
          PUSH nat 1 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
@@ -247,8 +241,6 @@
          PUSH nat 1 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
@@ -268,8 +260,6 @@
          PUSH nat 10 ;
          PUSH int 11 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;
@@ -289,8 +279,6 @@
          PUSH nat 2 ;
          PUSH int 1 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;

@@ -487,16 +487,12 @@
          DUG 5 ;
          PUSH nat 5 ;
          PUSH int 8 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
          PUSH nat 5 ;
          PUSH int 8 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE
            { PUSH string "DIV_BY_ZERO" ; FAILWITH }
@@ -509,8 +505,6 @@
          DROP 1 ;
          PUSH nat 2 ;
          PUSH int -1 ;
-         PAIR ;
-         UNPAIR ;
          ABS ;
          INT ;
          PAIR ;

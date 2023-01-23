@@ -47,8 +47,6 @@
          DUP 5 ;
          DUP 7 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -73,8 +71,6 @@
          DUP 5 ;
          DUP 9 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -99,8 +95,6 @@
          DUP 5 ;
          DUP 11 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -125,8 +119,6 @@
          DUP 5 ;
          DUP 13 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;

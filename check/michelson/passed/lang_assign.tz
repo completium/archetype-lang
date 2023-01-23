@@ -55,8 +55,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -85,8 +83,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -112,8 +108,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIP 1 { SWAP } ;
@@ -132,8 +126,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIG 3 ;
@@ -166,8 +158,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -197,8 +187,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -225,8 +213,6 @@
          INT ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIP 1 { SWAP } ;
@@ -246,8 +232,6 @@
          INT ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIG 3 ;
@@ -279,8 +263,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -309,8 +291,6 @@
          PAIR ;
          DUP 5 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
@@ -336,8 +316,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIP 1 { SWAP } ;
@@ -356,8 +334,6 @@
          PUSH int 1 ;
          PAIR ;
          DUP 4 ;
-         PAIR ;
-         UNPAIR ;
          DIP 1 { UNPAIR } ;
          UNPAIR ;
          DIG 3 ;

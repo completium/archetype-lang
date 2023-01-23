@@ -8,8 +8,6 @@
          PUSH nat 1 ;
          DUP 3 ;
          PAIR ;
-         PAIR ;
-         UNPAIR ;
          UNPAIR ;
          DIP 2
              { PUSH mutez 1 ;

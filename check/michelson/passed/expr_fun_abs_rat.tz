@@ -5,8 +5,6 @@
          DROP 1 ;
          PUSH nat 2 ;
          PUSH int 1 ;
-         PAIR ;
-         UNPAIR ;
          ABS ;
          INT ;
          PAIR ;
@@ -14,8 +12,6 @@
          DROP 1 ;
          PUSH nat 2 ;
          PUSH int -1 ;
-         PAIR ;
-         UNPAIR ;
          ABS ;
          INT ;
          PAIR ;

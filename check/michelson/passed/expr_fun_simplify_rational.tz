@@ -50,8 +50,6 @@
                { PUSH string "DIV_BY_ZERO" ; FAILWITH }
                { DUP ; CAR ; SWAP ; DROP 1 } ;
              PAIR ;
-             PAIR ;
-             UNPAIR ;
              DIP 1 { UNPAIR } ;
              UNPAIR ;
              DIG 3 ;

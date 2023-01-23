@@ -3,8 +3,6 @@
   code { CDR ;
          EMPTY_MAP nat string ;
          PUSH nat 0 ;
-         PAIR ;
-         UNPAIR ;
          SWAP ;
          PUSH string "0" ;
          SOME ;

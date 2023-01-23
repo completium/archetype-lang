@@ -5,16 +5,12 @@
          DROP 1 ;
          PUSH nat 3 ;
          PUSH int 5 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
          SWAP ;
          DROP 1 ;
          PUSH nat 3 ;
          PUSH int -5 ;
-         PAIR ;
-         UNPAIR ;
          EDIV ;
          IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
          DIP 1 { SWAP ; DROP 1 } ;
