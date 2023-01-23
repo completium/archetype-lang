@@ -6,6 +6,7 @@
          PUSH string "mystr" ;
          TICKET ;
          IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
-         DROP 2 ;
+         CONS ;
+         DROP 1 ;
          NIL operation ;
          PAIR } }

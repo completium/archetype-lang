@@ -27,7 +27,7 @@
                { DROP 1 ;
                  PUSH nat 0 ;
                  DUP 2 ;
-                 ITER { UNPAIR ; DROP 2 } ;
+                 ITER { CDR ; DROP 1 } ;
                  PUSH nat 0 ;
                  DUP 2 ;
                  COMPARE ;

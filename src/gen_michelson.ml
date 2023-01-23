@@ -2005,11 +2005,13 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       then begin
         if av.av_value_no_dup
         then begin
+          let nenv = dig_env env av.av_ident in
           if n == 0
-          then (T.cseq [], env)
+          then begin
+            T.cseq [], nenv
+          end
           else begin
-            let nenv = dig_env env av.av_ident in
-            (T.cseq ([T.cdig n]), nenv)
+            T.cseq ([T.cdig n]), nenv
           end
         end
         else begin
@@ -2102,8 +2104,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | _           -> env2b, env2
       in
 
-      let n_b = List.length benv.stack in
-      let n_n = List.length nenv.stack in
+      let n_b = List.count (fun x -> x.populated) benv.stack in
+      let n_n = List.count (fun x -> x.populated) nenv.stack in
 
       let ee, nenv =
         if (n_b - n_n == 0)
@@ -2162,13 +2164,16 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let nenv = dec_env env in
           let env_body = add_var_env nenv id in
           let b, _ = fe env_body b in
-          T.cseq T.[c; citer [b; cdrop 1]], nenv
+          let _, si = get_pos_stack_item env_body id in
+          T.cseq T.[c; citer ([b] @ (if si.populated then [cdrop 1] else []))], nenv
         end
       | [k; v] -> begin
           let nenv = dec_env env in
           let env_body = add_var_env (add_var_env nenv v) k in
           let b, _ = fe env_body b in
-          T.cseq T.[c; citer [cunpair; b; cdrop 2]] , nenv
+          let _, si_k = get_pos_stack_item env_body k in
+          let _, si_v = get_pos_stack_item env_body v in
+          T.cseq T.[c; citer ([cunpair; b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
         end
       | _ -> assert false
     end
@@ -2282,7 +2287,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           else begin
             let tenv = dig_env env id in
             let c = g tenv l 0 in
-            let nn = get_pos_stack_item tenv id |> fst in
+            let nn = get_pos_stack_item (dec_env tenv) id |> fst in
             T.cseq ([ T.cdig n ] @ c @ [ T.cdug nn ]), env
           end
         end
@@ -2639,7 +2644,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           let args = List.map fst l |> List.rev in
           let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
           let code, nenv = instruction_to_code env e.body in
-          let diff = List.length env.stack - List.length nenv.stack in
+          let diff = List.count (fun x -> not x.populated) nenv.stack in
           Format.eprintf "diff: %n\n" diff;
           T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair])
         end
