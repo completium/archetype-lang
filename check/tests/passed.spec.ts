@@ -1161,9 +1161,23 @@ import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
+import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
+import * as ticket_read_ticket_arg_tuple_2_list from '../bindings/passed/ticket_read_ticket_arg_tuple_2_list'
+import * as ticket_read_ticket_arg_tuple_3_list from '../bindings/passed/ticket_read_ticket_arg_tuple_3_list'
 import * as ticket_read_ticket_record from '../bindings/passed/ticket_read_ticket_record'
 import * as ticket_read_ticket_record_list from '../bindings/passed/ticket_read_ticket_record_list'
-import * as ticket_record_list_var from '../bindings/passed/ticket_record_list_var'
+import * as ticket_record_list_var_0_0 from '../bindings/passed/ticket_record_list_var_0_0'
+import * as ticket_record_list_var_0_1 from '../bindings/passed/ticket_record_list_var_0_1'
+import * as ticket_record_list_var_0_2 from '../bindings/passed/ticket_record_list_var_0_2'
+import * as ticket_record_list_var_1_0 from '../bindings/passed/ticket_record_list_var_1_0'
+import * as ticket_record_list_var_1_1 from '../bindings/passed/ticket_record_list_var_1_1'
+import * as ticket_record_list_var_1_2 from '../bindings/passed/ticket_record_list_var_1_2'
+import * as ticket_record_list_var_2_0 from '../bindings/passed/ticket_record_list_var_2_0'
+import * as ticket_record_list_var_2_1 from '../bindings/passed/ticket_record_list_var_2_1'
+import * as ticket_record_list_var_2_2 from '../bindings/passed/ticket_record_list_var_2_2'
+import * as ticket_record_list_var_3_0 from '../bindings/passed/ticket_record_list_var_3_0'
+import * as ticket_record_list_var_3_1 from '../bindings/passed/ticket_record_list_var_3_1'
+import * as ticket_record_list_var_3_2 from '../bindings/passed/ticket_record_list_var_3_2'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
 import * as transfer_entrypoint2 from '../bindings/passed/transfer_entrypoint2'
@@ -9234,6 +9248,45 @@ describe('passed', async () => {
     assert(res_after[2].equals(new Nat(10)))
   })
 
+  it('ticket_read_ticket_arg_list', async () => {
+    await ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg_list.ticket_read_ticket_arg_list.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_arg_tuple_2_list', async () => {
+    await ticket_read_ticket_arg_tuple_2_list.ticket_read_ticket_arg_tuple_2_list.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_arg_tuple_2_list.ticket_read_ticket_arg_tuple_2_list.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_arg_tuple_2_list.ticket_read_ticket_arg_tuple_2_list.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg_tuple_2_list.ticket_read_ticket_arg_tuple_2_list.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg_tuple_2_list.ticket_read_ticket_arg_tuple_2_list.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
+  it('ticket_read_ticket_arg_tuple_3_list', async () => {
+    await ticket_read_ticket_arg_tuple_3_list.ticket_read_ticket_arg_tuple_3_list.deploy({ as: alice })
+    const res_before = await ticket_read_ticket_arg_tuple_3_list.ticket_read_ticket_arg_tuple_3_list.get_res()
+    assert(res_before[0].equals(alice.get_address()))
+    assert(res_before[1] == "")
+    assert(res_before[2].equals(new Nat(0)))
+    await ticket_read_ticket_arg_tuple_3_list.ticket_read_ticket_arg_tuple_3_list.exec({ as: alice })
+    const res_after = await ticket_read_ticket_arg_tuple_3_list.ticket_read_ticket_arg_tuple_3_list.get_res()
+    assert(res_after[0].equals(ticket_read_ticket_arg_tuple_3_list.ticket_read_ticket_arg_tuple_3_list.get_address()))
+    assert(res_after[1] == "my_ticket")
+    assert(res_after[2].equals(new Nat(10)))
+  })
+
   it('ticket_read_ticket_record', async () => {
     await ticket_read_ticket_record.ticket_read_ticket_record.deploy({ as: alice })
     const res_before = await ticket_read_ticket_record.ticket_read_ticket_record.get_res()
@@ -9260,12 +9313,113 @@ describe('passed', async () => {
     assert(res_after[2].equals(new Nat(10)))
   })
 
-  it('ticket_record_list_var', async () => {
-    await ticket_record_list_var.ticket_record_list_var.deploy({ as: alice })
-    const res_before = await ticket_record_list_var.ticket_record_list_var.get_res();
+  it('ticket_record_list_var_0_0', async () => {
+    await ticket_record_list_var_0_0.ticket_record_list_var_0_0.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_0_0.ticket_record_list_var_0_0.get_res();
     assert(res_before.equals(new Nat(0)))
-    await ticket_record_list_var.ticket_record_list_var.exec({ as: alice });
-    const res_after = await ticket_record_list_var.ticket_record_list_var.get_res();
+    await ticket_record_list_var_0_0.ticket_record_list_var_0_0.exec({ as: alice });
+    const res_after = await ticket_record_list_var_0_0.ticket_record_list_var_0_0.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_0_1', async () => {
+    await ticket_record_list_var_0_1.ticket_record_list_var_0_1.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_0_1.ticket_record_list_var_0_1.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_0_1.ticket_record_list_var_0_1.exec({ as: alice });
+    const res_after = await ticket_record_list_var_0_1.ticket_record_list_var_0_1.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_0_2', async () => {
+    await ticket_record_list_var_0_2.ticket_record_list_var_0_2.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_0_2.ticket_record_list_var_0_2.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_0_2.ticket_record_list_var_0_2.exec({ as: alice });
+    const res_after = await ticket_record_list_var_0_2.ticket_record_list_var_0_2.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_1_0', async () => {
+    await ticket_record_list_var_1_0.ticket_record_list_var_1_0.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_1_0.ticket_record_list_var_1_0.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_1_0.ticket_record_list_var_1_0.exec({ as: alice });
+    const res_after = await ticket_record_list_var_1_0.ticket_record_list_var_1_0.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_1_1', async () => {
+    await ticket_record_list_var_1_1.ticket_record_list_var_1_1.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_1_1.ticket_record_list_var_1_1.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_1_1.ticket_record_list_var_1_1.exec({ as: alice });
+    const res_after = await ticket_record_list_var_1_1.ticket_record_list_var_1_1.get_res();
+    assert(res_after.equals(new Nat(6)))
+
+  })
+
+  it('ticket_record_list_var_1_2', async () => {
+    await ticket_record_list_var_1_2.ticket_record_list_var_1_2.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_1_2.ticket_record_list_var_1_2.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_1_2.ticket_record_list_var_1_2.exec({ as: alice });
+    const res_after = await ticket_record_list_var_1_2.ticket_record_list_var_1_2.get_res();
+    assert(res_after.equals(new Nat(6)))
+
+  })
+
+  it('ticket_record_list_var_2_0', async () => {
+    await ticket_record_list_var_2_0.ticket_record_list_var_2_0.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_2_0.ticket_record_list_var_2_0.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_2_0.ticket_record_list_var_2_0.exec({ as: alice });
+    const res_after = await ticket_record_list_var_2_0.ticket_record_list_var_2_0.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_2_1', async () => {
+    await ticket_record_list_var_2_1.ticket_record_list_var_2_1.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_2_1.ticket_record_list_var_2_1.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_2_1.ticket_record_list_var_2_1.exec({ as: alice });
+    const res_after = await ticket_record_list_var_2_1.ticket_record_list_var_2_1.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_2_2', async () => {
+    await ticket_record_list_var_2_2.ticket_record_list_var_2_2.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_2_2.ticket_record_list_var_2_2.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_2_2.ticket_record_list_var_2_2.exec({ as: alice });
+    const res_after = await ticket_record_list_var_2_2.ticket_record_list_var_2_2.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_3_0', async () => {
+    await ticket_record_list_var_3_0.ticket_record_list_var_3_0.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_3_0.ticket_record_list_var_3_0.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_3_0.ticket_record_list_var_3_0.exec({ as: alice });
+    const res_after = await ticket_record_list_var_3_0.ticket_record_list_var_3_0.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_3_1', async () => {
+    await ticket_record_list_var_3_1.ticket_record_list_var_3_1.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_3_1.ticket_record_list_var_3_1.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_3_1.ticket_record_list_var_3_1.exec({ as: alice });
+    const res_after = await ticket_record_list_var_3_1.ticket_record_list_var_3_1.get_res();
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_record_list_var_3_2', async () => {
+    await ticket_record_list_var_3_2.ticket_record_list_var_3_2.deploy({ as: alice })
+    const res_before = await ticket_record_list_var_3_2.ticket_record_list_var_3_2.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await ticket_record_list_var_3_2.ticket_record_list_var_3_2.exec({ as: alice });
+    const res_after = await ticket_record_list_var_3_2.ticket_record_list_var_3_2.get_res();
     assert(res_after.equals(new Nat(6)))
   })
 

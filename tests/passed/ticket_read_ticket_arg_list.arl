@@ -1,0 +1,15 @@
+archetype ticket_read_ticket_arg_list
+
+variable res : (address * string * nat) = (tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb, "", 0)
+
+entry callback(l : list<ticket<string>>) {
+  for i in l do
+    res := read_ticket(i)
+  done
+}
+
+entry exec() {
+  const t ?= create_ticket("my_ticket", 10) : "ERROR";
+  const l : list<ticket<string>> = [t];
+  transfer 0tz to entry self.callback(l)
+}

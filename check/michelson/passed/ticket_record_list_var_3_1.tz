@@ -1,0 +1,57 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DROP 1 ;
+         NIL (pair (option %t (ticket string))
+                   (bytes %n)
+                   (string %s)
+                   (pair %v string nat (option address))) ;
+         NONE address ;
+         PUSH nat 3 ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH bytes 0x ;
+         PAIR ;
+         NONE (ticket string) ;
+         PAIR ;
+         CONS ;
+         NONE address ;
+         PUSH nat 2 ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH bytes 0x ;
+         PAIR ;
+         NONE (ticket string) ;
+         PAIR ;
+         CONS ;
+         NONE address ;
+         PUSH nat 1 ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH string "" ;
+         PAIR ;
+         PUSH bytes 0x ;
+         PAIR ;
+         NONE (ticket string) ;
+         PAIR ;
+         CONS ;
+         ITER { UNPAIR 4 ;
+                UNPAIR 3 ;
+                DIG 1 ;
+                DUP ;
+                DIP 1 { DUG 1 ; PAIR 3 ; PAIR 4 } ;
+                DUP ;
+                DUP 4 ;
+                ADD ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                DROP 2 } ;
+         NIL operation ;
+         PAIR } }

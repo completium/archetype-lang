@@ -1,0 +1,22 @@
+archetype ticket_record_list_var_1_1
+
+record my_record {
+  t : option<ticket<string>>;
+  v : (string * nat * option<address>);
+  n : bytes;
+  s : string;
+}
+
+variable res : nat = 0
+
+entry exec() {
+  const l : list<my_record> = [
+    {none; (("", 1, none<address>)); 0x; ""};
+    {none; (("", 2, none<address>)); 0x; ""};
+    {none; (("", 3, none<address>)); 0x; ""}
+  ];
+  for i in l do
+    const a = i.v[1];
+    res += a
+  done
+}

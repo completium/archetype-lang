@@ -1980,9 +1980,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             then []
             else [T.cdig n] in
           let p = List.map (fun (ai : T.access_item) ->
-              ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_index)]))) av.av_path |> List.flatten in
+              ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) av.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
-              ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_index)]) @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
+              ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
           let nenv = inc_env env in
           print_env ~str:"Ivar_access" nenv;
           (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r)])), nenv
@@ -2362,9 +2362,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let n = get_sp_for_id env v.av_ident in
           let ccdig, _nenv = (if n == 0 then [] else [T.cdig n]), dig_env n env in
           let p = List.map (fun (ai : T.access_item) ->
-              ((T.cunpair_n ai.ai_length)::(if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdig (ai.ai_index)]))) v.av_path |> List.flatten in
+              ((T.cunpair_n ai.ai_length)::[T.cdig (ai.ai_index)])) v.av_path |> List.flatten in
           let r = List.map (fun (ai : T.access_item) ->
-              ((if (ai.ai_index + 1 = ai.ai_length) then [] else [T.cdug (ai.ai_index + 1)]) @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
+              ([T.cdug (ai.ai_index + 1)] @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
 
           T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r)]), inc_env env
         end
@@ -2577,8 +2577,10 @@ and to_michelson (ir : T.ir) : T.michelson =
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
           let env = { env with vars = args @ eargs @ env.vars } in
-          let code, _ = instruction_to_code env e.body in
-          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs)] @ fold_storage @ eops @ [T.cpair])
+          let code, nenv = instruction_to_code env e.body in
+          let diff = List.length env.vars - List.length nenv.vars in
+          Format.eprintf "diff: %n\n" diff;
+          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair])
         end
     in
 
