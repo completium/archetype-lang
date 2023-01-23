@@ -1,7 +1,6 @@
 { storage (option mutez) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH mutez 2000000 ;
          PUSH mutez 3000000 ;
          SUB_MUTEZ ;

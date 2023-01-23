@@ -1,0 +1,7 @@
+archetype ticket_create_ticket_list_prepend
+
+entry exec () {
+  var l : list<ticket<string>> = [];
+  const t ?= create_ticket("mystr", 10) : "ERROR";
+  // l.prepend(t)
+}

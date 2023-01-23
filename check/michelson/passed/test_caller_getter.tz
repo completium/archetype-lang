@@ -1,16 +1,16 @@
 { storage (pair (nat %n) (nat %res)) ;
   parameter (or (nat %callback) (unit %main)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { DUP 2 ;
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             PAIR 2 ;
-             DIG 1 ;
+             PAIR ;
+             SWAP ;
              PAIR }
            { DROP 1 ;
              PUSH nat 1 ;
@@ -39,6 +39,6 @@
                  DIP 1 { DIG 3 ; DROP 1 } ;
                  DUG 3 ;
                  DROP 1 } ;
-             PAIR 2 ;
-             DIG 1 ;
+             PAIR ;
+             SWAP ;
              PAIR } } }

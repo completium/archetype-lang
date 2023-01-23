@@ -14,9 +14,9 @@
                   COMPARE ;
                   EQ ;
                   IF { PUSH nat 2 ; SWAP ; DROP 1 } { PUSH nat 3 ; SWAP ; DROP 1 } } ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          DIP 1 { UNPAIR 3 } ;
          DROP 1 ;
@@ -28,8 +28,8 @@
          DUP 4 ;
          PUSH nat 2 ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP 4 ;
          PUSH nat 0 ;
          EXEC ;

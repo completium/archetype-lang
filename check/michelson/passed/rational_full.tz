@@ -21,7 +21,7 @@
          LAMBDA
            (pair int nat)
            (pair int nat)
-           { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
+           { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
          NIL operation ;
          DIG 3 ;
          UNPAIR ;
@@ -207,6 +207,6 @@
          DIP 1 { DIG 5 ; DROP 1 } ;
          DUG 5 ;
          DROP 4 ;
-         DIG 1 ;
+         SWAP ;
          PAIR ;
          DIP 1 { DROP 2 } } }

@@ -1,13 +1,13 @@
 { storage (pair (map %my_asset string int) (bool %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          PUSH string "id0" ;
          MEM ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
-         PAIR 2 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

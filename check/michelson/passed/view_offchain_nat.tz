@@ -1,7 +1,7 @@
 { storage (pair (big_map %bm nat string) (big_map %metadata string bytes)) ;
   parameter (pair %set (nat %i) (string %s)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          UNPAIR ;
          SWAP ;
          DUP 3 ;
@@ -12,6 +12,6 @@
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 2 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

@@ -1,0 +1,15 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         NIL (ticket string) ;
+         PUSH nat 10 ;
+         PUSH string "mystr" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         SWAP ;
+         SWAP ;
+         CONS ;
+         SWAP ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

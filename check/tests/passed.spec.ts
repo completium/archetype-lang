@@ -1159,6 +1159,7 @@ import * as test_update from '../bindings/passed/test_update'
 import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
+import * as ticket_create_ticket_list_prepend from '../bindings/passed/ticket_create_ticket_list_prepend'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
@@ -9222,6 +9223,11 @@ describe('passed', async () => {
     await ticket_create_ticket.ticket_create_ticket.exec({ as: alice });
     const t_after = await ticket_create_ticket.ticket_create_ticket.get_t();
     assert(t_after.equals(Option.Some(new Ticket<string>(ticket_create_ticket.ticket_create_ticket.get_address(), "mystr", new Nat(10)))))
+  })
+
+  it('ticket_create_ticket_list_prepend', async () => {
+    await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.deploy({ as: alice })
+    // TODO
   })
 
   it('ticket_read_ticket', async () => {

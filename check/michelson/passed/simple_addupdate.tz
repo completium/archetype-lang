@@ -1,7 +1,6 @@
 { storage (map string (pair (nat %v1) (int %v2))) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          PUSH string "id3" ;
          MEM ;
@@ -18,8 +17,7 @@
               IF_NONE
                 { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                 {} ;
-              UNPAIR ;
-              DROP 1 ;
+              CDR ;
               PUSH nat 3 ;
               DUP 4 ;
               GET 1 ;
@@ -28,8 +26,8 @@
               SOME ;
               PUSH string "id3" ;
               UPDATE ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 ;
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP ;
               DROP 1 }
             { DUP ;
               PUSH int 0 ;

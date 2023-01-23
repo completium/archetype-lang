@@ -1,3 +1,3 @@
 { storage (pair (set %o_asset int) (map %my_asset string (set int))) ;
   parameter (string %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 2 } ; DROP 1 ; PAIR 2 ; NIL operation ; PAIR } }
+  code { UNPAIR ; DIP 1 { UNPAIR } ; DROP 1 ; PAIR ; NIL operation ; PAIR } }

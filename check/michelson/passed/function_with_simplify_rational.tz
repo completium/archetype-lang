@@ -22,8 +22,8 @@
                     IF_NONE
                       { PUSH string "DIV_BY_ZERO" ; FAILWITH }
                       { DUP ; CDR ; SWAP ; DROP 1 } ;
-                    DIP 1 { DIG 1 ; DROP 1 } ;
-                    DUG 1 ;
+                    DIP 1 { SWAP ; DROP 1 } ;
+                    SWAP ;
                     DUP ;
                     INT ;
                     DIP 1 { DIG 2 ; DROP 1 } ;
@@ -77,12 +77,12 @@
              DIP 1 { DIG 4 ; DROP 1 } ;
              DUG 4 ;
              DROP 4 ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
          LAMBDA
            (pair (pair int nat) (lambda (pair int nat) (pair int nat)))
            (pair int nat)
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 3 ;
              DUP 3 ;
@@ -98,8 +98,8 @@
          DUP 3 ;
          PAIR ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

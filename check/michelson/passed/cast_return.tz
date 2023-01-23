@@ -4,9 +4,8 @@
            unit
            int
            { PUSH unit Unit ; PUSH int 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          DUP 2 ;
          UNIT ;
          EXEC ;

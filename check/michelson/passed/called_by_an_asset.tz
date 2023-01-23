@@ -1,7 +1,6 @@
 { storage (map address string) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          SENDER ;
          MEM ;

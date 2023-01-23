@@ -1,10 +1,9 @@
 { storage nat ;
   parameter (pair %getN unit (contract %callback nat)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          NIL operation ;
          NIL operation ;
          DUP 5 ;
@@ -18,5 +17,5 @@
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 1 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

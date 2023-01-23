@@ -1,7 +1,6 @@
 { storage (map (pair nat string) bool) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          PUSH string "mystr_1" ;
          PUSH nat 1 ;
@@ -35,8 +34,8 @@
          PUSH nat 0 ;
          PAIR ;
          UPDATE ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          NIL (pair nat string) ;
          NIL (pair nat string) ;
          DUP 4 ;

@@ -23,8 +23,8 @@
                        SOME ;
                        PUSH string "toto" ;
                        UPDATE ;
-                       DIP 1 { DIG 1 ; DROP 1 } ;
-                       DUG 1 ;
+                       DIP 1 { SWAP ; DROP 1 } ;
+                       SWAP ;
                        DUP ;
                        PUSH nat 2 ;
                        SOME ;
@@ -57,8 +57,8 @@
                     IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
                     SWAP ;
                     DROP 1 ;
-                    DIP 1 { DIG 1 ; DROP 1 } ;
-                    DUG 1 ;
+                    DIP 1 { SWAP ; DROP 1 } ;
+                    SWAP ;
                     DROP 1 } ;
              ITER { CONS } ;
              DIP 1 { DIG 2 ; DROP 1 } ;

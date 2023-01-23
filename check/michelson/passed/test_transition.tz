@@ -10,7 +10,7 @@
                  COMPARE ;
                  EQ ;
                  IF { PUSH bool True ;
-                      IF { PUSH int 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 } {} }
+                      IF { PUSH int 1 ; DIP 1 { SWAP ; DROP 1 } ; SWAP } {} }
                     { PUSH string "INVALID_STATE" ; FAILWITH } ;
                  DROP 1 ;
                  NIL operation ;
@@ -22,12 +22,12 @@
              PUSH int 0 ;
              COMPARE ;
              EQ ;
-             IF { PUSH int 2 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+             IF { PUSH int 2 ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
                 { DUP ;
                   PUSH int 1 ;
                   COMPARE ;
                   EQ ;
-                  IF { PUSH int 2 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+                  IF { PUSH int 2 ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
                      { PUSH string "INVALID_STATE" ; FAILWITH } } ;
              DROP 1 ;
              NIL operation ;

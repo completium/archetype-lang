@@ -1,3 +1,3 @@
 { storage (list nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ; DROP 1 ; NIL nat ; SWAP ; DROP 1 ; NIL operation ; PAIR } }
+  code { CDR ; NIL nat ; SWAP ; DROP 1 ; NIL operation ; PAIR } }

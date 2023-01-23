@@ -1,7 +1,6 @@
 { storage (pair (nat %n) (string %s)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          UNPAIR ;
          SWAP ;

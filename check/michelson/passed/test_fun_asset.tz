@@ -3,17 +3,17 @@
   code { LAMBDA
            (set nat)
            nat
-           { PUSH unit Unit ; DUP 2 ; SIZE ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
-         DIG 1 ;
+           { PUSH unit Unit ; DUP 2 ; SIZE ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP 3 ;
          DUP 2 ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
-         PAIR 2 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

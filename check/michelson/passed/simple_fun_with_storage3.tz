@@ -3,7 +3,7 @@
   code { LAMBDA
            (pair int int)
            int
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 3 ;
              DUP 3 ;
@@ -33,7 +33,7 @@
              DROP 3 } ;
          DIG 2 ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP 3 ;
          PUSH int 2 ;
@@ -50,7 +50,7 @@
          ADD ;
          SWAP ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 2 } } }

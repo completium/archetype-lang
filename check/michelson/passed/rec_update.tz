@@ -1,10 +1,8 @@
 { storage (pair (string %a) (int %b) (nat %c)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH string "mystr" ;
          SWAP ;
          UNPAIR ;

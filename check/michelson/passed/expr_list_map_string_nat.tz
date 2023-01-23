@@ -1,7 +1,6 @@
 { storage (list nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL string ;
          PUSH string "cccc" ;
          CONS ;
@@ -11,8 +10,8 @@
          CONS ;
          DUP ;
          MAP { DUP ; SIZE ; SWAP ; DROP 1 } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

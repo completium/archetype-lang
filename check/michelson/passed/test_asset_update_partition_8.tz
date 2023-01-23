@@ -3,7 +3,7 @@
           (map %my_asset string (pair (nat %v0) (set %c nat)))) ;
   parameter (nat %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DUP 2 ;
          DUP 2 ;
          MEM ;
@@ -62,6 +62,6 @@
               DROP 1 }
             { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH } ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

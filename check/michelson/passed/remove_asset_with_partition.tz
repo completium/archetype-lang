@@ -13,15 +13,15 @@
                 PUSH bool False ;
                 DUP 3 ;
                 UPDATE ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          DUP 2 ;
          NONE (set string) ;
          PUSH string "oid" ;
          UPDATE ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PAIR 3 ;
          NIL operation ;
          PAIR } }

@@ -5,7 +5,7 @@
            (list string)
            { UNPAIR ;
              NIL string ;
-             DIG 1 ;
+             SWAP ;
              ITER { CONS } ;
              DUP 2 ;
              DUP 2 ;
@@ -44,7 +44,7 @@
                     LT } ;
              DROP 2 ;
              DIP 1 { DROP 3 } } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          UNPAIR ;
          SWAP ;

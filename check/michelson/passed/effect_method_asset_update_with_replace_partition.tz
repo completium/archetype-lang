@@ -3,7 +3,7 @@
           (map %my_asset string (pair (int %value) (set %mypartition nat)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          PUSH nat 3 ;
@@ -26,8 +26,7 @@
               IF_NONE
                 { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                 {} ;
-              UNPAIR ;
-              DROP 1 ;
+              CDR ;
               PUSH int 3 ;
               SWAP ;
               DROP 1 ;
@@ -46,8 +45,8 @@
               SOME ;
               PUSH string "my_id" ;
               UPDATE ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 ;
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP ;
               DUP ;
               PUSH bool True ;
               PUSH nat 1 ;
@@ -61,6 +60,6 @@
               SWAP ;
               DROP 1 }
             { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH } ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

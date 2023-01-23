@@ -6,7 +6,7 @@
           (bytes %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          DUP ;
@@ -49,6 +49,6 @@
          EQ ;
          NOT ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

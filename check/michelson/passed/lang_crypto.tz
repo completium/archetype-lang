@@ -1,7 +1,6 @@
 { storage unit ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH bytes 0x050100000009617263686574797065 ;
          DUP ;
          BLAKE2B ;

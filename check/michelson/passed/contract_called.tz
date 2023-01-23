@@ -2,12 +2,7 @@
   parameter (or (int %set_value) (pair %add_value (int %a) (int %b))) ;
   code { UNPAIR ;
          IF_LEFT
-           { DUP ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             DROP 1 ;
-             NIL operation ;
-             PAIR }
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; NIL operation ; PAIR }
            { UNPAIR ;
              SWAP ;
              DUP ;

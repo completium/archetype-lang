@@ -3,7 +3,7 @@
   code { LAMBDA
            (pair int nat)
            nat
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 2 ;
              ABS ;
@@ -48,7 +48,7 @@
              DROP 4 } ;
          DIG 3 ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP 3 ;
          DUP 6 ;
@@ -61,7 +61,7 @@
          EXEC ;
          SWAP ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 3 } } }

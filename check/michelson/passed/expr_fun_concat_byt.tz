@@ -1,7 +1,6 @@
 { storage bytes ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH bytes 0xef ;
          PUSH bytes 0x12 ;
          CONCAT ;

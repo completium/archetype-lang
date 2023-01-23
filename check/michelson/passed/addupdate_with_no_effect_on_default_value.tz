@@ -1,7 +1,7 @@
 { storage (pair (nat %r) (map %my_asset string (pair (nat %v) (nat %c)))) ;
   parameter (or (unit %exec) (unit %exec2)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { DROP 1 ;
              DUP 2 ;
@@ -11,9 +11,9 @@
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             PAIR 2 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
              NIL operation ;
              PAIR }
            { DROP 1 ;
@@ -27,15 +27,14 @@
                   IF_NONE
                     { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                     {} ;
-                  UNPAIR ;
-                  DROP 1 ;
+                  CDR ;
                   PUSH nat 1 ;
                   PAIR ;
                   SOME ;
                   PUSH string "id0" ;
                   UPDATE ;
-                  DIP 1 { DIG 1 ; DROP 1 } ;
-                  DUG 1 }
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP }
                 { DUP 2 ;
                   PUSH nat 0 ;
                   PUSH nat 1 ;
@@ -43,8 +42,8 @@
                   SOME ;
                   PUSH string "id0" ;
                   UPDATE ;
-                  DIP 1 { DIG 1 ; DROP 1 } ;
-                  DUG 1 } ;
-             PAIR 2 ;
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP } ;
+             PAIR ;
              NIL operation ;
              PAIR } } }

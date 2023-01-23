@@ -28,8 +28,8 @@
               SOME ;
               PUSH string "id" ;
               UPDATE ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 }
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP }
             { PUSH string "NOT_FOUND" ; FAILWITH } ;
          PUSH nat 0 ;
          DUP 3 ;
@@ -38,7 +38,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         ITER { DUP ; DUP 3 ; ADD ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         ITER { DUP ; DUP 3 ; ADD ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          PAIR 3 ;

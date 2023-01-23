@@ -17,9 +17,8 @@
                     ADD ;
                     SWAP } ;
              DIP 1 { DROP 2 } } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          NIL string ;
          PUSH string "3" ;
          CONS ;
@@ -33,8 +32,8 @@
          PAIR ;
          EXEC ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

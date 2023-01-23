@@ -1,7 +1,6 @@
 { storage (map string (pair (int %value) (bytes %v))) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          DUP 2 ;
          PUSH string "id4" ;
@@ -9,8 +8,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH int 3 ;
          PAIR ;
          SOME ;

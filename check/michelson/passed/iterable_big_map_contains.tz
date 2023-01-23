@@ -6,17 +6,17 @@
           (bool %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          GET 1 ;
          PUSH string "mystr0" ;
          MEM ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP 2 ;
          NOT ;
          IF { PUSH string "INVALID_VALUE" ; FAILWITH } {} ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

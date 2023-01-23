@@ -13,7 +13,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
          ITER { PUSH nat 2 ;
                 DUP 3 ;
                 GET 1 ;
@@ -21,8 +21,8 @@
                 LT ;
                 IF { DUP 2 ; GET 2 ; DUP 2 ; CONS ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
                    { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          CDR ;
          DROP 1 ;

@@ -1,7 +1,6 @@
 { storage (set string) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          PUSH bool False ;
          PUSH string "id0" ;

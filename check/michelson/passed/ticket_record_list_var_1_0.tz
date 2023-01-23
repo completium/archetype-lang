@@ -1,7 +1,6 @@
 { storage nat ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL (pair (option %t (ticket string))
                    (pair %v nat string (option address))
                    (bytes %n)
@@ -43,10 +42,10 @@
          PAIR ;
          CONS ;
          ITER { UNPAIR 4 ;
-                DIG 1 ;
+                SWAP ;
                 UNPAIR 3 ;
                 DUP ;
-                DIP 1 { PAIR 3 ; DUG 1 ; PAIR 4 } ;
+                DIP 1 { PAIR 3 ; SWAP ; PAIR 4 } ;
                 DUP ;
                 DUP 4 ;
                 ADD ;

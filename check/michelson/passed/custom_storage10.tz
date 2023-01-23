@@ -5,13 +5,11 @@
           (pair (nat %k) (nat %l))
           (nat %m)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH nat 8 ;
          DUP 2 ;
          UNPAIR ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 0 ;
          SWAP ;
          DROP 1 ;
@@ -21,8 +19,7 @@
          SWAP ;
          UNPAIR ;
          UNPAIR ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 2 ;
          SWAP ;
          DROP 1 ;
@@ -31,16 +28,13 @@
          PAIR ;
          SWAP ;
          UNPAIR ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 4 ;
          SWAP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 5 ;
          SWAP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 6 ;
          SWAP ;
          DROP 1 ;
@@ -59,13 +53,11 @@
          SWAP ;
          PAIR ;
          SWAP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 9 ;
          SWAP ;
          UNPAIR ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 10 ;
          SWAP ;
          DROP 1 ;
@@ -83,8 +75,8 @@
          PAIR ;
          SWAP ;
          PAIR ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

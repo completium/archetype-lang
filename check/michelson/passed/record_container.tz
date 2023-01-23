@@ -2,4 +2,4 @@
     (pair (list %vl (pair (set %s nat) (list %l nat) (map %m nat string)))
           (map %vm nat (pair (set %s nat) (list %l nat) (map %m nat string)))) ;
   parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 2 } ; DROP 1 ; PAIR 2 ; NIL operation ; PAIR } }
+  code { UNPAIR ; DIP 1 { UNPAIR } ; DROP 1 ; PAIR ; NIL operation ; PAIR } }

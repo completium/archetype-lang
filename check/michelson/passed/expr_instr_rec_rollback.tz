@@ -1,10 +1,8 @@
 { storage (pair (map %m nat string) (nat %id) (string %a) (int %b)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          DUP 2 ;
          GET 1 ;
          DUP 3 ;

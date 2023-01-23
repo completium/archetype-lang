@@ -3,8 +3,8 @@
   code { UNPAIR ;
          DUP ;
          UNPACK (pair nat string chain_id) ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

@@ -1,7 +1,7 @@
 { storage (pair (map %my_asset nat string) (list %res nat)) ;
   parameter (nat %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          NIL nat ;
          NIL nat ;
          NIL nat ;
@@ -36,13 +36,13 @@
                 IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
                 SWAP ;
                 DROP 1 ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          ITER { CONS } ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

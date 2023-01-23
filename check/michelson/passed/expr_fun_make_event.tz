@@ -1,9 +1,8 @@
 { storage unit ;
   parameter (unit %exec) ;
   code { NIL operation ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          PUSH nat 2 ;
          EMIT %sample nat ;
          DUP 3 ;
@@ -12,5 +11,5 @@
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 1 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

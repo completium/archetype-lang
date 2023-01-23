@@ -1,7 +1,6 @@
 { storage nat ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL (pair (pair %v string (option address) nat)
                    (option %t (ticket string))
                    (bytes %n)

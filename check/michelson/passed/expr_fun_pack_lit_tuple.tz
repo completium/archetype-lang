@@ -1,7 +1,6 @@
 { storage bytes ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH string "test" ;
          PUSH nat 1 ;
          PAIR ;

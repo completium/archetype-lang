@@ -282,13 +282,13 @@
                     NEQ } ;
              CONCAT ;
              DIP 1 { DROP 2 } } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          DUP 3 ;
          DUP 2 ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

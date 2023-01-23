@@ -1,20 +1,20 @@
 { storage (pair (nat %a) (nat %b)) ;
   parameter (nat %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          PUSH nat 6 ;
          DUP 2 ;
          COMPARE ;
          LT ;
          IF { PUSH nat 5 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
-            { PUSH nat 8 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 } ;
+            { PUSH nat 8 ; DIP 1 { SWAP ; DROP 1 } ; SWAP } ;
          PUSH nat 2 ;
          DUP 2 ;
          COMPARE ;
          GT ;
-         IF { PUSH nat 2 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 }
+         IF { PUSH nat 2 ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
             { PUSH nat 4 ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 } ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

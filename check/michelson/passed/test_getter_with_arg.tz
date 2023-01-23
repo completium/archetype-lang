@@ -1,7 +1,7 @@
 { storage unit ;
   parameter (pair %getArg (string %s) (contract %callback string)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          UNPAIR ;
          NIL operation ;
@@ -17,5 +17,5 @@
          DIP 1 { DIG 3 ; DROP 1 } ;
          DUG 3 ;
          DROP 2 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

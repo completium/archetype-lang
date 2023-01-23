@@ -1,7 +1,6 @@
 { storage mutez ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH mutez 9223372036854775807 ;
          PUSH nat 3 ;
          PUSH int 2 ;

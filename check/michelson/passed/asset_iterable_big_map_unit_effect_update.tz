@@ -3,4 +3,4 @@
           (big_map %keys nat nat)
           (nat %size)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ; DROP 1 ; NIL operation ; PAIR } }
+  code { CDR ; NIL operation ; PAIR } }

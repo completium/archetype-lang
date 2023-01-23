@@ -1,6 +1,6 @@
 { storage int ;
   parameter (or (or (unit %exec) (unit %exec1)) (unit %exec2)) ;
-  code { LAMBDA int int { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
+  code { LAMBDA int int { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
          LAMBDA
            int
            int
@@ -10,7 +10,7 @@
              ADD ;
              SWAP ;
              DROP 1 ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
          DIG 2 ;
          UNPAIR ;

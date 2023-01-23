@@ -1,7 +1,6 @@
 { storage unit ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH int 0 ;
          PUSH string "mystr" ;
          PAIR ;
@@ -15,8 +14,8 @@
          PUSH int 2 ;
          SWAP ;
          PAIR ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP 2 ;
          GET 1 ;
          DUP 2 ;

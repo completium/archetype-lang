@@ -4,9 +4,9 @@
            unit
            int
            { PUSH unit Unit ; PUSH int 1 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          NIL string ;
          NIL string ;
          DUP 4 ;
@@ -33,8 +33,8 @@
                 EQ ;
                 IF { DUP ; SOME ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR }
                    { DUP 2 ; GET 2 ; PUSH nat 1 ; DUP 4 ; GET 1 ; ADD ; PAIR } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          CDR ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
@@ -47,7 +47,7 @@
          DIP 1 { DIG 4 ; DROP 1 } ;
          DUG 4 ;
          DROP 3 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

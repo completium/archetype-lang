@@ -1,7 +1,7 @@
 { storage (pair (string %str) (nat %n)) ;
   parameter (pair %exec (nat %a) (nat %x)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          UNPAIR ;
          SWAP ;
          PUSH nat 3 ;
@@ -22,6 +22,6 @@
          DIP 1 { DIG 5 ; DROP 1 } ;
          DUG 5 ;
          DROP 4 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

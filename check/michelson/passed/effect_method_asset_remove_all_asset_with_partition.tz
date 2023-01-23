@@ -2,7 +2,7 @@
     (pair (set %oasset int) (map %my_asset string (pair (int %value) (set %p int)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP 2 ;
          ITER { UNPAIR ;
@@ -17,8 +17,8 @@
                        DROP 1 } ;
                 DROP 2 } ;
          EMPTY_MAP string (pair (int %value) (set %p int)) ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
-         PAIR 2 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

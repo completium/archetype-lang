@@ -35,8 +35,8 @@
                   SOME ;
                   PUSH string "id0" ;
                   UPDATE ;
-                  DIP 1 { DIG 1 ; DROP 1 } ;
-                  DUG 1 }
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP }
                 { PUSH string "NOT_FOUND" ; FAILWITH } ;
              PAIR 3 ;
              NIL operation ;
@@ -67,8 +67,8 @@
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              PAIR 3 ;
              NIL operation ;
              PAIR } } }

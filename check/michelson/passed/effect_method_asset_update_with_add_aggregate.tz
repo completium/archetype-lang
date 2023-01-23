@@ -3,7 +3,7 @@
           (map %my_asset string (pair (int %value) (set %myaggregate nat)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          PUSH nat 3 ;
@@ -29,8 +29,7 @@
               IF_NONE
                 { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                 {} ;
-              UNPAIR ;
-              DROP 1 ;
+              CDR ;
               PUSH int 3 ;
               SWAP ;
               DROP 1 ;
@@ -54,6 +53,6 @@
               DUG 2 ;
               DROP 1 }
             { PUSH string "NOT_FOUND" ; FAILWITH } ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

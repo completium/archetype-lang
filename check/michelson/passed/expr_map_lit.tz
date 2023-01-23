@@ -1,7 +1,6 @@
 { storage (map nat string) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          EMPTY_MAP nat string ;
          PUSH string "2" ;
          SOME ;

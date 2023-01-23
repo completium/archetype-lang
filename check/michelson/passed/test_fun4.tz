@@ -24,12 +24,12 @@
              PAIR ;
              SWAP ;
              DROP 1 ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
          LAMBDA
            (pair (pair int nat) (lambda (pair int nat) (pair int nat)))
            (pair int nat)
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 3 ;
              DUP 3 ;
@@ -39,8 +39,7 @@
              DUG 2 ;
              DROP 2 } ;
          DIG 2 ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          DUP 2 ;
          DUP 4 ;
          PUSH nat 10 ;

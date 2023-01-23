@@ -1,7 +1,6 @@
 { storage (option address) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH key "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn" ;
          DUP ;
          HASH_KEY ;

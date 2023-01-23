@@ -3,7 +3,7 @@
   code { LAMBDA
            (pair int string)
            int
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 3 ;
              SIZE ;
@@ -14,9 +14,8 @@
              DROP 1 ;
              DUG 2 ;
              DROP 2 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          DUP 2 ;
          PUSH string "mystr" ;
          PUSH int 1 ;

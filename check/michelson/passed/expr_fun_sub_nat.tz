@@ -1,7 +1,6 @@
 { storage (option nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH nat 2 ;
          PUSH nat 3 ;
          SUB ;

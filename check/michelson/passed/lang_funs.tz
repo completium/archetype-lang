@@ -109,7 +109,7 @@
                   DUG 2 ;
                   DROP 2 }
                 { PUSH string "0" ; SWAP ; DROP 1 } ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
          DIG 2 ;
          UNPAIR ;
@@ -143,8 +143,8 @@
          COMPARE ;
          LT ;
          IF { CAR } { CDR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -153,8 +153,8 @@
          COMPARE ;
          LT ;
          IF { CDR } { CAR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -163,8 +163,8 @@
          COMPARE ;
          LT ;
          IF { CAR } { CDR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -173,8 +173,8 @@
          COMPARE ;
          LT ;
          IF { CDR } { CAR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -183,8 +183,8 @@
          COMPARE ;
          LT ;
          IF { CAR } { CDR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -193,8 +193,8 @@
          COMPARE ;
          LT ;
          IF { CDR } { CAR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH nat 2 ;
          PUSH int 1 ;
          PAIR ;
@@ -491,8 +491,8 @@
          UNPAIR ;
          EDIV ;
          IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } { CAR } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH nat 5 ;
          PUSH int 8 ;
          PAIR ;
@@ -501,8 +501,8 @@
          IF_NONE
            { PUSH string "DIV_BY_ZERO" ; FAILWITH }
            { UNPAIR ; SWAP ; INT ; EQ ; IF {} { PUSH int 1 ; ADD } } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH int -1 ;
          ABS ;
          SWAP ;

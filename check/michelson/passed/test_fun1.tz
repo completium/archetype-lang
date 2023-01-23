@@ -13,14 +13,13 @@
              LT ;
              IF { CAR } { CDR } ;
              PUSH bool True ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              DROP 1 ;
              SWAP ;
              DROP 1 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

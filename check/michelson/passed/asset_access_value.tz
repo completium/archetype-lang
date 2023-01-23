@@ -1,7 +1,6 @@
 { storage (map nat (pair (string %b) (bytes %c))) ;
   parameter (unit %get_value) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          PUSH nat 0 ;
          GET ;

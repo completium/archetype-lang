@@ -1,7 +1,6 @@
 { storage (list (list nat)) ;
   parameter (unit %default) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          NIL nat ;
          PUSH nat 1 ;

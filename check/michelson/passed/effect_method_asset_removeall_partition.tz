@@ -1,7 +1,7 @@
 { storage (pair (set %o_asset int) (map %my_asset string (set int))) ;
   parameter (or (unit %pre_exec) (unit %exec)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { DROP 1 ;
              DUP ;
@@ -22,9 +22,9 @@
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             PAIR 2 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
              NIL operation ;
              PAIR }
            { DROP 1 ;
@@ -38,16 +38,16 @@
                     PUSH bool False ;
                     DUP 3 ;
                     UPDATE ;
-                    DIP 1 { DIG 1 ; DROP 1 } ;
-                    DUG 1 ;
+                    DIP 1 { SWAP ; DROP 1 } ;
+                    SWAP ;
                     DROP 1 } ;
              DUP 2 ;
              EMPTY_SET int ;
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             PAIR 2 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
              NIL operation ;
              PAIR } } }

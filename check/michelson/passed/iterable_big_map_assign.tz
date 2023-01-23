@@ -3,8 +3,7 @@
           (big_map %keys nat string)
           (nat %size)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH nat 1 ;
          EMPTY_BIG_MAP nat string ;
          PUSH string "str" ;

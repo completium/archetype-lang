@@ -1,9 +1,8 @@
 { storage unit ;
   parameter (unit %exec) ;
   code { NIL operation ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          DUP 2 ;
          SIZE ;
          INT ;
@@ -30,5 +29,5 @@
          NOT ;
          IF { PUSH string "ok" ; FAILWITH } {} ;
          DROP 3 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

@@ -1,9 +1,8 @@
 { storage unit ;
   parameter (unit %exec) ;
   code { NIL operation ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          PUSH key "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj" ;
          DUP ;
          HASH_KEY ;
@@ -19,5 +18,5 @@
          DIP 1 { DIG 5 ; DROP 1 } ;
          DUG 5 ;
          DROP 4 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

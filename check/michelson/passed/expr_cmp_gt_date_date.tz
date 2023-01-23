@@ -1,7 +1,6 @@
 { storage bool ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH timestamp 1577836800 ;
          PUSH timestamp 1577923200 ;
          COMPARE ;

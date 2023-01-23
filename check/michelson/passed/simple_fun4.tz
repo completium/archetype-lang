@@ -17,9 +17,8 @@
              DROP 1 ;
              DUG 3 ;
              DROP 3 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          DUP 2 ;
          PUSH nat 5 ;
          PUSH string "mystr" ;

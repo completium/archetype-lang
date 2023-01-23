@@ -1,7 +1,6 @@
 { storage (option nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          SELF_ADDRESS ;
          PUSH nat 2 ;
          VIEW "get" nat ;

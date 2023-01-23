@@ -1,7 +1,6 @@
 { storage int ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH int 14400 ;
          PUSH nat 1 ;
          PUSH int 4 ;

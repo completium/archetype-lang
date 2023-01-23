@@ -3,7 +3,7 @@
           (big_map %my_asset string (pair (int %value) (set %col int)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          PUSH string "id3" ;
          DUP 3 ;
@@ -32,8 +32,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH int 2 ;
          DUP 4 ;
          GET 1 ;
@@ -61,8 +60,7 @@
               IF_NONE
                 { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                 {} ;
-              UNPAIR ;
-              DROP 1 ;
+              CDR ;
               PUSH int 3 ;
               DUP 4 ;
               GET 1 ;
@@ -197,6 +195,6 @@
          NOT ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
          DROP 4 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

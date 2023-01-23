@@ -1,12 +1,11 @@
 { storage nat ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH bool True ;
          DUP ;
          IF { PUSH nat 2 } { PUSH nat 1 } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH nat 2 ;
          DUP 3 ;
          COMPARE ;

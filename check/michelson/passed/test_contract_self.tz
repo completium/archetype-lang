@@ -1,10 +1,10 @@
 { storage nat ;
   parameter (or (nat %otherentry) (unit %exec)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
-           { DUP ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
            { DROP 1 ;
              SELF_ADDRESS ;
              CONTRACT %otherentry nat ;
@@ -24,5 +24,5 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR } } }

@@ -1,7 +1,6 @@
 { storage (map nat (map string bytes)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL (pair string bytes) ;
          PUSH bytes 0x02 ;
          PUSH string "m" ;
@@ -33,14 +32,14 @@
                      DUP 3 ;
                      GET 1 ;
                      UPDATE ;
-                     DIP 1 { DIG 1 ; DROP 1 } ;
-                     DUG 1 ;
+                     DIP 1 { SWAP ; DROP 1 } ;
+                     SWAP ;
                      DROP 1 } ;
               SOME ;
               PUSH nat 0 ;
               UPDATE ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 }
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP }
             { DUP 2 ;
               EMPTY_MAP string bytes ;
               DUP 3 ;
@@ -51,14 +50,14 @@
                      DUP 3 ;
                      GET 1 ;
                      UPDATE ;
-                     DIP 1 { DIG 1 ; DROP 1 } ;
-                     DUG 1 ;
+                     DIP 1 { SWAP ; DROP 1 } ;
+                     SWAP ;
                      DROP 1 } ;
               SOME ;
               PUSH nat 0 ;
               UPDATE ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 } ;
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP } ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

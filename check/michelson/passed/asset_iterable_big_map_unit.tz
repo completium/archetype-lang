@@ -3,8 +3,7 @@
           (big_map %keys nat nat)
           (nat %size)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          GET 1 ;
          PUSH nat 3 ;
@@ -23,8 +22,8 @@
                 { DUP 2 ;
                   DUP 2 ;
                   UPDATE 4 ;
-                  DIP 1 { DIG 1 ; DROP 1 } ;
-                  DUG 1 ;
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP ;
                   DUP 2 ;
                   DUP 3 ;
                   GET 3 ;
@@ -34,9 +33,9 @@
                   GET 4 ;
                   UPDATE ;
                   UPDATE 3 ;
-                  DIP 1 { DIG 1 ; DROP 1 } ;
-                  DUG 1 }
-                { DUP ; GET 1 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP }
+                { DUP ; GET 1 ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
               DUP 2 ;
               DUP 3 ;
               GET 1 ;
@@ -47,8 +46,8 @@
               PUSH nat 3 ;
               UPDATE ;
               UPDATE 1 ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 ;
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP ;
               DUP 2 ;
               DIP 1 { DIG 2 ; DROP 1 } ;
               DUG 2 ;

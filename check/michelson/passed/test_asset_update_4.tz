@@ -10,8 +10,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          DUP 4 ;
          SWAP ;
          DROP 1 ;

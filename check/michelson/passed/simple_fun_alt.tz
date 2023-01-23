@@ -3,10 +3,9 @@
   code { LAMBDA
            int
            int
-           { PUSH unit Unit ; PUSH int 0 ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+           { PUSH unit Unit ; PUSH int 0 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
+         SWAP ;
+         CDR ;
          DUP 2 ;
          PUSH int 0 ;
          EXEC ;

@@ -4,16 +4,16 @@
          DIP 1 { UNPAIR 3 } ;
          DROP 1 ;
          PUSH nat 3 ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH string "mystring" ;
          SWAP ;
          DROP 1 ;
          PUSH nat 2 ;
          DUP 3 ;
          ADD ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PAIR 3 ;
          NIL operation ;
          PAIR } }

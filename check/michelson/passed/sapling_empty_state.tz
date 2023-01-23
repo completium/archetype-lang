@@ -1,9 +1,3 @@
 { storage (sapling_state 8) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
-         SAPLING_EMPTY_STATE 8 ;
-         SWAP ;
-         DROP 1 ;
-         NIL operation ;
-         PAIR } }
+  code { CDR ; SAPLING_EMPTY_STATE 8 ; SWAP ; DROP 1 ; NIL operation ; PAIR } }

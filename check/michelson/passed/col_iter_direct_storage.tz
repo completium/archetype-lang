@@ -1,7 +1,6 @@
 { storage (map int string) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          ITER { UNPAIR ;
                 DUP 3 ;

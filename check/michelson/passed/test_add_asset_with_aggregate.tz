@@ -1,7 +1,7 @@
 { storage (pair (set %o_asset nat) (map %my_asset string (set nat))) ;
   parameter (nat %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DUP 3 ;
          PUSH string "id3" ;
          MEM ;
@@ -21,6 +21,6 @@
                    DUG 2 }
                  { PUSH string "NOT_FOUND" ; FAILWITH } } ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

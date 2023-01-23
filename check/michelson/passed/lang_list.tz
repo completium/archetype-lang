@@ -26,8 +26,7 @@
                     SWAP } ;
              DIP 1 { DROP 2 } } ;
          DIG 2 ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          NIL string ;
          PUSH string "3" ;
          CONS ;
@@ -57,10 +56,10 @@
          NIL string ;
          DUP 8 ;
          ITER { CONS } ;
-         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         ITER { DUP 2 ; DUP 2 ; CONS ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
          PUSH nat 0 ;
          DUP 8 ;
-         ITER { DUP ; SIZE ; DUP 3 ; ADD ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
+         ITER { DUP ; SIZE ; DUP 3 ; ADD ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
          PUSH nat 3 ;
          DUP 2 ;
          COMPARE ;

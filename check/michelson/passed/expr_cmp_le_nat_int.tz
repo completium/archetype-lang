@@ -1,7 +1,6 @@
 { storage bool ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH int 2 ;
          PUSH int 1 ;
          COMPARE ;

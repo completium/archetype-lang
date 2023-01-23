@@ -1,7 +1,6 @@
 { storage (list string) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL string ;
          NIL string ;
          PUSH string "i2" ;

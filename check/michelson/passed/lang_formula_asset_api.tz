@@ -1,7 +1,7 @@
 { storage (pair (map %my_asset string int) (int %n)) ;
   parameter (or (or (unit %exec) (unit %exec2)) (unit %exec3)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { IF_LEFT
                { DROP 1 ;
@@ -21,7 +21,7 @@
                  EQ ;
                  NOT ;
                  IF { PUSH string "ko" ; FAILWITH } {} ;
-                 PAIR 2 ;
+                 PAIR ;
                  NIL operation ;
                  PAIR }
                { DROP 1 ;
@@ -35,7 +35,7 @@
                  NOT ;
                  IF { PUSH string "ko" ; FAILWITH } {} ;
                  DROP 1 ;
-                 PAIR 2 ;
+                 PAIR ;
                  NIL operation ;
                  PAIR } }
            { DROP 1 ;
@@ -49,6 +49,6 @@
                     DUG 2 ;
                     DROP 2 } ;
              DROP 1 ;
-             PAIR 2 ;
+             PAIR ;
              NIL operation ;
              PAIR } } }

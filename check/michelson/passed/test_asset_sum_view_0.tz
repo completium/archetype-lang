@@ -1,7 +1,7 @@
 { storage (pair (set %my_asset nat) (nat %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          PUSH nat 0 ;
          NIL nat ;
@@ -12,13 +12,13 @@
                 COMPARE ;
                 GE ;
                 IF { DUP 2 ; DUP 2 ; CONS } { DUP 2 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          ITER { CONS } ;
-         ITER { DUP ; DUP 3 ; ADD ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
-         PAIR 2 ;
+         ITER { DUP ; DUP 3 ; ADD ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

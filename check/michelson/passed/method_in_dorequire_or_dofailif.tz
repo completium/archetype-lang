@@ -1,7 +1,7 @@
 { storage (pair (map %my_asset string int) (int %res)) ;
   parameter (string %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          PUSH int 1 ;
          DUP 3 ;
          PUSH string "id0" ;
@@ -24,6 +24,6 @@
          EQ ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

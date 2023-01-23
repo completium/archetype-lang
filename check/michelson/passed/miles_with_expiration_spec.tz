@@ -163,8 +163,8 @@
                                DROP 1 ;
                                SWAP ;
                                DROP 1 ;
-                               DIP 1 { DIG 1 ; DROP 1 } ;
-                               DUG 1 ;
+                               DIP 1 { SWAP ; DROP 1 } ;
+                               SWAP ;
                                DROP 1 } ;
                         DUP ;
                         GET 1 ;
@@ -182,8 +182,8 @@
                         DROP 1 ;
                         SWAP ;
                         DROP 1 ;
-                        DIP 1 { DIG 1 ; DROP 1 } ;
-                        DUG 1 ;
+                        DIP 1 { SWAP ; DROP 1 } ;
+                        SWAP ;
                         DROP 1 } ;
                  ITER { DUP 7 ;
                         DUP 2 ;
@@ -199,8 +199,8 @@
                         IF { DUP 3 ; DUP 3 ; CONS } { DUP 3 } ;
                         SWAP ;
                         DROP 1 ;
-                        DIP 1 { DIG 1 ; DROP 1 } ;
-                        DUG 1 ;
+                        DIP 1 { SWAP ; DROP 1 } ;
+                        SWAP ;
                         DROP 1 } ;
                  ITER { CONS } ;
                  DUP 2 ;
@@ -218,8 +218,8 @@
                         ADD ;
                         SWAP ;
                         DROP 1 ;
-                        DIP 1 { DIG 1 ; DROP 1 } ;
-                        DUG 1 ;
+                        DIP 1 { SWAP ; DROP 1 } ;
+                        SWAP ;
                         DROP 1 } ;
                  COMPARE ;
                  GE ;
@@ -254,8 +254,7 @@
                                   IF_NONE
                                     { PUSH string "mile" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                                     {} ;
-                                  UNPAIR ;
-                                  DROP 1 ;
+                                  CDR ;
                                   DUP 5 ;
                                   DUP 4 ;
                                   GET 1 ;
@@ -268,8 +267,8 @@
                                   DUG 7 ;
                                   DROP 1 ;
                                   PUSH int 0 ;
-                                  DIP 1 { DIG 1 ; DROP 1 } ;
-                                  DUG 1 }
+                                  DIP 1 { SWAP ; DROP 1 } ;
+                                  SWAP }
                                 { DUP 2 ;
                                   DUP 8 ;
                                   DUP 3 ;
@@ -281,8 +280,8 @@
                                   COMPARE ;
                                   EQ ;
                                   IF { PUSH int 0 ;
-                                       DIP 1 { DIG 1 ; DROP 1 } ;
-                                       DUG 1 ;
+                                       DIP 1 { SWAP ; DROP 1 } ;
+                                       SWAP ;
                                        DUP 7 ;
                                        NONE (pair int timestamp) ;
                                        DUP 3 ;
@@ -313,8 +312,8 @@
                                        CAR ;
                                        DUP 3 ;
                                        SUB ;
-                                       DIP 1 { DIG 1 ; DROP 1 } ;
-                                       DUG 1 ;
+                                       DIP 1 { SWAP ; DROP 1 } ;
+                                       SWAP ;
                                        DUP 7 ;
                                        NONE (pair int timestamp) ;
                                        DUP 3 ;

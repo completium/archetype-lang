@@ -3,13 +3,12 @@
   code { LAMBDA
            int
            string
-           { PUSH unit Unit ; PUSH string "mystr" ; SWAP ; DROP 1 ; DUG 1 ; DROP 1 } ;
+           { PUSH unit Unit ; PUSH string "mystr" ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
          NIL operation ;
          DIG 2 ;
          UNPAIR ;
          IF_LEFT
-           { UNPAIR ;
-             DROP 1 ;
+           { CDR ;
              NIL operation ;
              NIL operation ;
              DUP 5 ;
@@ -23,7 +22,7 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR }
-           { DROP 1 ; DIG 1 ; PAIR } ;
+           { DROP 1 ; SWAP ; PAIR } ;
          DIP 1 { DROP 1 } } }

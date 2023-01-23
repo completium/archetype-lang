@@ -1,7 +1,7 @@
 { storage unit ;
   parameter (key_hash %exec) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          DUP ;
          SOME ;
@@ -12,5 +12,5 @@
          DIP 1 { DIG 3 ; DROP 1 } ;
          DUG 3 ;
          DROP 2 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

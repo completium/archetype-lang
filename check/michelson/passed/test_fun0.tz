@@ -4,7 +4,7 @@
            unit
            nat
            { PUSH unit Unit ; PUSH nat 0 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          DUP 3 ;
          UNIT ;

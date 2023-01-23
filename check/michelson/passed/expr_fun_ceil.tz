@@ -1,7 +1,7 @@
 { storage (pair (int %r0) (int %r1)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          PUSH nat 3 ;
          PUSH int 5 ;
@@ -21,8 +21,8 @@
          IF_NONE
            { PUSH string "DIV_BY_ZERO" ; FAILWITH }
            { UNPAIR ; SWAP ; INT ; EQ ; IF {} { PUSH int 1 ; ADD } } ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
-         PAIR 2 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

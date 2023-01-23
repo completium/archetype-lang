@@ -1,10 +1,10 @@
 { storage nat ;
   parameter (or (nat %f) (unit %exec)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
-           { PUSH nat 0 ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { PUSH nat 0 ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
            { DROP 1 ;
              NIL operation ;
              NIL operation ;
@@ -18,8 +18,8 @@
              TRANSFER_TOKENS ;
              CONS ;
              ITER { CONS } ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              NIL operation ;
              NIL operation ;
              DUP 4 ;
@@ -34,8 +34,8 @@
              TRANSFER_TOKENS ;
              CONS ;
              ITER { CONS } ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              PUSH address "KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm" ;
              CONTRACT %set_value nat ;
              IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
@@ -68,5 +68,5 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR } } }

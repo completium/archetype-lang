@@ -18,9 +18,8 @@
                { IF_LEFT
                    { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
                    { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          PUSH nat 10 ;
          PUSH int 1 ;
          PAIR ;

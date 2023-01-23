@@ -41,10 +41,10 @@
                     LT } ;
              DROP 2 ;
              NIL string ;
-             DIG 1 ;
+             SWAP ;
              ITER { CONS } ;
              DIP 1 { DROP 3 } } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          UNPAIR ;
          SWAP ;

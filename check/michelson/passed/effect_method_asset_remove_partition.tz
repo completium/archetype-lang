@@ -3,7 +3,7 @@
           (map %my_asset string (pair (int %value) (set %col string)))) ;
   parameter (or (unit %pre_exec) (unit %exec)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { DROP 1 ;
              DUP ;
@@ -36,9 +36,9 @@
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             PAIR 2 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
              NIL operation ;
              PAIR }
            { DROP 1 ;
@@ -73,8 +73,8 @@
              SOME ;
              PUSH string "id0" ;
              UPDATE ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             PAIR 2 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
              NIL operation ;
              PAIR } } }

@@ -1,7 +1,6 @@
 { storage (pair address string nat) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH nat 10 ;
          PUSH string "my_ticket" ;
          TICKET ;
@@ -25,11 +24,11 @@
          ITER { UNPAIR 4 ;
                 DIG 2 ;
                 UNPAIR 3 ;
-                DIG 1 ;
+                SWAP ;
                 READ_TICKET ;
-                DIP 1 { DUG 1 ; PAIR 3 ; DUG 2 ; PAIR 4 } ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; PAIR 3 ; DUG 2 ; PAIR 4 } ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          NIL operation ;
          PAIR } }

@@ -1,7 +1,7 @@
 { storage (pair (map %my_asset string int) (int %n)) ;
   parameter (or (or (unit %add_asset) (unit %remove_asset)) (unit %exec)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
            { IF_LEFT
                { DROP 1 ;
@@ -10,7 +10,7 @@
                  MEM ;
                  IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
                     { DUP ; PUSH int 4 ; SOME ; PUSH string "id4" ; UPDATE ; SWAP ; DROP 1 } ;
-                 PAIR 2 ;
+                 PAIR ;
                  NIL operation ;
                  PAIR }
                { DROP 1 ;
@@ -20,7 +20,7 @@
                  UPDATE ;
                  SWAP ;
                  DROP 1 ;
-                 PAIR 2 ;
+                 PAIR ;
                  NIL operation ;
                  PAIR } }
            { DROP 1 ;
@@ -40,6 +40,6 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             PAIR 2 ;
+             PAIR ;
              NIL operation ;
              PAIR } } }

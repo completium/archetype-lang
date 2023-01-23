@@ -1,7 +1,6 @@
 { storage (map string (pair (nat %v0) (set %c nat))) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          EMPTY_SET nat ;
          PUSH bool True ;
          PUSH nat 1 ;
@@ -28,16 +27,16 @@
                 PUSH bool False ;
                 DUP 3 ;
                 UPDATE ;
-                DIP 1 { DIG 1 ; DROP 1 } ;
-                DUG 1 ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
                 DROP 1 } ;
          SWAP ;
          PAIR ;
          SOME ;
          PUSH string "id1" ;
          UPDATE ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

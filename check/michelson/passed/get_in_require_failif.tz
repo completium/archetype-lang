@@ -1,7 +1,6 @@
 { storage (map string int) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH int 0 ;
          DUP 2 ;
          PUSH string "myid" ;

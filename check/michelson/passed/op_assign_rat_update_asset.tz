@@ -2,8 +2,7 @@
     (map nat
          (pair (pair %r1 int nat) (pair %r2 int nat) (pair %r3 int nat) (pair %r4 int nat))) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          PUSH nat 0 ;
          GET ;
@@ -17,8 +16,7 @@
          IF_NONE
            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          UNIT ;
          LEFT unit ;
          PUSH nat 1 ;
@@ -49,8 +47,7 @@
          IF_LEFT { DROP 1 ; ADD } { DROP 1 ; SWAP ; SUB } ;
          PAIR ;
          SWAP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          UNIT ;
          RIGHT unit ;
          PUSH nat 1 ;
@@ -81,8 +78,7 @@
          IF_LEFT { DROP 1 ; ADD } { DROP 1 ; SWAP ; SUB } ;
          PAIR ;
          SWAP ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          PUSH nat 10 ;
          PUSH int 9 ;
          PAIR ;
@@ -142,8 +138,8 @@
          SOME ;
          PUSH nat 0 ;
          UPDATE ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR } }

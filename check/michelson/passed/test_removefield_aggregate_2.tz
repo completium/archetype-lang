@@ -2,7 +2,7 @@
     (pair (set %o_asset nat) (map %my_asset string (pair (set %col nat) (nat %val)))) ;
   parameter (nat %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DUP 3 ;
          DUP 4 ;
          PUSH string "id0" ;
@@ -10,8 +10,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          DUP 5 ;
          PUSH string "id0" ;
          GET ;
@@ -29,6 +28,6 @@
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

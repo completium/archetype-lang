@@ -1,12 +1,11 @@
 { storage (pair (map %my_asset nat string) (list %res nat)) ;
   parameter (or (pair %my_getter unit (contract %callback (list nat))) (list %exec nat)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          IF_LEFT
-           { UNPAIR ;
-             DROP 1 ;
+           { CDR ;
              NIL operation ;
              NIL operation ;
              DUP 6 ;
@@ -38,16 +37,10 @@
              DIP 1 { DIG 3 ; DROP 1 } ;
              DUG 3 ;
              DROP 1 ;
-             PAIR 2 ;
-             DIG 1 ;
+             PAIR ;
+             SWAP ;
              PAIR }
-           { DUP ;
-             DIP 1 { DIG 2 ; DROP 1 } ;
-             DUG 2 ;
-             DROP 1 ;
-             PAIR 2 ;
-             DIG 1 ;
-             PAIR } } ;
+           { DUP ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 ; DROP 1 ; PAIR ; SWAP ; PAIR } } ;
   view "my_view"
        unit
        (list nat)

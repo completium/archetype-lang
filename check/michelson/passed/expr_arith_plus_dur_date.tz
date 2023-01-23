@@ -1,7 +1,6 @@
 { storage timestamp ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH timestamp 1577836800 ;
          PUSH int 14400 ;
          ADD ;

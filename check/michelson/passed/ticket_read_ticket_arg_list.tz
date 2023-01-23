@@ -1,11 +1,11 @@
 { storage (pair address string nat) ;
   parameter (or (list %callback (ticket string)) (unit %exec)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
-           { ITER { READ_TICKET ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 } ;
-             DIG 1 ;
+           { ITER { READ_TICKET ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
+             SWAP ;
              PAIR }
            { DROP 1 ;
              PUSH nat 10 ;
@@ -13,7 +13,7 @@
              TICKET ;
              IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
              NIL (ticket string) ;
-             DIG 1 ;
+             SWAP ;
              CONS ;
              NIL operation ;
              NIL operation ;
@@ -29,7 +29,7 @@
              TRANSFER_TOKENS ;
              CONS ;
              ITER { CONS } ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
-             DIG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             SWAP ;
              PAIR } } }

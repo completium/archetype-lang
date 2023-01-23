@@ -1,7 +1,6 @@
 { storage unit ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          EMPTY_SET nat ;
          PUSH bool True ;
          PUSH nat 3 ;

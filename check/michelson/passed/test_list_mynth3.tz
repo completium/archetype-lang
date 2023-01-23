@@ -3,7 +3,7 @@
   code { LAMBDA
            (pair (list string) nat)
            (option string)
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              PUSH nat 0 ;
              NONE string ;
@@ -12,7 +12,7 @@
                     DUP 4 ;
                     COMPARE ;
                     EQ ;
-                    IF { DUP ; SOME ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 } {} ;
+                    IF { DUP ; SOME ; DIP 1 { SWAP ; DROP 1 } ; SWAP } {} ;
                     PUSH nat 1 ;
                     DUP 4 ;
                     ADD ;
@@ -25,9 +25,8 @@
              DROP 2 ;
              DUG 2 ;
              DROP 2 } ;
-         DIG 1 ;
-         UNPAIR ;
-         DROP 1 ;
+         SWAP ;
+         CDR ;
          NIL string ;
          PUSH string "3" ;
          CONS ;
@@ -40,8 +39,8 @@
          DUP 3 ;
          PAIR ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

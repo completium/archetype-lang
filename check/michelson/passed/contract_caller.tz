@@ -1,7 +1,7 @@
 { storage address ;
   parameter (or (int %update_value) (int %add_one)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
            { NIL operation ;
@@ -21,7 +21,7 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR }
            { NIL operation ;
              NIL operation ;
@@ -42,5 +42,5 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR } } }

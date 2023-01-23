@@ -25,8 +25,8 @@
          DUP ;
          GET 1 ;
          GET 1 ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP ;
          GET 1 ;
          GET 2 ;

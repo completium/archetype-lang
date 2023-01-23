@@ -1,7 +1,6 @@
 { storage int ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;

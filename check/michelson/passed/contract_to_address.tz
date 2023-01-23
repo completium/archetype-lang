@@ -1,7 +1,6 @@
 { storage (option address) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
          DUP ;
          CONTRACT unit ;

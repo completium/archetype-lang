@@ -4,26 +4,24 @@
          IF_LEFT
            { IF_LEFT
                { DUP 2 ;
-                 UNPAIR ;
-                 DROP 1 ;
+                 CDR ;
                  DUP 2 ;
                  PAIR ;
-                 DIP 1 { DIG 1 ; DROP 1 } ;
-                 DUG 1 ;
+                 DIP 1 { SWAP ; DROP 1 } ;
+                 SWAP ;
                  DROP 1 ;
                  NIL operation ;
                  PAIR }
                { DUP 2 ;
                  UNPAIR ;
                  SWAP ;
-                 UNPAIR ;
-                 DROP 1 ;
+                 CDR ;
                  DUP 3 ;
                  PAIR ;
                  SWAP ;
                  PAIR ;
-                 DIP 1 { DIG 1 ; DROP 1 } ;
-                 DUG 1 ;
+                 DIP 1 { SWAP ; DROP 1 } ;
+                 SWAP ;
                  DROP 1 ;
                  NIL operation ;
                  PAIR } }
@@ -33,16 +31,15 @@
                  SWAP ;
                  UNPAIR ;
                  SWAP ;
-                 UNPAIR ;
-                 DROP 1 ;
+                 CDR ;
                  DUP 4 ;
                  PAIR ;
                  SWAP ;
                  PAIR ;
                  SWAP ;
                  PAIR ;
-                 DIP 1 { DIG 1 ; DROP 1 } ;
-                 DUG 1 ;
+                 DIP 1 { SWAP ; DROP 1 } ;
+                 SWAP ;
                  DROP 1 ;
                  NIL operation ;
                  PAIR }
@@ -61,8 +58,8 @@
                  PAIR ;
                  SWAP ;
                  PAIR ;
-                 DIP 1 { DIG 1 ; DROP 1 } ;
-                 DUG 1 ;
+                 DIP 1 { SWAP ; DROP 1 } ;
+                 SWAP ;
                  DROP 1 ;
                  NIL operation ;
                  PAIR } } } }

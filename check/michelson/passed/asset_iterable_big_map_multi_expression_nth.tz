@@ -6,7 +6,7 @@
           (string %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          NONE string ;
          PUSH nat 0 ;
@@ -52,14 +52,14 @@
          DROP 3 ;
          CDR ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          PUSH string "id1" ;
          DUP 3 ;
          COMPARE ;
          EQ ;
          NOT ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

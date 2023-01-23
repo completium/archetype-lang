@@ -1,3 +1,3 @@
 { storage (pair (map %asset1 string bool) (map %asset2 string bool)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 2 } ; DROP 1 ; PAIR 2 ; NIL operation ; PAIR } }
+  code { UNPAIR ; DIP 1 { UNPAIR } ; DROP 1 ; PAIR ; NIL operation ; PAIR } }

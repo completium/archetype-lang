@@ -1,7 +1,7 @@
 { storage unit ;
   parameter (nat %e1) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          PUSH nat 0 ;
          PUSH int 2 ;
@@ -38,5 +38,5 @@
               DIP 1 { DIG 2 ; DROP 1 } ;
               DUG 2 } ;
          DROP 1 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

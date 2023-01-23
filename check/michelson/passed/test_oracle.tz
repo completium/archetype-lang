@@ -1,10 +1,10 @@
 { storage (pair string timestamp nat) ;
   parameter (or (pair %update_value string timestamp nat) (unit %exec)) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
-           { DUP ; DIP 1 { DIG 1 ; DROP 1 } ; DUG 1 ; DROP 1 ; DIG 1 ; PAIR }
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
            { DROP 1 ;
              PUSH address "KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r" ;
              NIL operation ;
@@ -30,5 +30,5 @@
              DIP 1 { DIG 2 ; DROP 1 } ;
              DUG 2 ;
              DROP 1 ;
-             DIG 1 ;
+             SWAP ;
              PAIR } } }

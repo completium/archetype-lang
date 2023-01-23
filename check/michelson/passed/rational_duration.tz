@@ -1,7 +1,7 @@
 { storage timestamp ;
   parameter (address %exec) ;
   code { NIL operation ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
          PUSH int 604800 ;
          DUP 3 ;
@@ -10,8 +10,8 @@
          COMPARE ;
          GT ;
          IF { NOW ;
-              DIP 1 { DIG 1 ; DROP 1 } ;
-              DUG 1 ;
+              DIP 1 { SWAP ; DROP 1 } ;
+              SWAP ;
               NIL operation ;
               NIL operation ;
               DUP 5 ;
@@ -28,5 +28,5 @@
               DUG 2 }
             {} ;
          DROP 1 ;
-         DIG 1 ;
+         SWAP ;
          PAIR } }

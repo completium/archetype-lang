@@ -1551,22 +1551,23 @@ end = struct
       let rec aux accu (l : code list) =
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
-        (* | (DROP x)::(DROP y)::t   -> aux accu ((DROP (x + y))::t)
-           (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
-           | (PAIR)::(UNPAIR)::t     -> aux accu t
-           | (UNPAIR)::(PAIR)::t     -> aux accu t
-           | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t)
-           | (DUP)::(DROP x)::t      -> aux accu ((DROP (x - 1))::t)
-           | (DUP)::(SWAP)::t        -> aux accu ((DUP)::t)
-           | (DROP 0)::t             -> aux accu t *)
+        (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
+        (* | (PAIR)::(UNPAIR)::t     -> aux accu t *)
+        (* | (UNPAIR)::(PAIR)::t     -> aux accu t *)
+        (* | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t) *)
+        | ({node = PAIR_N 2})::t                  -> aux accu ((mk_code (PAIR))::t)
+        | ({node = UNPAIR_N 2})::t                -> aux accu ((mk_code (UNPAIR))::t)
+        | ({node = UNPAIR})::({node = DROP 1})::t -> aux accu ((mk_code (CDR))::t)
         | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
         | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
-        | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code DUP)::t)
+        | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code (DUP))::t)
         | ({node = DROP 0})::t                    -> aux accu t
         | ({node = DIG 0})::t                     -> aux accu t
         | ({node = DUG 0})::t                     -> aux accu t
         | ({node = DIP (_, [])})::t               -> aux accu t
-        (* | ({node = (UNPAIR | UNPAIR_N 2)})::({node = DROP 1})::t -> aux accu ((mk_code CDR)::t) *)
+        | ({node = DIG 1})::t                     -> aux accu ((mk_code (SWAP))::t)
+        | ({node = DUG 1})::t                     -> aux accu ((mk_code (SWAP))::t)
+        | ({node = SWAP})::({node = SWAP})::t     -> aux accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in

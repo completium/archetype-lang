@@ -8,9 +8,9 @@
              SWAP ;
              ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
              DIP 1 { DROP 1 } } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          NIL string ;
          PUSH string "3" ;
@@ -24,8 +24,8 @@
          DUP 3 ;
          PAIR ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP 4 ;
          PUSH string "0" ;
          DUP 3 ;
@@ -34,7 +34,7 @@
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

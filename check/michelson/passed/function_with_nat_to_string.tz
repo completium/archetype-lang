@@ -81,12 +81,12 @@
                   DUG 2 ;
                   DROP 2 }
                 { PUSH string "0" ; SWAP ; DROP 1 } ;
-             DUG 1 ;
+             SWAP ;
              DROP 1 } ;
          LAMBDA
            (pair nat (lambda nat string))
            string
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 3 ;
              DUP 3 ;
@@ -102,8 +102,8 @@
          DUP 3 ;
          PAIR ;
          EXEC ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

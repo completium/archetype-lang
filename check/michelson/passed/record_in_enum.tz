@@ -1,7 +1,6 @@
 { storage nat ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          NIL (or (pair %abc (nat %a) (string %b)) (pair %xyz (nat %a) (string %b))) ;
          PUSH string "wxyz" ;
          PUSH nat 2 ;
@@ -14,8 +13,8 @@
          LEFT (pair nat string) ;
          CONS ;
          PUSH nat 0 ;
-         DIP 1 { DIG 1 ; DROP 1 } ;
-         DUG 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
          DUP ;
          ITER { DUP ;
                 IF_LEFT

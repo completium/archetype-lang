@@ -13,13 +13,13 @@
                        (option %custom (pair (string %tag) (option %config_api address))))
                  int)
            int
-           { UNPAIR 2 ;
+           { UNPAIR ;
              PUSH unit Unit ;
              DUP 2 ;
              GET 2 ;
              DUP 4 ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              DROP 1 ;
              DUG 2 ;
              DROP 2 } ;
@@ -55,14 +55,13 @@
              PAIR ;
              EXEC ;
              DUP ;
-             DIP 1 { DIG 1 ; DROP 1 } ;
-             DUG 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
              DROP 1 ;
              DUG 4 ;
              DROP 4 } ;
          DIG 2 ;
-         UNPAIR ;
-         DROP 1 ;
+         CDR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 2 } } }

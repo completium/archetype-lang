@@ -1,7 +1,6 @@
 { storage (option bool) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DROP 1 ;
+  code { CDR ;
          PUSH bytes 0x05030a ;
          UNPACK bool ;
          SWAP ;

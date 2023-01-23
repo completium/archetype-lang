@@ -17,9 +17,9 @@
              DROP 1 ;
              DUG 3 ;
              DROP 3 } ;
-         DIG 1 ;
+         SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR 2 } ;
+         DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP 3 ;
          PUSH int 0 ;
@@ -30,7 +30,7 @@
          EXEC ;
          SWAP ;
          DROP 1 ;
-         PAIR 2 ;
+         PAIR ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }
