@@ -377,7 +377,6 @@ and access_value = {
 and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
-  | Ivar         of ident
   | Ivar_access  of access_value
   | Icall        of ident * instruction list * bool
   | Iassign      of ident * instruction
@@ -668,6 +667,7 @@ let tticket t     = mk_type (Tticket t)
 
 (* -------------------------------------------------------------------- *)
 
+let ivar id          = Ivar_access {av_ident = id; av_path = []; av_source_no_dup = false; av_value_no_dup = false}
 let itrue            = Iconst (tbool,    Dtrue)
 let ifalse           = Iconst (tbool,    Dfalse)
 let iint n           = Iconst (tint,     Dint n)
@@ -693,8 +693,8 @@ let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
 let isub_mutez l r   = Ibinop (Bsubmutez, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icar (ivar "_var_ifnone"), tint )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icdr (ivar "_var_ifnone"), tnat )
 let irecord ir       = Irecord ir
 let isrecord l       = irecord (Rtuple l)
 let ipair x y        = Ibinop (Bpair, x, y)

@@ -369,10 +369,10 @@ let to_ir (model : M.model) : T.ir =
           let pair_name    = "p" in
           let zero   = T.inat Big_int.zero_big_int in
           let ten    = T.inat (Big_int.big_int_of_int 10) in
-          let varg   = T.Ivar arg_name in
-          let vres   = T.Ivar res_name in
-          let vmap   = T.Ivar map_name in
-          let vpair  = T.Ivar pair_name in
+          let varg   = T.ivar arg_name in
+          let vres   = T.ivar res_name in
+          let vmap   = T.ivar map_name in
+          let vpair  = T.ivar pair_name in
           let cond   = T.Icompare(Cgt, varg, zero) in
           let map    = T.Imap (false, T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
                                                           T.inat (Big_int.big_int_of_int 1), T.istring "1";
@@ -384,11 +384,11 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                           T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail M.fail_msg_NOT_FOUND, "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail M.fail_msg_NOT_FOUND, "_var_ifnone", T.ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", Ivar "_var_ifnone", T.tpair [T.tint; T.tnat]) in
+          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", T.ivar "_var_ifnone", T.tpair [T.tint; T.tnat]) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iloop (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
@@ -566,13 +566,13 @@ let to_ir (model : M.model) : T.ir =
         | Some v -> (T.ipair (T.istring M.fail_msg_ENTRY_NOT_FOUND) (T.istring v))
         | None -> T.istring M.fail_msg_ENTRY_NOT_FOUND
       in
-      T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", Ivar "_var_ifnone", T.tint) in
+      T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", T.ivar "_var_ifnone", T.tint) in
     let get_entrypoint id t d =
       let annot = get_entrypoint_annot ~pref:"%" id in
       contract_internal (Some id) annot t d
     in
 
-    let vops = T.Ivar operations in
+    let vops = T.ivar operations in
 
     let get_contract   id t d = contract_internal id None     t d in
     let get_self_entrypoint id =
@@ -722,7 +722,7 @@ let to_ir (model : M.model) : T.ir =
     | Mapp (e, args)            -> begin
         let eargs =
           match List.assoc_opt (M.unloc_mident e) !extra_args with
-          | Some l -> List.map (fun (id, _t) -> T.Ivar id) l
+          | Some l -> List.map (fun (id, _t) -> T.ivar id) l
           | _ -> []
         in
         T.Icall (M.unloc_mident e, List.map f args @ eargs, false)
@@ -741,7 +741,7 @@ let to_ir (model : M.model) : T.ir =
           | _ -> assert false
         in
         let ru = make_ru rn (M.unloc_mident fn) v in
-        let a = T.Irecupdate (T.Ivar id, ru) in
+        let a = T.Irecupdate (T.ivar id, ru) in
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
@@ -999,7 +999,7 @@ let to_ir (model : M.model) : T.ir =
     | Mplus (l, r)       -> T.iadd (f l) (f r)
     | Mminus (l, r)      -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail M.fail_msg_NAT_NEG_ASSIGN, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail M.fail_msg_NAT_NEG_ASSIGN, "_var_ifnone", T.ivar "_var_ifnone", ft mtt.type_)
         | _ -> T.isub (f l) (f r)
       end
     | Mmult (l, r)       -> T.imul (f l) (f r)
@@ -1221,7 +1221,7 @@ let to_ir (model : M.model) : T.ir =
               av_source_no_dup = true;
               av_value_no_dup = true
             }
-          else fun x -> T.Ivar x
+          else fun x -> T.ivar x
         in
 
         match kind with
@@ -1993,16 +1993,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       c, nenv
     end
 
-  | Ivar id -> begin
-      let n = get_sp_for_id env id in
-      let c =
-        if n = 0
-        then T.cdup
-        else T.cdup_n (n + 1)
-      in
-      c, inc_env env
-    end
-
   | Ivar_access av -> begin
       let n = get_sp_for_id env av.av_ident in
       let compute_path_n (ai : T.access_item) =
@@ -2063,7 +2053,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         let cargs, env = get_args env in
         T.cseq (cargs::body_fun), env
       | _ -> begin
-          let fid, env   = fe env (Ivar id) in
+          let fid, env   = fe env (T.ivar id) in
           let cargs, env = get_args env in
           T.cseq [fid; cargs; T.cexec], dec_env env
         end
@@ -2077,7 +2067,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iassigntuple (id, i, l, v) -> begin
-      let fid, env = f (Ivar id) in
+      let fid, env = f (T.ivar id) in
       let v, env = fe env v in
       let n = if i = l - 1 then i * 2 else i * 2 + 1 in
       assign (dec_env env) id (T.cseq [fid; v; T.cupdate_n n])
