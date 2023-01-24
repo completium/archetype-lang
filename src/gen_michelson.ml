@@ -2143,9 +2143,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iloop (c, b) -> begin
-      let c, _ = f c in
-      let b, _ = f b in
-      T.cseq T.[c; cloop [b; c]] , env
+      let c, env0 = fe env c in
+      let b, _ = fe (dec_env env0) b in
+      T.cseq T.[c; cloop [b; c]], (dec_env env0)
     end
 
   | Iiter (ids, c, b) -> begin
@@ -2178,8 +2178,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Ilambda (rt, id, at, e) -> begin
       let e, env = fe (add_var_env env id) e in
+      let rm = get_remove_code env id in
+      let nenv = rm_var_env env id in
 
-      T.clambda (rt, at, T.[e; cswap; cdrop 1]), dec_env env
+      T.clambda (rt, at, ([e] @ rm)), nenv
     end
 
   | Izop op -> begin
