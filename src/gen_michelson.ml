@@ -2123,18 +2123,23 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq [ v; T.cifleft ([l] @ rm_left, [r] @ rm_right) ], nenv
     end
 
-  | Iifcons (x, hd, tl, hte, ne, ty) -> begin
-      let x, _ = fe env x in
-      let t, _ = fe (add_var_env (add_var_env env tl) hd) hte in
-      let n, _ = fe env ne in
+  | Iifcons (x, hd, tl, hte, ne, _ty) -> begin
+      let x, env0 = fe env x in
+      let t, env_cons = fe (add_var_env (add_var_env (dec_env env0) tl) hd) hte in
+      let n, env_empty = fe (dec_env env0) ne in
 
-      let ee, env =
-        match ty.node with
-        | T.Tunit -> T.[cdrop 2], env
-        | _       -> T.[cdug 2; cdrop 2], inc_env env
+      let rm_hd = get_remove_code env_cons hd in
+      let rm_tl = get_remove_code (rm_var_env env_cons hd) tl in
+
+      let nenv =
+        match env_cons.fail, env_empty.fail with
+        | true, true  -> {env_empty with fail = true}
+        | true, _     -> env_empty
+        | _, true     -> rm_var_env (rm_var_env env_cons hd) tl
+        | _           -> rm_var_env (rm_var_env env_cons hd) tl
       in
 
-      T.cseq T.[ x; cifcons ([t] @ ee, [n]) ], env
+      T.cseq T.[ x; cifcons ([t] @ rm_hd @ rm_tl, [n]) ], nenv
     end
 
   | Iloop (c, b) -> begin

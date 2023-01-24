@@ -5,7 +5,7 @@
          PUSH nat 1 ;
          CONS ;
          DUP ;
-         IF_CONS { DUP ; DUG 2 ; DROP 2 } { PUSH nat 0 } ;
+         IF_CONS { SWAP ; DROP 1 } { PUSH nat 0 } ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
          DROP 1 ;

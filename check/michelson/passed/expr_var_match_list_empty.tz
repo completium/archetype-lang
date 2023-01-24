@@ -2,7 +2,7 @@
   parameter (unit %exec) ;
   code { CDR ;
          NIL string ;
-         IF_CONS { DUP ; DUG 2 ; DROP 2 } { PUSH string "mystr" } ;
+         IF_CONS { SWAP ; DROP 1 } { PUSH string "mystr" } ;
          DUP ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;

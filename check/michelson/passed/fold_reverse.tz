@@ -25,8 +25,10 @@
                  CONS ;
                  PAIR ;
                  LEFT (list nat) ;
-                 DUG 2 ;
-                 DROP 2 }
+                 SWAP ;
+                 DROP 1 ;
+                 SWAP ;
+                 DROP 1 }
                { DUP ; GET 1 ; RIGHT (pair (list nat) (list nat)) } ;
              SWAP ;
              DROP 1 } ;
