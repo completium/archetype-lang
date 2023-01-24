@@ -1,0 +1,60 @@
+archetype oracle(publickey : key)
+
+asset oracleData to big_map {
+  code     : string;
+  start    : date;
+  %end     : date;
+  open     : nat;
+  high     : nat;
+  low      : nat;
+  close    : nat;
+  volume   : nat
+} initialized by {
+  { "XTZ-USD"; int_to_date(0); int_to_date(0); 0; 0; 0; 0; 0 };
+  { "BTC-USD"; int_to_date(0); int_to_date(0); 0; 0; 0; 0; 0 }
+}
+
+states =
+| Running initial
+| Revoked
+
+constant INVALID_SIG : string = "bad sig"
+constant REVOKED     : string = "revoked"
+constant BAD_REQUEST : string = "bad request"
+
+//record update_value {
+//  sig : signature;
+//  data: asset_value<oracleData>
+//}
+
+entry update(upm : map<asset_key<oracleData>, (signature * asset_value<oracleData>)>) {
+  state is Running otherwise REVOKED
+  effect {
+    for (k, newData) in upm do
+      if oracleData.contains(k) and newData[1].start > oracleData[k].start then  begin
+        const packed = pack((k, newData[1]));
+        do_require(check_signature(publickey, newData[0], packed), INVALID_SIG);
+        oracleData.put(make_asset<oracleData>(k, newData[1]))
+      end
+    done
+  }
+}
+
+entry push(normalizer : contract<asset_container<oracleData>>) {
+  transfer 0tz to entry normalizer(oracleData.to_container())
+}
+
+transition revoke(sig: signature) {
+  require {
+    r0: check_signature(publickey, sig, pack(none<key>)) otherwise INVALID_SIG
+  }
+  from Running to Revoked
+  with effect {
+    oracleData.remove_all()
+  }
+}
+
+view getPrice(c : asset_key<oracleData>) : asset_value<oracleData> {
+  const data ?= oracleData[c] : BAD_REQUEST;
+  return data
+}

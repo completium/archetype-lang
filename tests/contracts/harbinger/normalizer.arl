@@ -1,0 +1,83 @@
+archetype normalizer(
+  assetCodes     : list<string>,
+  oracleContract : address,
+  numDataPoints  : nat,
+  const empty_queue : queue
+)
+
+constant INVALID_CALLER : string = "bad sender"
+constant BAD_REQUEST    : string = "bad request"
+constant INVALID_SUM    : string = "invalid sum"
+
+record queue {
+  first : int;
+  last  : int;
+  sum   : nat;
+  saved : map<int, nat>
+}
+
+function push(q : queue, v : nat) : queue {
+  const pop       = q.last - q.first + 2 > numDataPoints;
+  const new_first = q.first + (pop ? 1 : 0);
+  const new_last  = q.last + 1;
+  const new_sum  ?= int_to_nat(q.sum + v - (pop ? (q.saved[q.first] ? the : 0) : 0)) : INVALID_SUM;
+  const new_saved = put(pop ? remove(q.saved, q.first): q.saved, new_last, v);
+  return { new_first; new_last; new_sum; new_saved }
+}
+
+asset assetMap to big_map {
+  assets         : string;
+  computedPrice  : nat  = 0;
+  lastUpdateTime : date = int_to_date(0);
+  prices         : queue;
+  volumes        : queue
+} initialized by {
+  { "XTZ-USD"; 0; int_to_date(0); empty_queue; empty_queue };
+  { "BTC-USD"; 0; int_to_date(0); empty_queue; empty_queue }
+}
+
+record update_param {
+  start    : date;
+  %end     : date;
+  open     : nat;
+  high     : nat;
+  low      : nat;
+  close    : nat;
+  volume   : nat
+}
+
+// Called by oracle's 'push' entrypoint
+entry update(upm : big_map<asset_key<assetMap>, update_param>) {
+  called by oracleContract otherwise INVALID_CALLER
+  effect {
+    for assetcode in assetCodes do
+      if upm.contains(assetcode) then begin
+        const assetData  ?= assetMap[assetcode];
+        const updateData ?= upm[assetcode];
+        if updateData.start > assetData.lastUpdateTime then begin
+          if updateData.volume > 0 then begin
+            const volumePrice = ((updateData.high + updateData.low + updateData.close) div 3) * updateData.volume;
+            const new_prices  = push(assetData.prices, volumePrice);
+            const new_volumes = push(assetData.volumes, updateData.volume);
+            assetMap.update(assetcode, {
+              computedPrice  := (new_prices.sum div new_volumes.sum);
+              lastUpdateTime := updateData.start;
+              prices         := new_prices;
+              volumes        := new_volumes
+            })
+          end
+        end
+      end
+    done
+  }
+}
+
+getter get(requestedAsset : asset_key<assetMap>) : asset_key<assetMap> * date * nat {
+  const assetData ?= assetMap[requestedAsset] : BAD_REQUEST;
+  return ((requestedAsset, assetData.lastUpdateTime, assetData.computedPrice))
+}
+
+view getPrice(requestedAsset : asset_key<assetMap>) : date * nat {
+  const assetData ?= assetMap[requestedAsset] : BAD_REQUEST;
+  return ((assetData.lastUpdateTime, assetData.computedPrice))
+}
