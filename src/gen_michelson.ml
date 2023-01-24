@@ -1849,15 +1849,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   let assign env id v =
     let n = get_sp_for_id env id in
-    print_env ~str:("assign:before " ^ id) env;
-    Format.eprintf "assign n: %d@." n;
+    (* print_env ~str:("assign:before " ^ id) env; *)
+    (* Format.eprintf "assign n: %d@." n; *)
     let c, nenv =
       match n with
       | 0 -> T.cseq [ v ], env
       | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
       | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
     in
-    print_env ~str:("assign:after " ^ id) nenv;
+    (* print_env ~str:("assign:after " ^ id) nenv; *)
     c, nenv
   in
 
@@ -1976,11 +1976,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | IletIn (id, v, b, _u)    -> begin
       let v, env = f v in
       let env = add_var_env (dec_env env) id in
-      print_env ~str:("IletIn " ^ id ^ " before") env;
+      (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
-      print_env ~str:("IletIn " ^ id ^ " after") env;
+      (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
       let idx, si = get_pos_stack_item env id in
-      Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si;
+      (* Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si; *)
       let nenv = rm_var_env env id in
       let c =
         match idx with
@@ -1989,7 +1989,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | 1  -> T.cseq ([v; b] @ (if si.populated then [T.cswap; T.cdrop 1 ] else []))
         | _  -> T.cseq ([v; b] @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else []))
       in
-      print_env ~str:("IletIn " ^ id ^ " final") nenv;
+      (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
       c, nenv
     end
 
@@ -2027,7 +2027,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let r = List.map (fun (ai : T.access_item) ->
               ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
           let nenv = inc_env env in
-          print_env ~str:"Ivar_access" nenv;
+          (* print_env ~str:"Ivar_access" nenv; *)
           (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r @ d)])), nenv
         end
       end
@@ -2060,9 +2060,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iassign (id, v)  -> begin
-      print_env ~str:("Iassign:before " ^ id) env;
+      (* print_env ~str:("Iassign:before " ^ id) env; *)
       let v, env = f v in
-      print_env ~str:("Iassign:after " ^ id) env;
+      (* print_env ~str:("Iassign:after " ^ id) env; *)
       assign env id v
     end
 
@@ -2233,9 +2233,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           else begin
             let tenv = dig_env env id in
             let c, ntenv = aop_to_code tenv aop in
-            print_env ~str:"ntenv" ntenv;
+            (* print_env ~str:"ntenv" ntenv; *)
             let nn = get_pos_stack_item (dec_env ntenv) id |> fst in
-            Format.eprintf "id=%s nn=%d\n" id nn;
+            (* Format.eprintf "id=%s nn=%d\n" id nn; *)
             let nenv = dug_env ntenv id in
             T.cseq ([ T.cdig n ] @ c @ [ T.cdug nn ]), nenv
           end
@@ -2407,17 +2407,17 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Ireplace (id, v, k, fa) -> begin
-      print_env ~str:"Ireplace before" env;
+      (* print_env ~str:"Ireplace before" env; *)
       let n = get_sp_for_id env v in
       let a, _ = fe (inc_env env) fa in
       let nenv = add_var_env env id in
-      print_env ~str:"Ireplace after" nenv;
+      (* print_env ~str:"Ireplace after" nenv; *)
       let b = match k with | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])] | KLVlist -> [T.cifcons ([], [a; T.cfailwith])] in
       T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
     end
 
   | Ireadticket (x) -> begin
-      print_env ~str:"Ireadticket" env;
+      (* print_env ~str:"Ireadticket" env; *)
       match x with
       | T.Ivar_access v -> begin
           let n = get_sp_for_id env v.av_ident in
@@ -2641,7 +2641,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
           let code, nenv = instruction_to_code env e.body in
           let diff = List.count (fun x -> not x.populated) nenv.stack in
-          Format.eprintf "diff: %n\n" diff;
+          (* Format.eprintf "diff: %n\n" diff; *)
           T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair])
         end
     in
