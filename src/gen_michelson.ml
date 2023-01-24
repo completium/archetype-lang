@@ -2302,13 +2302,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iset (t, l) -> begin
-      T.cseq ((T.cempty_set t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.cseq [T.ctrue; x; T.cupdate ] ))), inc_env env
+      let l, nenv =
+        List.fold_right (fun x (l, env) -> let x, env = fe (inc_env env) x in ((T.cseq [ T.ctrue; x; T.cupdate ])::l, dec_env (dec_env env))) (List.rev l) ([], inc_env env)
+      in
+      (T.cseq ((T.cempty_set t)::l), nenv)
     end
   | Ilist (t, l) -> begin
       let l, nenv =
         List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) (List.rev l) ([], inc_env env)
       in
-      (* print_env ~str:"Ilist" nenv; *)
       (T.cseq ((T.cnil t)::l), nenv)
     end
   | Imap (b, k, v, l) -> begin
@@ -2383,8 +2385,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Imap_ (x, id, e) -> begin
       let x, _env0 = fe env x in
-      let e, _env1 = fe (add_var_env env id) e in
-      let rm = get_remove_code _env1 id in
+      let e, env_body = fe (add_var_env env id) e in
+      let rm = get_remove_code env_body id in
       T.cseq [x; T.cmap (e::rm)], inc_env env
     end
 
