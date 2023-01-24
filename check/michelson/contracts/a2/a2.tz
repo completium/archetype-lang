@@ -1,0 +1,598 @@
+{ storage
+    (pair (address %owner)
+          (address %users)
+          (option %owner_candidate address)
+          (bool %paused)
+          (set %superusers address)
+          (set %whitelister address)
+          (big_map %transferlists
+             nat
+             (pair (bool %unrestricted) (set %allowedTransferlists nat)))
+          (big_map %metadata string bytes)) ;
+  parameter
+    (or (or (or (or (pair %getUser (address %user) (contract %callback (option nat)))
+                    (address %declare_ownership))
+                (or (unit %claim_ownership) (unit %pause)))
+            (or (or (unit %unpause) (pair %set_metadata (string %k) (option %d bytes)))
+                (or (address %addSuperuser) (address %removeSuperuser))))
+        (or (or (or (address %addWhitelister) (address %removeWhitelister))
+                (or (list %assertReceivers address)
+                    (list %assertTransfers (pair address (list address)))))
+            (or (or (pair %assertTransferlist (nat %fromTransferListId) (nat %toTransferListId))
+                    (pair %updateUser (address %user) (option %transferlistId nat)))
+                (or (list %updateUsers (pair address (option nat)))
+                    (pair %updateTransferlist (nat %transferlistId) (option %u (pair bool (set nat)))))))) ;
+  code { LAMBDA
+           bool
+           bool
+           { PUSH unit Unit ;
+             DUP 2 ;
+             IF { PUSH string "CONTRACT_PAUSED" ; FAILWITH } {} ;
+             PUSH bool True ;
+             SWAP ;
+             DROP 1 ;
+             SWAP ;
+             DROP 1 } ;
+         LAMBDA
+           (pair (big_map nat (pair (bool %unrestricted) (set %allowedTransferlists nat)))
+                 address
+                 address)
+           bool
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 3 ;
+             DUP 5 ;
+             VIEW "getopt" (option nat) ;
+             IF_NONE { PUSH string "USER_GETOPT_INTERNAL_ERROR" ; FAILWITH } {} ;
+             DUP ;
+             IF_NONE
+               { PUSH bool False }
+               { DUP 4 ;
+                 DUP 2 ;
+                 GET ;
+                 IF_NONE { PUSH bool False } { DUP ; GET 1 ; SWAP ; DROP 1 } ;
+                 SWAP ;
+                 DROP 1 } ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             DUG 3 ;
+             DROP 3 } ;
+         NIL operation ;
+         DIG 3 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 8 } ;
+         IF_LEFT
+           { IF_LEFT
+               { IF_LEFT
+                   { IF_LEFT
+                       { UNPAIR ;
+                         NONE nat ;
+                         DUP 5 ;
+                         DUP 3 ;
+                         VIEW "getopt" (option nat) ;
+                         IF_NONE
+                           { PUSH string "USER_GETOPT_INTERNAL_ERROR" ; FAILWITH }
+                           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
+                         NIL operation ;
+                         NIL operation ;
+                         DUP 14 ;
+                         ITER { CONS } ;
+                         DUP 5 ;
+                         AMOUNT ;
+                         DUP 5 ;
+                         TRANSFER_TOKENS ;
+                         CONS ;
+                         ITER { CONS } ;
+                         DIP 1 { DIG 11 ; DROP 1 } ;
+                         DUG 11 ;
+                         DROP 3 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP ;
+                         SOME ;
+                         DIP 1 { DIG 3 ; DROP 1 } ;
+                         DUG 3 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } }
+                   { IF_LEFT
+                       { DROP 1 ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 3 ;
+                         IF_NONE
+                           { PUSH bool False }
+                           { SENDER ; DUP 2 ; COMPARE ; EQ ; SWAP ; DROP 1 } ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         SENDER ;
+                         SWAP ;
+                         DROP 1 ;
+                         NONE address ;
+                         DIP 1 { DIG 2 ; DROP 1 } ;
+                         DUG 2 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DROP 1 ;
+                         DUP ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 11 ;
+                         DUP 5 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "pausable_r1" ;
+                              PUSH string "INVALID_CONDITION" ;
+                              PAIR ;
+                              FAILWITH }
+                            {} ;
+                         PUSH bool True ;
+                         DIP 1 { DIG 3 ; DROP 1 } ;
+                         DUG 3 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } } }
+               { IF_LEFT
+                   { IF_LEFT
+                       { DROP 1 ;
+                         DUP ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 4 ;
+                         NOT ;
+                         IF { PUSH string "CONTRACT_NOT_PAUSED" ; FAILWITH } {} ;
+                         PUSH bool False ;
+                         DIP 1 { DIG 3 ; DROP 1 } ;
+                         DUG 3 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { UNPAIR ;
+                         SWAP ;
+                         DUP 3 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 13 ;
+                         DUP 7 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "md_r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH }
+                            {} ;
+                         DUP 10 ;
+                         DUP 2 ;
+                         DUP 4 ;
+                         UPDATE ;
+                         DIP 1 { DIG 9 ; DROP 1 } ;
+                         DUG 9 ;
+                         DROP 2 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } }
+                   { IF_LEFT
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 6 ;
+                         PUSH bool True ;
+                         DUP 3 ;
+                         UPDATE ;
+                         DIP 1 { DIG 5 ; DROP 1 } ;
+                         DUG 5 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 6 ;
+                         PUSH bool False ;
+                         DUP 3 ;
+                         UPDATE ;
+                         DIP 1 { DIG 5 ; DROP 1 } ;
+                         DUG 5 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } } } }
+           { IF_LEFT
+               { IF_LEFT
+                   { IF_LEFT
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 7 ;
+                         DUP 2 ;
+                         MEM ;
+                         IF { PUSH string "whitelister" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                            { DUP 7 ;
+                              PUSH bool True ;
+                              DUP 3 ;
+                              UPDATE ;
+                              DIP 1 { DIG 6 ; DROP 1 } ;
+                              DUG 6 } ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         PUSH mutez 0 ;
+                         AMOUNT ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "NO_TRANSFER" ; FAILWITH } {} ;
+                         DUP 7 ;
+                         PUSH bool False ;
+                         DUP 3 ;
+                         UPDATE ;
+                         DIP 1 { DIG 6 ; DROP 1 } ;
+                         DUG 6 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } }
+                   { IF_LEFT
+                       { DUP ;
+                         ITER { DUP 12 ;
+                                DUP 2 ;
+                                DUP 6 ;
+                                PAIR ;
+                                DUP 11 ;
+                                PAIR ;
+                                EXEC ;
+                                NOT ;
+                                IF { PUSH string "USER_RESTRICTED" ; FAILWITH } {} ;
+                                DROP 1 } ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DUP ;
+                         ITER { DUP ;
+                                GET 1 ;
+                                DUP 2 ;
+                                GET 2 ;
+                                DUP ;
+                                ITER { SELF_ADDRESS ;
+                                       DUP 2 ;
+                                       DUP 5 ;
+                                       PAIR ;
+                                       SENDER ;
+                                       PAIR ;
+                                       VIEW "assertTransfer" string ;
+                                       IF_NONE
+                                         { PUSH string "INTERNAL_ERROR" ; FAILWITH }
+                                         { PUSH string "" ;
+                                           DUP 2 ;
+                                           COMPARE ;
+                                           NEQ ;
+                                           IF { DUP ; FAILWITH } {} ;
+                                           DROP 1 } ;
+                                       DROP 1 } ;
+                                DROP 3 } ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } } }
+               { IF_LEFT
+                   { IF_LEFT
+                       { UNPAIR ;
+                         SWAP ;
+                         DUP 9 ;
+                         DUP 3 ;
+                         GET ;
+                         IF_NONE { PUSH string "FROM_TRANSFERLIST_NOT_FOUND" ; FAILWITH } {} ;
+                         DUP 10 ;
+                         DUP 3 ;
+                         GET ;
+                         IF_NONE { PUSH string "TO_TRANSFERLIST_NOT_FOUND" ; FAILWITH } {} ;
+                         DUP 2 ;
+                         GET 1 ;
+                         NOT ;
+                         IF { PUSH string "FROM_INVALID_UNRESTRICTED_STATE" ; FAILWITH } {} ;
+                         DUP ;
+                         GET 1 ;
+                         NOT ;
+                         IF { PUSH string "TO_INVALID_UNRESTRICTED_STATE" ; FAILWITH } {} ;
+                         DUP 2 ;
+                         GET 2 ;
+                         DUP 4 ;
+                         MEM ;
+                         NOT ;
+                         IF { PUSH string "TO_TRANSFERLIST_NOT_FOUND_IN_FROM" ; FAILWITH } {} ;
+                         DROP 4 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { UNPAIR ;
+                         SWAP ;
+                         DUP 3 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         IF { PUSH bool True }
+                            { DUP 8 ; SENDER ; MEM ; IF { PUSH bool True } { PUSH bool False } } ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 13 ;
+                         DUP 7 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "r0" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                         NIL operation ;
+                         NIL operation ;
+                         DUP 13 ;
+                         ITER { CONS } ;
+                         DUP 6 ;
+                         CONTRACT %update (pair address (option nat)) ;
+                         IF_NONE
+                           { PUSH string "update" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                           {} ;
+                         PUSH mutez 0 ;
+                         DUP 5 ;
+                         DUP 7 ;
+                         PAIR ;
+                         TRANSFER_TOKENS ;
+                         CONS ;
+                         ITER { CONS } ;
+                         DIP 1 { DIG 10 ; DROP 1 } ;
+                         DUG 10 ;
+                         DROP 2 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } }
+                   { IF_LEFT
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         IF { PUSH bool True }
+                            { DUP 7 ; SENDER ; MEM ; IF { PUSH bool True } { PUSH bool False } } ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 12 ;
+                         DUP 6 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                         DUP ;
+                         ITER { DUP ;
+                                GET 1 ;
+                                DUP 2 ;
+                                GET 2 ;
+                                NIL operation ;
+                                NIL operation ;
+                                DUP 15 ;
+                                ITER { CONS } ;
+                                DUP 8 ;
+                                CONTRACT %update (pair address (option nat)) ;
+                                IF_NONE
+                                  { PUSH string "update" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                                  {} ;
+                                PUSH mutez 0 ;
+                                DUP 5 ;
+                                DUP 7 ;
+                                PAIR ;
+                                TRANSFER_TOKENS ;
+                                CONS ;
+                                ITER { CONS } ;
+                                DIP 1 { DIG 12 ; DROP 1 } ;
+                                DUG 12 ;
+                                DROP 3 } ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { UNPAIR ;
+                         SWAP ;
+                         DUP 3 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 13 ;
+                         DUP 7 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "r2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                         DUP ;
+                         IF_NONE
+                           { DUP 9 ;
+                             NONE (pair bool (set nat)) ;
+                             DUP 4 ;
+                             UPDATE ;
+                             DIP 1 { DIG 8 ; DROP 1 } ;
+                             DUG 8 }
+                           { DUP ;
+                             GET 2 ;
+                             DUP 2 ;
+                             GET 1 ;
+                             PAIR ;
+                             DUP 11 ;
+                             DUP 2 ;
+                             SOME ;
+                             DUP 6 ;
+                             UPDATE ;
+                             DIP 1 { DIG 10 ; DROP 1 } ;
+                             DUG 10 ;
+                             DROP 2 } ;
+                         DROP 2 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } } } } ;
+         DIP 1 { DROP 2 } } ;
+  view "assertTransfer"
+       (pair address address address)
+       string
+       { UNPAIR ;
+         DIP 1
+             { CDR ;
+               UNPAIR ;
+               SWAP ;
+               CDR ;
+               CDR ;
+               UNPAIR ;
+               SWAP ;
+               CDR ;
+               UNPAIR ;
+               SWAP ;
+               DROP 1 } ;
+         UNPAIR 3 ;
+         UNIT ;
+         PUSH string "" ;
+         NONE nat ;
+         NONE nat ;
+         PUSH bool False ;
+         DUP 11 ;
+         DUP 8 ;
+         VIEW "getopt" (option nat) ;
+         IF_NONE
+           { PUSH string "USER_GETOPT_INTERNAL_ERROR" ; FAILWITH }
+           { DUP ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DUP ;
+             IF_NONE
+               { PUSH bool True ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
+               { DUP 11 ;
+                 DUP 2 ;
+                 GET ;
+                 IF_NONE
+                   { PUSH bool True ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+                   { DUP ; GET 1 ; NOT ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 1 } ;
+                 DROP 1 } ;
+             DROP 1 } ;
+         DUP ;
+         IF { PUSH string "FROM_RESTRICTED" ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 }
+            { PUSH bool False ;
+              DUP 12 ;
+              DUP 10 ;
+              VIEW "getopt" (option nat) ;
+              IF_NONE
+                { PUSH string "USER_GETOPT_INTERNAL_ERROR" ; FAILWITH }
+                { DUP ;
+                  DIP 1 { DIG 3 ; DROP 1 } ;
+                  DUG 3 ;
+                  DUP ;
+                  IF_NONE
+                    { PUSH bool True ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
+                    { DUP 12 ;
+                      DUP 2 ;
+                      GET ;
+                      IF_NONE
+                        { PUSH bool True ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+                        { DUP ; GET 1 ; NOT ; DIP 1 { DIG 3 ; DROP 1 } ; DUG 3 ; DROP 1 } ;
+                      DROP 1 } ;
+                  DROP 1 } ;
+              DUP ;
+              IF { PUSH string "TO_RESTRICTED" ; DIP 1 { DIG 4 ; DROP 1 } ; DUG 4 }
+                 { DUP 4 ;
+                   IF_NONE { PUSH string "INTERNAL_ERROR" ; FAILWITH } {} ;
+                   DUP 4 ;
+                   IF_NONE { PUSH string "INTERNAL_ERROR" ; FAILWITH } {} ;
+                   DUP 13 ;
+                   DUP 10 ;
+                   MEM ;
+                   NOT ;
+                   IF { DUP 12 ;
+                        DUP 3 ;
+                        GET ;
+                        IF_NONE
+                          { PUSH string "INTERNAL_ERROR" ; FAILWITH }
+                          { DUP ;
+                            GET 2 ;
+                            DUP ;
+                            DUP 4 ;
+                            MEM ;
+                            NOT ;
+                            IF { PUSH string "TO_NOT_ALLOWED" ; DIP 1 { DIG 8 ; DROP 1 } ; DUG 8 } {} ;
+                            DROP 2 } }
+                      {} ;
+                   DROP 2 } ;
+              DROP 1 } ;
+         DUP 4 ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 4 ;
+         DIP 1 { DROP 6 } } }

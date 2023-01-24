@@ -13,7 +13,13 @@ const compile = (args: string[]) => {
   return res
 }
 
-const generation_interface_contract = (i: string) : string => {
+const create_folder = (dir: string) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+}
+
+const generation_interface_contract = (i: string, p : string): string => {
   const arl_path = i + '.arl'
   const res = compile(['--show-contract-interface', arl_path])
   if (res.status != 0) {
@@ -21,32 +27,32 @@ const generation_interface_contract = (i: string) : string => {
   }
   const content = JSON.parse(res.stdout.toString())
   const output = JSON.stringify(content, null, 2);
-  const json_path = './json/passed/' + path.basename(arl_path.replace('.arl', '.json'))
+  const json_path = p + path.basename(arl_path.replace('.arl', '.json'))
   fs.writeFileSync(json_path, output)
   return json_path
 }
 
-const generation_tz_file = (i: string) : string => {
+const generation_tz_file = (i: string, p: string): string => {
   const arl_path = i + '.arl'
   const res = compile([arl_path])
   if (res.status != 0) {
     throw new Error(res.stderr.toString())
   }
-  const output_path = './michelson/passed/' + path.basename(arl_path.replace('.arl', '.tz'))
+  const output_path = p + path.basename(arl_path.replace('.arl', '.tz'))
   fs.writeFileSync(output_path, res.stdout.toString())
   return output_path
 }
 
-const write_binding = (json_path: string) => {
+const write_binding = (json_path: string, p : string, op : string) => {
   const json = fs.readFileSync(json_path);
   let rci: RawContractInterface = JSON.parse(json);
   const settings: BindingSettings = {
     language: Language.Archetype,
     target: Target.Experiment,
-    path: '../tests/passed/'
+    path: p
   }
   const output = generate_binding(rci, settings);
-  const out_ts = './bindings/passed/' + path.basename(json_path.replace('.json', '.ts'));
+  const out_ts = op + path.basename(json_path.replace('.json', '.ts'));
   fs.writeFileSync(out_ts, output)
 }
 
@@ -172,15 +178,37 @@ const extract_file_dir = (path: string, ext: string): Array<string> => {
 }
 
 describe('Generate binding', async () => {
+  describe('contracts', async () => {
+    const p = '../tests/contracts'
+    const ids = ['a2', 'fa1.2', 'fa2', 'fa2.1', 'harbinger', 'multisig', 'poll']
+    for (const id of ids) {
+      it(id, () => {
+        const pa = p + '/' + id;
+        const out_michelson_path = `./michelson/contracts/${id}/`;
+        create_folder(out_michelson_path)
+        const out_json_path = `./json/contracts/${id}/`;
+        create_folder(out_json_path)
+        const out_ts_path = `./bindings/contracts/${id}/`;
+        create_folder(out_ts_path)
+        const filenames = extract_file_dir(pa, '.arl')
+        for (const filename of filenames) {
+          const filepath = pa + '/' + filename
+          generation_tz_file(filepath, out_michelson_path)
+          const json_path = generation_interface_contract(filepath, out_json_path)
+          write_binding(json_path, pa + '/', out_ts_path)
+        }
+      })
+    }
+  })
   describe('passed', async () => {
     const p = '../tests/passed'
     const filenames = extract_file_dir(p, '.arl')
     for (const filename of filenames) {
       it(filename, () => {
         const filepath = p + '/' + filename
-        const json_path = generation_interface_contract(filepath)
-        generation_tz_file(filepath)
-        write_binding(json_path)
+        const json_path = generation_interface_contract(filepath, './json/passed/')
+        generation_tz_file(filepath, './michelson/passed/')
+        write_binding(json_path, '../tests/passed/', './bindings/passed/')
       });
     }
     it('Generate passed.spec.ts', async () => {

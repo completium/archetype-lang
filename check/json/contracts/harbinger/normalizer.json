@@ -1,0 +1,1499 @@
+{
+  "name": "normalizer",
+  "parameters": [
+    {
+      "name": "assetCodes",
+      "type": {
+        "node": "list",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "oracleContract",
+      "type": {
+        "node": "address",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "numDataPoints",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "empty_queue",
+      "type": {
+        "node": "record",
+        "name": "queue",
+        "int_value": null,
+        "args": []
+      },
+      "const": true,
+      "default": null
+    }
+  ],
+  "types": {
+    "assets": [
+      {
+        "name": "assetMap",
+        "container_kind": "big_map",
+        "fields": [
+          {
+            "name": "assets",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "computedPrice",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "lastUpdateTime",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "prices",
+            "type": {
+              "node": "record",
+              "name": "queue",
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "volumes",
+            "type": {
+              "node": "record",
+              "name": "queue",
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%computedPrice"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%lastUpdateTime"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "pair",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%first"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%last"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%sum"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "map",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "int",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        },
+                        {
+                          "prim": "nat",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [
+                        "%saved"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%prices"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "pair",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%first"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%last"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%sum"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "map",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "int",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        },
+                        {
+                          "prim": "nat",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [
+                        "%saved"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%volumes"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%computedPrice"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%lastUpdateTime"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%first"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%last"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%sum"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "map",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%saved"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%prices"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%first"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%last"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%sum"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "map",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%saved"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%volumes"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "enums": [],
+    "records": [
+      {
+        "name": "queue",
+        "fields": [
+          {
+            "name": "first",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "last",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "saved",
+            "type": {
+              "node": "map",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "int",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "nat",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%first"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%last"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%sum"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "map",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%saved"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      },
+      {
+        "name": "update_param",
+        "fields": [
+          {
+            "name": "start",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "end",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "open",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "high",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "low",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "close",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "volume",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%start"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%end"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%open"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%high"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%low"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%close"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%volume"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "assetMap",
+      "type": {
+        "node": "asset",
+        "name": "assetMap",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "list",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%assetCodes"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%oracleContract"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%numDataPoints"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%computedPrice"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%lastUpdateTime"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "pair",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%first"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%last"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%sum"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "map",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "int",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        },
+                        {
+                          "prim": "nat",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [
+                        "%saved"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%prices"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "pair",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%first"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "int",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%last"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "nat",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [
+                        "%sum"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "map",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "int",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        },
+                        {
+                          "prim": "nat",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [
+                        "%saved"
+                      ],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%volumes"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%assetMap"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "update",
+      "args": [
+        {
+          "name": "upm",
+          "type": {
+            "node": "big_map",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "string",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "record",
+                "name": "update_param",
+                "int_value": null,
+                "args": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [
+    {
+      "name": "get",
+      "args": [
+        {
+          "name": "requestedAsset",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "tuple",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "date",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "views": [
+    {
+      "name": "getPrice",
+      "args": [
+        {
+          "name": "requestedAsset",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "tuple",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "date",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "errors": [
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "OPTION_IS_NONE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "OPTION_IS_NONE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad sender",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad request",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad request",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "invalid sum",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

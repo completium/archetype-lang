@@ -1,0 +1,241 @@
+{ storage
+    (pair (list %assetCodes string)
+          (address %oracleContract)
+          (nat %numDataPoints)
+          (big_map %assetMap
+             string
+             (pair (nat %computedPrice)
+                   (timestamp %lastUpdateTime)
+                   (pair %prices (int %first) (int %last) (nat %sum) (map %saved int nat))
+                   (pair %volumes (int %first) (int %last) (nat %sum) (map %saved int nat))))) ;
+  parameter
+    (or (pair %get
+           (string %requestedAsset)
+           (contract %callback (pair string timestamp nat)))
+        (big_map %update
+           string
+           (pair (timestamp %start)
+                 (timestamp %end)
+                 (nat %open)
+                 (nat %high)
+                 (nat %low)
+                 (nat %close)
+                 (nat %volume)))) ;
+  code { LAMBDA
+           (pair nat (pair (int %first) (int %last) (nat %sum) (map %saved int nat)) nat)
+           (pair (int %first) (int %last) (nat %sum) (map %saved int nat))
+           { UNPAIR 3 ;
+             PUSH unit Unit ;
+             DUP 2 ;
+             INT ;
+             PUSH int 2 ;
+             DUP 5 ;
+             GET 1 ;
+             DUP 6 ;
+             GET 3 ;
+             SUB ;
+             ADD ;
+             COMPARE ;
+             GT ;
+             DUP ;
+             IF { PUSH nat 1 } { PUSH nat 0 } ;
+             INT ;
+             DUP 5 ;
+             GET 1 ;
+             ADD ;
+             PUSH int 1 ;
+             DUP 6 ;
+             GET 3 ;
+             ADD ;
+             DUP 3 ;
+             IF { DUP 6 ; GET 6 ; DUP 7 ; GET 1 ; GET ; IF_NONE { PUSH nat 0 } {} }
+                { PUSH nat 0 } ;
+             INT ;
+             DUP 8 ;
+             DUP 8 ;
+             GET 5 ;
+             ADD ;
+             INT ;
+             SUB ;
+             ISNAT ;
+             IF_NONE { PUSH string "invalid sum" ; FAILWITH } {} ;
+             DUP 4 ;
+             IF { DUP 7 ; GET 6 ; NONE nat ; DUP 9 ; GET 1 ; UPDATE }
+                { DUP 7 ; GET 6 } ;
+             DUP 9 ;
+             SOME ;
+             DUP 4 ;
+             UPDATE ;
+             DUP ;
+             DUP 3 ;
+             PAIR ;
+             DUP 4 ;
+             PAIR ;
+             DUP 5 ;
+             PAIR ;
+             DIP 1 { DIG 5 ; DROP 1 } ;
+             DUG 5 ;
+             DROP 5 ;
+             DUG 3 ;
+             DROP 3 } ;
+         NIL operation ;
+         DIG 2 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 4 } ;
+         IF_LEFT
+           { UNPAIR ;
+             DUP 6 ;
+             DUP 2 ;
+             GET ;
+             IF_NONE { PUSH string "bad request" ; FAILWITH } {} ;
+             NIL operation ;
+             NIL operation ;
+             DUP 10 ;
+             ITER { CONS } ;
+             DUP 5 ;
+             AMOUNT ;
+             DUP 5 ;
+             GET 1 ;
+             DUP 6 ;
+             GET 3 ;
+             PAIR ;
+             DUP 7 ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 7 ; DROP 1 } ;
+             DUG 7 ;
+             DROP 3 ;
+             PAIR 4 ;
+             SWAP ;
+             PAIR }
+           { DUP 3 ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "bad sender" ; FAILWITH } {} ;
+             DUP 2 ;
+             ITER { DUP 2 ;
+                    DUP 2 ;
+                    MEM ;
+                    IF { DUP 6 ;
+                         DUP 2 ;
+                         GET ;
+                         IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+                         DUP 3 ;
+                         DUP 3 ;
+                         GET ;
+                         IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+                         DUP 2 ;
+                         GET 3 ;
+                         DUP 2 ;
+                         GET 1 ;
+                         COMPARE ;
+                         GT ;
+                         IF { PUSH nat 0 ;
+                              DUP 2 ;
+                              GET 12 ;
+                              COMPARE ;
+                              GT ;
+                              IF { DUP ;
+                                   GET 12 ;
+                                   PUSH nat 3 ;
+                                   DUP 3 ;
+                                   GET 11 ;
+                                   DUP 4 ;
+                                   GET 9 ;
+                                   DUP 5 ;
+                                   GET 7 ;
+                                   ADD ;
+                                   ADD ;
+                                   EDIV ;
+                                   IF_NONE
+                                     { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                                     { DUP ; CAR ; SWAP ; DROP 1 } ;
+                                   MUL ;
+                                   DUP 11 ;
+                                   DUP 2 ;
+                                   DUP 5 ;
+                                   GET 5 ;
+                                   PAIR ;
+                                   DUP 10 ;
+                                   PAIR ;
+                                   EXEC ;
+                                   DUP 12 ;
+                                   DUP 4 ;
+                                   GET 12 ;
+                                   DUP 6 ;
+                                   GET 6 ;
+                                   PAIR ;
+                                   DUP 11 ;
+                                   PAIR ;
+                                   EXEC ;
+                                   DUP 11 ;
+                                   DUP 12 ;
+                                   DUP 8 ;
+                                   GET ;
+                                   IF_NONE
+                                     { PUSH string "assetMap" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                     {} ;
+                                   CDR ;
+                                   DUP 3 ;
+                                   GET 5 ;
+                                   DUP 5 ;
+                                   GET 5 ;
+                                   EDIV ;
+                                   IF_NONE
+                                     { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                                     { DUP ; CAR ; SWAP ; DROP 1 } ;
+                                   SWAP ;
+                                   CDR ;
+                                   DUP 7 ;
+                                   GET 1 ;
+                                   SWAP ;
+                                   CDR ;
+                                   DUP 6 ;
+                                   SWAP ;
+                                   DROP 1 ;
+                                   DUP 5 ;
+                                   SWAP ;
+                                   PAIR ;
+                                   SWAP ;
+                                   PAIR ;
+                                   SWAP ;
+                                   PAIR ;
+                                   SOME ;
+                                   DUP 8 ;
+                                   UPDATE ;
+                                   DIP 1 { DIG 10 ; DROP 1 } ;
+                                   DUG 10 ;
+                                   DROP 3 }
+                                 {} }
+                            {} ;
+                         DROP 2 }
+                       {} ;
+                    DROP 1 } ;
+             DROP 1 ;
+             PAIR 4 ;
+             SWAP ;
+             PAIR } ;
+         DIP 1 { DROP 1 } } ;
+  view "getPrice"
+       string
+       (pair timestamp nat)
+       { UNPAIR ;
+         DIP 1 { CDR ; CDR ; CDR } ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE { PUSH string "bad request" ; FAILWITH } {} ;
+         DUP ;
+         GET 1 ;
+         DUP 2 ;
+         GET 3 ;
+         PAIR ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

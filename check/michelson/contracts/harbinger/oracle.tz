@@ -1,0 +1,184 @@
+{ storage
+    (pair (key %publickey)
+          (big_map %oracleData
+             string
+             (pair (timestamp %start)
+                   (timestamp %end)
+                   (nat %open)
+                   (nat %high)
+                   (nat %low)
+                   (nat %close)
+                   (nat %volume)))
+          (int %_state)) ;
+  parameter
+    (or (or (map %update
+               string
+               (pair signature
+                     (pair (timestamp %start)
+                           (timestamp %end)
+                           (nat %open)
+                           (nat %high)
+                           (nat %low)
+                           (nat %close)
+                           (nat %volume))))
+            (contract %push
+               (big_map
+                  string
+                  (pair (timestamp %start)
+                        (timestamp %end)
+                        (nat %open)
+                        (nat %high)
+                        (nat %low)
+                        (nat %close)
+                        (nat %volume)))))
+        (signature %revoke)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         IF_LEFT
+           { IF_LEFT
+               { DUP 4 ;
+                 PUSH int 0 ;
+                 COMPARE ;
+                 NEQ ;
+                 IF { PUSH string "revoked" ; FAILWITH } {} ;
+                 DUP ;
+                 ITER { UNPAIR ;
+                        DUP 5 ;
+                        DUP 2 ;
+                        MEM ;
+                        IF { DUP 5 ;
+                             DUP 2 ;
+                             GET ;
+                             IF_NONE
+                               { PUSH string "oracleData" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                               {} ;
+                             CAR ;
+                             DUP 3 ;
+                             GET 2 ;
+                             GET 1 ;
+                             COMPARE ;
+                             GT ;
+                             IF { PUSH bool True } { PUSH bool False } }
+                           { PUSH bool False } ;
+                        IF { DUP 2 ;
+                             GET 2 ;
+                             DUP 2 ;
+                             PAIR ;
+                             PACK ;
+                             DUP ;
+                             DUP 4 ;
+                             GET 1 ;
+                             DUP 7 ;
+                             CHECK_SIGNATURE ;
+                             NOT ;
+                             IF { PUSH string "bad sig" ; FAILWITH } {} ;
+                             DUP 6 ;
+                             DUP 4 ;
+                             GET 2 ;
+                             GET 12 ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 11 ;
+                             PAIR ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 9 ;
+                             PAIR ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 7 ;
+                             PAIR ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 5 ;
+                             PAIR ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 3 ;
+                             PAIR ;
+                             DUP 5 ;
+                             GET 2 ;
+                             GET 1 ;
+                             PAIR ;
+                             SOME ;
+                             DUP 4 ;
+                             UPDATE ;
+                             DIP 1 { DIG 5 ; DROP 1 } ;
+                             DUG 5 ;
+                             DROP 1 }
+                           {} ;
+                        DROP 2 } ;
+                 DROP 1 ;
+                 PAIR 3 ;
+                 SWAP ;
+                 PAIR }
+               { NIL operation ;
+                 NIL operation ;
+                 DUP 7 ;
+                 ITER { CONS } ;
+                 DUP 3 ;
+                 PUSH mutez 0 ;
+                 DUP 7 ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 4 ; DROP 1 } ;
+                 DUG 4 ;
+                 DROP 1 ;
+                 PAIR 3 ;
+                 SWAP ;
+                 PAIR } }
+           { NONE key ;
+             PACK ;
+             DUP 2 ;
+             DUP 4 ;
+             CHECK_SIGNATURE ;
+             NOT ;
+             IF { PUSH string "bad sig" ; FAILWITH } {} ;
+             DUP 4 ;
+             DUP ;
+             PUSH int 0 ;
+             COMPARE ;
+             EQ ;
+             IF { EMPTY_BIG_MAP
+                    string
+                    (pair (timestamp %start)
+                          (timestamp %end)
+                          (nat %open)
+                          (nat %high)
+                          (nat %low)
+                          (nat %close)
+                          (nat %volume)) ;
+                  DIP 1 { DIG 3 ; DROP 1 } ;
+                  DUG 3 ;
+                  PUSH int 1 ;
+                  DIP 1 { DIG 4 ; DROP 1 } ;
+                  DUG 4 }
+                { PUSH string "INVALID_STATE" ; FAILWITH } ;
+             DROP 2 ;
+             PAIR 3 ;
+             SWAP ;
+             PAIR } } ;
+  view "getPrice"
+       string
+       (pair (timestamp %start)
+             (timestamp %end)
+             (nat %open)
+             (nat %high)
+             (nat %low)
+             (nat %close)
+             (nat %volume))
+       { UNPAIR ;
+         DIP 1 { CDR ; UNPAIR ; SWAP ; DROP 1 } ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE { PUSH string "bad request" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

@@ -6,8 +6,8 @@ variable info : option<(address * string * nat)> = none
 
 entry exec() {
   const ti ?= create_ticket("info", 1) : "ERROR";
-  mt := [(0, ti)];
+  mt.update(0, ti);
 
-  detach t from mt[0] : "ERROR";
-  info := some(read_ticket(t))
+  // detach t from mt[0] : "ERROR";
+  info := some(read_ticket(ti))
 }

@@ -44,8 +44,6 @@ jobs:
 
     - run: _build/default/src/compiler.exe -v
 
-    # - run: ./extra/script/check_action.sh
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -68,6 +66,10 @@ jobs:
     - name: show_archetype_version
       working-directory: ./check
       run: npm run show_archetype_version
+
+    - name: completium_add_users
+      working-directory: ./check
+      run: npm run completium_add_users
 
     - name: mockup_init
       working-directory: ./check

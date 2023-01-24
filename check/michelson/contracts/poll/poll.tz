@@ -1,0 +1,388 @@
+{ storage
+    (pair (address %owner)
+          (option %owner_candidate address)
+          (bool %paused)
+          (nat %polls_counter)
+          (map %poll
+             nat
+             (pair (bytes %ipfs_hash) (map %responses nat nat) (timestamp %creation)))
+          (big_map %poll_to_approve bytes address)
+          (big_map %responder address (set nat))
+          (big_map %metadata string bytes)) ;
+  parameter
+    (or (or (or (address %declare_ownership) (unit %claim_ownership))
+            (or (unit %pause) (unit %unpause)))
+        (or (or (pair %set_metadata (string %k) (option %d bytes)) (bytes %add_poll))
+            (or (or (bytes %approve) (bytes %disapprove))
+                (or (nat %remove) (pair %respond (nat %pk) (nat %choice_id)))))) ;
+  code { LAMBDA
+           bool
+           bool
+           { PUSH unit Unit ;
+             DUP 2 ;
+             IF { PUSH string "CONTRACT_PAUSED" ; FAILWITH } {} ;
+             PUSH bool True ;
+             SWAP ;
+             DROP 1 ;
+             SWAP ;
+             DROP 1 } ;
+         NIL operation ;
+         DIG 2 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 8 } ;
+         IF_LEFT
+           { IF_LEFT
+               { IF_LEFT
+                   { DUP 2 ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     DUP ;
+                     SOME ;
+                     DIP 1 { DIG 2 ; DROP 1 } ;
+                     DUG 2 ;
+                     DROP 1 ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR }
+                   { DROP 1 ;
+                     DUP 2 ;
+                     IF_NONE
+                       { PUSH bool False }
+                       { SENDER ; DUP 2 ; COMPARE ; EQ ; SWAP ; DROP 1 } ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     SENDER ;
+                     SWAP ;
+                     DROP 1 ;
+                     NONE address ;
+                     DIP 1 { SWAP ; DROP 1 } ;
+                     SWAP ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR } }
+               { IF_LEFT
+                   { DROP 1 ;
+                     DUP ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     DUP 10 ;
+                     DUP 4 ;
+                     EXEC ;
+                     NOT ;
+                     IF { PUSH string "pausable_r1" ;
+                          PUSH string "INVALID_CONDITION" ;
+                          PAIR ;
+                          FAILWITH }
+                        {} ;
+                     PUSH bool True ;
+                     DIP 1 { DIG 2 ; DROP 1 } ;
+                     DUG 2 ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR }
+                   { DROP 1 ;
+                     DUP ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     DUP 3 ;
+                     NOT ;
+                     IF { PUSH string "CONTRACT_NOT_PAUSED" ; FAILWITH } {} ;
+                     PUSH bool False ;
+                     DIP 1 { DIG 2 ; DROP 1 } ;
+                     DUG 2 ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR } } }
+           { IF_LEFT
+               { IF_LEFT
+                   { UNPAIR ;
+                     SWAP ;
+                     DUP 3 ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     DUP 12 ;
+                     DUP 6 ;
+                     EXEC ;
+                     NOT ;
+                     IF { PUSH string "md_r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH }
+                        {} ;
+                     DUP 10 ;
+                     DUP 2 ;
+                     DUP 4 ;
+                     UPDATE ;
+                     DIP 1 { DIG 9 ; DROP 1 } ;
+                     DUG 9 ;
+                     DROP 2 ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR }
+                   { DUP 11 ;
+                     DUP 5 ;
+                     EXEC ;
+                     NOT ;
+                     IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                     DUP 7 ;
+                     DUP 2 ;
+                     MEM ;
+                     IF { PUSH string "poll_to_approve" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                        { DUP 7 ;
+                          SENDER ;
+                          SOME ;
+                          DUP 3 ;
+                          UPDATE ;
+                          DIP 1 { DIG 6 ; DROP 1 } ;
+                          DUG 6 } ;
+                     NIL operation ;
+                     NIL operation ;
+                     DUP 12 ;
+                     ITER { CONS } ;
+                     DUP 3 ;
+                     SENDER ;
+                     PAIR ;
+                     EMIT %NewPoll (pair (address %creator) (bytes %poll_id)) ;
+                     CONS ;
+                     ITER { CONS } ;
+                     DIP 1 { DIG 9 ; DROP 1 } ;
+                     DUG 9 ;
+                     DROP 1 ;
+                     PAIR 8 ;
+                     SWAP ;
+                     PAIR } }
+               { IF_LEFT
+                   { IF_LEFT
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 7 ;
+                         DUP 2 ;
+                         GET ;
+                         IF_NONE { NONE address } { DUP ; SOME ; SWAP ; DROP 1 } ;
+                         IF_NONE { PUSH string "POLL_NOT_FOUND" ; FAILWITH } {} ;
+                         DUP 7 ;
+                         DUP 7 ;
+                         MEM ;
+                         IF { PUSH string "poll" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                            { DUP 7 ;
+                              NOW ;
+                              EMPTY_MAP nat nat ;
+                              PAIR ;
+                              DUP 4 ;
+                              PAIR ;
+                              SOME ;
+                              DUP 8 ;
+                              UPDATE ;
+                              DIP 1 { DIG 6 ; DROP 1 } ;
+                              DUG 6 } ;
+                         PUSH nat 1 ;
+                         DUP 7 ;
+                         ADD ;
+                         DIP 1 { DIG 5 ; DROP 1 } ;
+                         DUG 5 ;
+                         DUP 8 ;
+                         NONE address ;
+                         DUP 4 ;
+                         UPDATE ;
+                         DIP 1 { DIG 7 ; DROP 1 } ;
+                         DUG 7 ;
+                         NIL operation ;
+                         NIL operation ;
+                         DUP 13 ;
+                         ITER { CONS } ;
+                         DUP 4 ;
+                         DUP 4 ;
+                         PAIR ;
+                         EMIT %ApprovePoll (pair (address %creator) (bytes %poll_id)) ;
+                         CONS ;
+                         ITER { CONS } ;
+                         DIP 1 { DIG 10 ; DROP 1 } ;
+                         DUG 10 ;
+                         DROP 2 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 7 ;
+                         NONE address ;
+                         DUP 3 ;
+                         UPDATE ;
+                         DIP 1 { DIG 6 ; DROP 1 } ;
+                         DUG 6 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } }
+                   { IF_LEFT
+                       { DUP 2 ;
+                         SENDER ;
+                         COMPARE ;
+                         EQ ;
+                         NOT ;
+                         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                         DUP 6 ;
+                         NONE (pair bytes (map nat nat) timestamp) ;
+                         DUP 3 ;
+                         UPDATE ;
+                         DIP 1 { DIG 5 ; DROP 1 } ;
+                         DUG 5 ;
+                         DROP 1 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR }
+                       { UNPAIR ;
+                         SWAP ;
+                         DUP 7 ;
+                         DUP 3 ;
+                         GET ;
+                         IF_NONE
+                           { PUSH nat 0 }
+                           { DUP ;
+                             GET 3 ;
+                             DUP 3 ;
+                             GET ;
+                             IF_NONE { PUSH nat 0 } {} ;
+                             SWAP ;
+                             DROP 1 } ;
+                         DUP 13 ;
+                         DUP 7 ;
+                         EXEC ;
+                         NOT ;
+                         IF { PUSH string "r2" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
+                         DUP 8 ;
+                         DUP 4 ;
+                         MEM ;
+                         NOT ;
+                         IF { PUSH string "POLL_NOT_FOUND" ; FAILWITH } {} ;
+                         DUP 10 ;
+                         SENDER ;
+                         GET ;
+                         IF_NONE { PUSH bool False } { DUP ; DUP 5 ; MEM ; SWAP ; DROP 1 } ;
+                         IF { PUSH string "CANNOT_RESPOND_TWICE" ; FAILWITH } {} ;
+                         DUP 10 ;
+                         SENDER ;
+                         MEM ;
+                         IF { DUP 10 ;
+                              DUP 11 ;
+                              SENDER ;
+                              GET ;
+                              IF_NONE
+                                { PUSH string "responder" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                                {} ;
+                              PUSH bool True ;
+                              DUP 6 ;
+                              UPDATE ;
+                              SOME ;
+                              SENDER ;
+                              UPDATE ;
+                              DIP 1 { DIG 9 ; DROP 1 } ;
+                              DUG 9 }
+                            { DUP 10 ;
+                              EMPTY_SET nat ;
+                              PUSH bool True ;
+                              DUP 6 ;
+                              UPDATE ;
+                              SOME ;
+                              SENDER ;
+                              UPDATE ;
+                              DIP 1 { DIG 9 ; DROP 1 } ;
+                              DUG 9 } ;
+                         DUP 8 ;
+                         DUP 9 ;
+                         DUP 5 ;
+                         GET ;
+                         IF_NONE
+                           { PUSH string "poll" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                           {} ;
+                         UNPAIR ;
+                         SWAP ;
+                         CDR ;
+                         DUP 11 ;
+                         DUP 7 ;
+                         GET ;
+                         IF_NONE
+                           { PUSH string "poll" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                           {} ;
+                         CDR ;
+                         CAR ;
+                         PUSH nat 1 ;
+                         DUP 6 ;
+                         ADD ;
+                         SOME ;
+                         DUP 7 ;
+                         UPDATE ;
+                         PAIR ;
+                         SWAP ;
+                         PAIR ;
+                         SOME ;
+                         DUP 5 ;
+                         UPDATE ;
+                         DIP 1 { DIG 7 ; DROP 1 } ;
+                         DUG 7 ;
+                         NIL operation ;
+                         NIL operation ;
+                         DUP 14 ;
+                         ITER { CONS } ;
+                         DUP 4 ;
+                         DUP 6 ;
+                         PAIR ;
+                         SENDER ;
+                         PAIR ;
+                         EMIT %Response (pair (address %responder_addr) (nat %poll_id) (nat %response)) ;
+                         CONS ;
+                         ITER { CONS } ;
+                         DIP 1 { DIG 11 ; DROP 1 } ;
+                         DUG 11 ;
+                         DROP 3 ;
+                         PAIR 8 ;
+                         SWAP ;
+                         PAIR } } } } ;
+         DIP 1 { DROP 1 } } ;
+  view "get_responses"
+       nat
+       (map nat nat)
+       { UNPAIR ;
+         DIP 1 { CDR ; CDR ; CDR ; CDR ; UNPAIR ; SWAP ; DROP 1 } ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         GET ;
+         IF_NONE
+           { PUSH string "poll" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         CAR ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } ;
+  view "already_responded"
+       nat
+       bool
+       { UNPAIR ;
+         DIP 1 { CDR ; CDR ; CDR ; CDR ; CDR ; CDR ; UNPAIR ; SWAP ; DROP 1 } ;
+         UNIT ;
+         DUP 3 ;
+         SOURCE ;
+         GET ;
+         IF_NONE { PUSH bool False } { DUP ; DUP 4 ; MEM ; SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

@@ -1,0 +1,25 @@
+{ storage (pair (address %owner) (nat %result)) ;
+  parameter (or (nat %process) (address %set_owner)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         IF_LEFT
+           { DUP 2 ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             NOT ;
+             IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+             DUP ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             PAIR ;
+             NIL operation ;
+             PAIR }
+           { DUP ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             PAIR ;
+             NIL operation ;
+             PAIR } } }

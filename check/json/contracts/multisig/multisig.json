@@ -1,0 +1,2285 @@
+{
+  "name": "multisig",
+  "parameters": [
+    {
+      "name": "owner",
+      "type": {
+        "node": "address",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "required",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "max_duration",
+      "type": {
+        "node": "duration",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    },
+    {
+      "name": "min_duration",
+      "type": {
+        "node": "duration",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    }
+  ],
+  "types": {
+    "assets": [
+      {
+        "name": "manager",
+        "container_kind": "map",
+        "fields": [
+          {
+            "name": "addr",
+            "type": {
+              "node": "address",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "counter",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      },
+      {
+        "name": "pending",
+        "container_kind": "big_map",
+        "fields": [
+          {
+            "name": "id",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "expiration",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "approvals",
+            "type": {
+              "node": "set",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "address",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                }
+              ]
+            },
+            "is_key": false
+          },
+          {
+            "name": "actions",
+            "type": {
+              "node": "lambda",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "unit",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "list",
+                  "name": null,
+                  "int_value": null,
+                  "args": [
+                    {
+                      "node": "operation",
+                      "name": null,
+                      "int_value": null,
+                      "args": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%expiration"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "set",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "address",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%approvals"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "lambda",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "unit",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "list",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "operation",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%actions"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%expiration"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "set",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "address",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%approvals"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "lambda",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "unit",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "list",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "operation",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%actions"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "enums": [
+      {
+        "name": "state",
+        "constructors": [
+          {
+            "name": "Starting",
+            "types": []
+          },
+          {
+            "name": "Running",
+            "types": []
+          },
+          {
+            "name": "Paused",
+            "types": []
+          }
+        ],
+        "type_michelson": {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [
+      {
+        "name": "rec_to_sign_propose_feeless",
+        "fields": [
+          {
+            "name": "pf_pkh",
+            "type": {
+              "node": "address",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "pf_counter",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "pf_entry",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "pf_lambda",
+            "type": {
+              "node": "lambda",
+              "name": null,
+              "int_value": null,
+              "args": [
+                {
+                  "node": "unit",
+                  "name": null,
+                  "int_value": null,
+                  "args": []
+                },
+                {
+                  "node": "list",
+                  "name": null,
+                  "int_value": null,
+                  "args": [
+                    {
+                      "node": "operation",
+                      "name": null,
+                      "int_value": null,
+                      "args": []
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "pf_validity",
+            "type": {
+              "node": "duration",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%pf_pkh"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%pf_counter"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%pf_entry"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "lambda",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "unit",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "list",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "operation",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%pf_lambda"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%pf_validity"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      },
+      {
+        "name": "rec_to_sign_approve_feeless",
+        "fields": [
+          {
+            "name": "af_pkh",
+            "type": {
+              "node": "address",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "af_counter",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "af_entry",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          },
+          {
+            "name": "af_proposal_id",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            }
+          }
+        ],
+        "type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%af_pkh"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%af_counter"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%af_entry"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%af_proposal_id"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "_state",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "id_count",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "manager",
+      "type": {
+        "node": "asset",
+        "name": "manager",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "pending",
+      "type": {
+        "node": "asset",
+        "name": "pending",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "owner_candidate",
+      "type": {
+        "node": "option",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false
+    },
+    {
+      "name": "approve_unpause_set",
+      "type": {
+        "node": "set",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false
+    },
+    {
+      "name": "metadata",
+      "type": {
+        "node": "big_map",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "bytes",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%owner"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%required"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%max_duration"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%min_duration"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%id_count"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%manager"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%expiration"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "set",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "address",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%approvals"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "lambda",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "unit",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    },
+                    {
+                      "prim": "list",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [
+                        {
+                          "prim": "operation",
+                          "int": null,
+                          "bytes": null,
+                          "string": null,
+                          "args": [],
+                          "annots": [],
+                          "array": [],
+                          "var_id": null,
+                          "var_type": null
+                        }
+                      ],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%actions"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%pending"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%_state"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "option",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%owner_candidate"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "set",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%approve_unpause_set"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "bytes",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%metadata"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "declare_ownership",
+      "args": [
+        {
+          "name": "candidate",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim_ownership",
+      "args": []
+    },
+    {
+      "name": "set_metadata_uri",
+      "args": [
+        {
+          "name": "idata",
+          "type": {
+            "node": "bytes",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "pause",
+      "args": []
+    },
+    {
+      "name": "approve_unpause",
+      "args": []
+    },
+    {
+      "name": "unpause",
+      "args": []
+    },
+    {
+      "name": "control",
+      "args": [
+        {
+          "name": "maddr",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "allowed",
+          "type": {
+            "node": "bool",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "args": []
+    },
+    {
+      "name": "require",
+      "args": [
+        {
+          "name": "new_required",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_duration",
+      "args": [
+        {
+          "name": "min",
+          "type": {
+            "node": "duration",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "max",
+          "type": {
+            "node": "duration",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "do_propose",
+      "args": [
+        {
+          "name": "actions_to_exec",
+          "type": {
+            "node": "lambda",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "unit",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "list",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "operation",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "validity",
+          "type": {
+            "node": "duration",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "approved_by_caller",
+          "type": {
+            "node": "bool",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "sender",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "do_approve",
+      "args": [
+        {
+          "name": "proposal_id",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "sender",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "propose",
+      "args": [
+        {
+          "name": "actions_to_exec",
+          "type": {
+            "node": "lambda",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "unit",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "list",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "operation",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "validity",
+          "type": {
+            "node": "duration",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "approved_by_caller",
+          "type": {
+            "node": "bool",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "approve",
+      "args": [
+        {
+          "name": "proposal_id",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "execute",
+      "args": [
+        {
+          "name": "proposal_id",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "propose_feeless",
+      "args": [
+        {
+          "name": "actions_to_exec",
+          "type": {
+            "node": "lambda",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "unit",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "list",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "operation",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "validity",
+          "type": {
+            "node": "duration",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "approved_by_caller",
+          "type": {
+            "node": "bool",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "manager_key",
+          "type": {
+            "node": "key",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "sig",
+          "type": {
+            "node": "signature",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "approve_feeless",
+      "args": [
+        {
+          "name": "proposal_id",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "manager_key",
+          "type": {
+            "node": "key",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "sig",
+          "type": {
+            "node": "signature",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [
+    {
+      "name": "get_manager_counter",
+      "args": [
+        {
+          "name": "pkh",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    },
+    {
+      "name": "get_approvals",
+      "args": [
+        {
+          "name": "proposal_id",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "set",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "set",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "address",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "views": [],
+  "errors": [
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r10"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_SIGNATURE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r9"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_SIGNATURE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r2"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "NOT_APPROVED",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r1"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "EXPIRED_PROPOSAL",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "PROPOSAL_NOT_FOUND",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r3"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "WRONG_DURATION",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r7"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r7",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r0"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r0",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r5"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r5",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r4"
+      ],
+      "expr": {
+        "prim": "Pair",
+        "int": null,
+        "bytes": null,
+        "string": null,
+        "args": [
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "INVALID_CONDITION",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          },
+          {
+            "prim": null,
+            "int": null,
+            "bytes": null,
+            "string": "r4",
+            "args": [],
+            "annots": [],
+            "array": [],
+            "var_id": null,
+            "var_type": null
+          }
+        ],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "ownership_r1"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

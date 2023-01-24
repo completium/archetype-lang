@@ -1,0 +1,758 @@
+{
+  "name": "oracle",
+  "parameters": [
+    {
+      "name": "publickey",
+      "type": {
+        "node": "key",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    }
+  ],
+  "types": {
+    "assets": [
+      {
+        "name": "oracleData",
+        "container_kind": "big_map",
+        "fields": [
+          {
+            "name": "code",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "start",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "end",
+            "type": {
+              "node": "date",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "open",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "high",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "low",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "close",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "volume",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%start"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%end"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%open"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%high"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%low"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%close"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%volume"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%start"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%end"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%open"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%high"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%low"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%close"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%volume"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "enums": [
+      {
+        "name": "state",
+        "constructors": [
+          {
+            "name": "Running",
+            "types": []
+          },
+          {
+            "name": "Revoked",
+            "types": []
+          }
+        ],
+        "type_michelson": {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "_state",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "oracleData",
+      "type": {
+        "node": "asset",
+        "name": "oracleData",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "key",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%publickey"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "big_map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%start"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "timestamp",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%end"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%open"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%high"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%low"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%close"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "nat",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%volume"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%oracleData"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%_state"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "update",
+      "args": [
+        {
+          "name": "upm",
+          "type": {
+            "node": "map",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "string",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "tuple",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "signature",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  },
+                  {
+                    "node": "asset_value",
+                    "name": "oracleData",
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "push",
+      "args": [
+        {
+          "name": "normalizer",
+          "type": {
+            "node": "contract",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "asset_container",
+                "name": "oracleData",
+                "int_value": null,
+                "args": []
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "revoke",
+      "args": [
+        {
+          "name": "sig",
+          "type": {
+            "node": "signature",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [
+    {
+      "name": "getPrice",
+      "args": [
+        {
+          "name": "c",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "asset_value",
+        "name": "oracleData",
+        "int_value": null,
+        "args": []
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "errors": [
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "InvalidCondition",
+      "args": [
+        "r0"
+      ],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad sig",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad sig",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "revoked",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "bad request",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

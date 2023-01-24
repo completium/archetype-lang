@@ -1,0 +1,11 @@
+archetype ticket_var_or_left
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  const nt ?= create_ticket("info", 1) : "ERROR";
+  const lt : or<ticket<string>, never> = left<never>(nt);
+  const ot = match lt with | left(l) -> some(l) | right(r) -> none<ticket<string>> end;
+  const t ?= ot : "ERROR";
+  info := some(read_ticket(t))
+}

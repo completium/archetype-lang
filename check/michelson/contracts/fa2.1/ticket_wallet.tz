@@ -1,0 +1,46 @@
+{ storage
+    (pair (option %my_ticket (ticket (pair nat (option bytes))))
+          (big_map %metadata string bytes)) ;
+  parameter
+    (or (ticket %callback (pair nat (option bytes)))
+        (pair %transfer_ticket (address %fa2_1) (address %to_))) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         IF_LEFT
+           { SOME ; SWAP ; DROP 1 ; PAIR ; SWAP ; PAIR }
+           { UNPAIR ;
+             SWAP ;
+             DIG 2 ;
+             IF_NONE
+               { PUSH string "NO_TICKET" ; FAILWITH }
+               { NONE (ticket (pair nat (option bytes))) ; SWAP } ;
+             DIP 1 { DUG 2 } ;
+             NIL operation ;
+             NIL operation ;
+             DUP 8 ;
+             ITER { CONS } ;
+             DUP 5 ;
+             CONTRACT %import_ticket (list (pair address (ticket (pair nat (option bytes))))) ;
+             IF_NONE
+               { PUSH string "import_ticket" ;
+                 PUSH string "ENTRY_NOT_FOUND" ;
+                 PAIR ;
+                 FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             NIL (pair (address %to_) (ticket %tickets_to_import (pair nat (option bytes)))) ;
+             DIG 5 ;
+             DUP 7 ;
+             PAIR ;
+             CONS ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 4 ; DROP 1 } ;
+             DUG 4 ;
+             DROP 2 ;
+             PAIR ;
+             SWAP ;
+             PAIR } } }

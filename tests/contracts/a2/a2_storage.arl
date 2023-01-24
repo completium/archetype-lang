@@ -1,0 +1,126 @@
+archetype a2_storage(owner : address)
+with metadata ""
+
+/* OWNERSHIP TRANSFER ------------------------------------------------------- */
+
+variable owner_candidate : option<address> = none
+
+entry declare_ownership(candidate : address) {
+  no transfer
+  called by owner
+  effect {
+    owner_candidate := some(candidate);
+  }
+}
+
+entry claim_ownership() {
+  no transfer
+  require {
+    ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
+  }
+  effect {
+    owner := caller;
+    owner_candidate := none
+  }
+}
+
+/*  PAUSABLE ----------------------------------------------------------------- */
+
+variable paused : bool = false
+
+function is_not_paused() : bool {
+  do_fail_if(paused, "CONTRACT_PAUSED");
+  return true
+}
+
+entry pause() {
+  no transfer
+  called by owner
+  require {
+    pausable_r1: is_not_paused()
+  }
+  effect {
+    paused := true
+  }
+}
+
+entry unpause() {
+  no transfer
+  called by owner
+  require {
+    pausable_r2: paused otherwise "CONTRACT_NOT_PAUSED"
+  }
+  effect {
+    paused := false
+  }
+}
+
+/* METADATA ---------------------------------------------------------------- */
+
+entry set_metadata(k: string, d : option<bytes>) {
+  no transfer
+  called by owner
+  require { md_r1 : is_not_paused() }
+  effect {
+    metadata.update(k, d)
+  }
+}
+
+/* WHITELISTER ROLE -------------------------------------------------------- */
+
+asset whitelister {
+  addr : address
+}
+
+entry add_whitelister(new_whitelister : address) {
+  no transfer
+  called by owner
+  effect {
+    whitelister.add({ new_whitelister })
+  }
+}
+
+entry rm_whitelister(old_whitelister : address) {
+  no transfer
+  called by owner
+  effect {
+    whitelister.remove(old_whitelister)
+  }
+}
+
+/* USERS STORAGE ----------------------------------------------------------- */
+
+variable users : big_map<address, nat> = []
+
+// READ
+view getopt(k : address) : option<nat> {
+  return users[k]
+}
+
+/**
+* Called by the cancel entrypoint of the Exchange contract.
+* It sets the value to none because a canceled order can never be filled again.
+*/
+entry remove(k : address) {
+  no transfer
+  called by whitelister
+  effect {
+    users.remove(k)
+  }
+}
+
+entry put(k : address, v : nat) {
+  no transfer
+  called by whitelister
+  effect {
+    users.put( k, v )
+  }
+}
+
+entry update(k : address, v : option<nat>) {
+  no transfer
+  called by whitelister
+  effect {
+    users.update( k, v )
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "name": "dummy",
+  "parameters": [
+    {
+      "name": "owner",
+      "type": {
+        "node": "address",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false,
+      "default": null
+    }
+  ],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "result",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "pair",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [
+        {
+          "prim": "address",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%owner"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%result"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "process",
+      "args": [
+        {
+          "name": "v",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_owner",
+      "args": [
+        {
+          "name": "v",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "InvalidCaller",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_CALLER",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}
