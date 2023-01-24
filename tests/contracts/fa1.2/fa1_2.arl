@@ -1,0 +1,59 @@
+archetype fa1_2(const initial_holder : address, const total_supply : nat, const metadata_coin : bytes)
+
+asset ledger identified by holder to big_map {
+  holder     : address;
+  tokens     : nat = 0;
+  allowance  : map<address, nat> = [];
+} initialized by {
+  { holder = initial_holder; tokens = total_supply }
+}
+
+constant TOKEN_ID : nat = 0
+
+asset token_metadata to big_map {
+  ftoken_metadata : nat;
+  token_id        : nat;
+  token_info      : map<string, bytes>;
+} initialized with {
+  {TOKEN_ID; TOKEN_ID; [("", metadata_coin)]}
+}
+
+entry set_token_metadata (tid : nat, tdata: map<string, bytes>) {
+  called by initial_holder
+  effect {
+    token_metadata.add_update(tid, { token_id = tid; token_info = tdata });
+  }
+}
+
+entry %transfer (%from : address, %to : address, value : nat) {
+  require {
+    r1 : ledger[%from].tokens >= value otherwise "NotEnoughBalance";
+  }
+  effect {
+    if caller <> %from then (
+      const current = ledger[%from].allowance[caller] ? the : 0;
+      const new_value ?= int_to_nat(current - value) : ("NotEnoughAllowance", (value, current));
+      ledger[%from].allowance.put(caller, new_value);
+    );
+    ledger.update(%from,   { tokens -= value });
+    ledger.add_update(%to, { tokens += value });
+  }
+}
+
+entry approve(spender : address, value : nat) {
+  const previous = ledger[caller] ? (the.allowance[spender] ? the : 0) : 0;
+  do_fail_if(previous > 0 and value > 0, ("UnsafeAllowanceChange", previous));
+  ledger.add_update(caller, { allowance += [(spender, value)] })
+}
+
+getter getAllowance (owner : address, spender : address) : nat {
+  return (ledger[owner] ? (the.allowance[spender] ? the : 0) : 0)
+}
+
+getter getBalance (owner : address) : nat {
+  return (ledger[owner] ? the.tokens : 0)
+}
+
+getter getTotalSupply () : nat {
+  return total_supply
+}

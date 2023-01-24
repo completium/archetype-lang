@@ -1,0 +1,14 @@
+archetype dummy(owner : address)
+
+variable result : nat = 0
+
+entry process(v : nat) {
+  called by owner
+  effect {
+    result := v
+  }
+}
+
+entry set_owner(v : address) {
+  owner := v
+}

@@ -1,0 +1,67 @@
+archetype with_token_metadata(owner : address) with metadata ""
+
+/* OWNERSHIP TRANSFER ------------------------------------------------------ */
+
+variable owner_candidate : option<address> = none
+
+entry declare_ownership(candidate : address) {
+  called by owner
+  effect {
+    owner_candidate := some(candidate);
+  }
+}
+
+entry claim_ownership() {
+  require {
+    ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
+  }
+  effect {
+    owner := caller;
+    owner_candidate := none
+  }
+}
+
+/*  PAUSABLE --------------------------------------------------------------- */
+
+variable paused : bool = false
+
+function is_not_paused() : bool {
+  do_fail_if(paused, "CONTRACT_PAUSED");
+  return true
+}
+
+entry pause() {
+  called by owner
+  require {
+    pausable_r1: is_not_paused()
+  }
+  effect {
+    paused := true
+  }
+}
+
+entry unpause() {
+  called by owner
+  require {
+    pausable_r2: paused otherwise "CONTRACT_NOT_PAUSED"
+  }
+  effect {
+    paused := false
+  }
+}
+
+/* TOKEN METADATA ---------------------------------------------------------- */
+
+asset token_metadata to big_map {
+  ftoken_metadata : nat;
+  token_id        : nat;
+  token_info      : map<string, bytes>;
+}
+
+entry set_token_metadata (tid : nat, tdata: map<string, bytes>) {
+  called by owner
+  require { tmd_r1: is_not_paused() }
+  effect {
+    token_metadata.add_update(tid, { token_id = tid; token_info = tdata });
+  }
+}

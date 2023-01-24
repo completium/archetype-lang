@@ -1,0 +1,176 @@
+archetype poll(owner : address)
+with metadata "" // QmXbuUyyJXW1RRuL3k81Kpe2HULbYLj1sUUq44Nuxa5z8h
+
+// Errors -----------------------------------------------------------
+
+constant CANNOT_RESPOND_TWICE : string = "CANNOT_RESPOND_TWICE"
+constant NON_EMPTY_SELECTIONS : string = "NON_EMPTY_SELECTIONS"
+constant POLL_NOT_FOUND       : string = "POLL_NOT_FOUND"
+
+/* OWNERSHIP TRANSFER ------------------------------------------------------- */
+
+variable owner_candidate : option<address> = none
+
+entry declare_ownership(candidate : address) {
+  called by owner
+  effect {
+    owner_candidate := some(candidate);
+  }
+}
+
+entry claim_ownership() {
+  require {
+    ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
+  }
+  effect {
+    owner := caller;
+    owner_candidate := none
+  }
+}
+
+/* PAUSABLE ---------------------------------------------------------------- */
+
+variable paused : bool = false
+
+function is_not_paused() : bool {
+  do_fail_if(paused, "CONTRACT_PAUSED");
+  return true
+}
+
+entry pause() {
+  called by owner
+  require {
+    pausable_r1: is_not_paused()
+  }
+  effect {
+    paused := true
+  }
+}
+
+entry unpause() {
+  called by owner
+  require {
+    pausable_r2: paused otherwise "CONTRACT_NOT_PAUSED"
+  }
+  effect {
+    paused := false
+  }
+}
+
+/* METADATA ---------------------------------------------------------------- */
+
+entry set_metadata(k: string, d : option<bytes>) {
+  called by owner
+  require { md_r1 : is_not_paused() }
+  effect {
+    metadata.update(k, d)
+  }
+}
+
+// Events -----------------------------------------------------------
+
+event Response {
+  responder_addr : address;
+  poll_id : nat;
+  response : nat
+}
+
+event NewPoll {
+  creator : address;
+  poll_id : bytes
+}
+
+event ApprovePoll {
+  creator : address;
+  poll_id : bytes
+}
+
+// Storage ----------------------------------------------------------
+
+variable polls_counter : nat = 0
+
+asset poll {
+  poll_pk : nat;
+  ipfs_hash : bytes;
+  responses : map<nat, nat> = [];
+  creation : date = now
+}
+
+asset poll_to_approve to big_map {
+  ipfs_hash_to_approve : bytes;
+  poll_creator : address = caller
+}
+
+asset responder to big_map {
+  res_addr : address;
+  polls : set<nat> = [];
+}
+
+// Entries ----------------------------------------------------------
+
+entry add_poll(h : bytes) {
+  require {
+    r1 : is_not_paused()
+  }
+  effect {
+    poll_to_approve.add({ ipfs_hash_to_approve = h });
+    emit<NewPoll>({ caller; h })
+  }
+}
+
+entry approve(h : bytes) {
+  called by owner
+  constant {
+    creator_ ?is poll_to_approve[h]?.poll_creator otherwise POLL_NOT_FOUND
+  }
+  effect {
+    poll.add({ poll_pk = polls_counter; ipfs_hash = h });
+    polls_counter += 1;
+    poll_to_approve.remove(h);
+    emit<ApprovePoll>({ creator_; h })
+  }
+}
+
+entry disapprove(h : bytes) {
+  called by owner
+  effect {
+    poll_to_approve.remove(h)
+  }
+}
+
+entry remove(pk : nat) {
+  called by owner
+  effect {
+    poll.remove(pk)
+  }
+}
+
+entry respond(pk : nat, choice_id : nat) {
+  constant {
+    selection_count is poll[pk] ? (the.responses[choice_id] ? the : 0) : 0;
+  }
+  require {
+    r2 : is_not_paused();
+    r3 : poll.contains(pk)     otherwise POLL_NOT_FOUND;
+  }
+  fail if {
+    f1 : responder[caller] ? the.polls.contains(pk) : false with CANNOT_RESPOND_TWICE
+  }
+  effect {
+    responder.add_update(caller, { polls += [pk] } );
+    poll.update(pk, {
+      responses += [(choice_id, selection_count + 1)]
+    });
+    emit<Response>({ caller; pk; choice_id })
+  }
+}
+
+// Views -----------------------------------------------------------
+
+view get_responses(pk : nat) : map<nat, nat> {
+  return poll[pk].responses
+}
+
+view already_responded(pk : nat) : bool {
+  return (responder[source] ? the.polls.contains(pk) : false)
+}

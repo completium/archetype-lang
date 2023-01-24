@@ -1,0 +1,306 @@
+/**
+ * Generic multisig contract
+ */
+archetype multisig(
+  owner        : address,
+  required     : nat,
+  max_duration : duration,
+  min_duration : duration
+)
+
+//----------------------------------------------------------------------------
+// Errors
+//----------------------------------------------------------------------------
+
+constant CONTRACT_NOT_PAUSED : string = "CONTRACT_NOT_PAUSED"
+constant CONTRACT_PAUSED     : string = "CONTRACT_PAUSED"
+constant EXPIRED_PROPOSAL    : string = "EXPIRED_PROPOSAL"
+constant INVALID_SIGNATURE   : string = "INVALID_SIGNATURE"
+constant NOT_APPROVED        : string = "NOT_APPROVED"
+constant PROPOSAL_NOT_FOUND  : string = "PROPOSAL_NOT_FOUND"
+constant WRONG_DURATION      : string = "WRONG_DURATION"
+
+//----------------------------------------------------------------------------
+// Assets
+//----------------------------------------------------------------------------
+
+variable id_count : nat = 0
+asset manager {
+  addr    : address;
+  counter : nat = 0  // protects from double-spending attack
+}
+
+asset pending to big_map {
+  id         : nat;
+  expiration : date;
+  approvals  : set<address>;
+  actions    : lambda<unit, list<operation>>;
+}
+
+//----------------------------------------------------------------------------
+// States
+//----------------------------------------------------------------------------
+
+states =
+| Starting initial
+| Running
+| Paused
+
+//----------------------------------------------------------------------------
+// Owner role transfer
+//----------------------------------------------------------------------------
+
+variable owner_candidate : option<address> = none
+
+entry declare_ownership(candidate : address) {
+  called by owner
+  effect {
+    owner_candidate := some(candidate);
+  }
+}
+
+entry claim_ownership() {
+  require {
+    ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
+  }
+  effect {
+    owner := caller;
+    owner_candidate := none
+  }
+}
+
+//----------------------------------------------------------------------------
+// Metadata
+//----------------------------------------------------------------------------
+
+entry set_metadata_uri(idata : bytes) {
+  called by owner
+  effect {
+    metadata := put(metadata, "", idata)
+  }
+}
+
+//----------------------------------------------------------------------------
+// Contract execution pause/resume
+//----------------------------------------------------------------------------
+
+transition pause() {
+  called by owner
+  from Running to Paused
+}
+
+variable approve_unpause_set : set<address> = []
+
+entry approve_unpause () {
+  called by manager
+  state is Paused
+  effect {
+    approve_unpause_set.add(caller)
+  }
+}
+
+transition unpause() {
+  from Paused to Running
+  when { approve_unpause_set.length() >= required }
+  with effect {
+    approve_unpause_set := []
+  }
+}
+
+//----------------------------------------------------------------------------
+// Control entry to add / remove a manager
+// May be called in Starting or Running states
+//----------------------------------------------------------------------------
+
+entry control(maddr : address, allowed : bool) {
+  called by owner
+  require {
+    r4 : state = Starting or state = Running;
+    r5 : allowed <> manager.contains(maddr);
+  }
+  effect {
+    if allowed then
+      manager.add({ addr = maddr })
+    else
+      manager.remove(maddr)
+  }
+}
+
+//----------------------------------------------------------------------------
+// Transition to Running state
+// owner becomes selfaddress
+//----------------------------------------------------------------------------
+
+transition run() {
+  called by owner
+  require {
+    r0 : manager.count() > required
+  }
+  from Starting to Running
+  with effect {
+    owner := self_address
+  }
+}
+
+//----------------------------------------------------------------------------
+// Set parameters in Running state
+//----------------------------------------------------------------------------
+
+entry %require(new_required : nat) {
+  called by owner
+  state is Running
+  require {
+    r7 : 0 < new_required < manager.count()
+  }
+  effect {
+    required := new_required
+  }
+}
+
+entry set_duration(min : duration, max : duration) {
+  called by owner
+  state is Running
+  effect {
+    min_duration := min;
+    max_duration := max;
+  }
+}
+
+//----------------------------------------------------------------------------
+// Internal operation
+//----------------------------------------------------------------------------
+
+entry do_propose(
+  actions_to_exec    : lambda<unit, list<operation>>,
+  validity           : duration,
+  approved_by_caller : bool,
+  sender             : address) {
+  called by self_address
+  require {
+    r3 : min_duration <= validity <= max_duration otherwise WRONG_DURATION
+  }
+  effect {
+    var init_approvals : set<address> = [];
+    if approved_by_caller then
+      init_approvals.add(sender);
+    pending.add({
+      id_count;
+      (now + validity);
+      init_approvals;
+      actions_to_exec
+    });
+    id_count += 1;
+  }
+}
+
+entry do_approve(proposal_id : nat, sender: address) {
+  called by self_address
+  constant {
+    p_expiration ?is pending[proposal_id]?.expiration otherwise PROPOSAL_NOT_FOUND
+  }
+  effect {
+    if p_expiration < now then
+      pending.remove(proposal_id)
+    else
+      pending[proposal_id].approvals.add(sender)
+  }
+}
+
+//----------------------------------------------------------------------------
+// propose, approve, execute
+//----------------------------------------------------------------------------
+
+entry propose(
+  actions_to_exec    : lambda<unit, list<operation>>,
+  validity           : duration,
+  approved_by_caller : bool) {
+  called by manager
+  state is Running
+  effect {
+    transfer 0tz to entry self.do_propose(actions_to_exec, validity, approved_by_caller, caller)
+  }
+}
+
+entry approve(proposal_id : nat) {
+  called by manager
+  state is Running
+  effect {
+    transfer 0tz to entry self.do_approve(proposal_id, caller)
+  }
+}
+
+entry execute(proposal_id : nat) {
+  state is Running
+  require {
+    r1 : pending[proposal_id].expiration >= now otherwise EXPIRED_PROPOSAL;
+    r2 : length(pending[proposal_id].approvals) >= required otherwise NOT_APPROVED
+  }
+  effect {
+    operations := exec_lambda(pending[proposal_id].actions, Unit);
+    pending.remove(proposal_id)
+  }
+}
+
+//----------------------------------------------------------------------------
+// Fee-less process
+//----------------------------------------------------------------------------
+
+record rec_to_sign_propose_feeless {
+  pf_pkh : address;
+  pf_counter: nat;
+  pf_entry : string;
+  pf_lambda: lambda<unit, list<operation>>;
+  pf_validity : duration;
+}
+
+entry propose_feeless(
+  actions_to_exec : lambda<unit, list<operation>>,
+  validity : duration,
+  approved_by_caller : bool,
+  manager_key : key,
+  sig : signature) {
+  state is Running
+  constant {
+    pkh     is key_to_address(manager_key);
+    to_sign is pack((pkh, manager[pkh].counter, "propose", actions_to_exec, validity))
+  }
+  require {
+    r9 : check_signature(manager_key, sig, to_sign) otherwise INVALID_SIGNATURE;
+  }
+  effect {
+    transfer 0tz to entry self.do_propose(actions_to_exec, validity, approved_by_caller, pkh)
+  }
+}
+
+record rec_to_sign_approve_feeless {
+  af_pkh : address;
+  af_counter: nat;
+  af_entry : string;
+  af_proposal_id: nat;
+}
+
+entry approve_feeless(proposal_id : nat, manager_key : key, sig : signature) {
+  state is Running
+  constant {
+    pkh     is key_to_address(manager_key);
+    to_sign is pack((pkh, manager[pkh].counter, "approve", proposal_id))
+  }
+  require {
+    r10 : check_signature(manager_key, sig, to_sign) otherwise INVALID_SIGNATURE
+  }
+  effect {
+    transfer 0tz to entry self.do_approve(proposal_id, pkh)
+  }
+}
+
+//----------------------------------------------------------------------------
+// Getters (aka TZIP4 view)
+//----------------------------------------------------------------------------
+
+getter get_manager_counter(pkh : address) : nat {
+  return (manager[pkh]?.counter ? the : 0)
+}
+
+getter get_approvals(proposal_id : nat) : set<address> {
+  return (pending[proposal_id]?.approvals ? the : [])
+}

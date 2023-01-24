@@ -1,0 +1,17 @@
+archetype ticket_wallet with metadata ""
+
+variable my_ticket : option<ticket<nat * option<bytes>>> = none<ticket<nat * option<bytes>>>
+
+entry callback (input : ticket<nat * option<bytes>>) {
+  my_ticket := some(input)
+}
+
+record import_ticket_param {
+  itp_to: address;
+  itp_tickets: ticket<nat * option<bytes>>;
+} as ((%to_, %tickets_to_import))
+
+entry transfer_ticket(fa2_1: address, to_ : address) {
+  detach t from my_ticket :: "NO_TICKET";
+  transfer 0tz to fa2_1 call import_ticket<list<import_ticket_param>>([{itp_to = to_; itp_tickets = t}]);
+}

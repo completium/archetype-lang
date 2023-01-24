@@ -1,0 +1,262 @@
+archetype permits(owner : address) with metadata ""
+
+/* CONSTANTS ------------------------------------------------------------------ */
+
+constant MAX_NUMBER_PERMITS : nat = 20_000
+
+/* ERRORS ------------------------------------------------------------------ */
+
+constant DUP_PERMIT            : string = "DUP_PERMIT"
+constant EXPIRY_TOO_BIG        : string = "EXPIRY_TOO_BIG"
+constant USER_PERMIT_NOT_FOUND : string = "USER_PERMIT_NOT_FOUND"
+constant PERMIT_NOT_FOUND      : string = "PERMIT_NOT_FOUND"
+constant MISSIGNED             : string = "MISSIGNED"
+constant PERMIT_EXPIRED        : string = "PERMIT_EXPIRED"
+constant MAX_PERMITS_REACHED   : string = "MAX_PERMITS_REACHED"
+
+/* OWNERSHIP TRANSFER ------------------------------------------------------- */
+
+variable owner_candidate : option<address> = none
+
+entry declare_ownership(candidate : address) {
+  called by owner
+  effect {
+    owner_candidate := some(candidate);
+  }
+}
+
+entry claim_ownership() {
+  require {
+    ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
+  }
+  effect {
+    owner := caller;
+    owner_candidate := none
+  }
+}
+
+/* PAUSABLE ---------------------------------------------------------------- */
+
+variable paused : bool = false
+
+function is_not_paused() : bool {
+  do_fail_if(paused, "CONTRACT_PAUSED");
+  return true
+}
+
+entry pause() {
+  called by owner
+  require {
+    pausable_r1: is_not_paused()
+  }
+  effect {
+    paused := true
+  }
+}
+
+entry unpause() {
+  called by owner
+  require {
+    pausable_r2: paused otherwise "CONTRACT_NOT_PAUSED"
+  }
+  effect {
+    paused := false
+  }
+}
+
+/* METADATA ---------------------------------------------------------------- */
+
+entry set_metadata(k: string, d : option<bytes>) {
+  called by owner
+  require { md_r1 : is_not_paused() }
+  effect {
+    metadata.update(k, d)
+  }
+}
+
+/* STORAGE ----------------------------------------------------------------- */
+
+asset consumer {
+  cid : address
+}
+
+record user_permit {
+  expiry : option<nat>;
+  created_at : date;
+}
+
+asset permits to big_map {
+  user_address : address;
+  counter      : nat = 0;
+  user_expiry  : option<nat> = none;
+  user_permits : map<bytes, user_permit> = [];
+}
+
+variable default_expiry : nat = 31556952
+
+/* FUNCTIONS --------------------------------------------------------------- */
+
+function get_default_expiry(addr : address) : nat {
+  return (permits[addr] ? (the.user_expiry ? the : default_expiry) : default_expiry)
+}
+
+function get_expiry(addr : address, permit_key : bytes) : nat {
+  return (permits[addr] ? let d = (the.user_expiry ? the : default_expiry) in
+    (the.user_permits[permit_key] ? (the.expiry ? the : default_expiry) : d) : default_expiry
+  )
+}
+
+function has_expired(up : user_permit, e : nat) : bool {
+  return (up.created_at + (up.expiry ? the : e) * 1s < now)
+}
+
+/* ENTRYPOINTS ------------------------------------------------------------- */
+
+enum consumer_op =
+| add<address>
+| remove<address>
+
+entry manage_consumer(op : consumer_op) {
+  no transfer
+  called by owner
+  effect {
+    match op with
+    | add(a)    -> consumer.add({ a })
+    | remove(a) -> consumer.remove(a)
+    end
+  }
+}
+
+entry set_expiry(iv : option<nat>, ip : option<bytes>) {
+  no transfer
+  constant {
+    caller_permit ?is permits[caller] otherwise (USER_PERMIT_NOT_FOUND, caller);
+  }
+  require {
+    r1: is_not_paused();
+    r2: iv ? the < default_expiry : true otherwise EXPIRY_TOO_BIG;
+  }
+  effect {
+    match ip with
+    | some(permit_key) -> begin
+        if (iv ? the > 0 : true) then begin
+          const up : user_permit ?=
+            caller_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, permit_key));
+          permits[caller].user_permits.update(permit_key, some({ up with expiry = iv }))
+        end else begin
+          permits[caller].user_permits.remove(permit_key)
+        end
+      end
+    | none    -> permits.update(caller, { user_expiry = iv })
+    end
+  }
+}
+
+entry setExpiry(u : address, sec : nat, data : option<bytes>) {
+  no transfer
+  called by u
+  constant {
+    u_permit ?is permits[u] otherwise (USER_PERMIT_NOT_FOUND, u);
+  }
+  require {
+    r5: is_not_paused();
+  }
+  effect {
+    match data with
+    | some(permit_key) -> begin
+      if sec = 0 or (u_permit.user_permits[permit_key] ? now - the.created_at >= sec : false)
+      then permits[u].user_permits.remove(permit_key)
+      else begin
+        const up : user_permit ?=
+          u_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, permit_key));
+        permits[u].user_permits.update(permit_key, some({ up with expiry = some(sec) }))
+      end
+      end
+    | none -> permits.update(caller, { user_expiry = some(sec) })
+    end
+  }
+}
+
+entry set_default_expiry(v : nat) {
+  called by owner
+  require { r3: is_not_paused() }
+  effect {
+    default_expiry := v
+  }
+}
+
+entry permit(signer : key, sig : signature, permit_key : bytes) {
+  no transfer
+  constant {
+    user          is key_to_address(signer);
+    usr_permit    is permits[user] ?
+                      (the.counter, the.user_permits) :
+                      (0, make_map<bytes, user_permit>([]));
+    lcounter      is usr_permit[0];
+    luser_permits is usr_permit[1];
+    to_sign       is pack(((self_address, self_chain_id), (lcounter, permit_key)));
+    usr_expiry    is get_default_expiry(user);
+  }
+  require {
+    p4: is_not_paused();
+    p5: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign);
+    p6: (not (luser_permits.contains(permit_key))) otherwise (DUP_PERMIT, permit_key);
+    p7: luser_permits.length() < MAX_NUMBER_PERMITS otherwise MAX_PERMITS_REACHED
+  }
+  effect {
+    permits.add_update(user, {
+      counter += 1;
+      user_permits = put(luser_permits, permit_key, {
+        expiry = some(usr_expiry);
+        created_at = now
+      })
+    });
+    for (k, v) in permits[user].user_permits do
+      if has_expired(v, usr_expiry)
+      then permits[user].user_permits.remove(k)
+    done
+  }
+}
+
+entry consume(user : address, permit_key: bytes, err: string) {
+  no transfer
+  called by consumer
+  constant {
+   signer_expiry  is get_expiry(user, permit_key);
+   lpermit       ?is permits[user]                    otherwise err;
+   luser_permits ?is lpermit.user_permits[permit_key] otherwise err;
+  }
+  require {
+    p8: is_not_paused()
+  }
+  fail if {
+    p9 : has_expired(luser_permits, signer_expiry) with (PERMIT_EXPIRED, ((luser_permits.created_at + (luser_permits.expiry ? the : signer_expiry) * 1s)))
+  }
+  effect {
+    permits[user].user_permits.remove(permit_key)
+  }
+}
+
+record rec_to_sign_permit_data {
+  s_addr_contract : address;
+  s_chainid : chain_id;
+  s_counter : nat;
+  s_data : bytes;
+} as (((addr, chain_id), (counter, data)))
+
+entry check(signer : key, sig : signature, data : bytes) {
+  no transfer
+  called by consumer
+  constant {
+    user     is key_to_address(signer);
+    lcounter is permits[user] ? the.counter : 0;
+    to_sign  is pack(((self_address, self_chain_id), (lcounter, data)));
+  }
+  require {
+    p10: is_not_paused();
+    p11: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign)
+  }
+  effect {
+    permits.add_update(user, { counter = (lcounter + 1)});
+  }
+}
