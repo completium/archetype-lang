@@ -1683,7 +1683,7 @@ let remove_enum (model : model) : model =
           | _ -> accu
         end ) [] model.decls in
 
-    {model with extra = {model.extra with original_decls = (lll @ model.extra.original_decls)}}
+    {model with extra = {original_decls = (lll @ model.extra.original_decls)}}
   in
 
   let clean model =
@@ -5608,8 +5608,7 @@ let remove_asset (model : model) : model =
     let assets = List.fold_right (fun x accu -> match x with | Dasset a -> a::accu | _ -> accu) model.decls [] in
     let items = List.map (fun (x : asset) -> let an = x.name in ODAsset (mk_odel_asset (unloc_mident an) (ft (tassetcontainer an)) (ft (tassetkey an)) (ft (tassetvalue an)))) assets in
     let original_decls = model.extra.original_decls @ items in
-    let extra = model.extra in
-    { model with extra = { extra with original_decls = original_decls } }
+    { model with extra = { original_decls = original_decls } }
   in
 
   let remove_decl_asset (model : model) : model =

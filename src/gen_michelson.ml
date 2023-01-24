@@ -550,7 +550,7 @@ let to_ir (model : M.model) : T.ir =
       end
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
-  and mterm_to_intruction env (mtt : M.mterm) ?(view = false) : T.instruction =
+  and mterm_to_intruction ?(view = false) env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env ~view in
     let ft = to_type model in
 
@@ -1323,7 +1323,7 @@ let to_ir (model : M.model) : T.ir =
 
   let funs, entries, views, offchain_views =
 
-    let for_fs _env (fs : M.function_struct) ?(view= false) =
+    let for_fs  ?(view= false) _env (fs : M.function_struct) =
       let name = M.unloc_mident fs.name in
       let args = List.map (fun (id, t, _) -> M.unloc_mident id, to_type model t) fs.args in
       let eargs = List.map (fun (id, t, _) -> M.unloc_mident id, to_type model t) fs.eargs in
@@ -1379,7 +1379,7 @@ let to_ir (model : M.model) : T.ir =
       aux [] mt |> List.dedup
     in
 
-    let for_fs_fun env (fs : M.function_struct) ret ?(view : bool = false) : T.func =
+    let for_fs_fun ?(view : bool = false) env (fs : M.function_struct) ret : T.func =
       let fid = M.unloc_mident fs.name in
       let tret = to_type model ret in
       let name, args, _eargs, body = for_fs env fs ~view in
@@ -1392,7 +1392,7 @@ let to_ir (model : M.model) : T.ir =
       T.mk_func name targ tret ctx (T.Concrete (args, body))
     in
 
-    let for_fs_entry env (fs : M.function_struct) ?(view= false) : T.entry =
+    let for_fs_entry ?(view= false) env (fs : M.function_struct) : T.entry =
       let name, args, eargs, body = for_fs env fs ~view in
       T.mk_entry name args eargs body
     in
