@@ -1784,6 +1784,18 @@ let rm_var_env (env : env) id =
   in
   { env with stack = nstack }
 
+let populate_env (env : env) id =
+  let nstack =
+    let rec aux accu a =
+      match a with
+      | x::tl when String.equal id x.id -> accu @ [{x with populated = true }] @ tl
+      | x::tl -> aux (accu @ [x]) tl
+      | [] -> assert false
+    in
+    aux [] env.stack
+  in
+  { env with stack = nstack }
+
 let dig_env env id =
   let nstack =
     let rec aux accu a =
@@ -1829,6 +1841,15 @@ let print_code ?(str="") (code : T.code) =
 let rec instruction_to_code env (i : T.instruction) : T.code * env =
   let fe env = instruction_to_code env in
   let f = fe env in
+
+  let get_remove_code env id =
+    let n, si = get_pos_stack_item env id in
+    match n with
+    | -1 -> []
+    | 0  -> ((if si.populated then [T.cdrop 1] else []))
+    | 1  -> ((if si.populated then [T.cswap; T.cdrop 1 ] else []))
+    | _  -> ((if si.populated then [T.cdip (n, [T.cdrop 1])] else []))
+  in
 
   let seq env l =
     match l with
@@ -1964,15 +1985,6 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Ttransfer_tokens   -> T.ctransfer_tokens
     | T.Topen_chest        -> T.copen_chest
     | T.Tcreate_contract c -> T.ccreate_contract c
-  in
-
-  let get_remove_code env id =
-    let n, si = get_pos_stack_item env id in
-    match n with
-    | -1 -> []
-    | 0  -> ((if si.populated then [T.cdrop 1] else []))
-    | 1  -> ((if si.populated then [T.cswap; T.cdrop 1 ] else []))
-    | _  -> ((if si.populated then [T.cdip (n, [T.cdrop 1])] else []))
   in
 
   match i with
@@ -2425,6 +2437,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             [T.cnone ty; k; T.cupdate]
           end
       in
+      let nenv = populate_env nenv v in
       T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
     end
 

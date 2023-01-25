@@ -5731,7 +5731,7 @@ let rec for_instruction_r
                   A.DK_option (ty, unloc_longident vdecl.vr_name), ty
                 end
               | None -> begin
-                  Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+                  Env.emit_error env (loc v, DetachVarNotFound (unloc v));
                   bailout()
                 end
             end
@@ -5740,8 +5740,8 @@ let rec for_instruction_r
               match v.node with
               | A.Pcall(None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
                   (match m with
-                   | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some (A.Tmap(kty, (Tticket _ as tty))); _} -> begin
-                       A.DK_map (kty, unloc id, k), tty
+                   | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some (A.Tmap(_, (Tticket _ as tty))); _} -> begin
+                       A.DK_map (tty, unloc id, k), tty
                      end
                    | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
                 end

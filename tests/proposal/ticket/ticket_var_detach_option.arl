@@ -1,0 +1,10 @@
+archetype ticket_var_detach_option
+
+variable info : option<(address * string * nat)> = none
+
+entry exec() {
+  const t : ticket<string> ?= create_ticket("info", 1) : "ERROR";
+  const ot = some(t);
+  detach dt from ot : "ERROR";
+  info := some(read_ticket(dt))
+}
