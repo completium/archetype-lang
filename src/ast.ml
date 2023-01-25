@@ -448,6 +448,10 @@ and transfer_t =
   | TTself      of pterm * lident * (lident * pterm) list
   | TToperation of pterm
 
+and detach_kind =
+  | DK_option of type_ * ident
+  | DK_map of type_ * ident * pterm
+
 and instruction_node =
   | Iif of (pterm * instruction * instruction)                               (* condition * then_ * else_ *)
   | Ifor of (for_ident * pterm * instruction)                                (* id * collection * body *)
@@ -470,7 +474,7 @@ and instruction_node =
   | Ilabel of lident
   | Ifail of pterm
   | Ifailsome of pterm
-  | Idetach of lident * lident * type_ * pterm
+  | Idetach of lident * detach_kind * type_ * pterm
 [@@deriving show {with_path = false}]
 
 and for_ident = FIsimple of lident | FIdouble of lident * lident

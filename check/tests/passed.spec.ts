@@ -1160,6 +1160,7 @@ import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_create_ticket_list_prepend from '../bindings/passed/ticket_create_ticket_list_prepend'
+import * as ticket_detach_option from '../bindings/passed/ticket_detach_option'
 import * as ticket_fun_join_tickets from '../bindings/passed/ticket_fun_join_tickets'
 import * as ticket_fun_split_ticket from '../bindings/passed/ticket_fun_split_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
@@ -9230,6 +9231,24 @@ describe('passed', async () => {
   it('ticket_create_ticket_list_prepend', async () => {
     await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.deploy({ as: alice })
     // TODO
+  })
+
+  it('ticket_detach_option', async () => {
+    await ticket_detach_option.ticket_detach_option.deploy({ as: alice })
+    const input_before = await ticket_detach_option.ticket_detach_option.get_input();
+    assert(input_before.equals(Option.None()))
+    const output_before = await ticket_detach_option.ticket_detach_option.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_option.ticket_detach_option.init({ as: alice })
+    const input_init = await ticket_detach_option.ticket_detach_option.get_input();
+    assert(input_init.equals(Option.Some(new Ticket<string>(ticket_detach_option.ticket_detach_option.get_address(), "info", new Nat(1)))))
+    const output_init = await ticket_detach_option.ticket_detach_option.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_option.ticket_detach_option.exec({ as: alice })
+    const input_after = await ticket_detach_option.ticket_detach_option.get_input();
+    assert(input_after.equals(Option.None()))
+    const output_after = await ticket_detach_option.ticket_detach_option.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_option.ticket_detach_option.get_address(), "info", new Nat(1)))))
   })
 
   it('ticket_fun_join_tickets', async () => {

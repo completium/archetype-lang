@@ -976,14 +976,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt pt
 
-    | Idetach (id, v, ty, f) ->
-      let pp fmt (id, v, _ty, f) =
+    | Idetach (id, dk, ty, f) ->
+      let pp_dk fmt = function
+      | DK_option (_, id) -> Format.pp_print_string fmt id
+      | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
+      in
+      let pp fmt (id, dk, _ty, f) =
         Format.fprintf fmt "detach %a from %a : %a"
           pp_id id
-          pp_id v
+          pp_dk dk
           pp_pterm f
       in
-      (pp_no_paren pp) fmt (id, v, ty, f)
+      (pp_no_paren pp) fmt (id, dk, ty, f)
 
   in
   pp_instruction_poly pp_node fmt i

@@ -1,0 +1,14 @@
+archetype ticket_detach_option
+
+variable input : option<ticket<string>> = none<ticket<string>>
+
+variable output : option<ticket<string>> = none<ticket<string>>
+
+entry init() {
+  input := create_ticket("info", 1)
+}
+
+entry exec() {
+  detach t from input : "ERROR";
+  output := some(t)
+}

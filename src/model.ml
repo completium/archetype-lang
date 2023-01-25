@@ -232,6 +232,11 @@ type 'term letin_value_gen =
   | LVreplace of mident * klv * 'term
 [@@deriving show {with_path = false}]
 
+type 'term detach_kind_gen =
+  | DK_option of type_ * ident
+  | DK_map of type_ * ident * 'term
+[@@deriving show {with_path = false}]
+
 type 'term mterm_node  =
   (* lambda *)
   | Mletin            of mident list * 'term letin_value_gen * type_ option * 'term * 'term option
@@ -259,7 +264,7 @@ type 'term mterm_node  =
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
-  | Mdetach           of mident * mident * type_ * 'term
+  | Mdetach           of mident * 'term detach_kind_gen * type_ * 'term
   (* entrypoint *)
   | Mgetentrypoint    of type_ * mident * 'term                 (* type * address * string *)
   | Mcallview         of type_ * 'term * mident * 'term         (* type * address * string * argument *)
@@ -657,6 +662,9 @@ and security_entry =
 [@@deriving show {with_path = false}]
 
 and letin_value = mterm letin_value_gen
+[@@deriving show {with_path = false}]
+
+and detach_kind = mterm detach_kind_gen
 [@@deriving show {with_path = false}]
 
 type label_term = {
@@ -1521,6 +1529,12 @@ let cmp_mterm_node
     | LVreplace (id1, k1, fa1), LVreplace (id2, k2, fa2) -> cmpi id1 id2 && k1 = k2 && cmp fa1 fa2
     | _, _ -> false
   in
+  let cmp_detach_kind (lhs : detach_kind) (rhs : detach_kind) : bool =
+    match lhs, rhs with
+    | DK_option (ty1, id1), DK_option (ty2, id2) -> cmp_type ty1 ty2 && cmp_ident id1 id2
+    | DK_map (ty1, id1, k1), DK_map (ty2, id2, k2) -> cmp_type ty1 ty2 && cmp_ident id1 id2 && cmp k1 k2
+    | _, _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1549,7 +1563,7 @@ let cmp_mterm_node
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
-    | Mdetach (id1, v1, ty1, f1), Mdetach (id2, v2, ty2, f2)                           -> cmpi id1 id2 && cmpi v1 v2 && cmp_type ty1 ty2 && cmp f1 f2
+    | Mdetach (id1, dk1, ty1, f1), Mdetach (id2, dk2, ty2, f2)                         -> cmpi id1 id2 && cmp_detach_kind dk1 dk2 && cmp_type ty1 ty2 && cmp f1 f2
     (* entrypoint *)
     | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
@@ -2029,6 +2043,10 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
   | TKself (x, id, args)    -> TKself (f x, fi id, List.map (fun (id, v) -> fi id, f v) args)
   | TKoperation x           -> TKoperation (f x)
 
+let map_detach_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
+  | DK_option (ty, id)-> DK_option (ft ty, fi id)
+  | DK_map (ty, id, k)-> DK_map (ft ty, fi id, f k)
+
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, (match a with | LVsimple a -> LVsimple (f a) | LVreplace (id, k, fa) -> LVreplace (g id, k, f fa)), Option.map ft t, f b, Option.map f o)
@@ -2056,7 +2074,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
-  | Mdetach (id, v, ty, fa)        -> Mdetach (g id, g v, ft ty, f fa)
+  | Mdetach (id, dk, ty, fa)       -> Mdetach (g id, map_detach_kind fi ft f dk, ft ty, f fa)
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -2501,6 +2519,10 @@ let fold_transfer_kind f accu = function
   | TKself (x, _, args)    -> List.fold_left f (f accu x) (List.map snd args)
   | TKoperation x          -> f accu x
 
+let fold_detach_kind f accu = function
+  | DK_option _ -> accu
+  | DK_map (_, _, k) -> f accu k
+
 let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
@@ -2530,7 +2552,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
-  | Mdetach (_, _, _, x)                  -> f accu x
+  | Mdetach (_, dk, _, x)                 -> f (fold_detach_kind f accu dk) x
   (* entrypoint *)
   | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
@@ -2879,6 +2901,10 @@ let fold_map_transfer_kind f accu = function
     let xe, xa = f accu x in
     TKoperation xe, xa
 
+let fold_map_detach_kind f accu = function
+  | DK_option (ty, id) -> DK_option (ty, id), accu
+  | DK_map (ty, id, k) -> let ke, ka = f accu k in DK_map (ty, id, ke), ka
+
 let fold_map_term
     (g : mterm mterm_node -> mterm)
     (f : 'a -> mterm -> mterm * 'a)
@@ -3034,9 +3060,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Memit (e, xe)), xa
 
-  | Mdetach (id, v, ty, fa) ->
-    let fae, faa = f accu fa in
-    g (Mdetach (id, v, ty, fae)), faa
+  | Mdetach (id, dk, ty, fa) ->
+    let dke, dka = fold_map_detach_kind f accu dk in
+    let fae, faa = f dka fa in
+    g (Mdetach (id, dke, ty, fae)), faa
 
 
   (* entrypoint *)

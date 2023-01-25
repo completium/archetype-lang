@@ -5725,16 +5725,19 @@ let rec for_instruction_r
                 let _ = check_and_emit_name_free env id in
                 let ty = match vdecl.vr_type with
                   | A.Toption ((A.Tticket _) as tty) -> tty
-                  | A.Tlist ((A.Tticket _) as tty) -> tty
                   | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
                 in
                 let env = Env.Local.push env (id, ty) ~kind:`Const in
-                env, mki (A.Idetach (id, v, vdecl.vr_type, for_expr kind env f))
+                env, mki (A.Idetach (id, A.DK_option (ty, unloc_longident vdecl.vr_name), ty, for_expr kind env f))
               end
             | None -> begin
                 Env.emit_error env (loc id, DetachVarNotFound (unloc id));
                 bailout()
               end
+          end
+        | Esqapp ({pldesc = Eterm (_, (_, _src))}, _k) -> begin
+            Env.emit_error env (loc v, DetachInvalidExprFrom);
+            bailout()
           end
         | _ -> begin
             Env.emit_error env (loc v, DetachInvalidExprFrom);

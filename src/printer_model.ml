@@ -410,10 +410,14 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid e
         f x
 
-    | Mdetach (id, v, _ty, fa) ->
+    | Mdetach (id, dk, _ty, fa) ->
+      let pp_dk fmt = function
+        | DK_option (_, id) -> Format.pp_print_string fmt id
+        | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
+      in
       Format.fprintf fmt "detach %a from %a : %a"
         pp_mid id
-        pp_mid v
+        pp_dk dk
         f fa
 
     (* entrypoint *)
