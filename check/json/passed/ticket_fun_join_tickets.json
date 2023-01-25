@@ -1,5 +1,5 @@
 {
-  "name": "ticket_join_tickets",
+  "name": "ticket_fun_join_tickets",
   "parameters": [],
   "types": {
     "assets": [],
@@ -9,7 +9,7 @@
   },
   "storage": [
     {
-      "name": "t",
+      "name": "res",
       "type": {
         "node": "option",
         "name": null,

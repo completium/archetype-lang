@@ -3,7 +3,7 @@ import * as att from "@completium/archetype-ts-types";
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Ticket_join_tickets {
+export class Ticket_fun_split_ticket {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,7 +21,7 @@ export class Ticket_join_tickets {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/ticket_join_tickets.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/ticket_fun_split_ticket.arl", {}, params)).address;
         this.address = address;
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
@@ -36,10 +36,21 @@ export class Ticket_join_tickets {
         }
         throw new Error("Contract not initialised");
     }
-    async get_t(): Promise<att.Option<att.Ticket<string>>> {
+    async get_res(): Promise<att.Option<[
+        att.Ticket<string>,
+        att.Ticket<string>
+    ]>> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Option.from_mich(storage, x => { return att.Ticket.from_mich(x, x => { return att.mich_to_string(x); }); });
+            const r : att.Option<[
+        att.Ticket<string>,
+        att.Ticket<string>
+    ]> = att.Option.from_mich(storage, x => {
+
+         return (p => {
+                return [att.Ticket.from_mich((p as att.Mpair).args[0], x => { return att.mich_to_string(x); }), att.Ticket.from_mich((p as att.Mpair).args[1], x => { return att.mich_to_string(x); })];
+            })(x); });
+            return r;
         }
         throw new Error("Contract not initialised");
     }
@@ -47,4 +58,4 @@ export class Ticket_join_tickets {
         ERROR: att.string_to_mich("\"ERROR\"")
     };
 }
-export const ticket_join_tickets = new Ticket_join_tickets();
+export const ticket_fun_split_ticket = new Ticket_fun_split_ticket();

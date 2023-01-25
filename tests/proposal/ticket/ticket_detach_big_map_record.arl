@@ -15,6 +15,6 @@ entry init() {
 }
 
 entry exec() {
-  detach dt from input[0].t :: "ERROR";
+  detach dt from input[0].t : "ERROR";
   output := some(dt)
 }

@@ -1160,7 +1160,8 @@ import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_create_ticket_list_prepend from '../bindings/passed/ticket_create_ticket_list_prepend'
-import * as ticket_join_tickets from '../bindings/passed/ticket_join_tickets'
+import * as ticket_fun_join_tickets from '../bindings/passed/ticket_fun_join_tickets'
+import * as ticket_fun_split_ticket from '../bindings/passed/ticket_fun_split_ticket'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
@@ -9231,13 +9232,22 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('ticket_join_tickets', async () => {
-    await ticket_join_tickets.ticket_join_tickets.deploy({ as: alice })
-    const t_before = await ticket_join_tickets.ticket_join_tickets.get_t();
-    assert(t_before.equals(Option.None()))
-    await ticket_join_tickets.ticket_join_tickets.exec({ as: alice });
-    const t_after = await ticket_join_tickets.ticket_join_tickets.get_t();
-    assert(t_after.equals(Option.Some(new Ticket<string>(ticket_join_tickets.ticket_join_tickets.get_address(), "mystr", new Nat(3)))))
+  it('ticket_fun_join_tickets', async () => {
+    await ticket_fun_join_tickets.ticket_fun_join_tickets.deploy({ as: alice })
+    const res_before = await ticket_fun_join_tickets.ticket_fun_join_tickets.get_res();
+    assert(res_before.equals(Option.None()))
+    await ticket_fun_join_tickets.ticket_fun_join_tickets.exec({ as: alice });
+    const res_after = await ticket_fun_join_tickets.ticket_fun_join_tickets.get_res();
+    assert(res_after.equals(Option.Some(new Ticket<string>(ticket_fun_join_tickets.ticket_fun_join_tickets.get_address(), "mystr", new Nat(3)))))
+  })
+
+  it('ticket_fun_split_ticket', async () => {
+    await ticket_fun_split_ticket.ticket_fun_split_ticket.deploy({ as: alice })
+    // const res_before = await ticket_fun_split_ticket.ticket_fun_split_ticket.get_res();
+    // assert(res_before.equals(Option.None()))
+    // await ticket_fun_split_ticket.ticket_fun_split_ticket.exec({ as: alice });
+    // const res_after = await ticket_fun_split_ticket.ticket_fun_split_ticket.get_res();
+    // assert(res_after.equals(Option.Some([new Ticket<string>(ticket_fun_split_ticket.ticket_fun_split_ticket.get_address(), "mystr", new Nat(1)), new Ticket<string>(ticket_fun_split_ticket.ticket_fun_split_ticket.get_address(), "mystr", new Nat(2))])))
   })
 
   it('ticket_read_ticket', async () => {

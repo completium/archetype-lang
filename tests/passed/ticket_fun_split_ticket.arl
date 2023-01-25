@@ -1,0 +1,8 @@
+archetype ticket_fun_split_ticket
+
+variable res : option<ticket<string> * ticket<string>> = none
+
+entry exec() {
+  const t ?= create_ticket("mystr", 3) : "ERROR";
+  res := split_ticket(t, 1, 2);
+}

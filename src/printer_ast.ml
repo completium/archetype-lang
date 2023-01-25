@@ -978,10 +978,10 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Idetach (id, v, ty, f) ->
       let pp fmt (id, v, _ty, f) =
-        Format.fprintf fmt "detach %a from %a%a"
+        Format.fprintf fmt "detach %a from %a : %a"
           pp_id id
           pp_id v
-          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) f
+          pp_pterm f
       in
       (pp_no_paren pp) fmt (id, v, ty, f)
 

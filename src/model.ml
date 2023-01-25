@@ -1299,7 +1299,6 @@ let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 (* -------------------------------------------------------------------- *)
 
 let fail_msg_ASSET_NOT_FOUND         = "ASSET_NOT_FOUND"
-let fail_msg_DETACH_ERROR            = "DETACH_ERROR"
 let fail_msg_DIV_BY_ZERO             = "DIV_BY_ZERO"
 let fail_msg_INVALID_CALLER          = "INVALID_CALLER"
 let fail_msg_INVALID_CONDITION       = "INVALID_CONDITION"

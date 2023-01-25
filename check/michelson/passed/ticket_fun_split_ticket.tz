@@ -1,0 +1,16 @@
+{ storage (option (pair (ticket string) (ticket string))) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 3 ;
+         PUSH string "mystr" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         PUSH nat 2 ;
+         PUSH nat 1 ;
+         PAIR ;
+         SWAP ;
+         SPLIT_TICKET ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

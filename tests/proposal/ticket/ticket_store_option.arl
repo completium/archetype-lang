@@ -7,6 +7,6 @@ variable info : option<(address * string * nat)> = none
 entry exec() {
   ot := create_ticket("info", 1);
 
-  detach t from ot :: "ERROR";
+  detach t from ot : "ERROR";
   info := some(read_ticket(t))
 }

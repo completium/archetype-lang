@@ -715,6 +715,7 @@ type error_desc =
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
+  | DetachInvalidExprFrom
   | DetachInvalidType                       of ident
   | DetachVarNotFound                       of ident
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
@@ -979,6 +980,7 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
+  | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
   | DetachVarNotFound id               -> pp "Variable `%s' not found" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
@@ -5716,19 +5718,26 @@ let rec for_instruction_r
       in env, mki (Itransfer tr)
 
     | Edetach (id, v, f) -> begin
-        match Env.Var.lookup env (Current, unloc v) with
-        | Some vdecl -> begin
-            let _ = check_and_emit_name_free env id in
-            let ty = match vdecl.vr_type with
-              | A.Toption ((A.Tticket _) as tty) -> tty
-              | A.Tlist ((A.Tticket _) as tty) -> tty
-              | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
-            in
-            let env = Env.Local.push env (id, ty) ~kind:`Const in
-            env, mki (A.Idetach (id, v, vdecl.vr_type, Option.map (for_expr kind env) f))
+        match unloc v with
+        | Eterm (_, (_, v)) -> begin
+            match Env.Var.lookup env (Current, unloc v) with
+            | Some vdecl -> begin
+                let _ = check_and_emit_name_free env id in
+                let ty = match vdecl.vr_type with
+                  | A.Toption ((A.Tticket _) as tty) -> tty
+                  | A.Tlist ((A.Tticket _) as tty) -> tty
+                  | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
+                in
+                let env = Env.Local.push env (id, ty) ~kind:`Const in
+                env, mki (A.Idetach (id, v, vdecl.vr_type, for_expr kind env f))
+              end
+            | None -> begin
+                Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+                bailout()
+              end
           end
-        | None -> begin
-            Env.emit_error env (loc id, DetachVarNotFound (unloc id));
+        | _ -> begin
+            Env.emit_error env (loc v, DetachInvalidExprFrom);
             bailout()
           end
       end
