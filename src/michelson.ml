@@ -357,7 +357,7 @@ and builtin =
 
 and klv =
   | KLVoption of type_
-  | KLVlist
+  | KLVmap of (type_ * instruction)
 [@@deriving show {with_path = false}]
 
 and access_item = {

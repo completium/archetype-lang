@@ -1,0 +1,14 @@
+{ storage (option (pair address string nat)) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 1 ;
+         PUSH string "info" ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         READ_TICKET ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

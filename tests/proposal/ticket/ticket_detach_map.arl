@@ -9,7 +9,7 @@ entry init() {
   input := [(0, t)];
 }
 
-entry exec() {
-  detach t from input[0] : "ERROR";
-  output := some(t)
-}
+// entry exec() {
+//   detach t from input[0] : "ERROR";
+//   output := some(t)
+// }

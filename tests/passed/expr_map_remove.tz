@@ -1,0 +1,11 @@
+{ storage (map nat string) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         DUP ;
+         NONE string ;
+         PUSH nat 0 ;
+         UPDATE ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

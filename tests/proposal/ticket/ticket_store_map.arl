@@ -8,6 +8,6 @@ entry exec() {
   const ti = create_ticket("info", 1);
   mt.update(0, ti);
 
-  detach t from mt[0] : "ERROR";
-  info := some(read_ticket(ti))
+  // detach t from mt[0] : "ERROR";
+  // info := some(read_ticket(t))
 }

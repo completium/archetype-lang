@@ -222,19 +222,14 @@ type michelson_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type klv =
-  | KLVoption of type_
-  | KLVlist
+type 'term detach_kind_gen =
+  | DK_option of type_ * ident
+  | DK_map of type_ * ident * 'term
 [@@deriving show {with_path = false}]
 
 type 'term letin_value_gen =
   | LVsimple of 'term
-  | LVreplace of mident * klv * 'term
-[@@deriving show {with_path = false}]
-
-type 'term detach_kind_gen =
-  | DK_option of type_ * ident
-  | DK_map of type_ * ident * 'term
+  | LVreplace of mident * 'term detach_kind_gen * 'term
 [@@deriving show {with_path = false}]
 
 type 'term mterm_node  =

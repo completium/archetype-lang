@@ -1184,6 +1184,12 @@ import * as ticket_record_list_var_2_2 from '../bindings/passed/ticket_record_li
 import * as ticket_record_list_var_3_0 from '../bindings/passed/ticket_record_list_var_3_0'
 import * as ticket_record_list_var_3_1 from '../bindings/passed/ticket_record_list_var_3_1'
 import * as ticket_record_list_var_3_2 from '../bindings/passed/ticket_record_list_var_3_2'
+import * as ticket_store_option from '../bindings/passed/ticket_store_option'
+import * as ticket_var_list from '../bindings/passed/ticket_var_list'
+import * as ticket_var_option from '../bindings/passed/ticket_var_option'
+import * as ticket_var_or_left from '../bindings/passed/ticket_var_or_left'
+import * as ticket_var_or_right from '../bindings/passed/ticket_var_or_right'
+import * as ticket_var_simple from '../bindings/passed/ticket_var_simple'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
 import * as transfer_entrypoint2 from '../bindings/passed/transfer_entrypoint2'
@@ -9498,6 +9504,64 @@ describe('passed', async () => {
     await ticket_record_list_var_3_2.ticket_record_list_var_3_2.exec({ as: alice });
     const res_after = await ticket_record_list_var_3_2.ticket_record_list_var_3_2.get_res();
     assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_store_option', async () => {
+    await ticket_store_option.ticket_store_option.deploy({ as: alice })
+    const ot_before = await ticket_store_option.ticket_store_option.get_ot();
+    assert(ot_before.equals(Option.None()));
+    const info_before = await ticket_store_option.ticket_store_option.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_store_option.ticket_store_option.exec({ as: alice })
+    const ot_after = await ticket_store_option.ticket_store_option.get_ot();
+    assert(ot_after.equals(Option.None()));
+    const info_after = await ticket_store_option.ticket_store_option.get_info()
+    assert(info_after.equals(Option.Some([ticket_store_option.ticket_store_option.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_list', async () => {
+    await ticket_var_list.ticket_var_list.deploy({ as: alice })
+    const info_before = await ticket_var_list.ticket_var_list.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_list.ticket_var_list.exec({ as: alice })
+    const info_after = await ticket_var_list.ticket_var_list.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_list.ticket_var_list.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_option', async () => {
+    await ticket_var_option.ticket_var_option.deploy({ as: alice })
+    const info_before = await ticket_var_option.ticket_var_option.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_option.ticket_var_option.exec({ as: alice })
+    const info_after = await ticket_var_option.ticket_var_option.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_option.ticket_var_option.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_or_left', async () => {
+    await ticket_var_or_left.ticket_var_or_left.deploy({ as: alice })
+    const info_before = await ticket_var_or_left.ticket_var_or_left.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_or_left.ticket_var_or_left.exec({ as: alice })
+    const info_after = await ticket_var_or_left.ticket_var_or_left.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_or_left.ticket_var_or_left.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_or_right', async () => {
+    await ticket_var_or_right.ticket_var_or_right.deploy({ as: alice })
+    const info_before = await ticket_var_or_right.ticket_var_or_right.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_or_right.ticket_var_or_right.exec({ as: alice })
+    const info_after = await ticket_var_or_right.ticket_var_or_right.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_or_right.ticket_var_or_right.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_simple', async () => {
+    await ticket_var_simple.ticket_var_simple.deploy({ as: alice })
+    const info_before = await ticket_var_simple.ticket_var_simple.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_simple.ticket_var_simple.exec({ as: alice })
+    const info_after = await ticket_var_simple.ticket_var_simple.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_simple.ticket_var_simple.get_address(), "info", new Nat(1)])));
   })
 
   it('transfer_call', async () => {

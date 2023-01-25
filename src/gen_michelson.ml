@@ -712,8 +712,13 @@ let to_ir (model : M.model) : T.ir =
     (* lambda *)
 
     | Mletin ([id], v, _, b, _) -> begin
+        let to_dk = function
+          | M.DK_option (ty, _) -> T.KLVoption (ft ty)
+          | M.DK_map (kt, _, k) -> T.KLVmap (ft kt, f k)
+        in
         let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
-        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, k, fa) -> T.Ireplace(M.unloc_mident id, M.unloc_mident idv, (match k with | KLVoption ty -> T.KLVoption (ft ty) | KLVlist -> T.KLVlist) , f fa) in
+
+        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, dk, fa) -> T.Ireplace(M.unloc_mident id, M.unloc_mident idv, to_dk dk, f fa) in
         T.IletIn (M.unloc_mident id, v, f b, is_unit)
       end
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
@@ -2412,7 +2417,14 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let a, _ = fe (inc_env env) fa in
       let nenv = add_var_env env id in
       (* print_env ~str:"Ireplace after" nenv; *)
-      let b = match k with | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])] | KLVlist -> [T.cifcons ([], [a; T.cfailwith])] in
+      let b =
+        match k with
+        | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
+        | KLVmap (ty, k) -> begin
+            let k, _ = fe (inc_env env) k in
+            [T.cnone ty; k; T.cupdate]
+          end
+      in
       T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
     end
 
