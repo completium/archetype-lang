@@ -259,6 +259,7 @@ rule token = parse
   | "?="                  { QUESTIONEQUAL }
   | "?:="                 { QUESTIONCOLONEQUAL }
   | "?is"                 { QUESTIONIS }
+  | "??"                  { QUESTIONQUESTION }
   | eof                   { EOF }
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)

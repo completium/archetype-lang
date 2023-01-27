@@ -449,8 +449,8 @@ and transfer_t =
   | TToperation of pterm
 
 and detach_kind =
-  | DK_option of type_ * ident
-  | DK_map of type_ * ident * pterm
+  | DK_option of type_ * pterm
+  | DK_map of type_ * pterm * pterm
 
 and instruction_node =
   | Iif of (pterm * instruction * instruction)                               (* condition * then_ * else_ *)

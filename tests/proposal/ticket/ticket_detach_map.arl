@@ -9,7 +9,8 @@ entry init() {
   input := [(0, t)];
 }
 
-// entry exec() {
-//   detach t from input[0] : "ERROR";
-//   output := some(t)
-// }
+entry exec() {
+  // const ot ?= create_ticket("info", 1) : "ERROR";
+  detach t from 0 in input : "ERROR";
+  output := some(t)
+}

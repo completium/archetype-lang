@@ -150,6 +150,7 @@
 %token QUESTIONDOT
 %token QUESTIONEQUAL
 %token QUESTIONIS
+%token QUESTIONQUESTION
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -955,6 +956,10 @@ ident_typ_q:
 %inline tentry_postfix:
 | DOT ida=ident arga=paren(expr) { (ida, arga) }
 
+%inline questionquestion_expr:
+| QUESTIONQUESTION x=expr { Some x }
+| { None }
+
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -1035,8 +1040,11 @@ expr_r:
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (TTself (x, id, args)) }
 
- | DETACH id=ident FROM x=simple_expr COLON f=simple_expr
-     { Edetach (id, x, f) }
+ | DETACH id=ident FROM src=simple_expr q=questionquestion_expr COLON f=simple_expr
+     { Edetach (id, src, None, q, f) }
+
+ | DETACH id=ident FROM k=simple_expr IN src=simple_expr q=questionquestion_expr COLON f=simple_expr
+     { Edetach (id, src, Some k, q, f) }
 
  | DO_REQUIRE LPAREN x=expr COMMA y=expr RPAREN
      { Edorequire (x, y) }

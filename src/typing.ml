@@ -717,6 +717,7 @@ type error_desc =
   | ContractInvariantInLocalSpec
   | DetachInvalidExprFrom
   | DetachInvalidType                       of ident
+  | DetachKeyNeeded
   | DetachVarNotFound                       of ident
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
   | DivergentExpr
@@ -981,6 +982,7 @@ let pp_error_desc fmt e =
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
   | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
+  | DetachKeyNeeded                    -> pp "Key needed"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
   | DetachVarNotFound id               -> pp "Variable `%s' not found" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
@@ -5717,43 +5719,40 @@ let rec for_instruction_r
 
       in env, mki (Itransfer tr)
 
-    | Edetach (id, v, f) -> begin
+    | Edetach (id, src, k, _q, f) -> begin
         let _ = check_and_emit_name_free env id in
-        let dk, ticket_type =
-          match unloc v with
-          | Eterm (_, (_, v)) -> begin
-              match Env.Var.lookup env (Current, unloc v) with
-              | Some vdecl -> begin
-                  let ty = match vdecl.vr_type with
-                    | A.Toption ((A.Tticket _) as tty) -> tty
-                    | _ -> (Env.emit_error env (loc v, DetachInvalidType (unloc v)); bailout())
-                  in
-                  A.DK_option (ty, unloc_longident vdecl.vr_name), ty
-                end
-              | None -> begin
-                  Env.emit_error env (loc v, DetachVarNotFound (unloc v));
-                  bailout()
-                end
+        let dk, dty =
+          let src = for_expr kind env src in
+          begin
+            match src.node with
+            | A.Pvar _ -> ()
+            | _ -> begin
+                Env.emit_error env (src.loc, DetachInvalidExprFrom);
+                bailout ()
+              end
+          end;
+          match src.type_ with
+          | Some (A.Toption tty) -> begin
+              A.DK_option (tty, src), tty
             end
-          | Esqapp ({pldesc = Eterm (_, (_, _src))}, _) -> begin
-              let v = for_expr kind env v in
-              match v.node with
-              | A.Pcall(None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
-                  (match m with
-                   | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some (A.Tmap(_, (Tticket _ as tty))); _} -> begin
-                       A.DK_map (tty, unloc id, k), tty
-                     end
-                   | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
-                end
-              | _ -> (Env.emit_error env (v.loc, DetachInvalidExprFrom); bailout())
+          | Some (A.Tmap (kty, vty)) -> begin
+              let k = match k with
+                | Some k -> for_expr kind env ~ety:kty k
+                | None -> begin
+                    Env.emit_error env (loc i, DetachKeyNeeded);
+                    bailout ()
+                  end
+              in
+              A.DK_map (vty, src, k), vty
             end
           | _ -> begin
-              Env.emit_error env (loc v, DetachInvalidExprFrom);
+              Env.emit_error env (src.loc, DetachInvalidExprFrom);
               bailout()
             end
         in
-        let env = Env.Local.push env (id, ticket_type) ~kind:`Const in
-        env, mki (A.Idetach (id, dk, ticket_type, for_expr kind env f))
+        let env = Env.Local.push env (id, dty) ~kind:`Const in
+        let f = for_expr kind env f in
+        env, mki (A.Idetach (id, dk, dty, f))
       end
 
     | Eemit (ty, arg) ->

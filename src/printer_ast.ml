@@ -978,8 +978,8 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Idetach (id, dk, ty, f) ->
       let pp_dk fmt = function
-      | DK_option (_, id) -> Format.pp_print_string fmt id
-      | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
+      | DK_option (_, src) -> pp_pterm fmt src
+      | DK_map (_, src, k) -> Format.fprintf fmt "%a in %a" pp_pterm k pp_pterm src
       in
       let pp fmt (id, dk, _ty, f) =
         Format.fprintf fmt "detach %a from %a : %a"

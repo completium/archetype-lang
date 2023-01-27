@@ -1226,8 +1226,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Ifailsome v -> M.Mfailsome (f v)
       | A.Idetach (id, dk, ty, fa) ->
         let to_dk = function
-          | A.DK_option (ty, id) -> M.DK_option (type_to_type ty, id)
-          | A.DK_map (ty, id, k) -> M.DK_map (type_to_type ty, id, f k)
+          | A.DK_option (ty, src) -> M.DK_option (type_to_type ty, f src)
+          | A.DK_map (ty, src, k) -> M.DK_map (type_to_type ty, f src, f k)
         in
         M.Mdetach (M.mk_mident id, to_dk dk, type_to_type ty, f fa)
 

@@ -223,8 +223,8 @@ type michelson_struct = {
 [@@deriving show {with_path = false}]
 
 type 'term detach_kind_gen =
-  | DK_option of type_ * ident
-  | DK_map of type_ * ident * 'term
+  | DK_option of type_ * 'term
+  | DK_map of type_ * 'term * 'term
 [@@deriving show {with_path = false}]
 
 type 'term letin_value_gen =
@@ -1526,8 +1526,8 @@ let cmp_mterm_node
   in
   let cmp_detach_kind (lhs : detach_kind) (rhs : detach_kind) : bool =
     match lhs, rhs with
-    | DK_option (ty1, id1), DK_option (ty2, id2) -> cmp_type ty1 ty2 && cmp_ident id1 id2
-    | DK_map (ty1, id1, k1), DK_map (ty2, id2, k2) -> cmp_type ty1 ty2 && cmp_ident id1 id2 && cmp k1 k2
+    | DK_option (ty1, src1), DK_option (ty2, src2) -> cmp_type ty1 ty2 && cmp src1 src2
+    | DK_map (ty1, src1, k1), DK_map (ty2, src2, k2) -> cmp_type ty1 ty2 && cmp src1 src2 && cmp k1 k2
     | _, _ -> false
   in
   try
@@ -2038,9 +2038,9 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
   | TKself (x, id, args)    -> TKself (f x, fi id, List.map (fun (id, v) -> fi id, f v) args)
   | TKoperation x           -> TKoperation (f x)
 
-let map_detach_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
-  | DK_option (ty, id)-> DK_option (ft ty, fi id)
-  | DK_map (ty, id, k)-> DK_map (ft ty, fi id, f k)
+let map_detach_kind (ft : type_ -> type_) f = function
+  | DK_option (ty, src)-> DK_option (ft ty, f src)
+  | DK_map (ty, src, k)-> DK_map (ft ty, f src, f k)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
@@ -2069,7 +2069,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
-  | Mdetach (id, dk, ty, fa)       -> Mdetach (g id, map_detach_kind fi ft f dk, ft ty, f fa)
+  | Mdetach (id, dk, ty, fa)       -> Mdetach (g id, map_detach_kind ft f dk, ft ty, f fa)
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -2515,8 +2515,8 @@ let fold_transfer_kind f accu = function
   | TKoperation x          -> f accu x
 
 let fold_detach_kind f accu = function
-  | DK_option _ -> accu
-  | DK_map (_, _, k) -> f accu k
+  | DK_option (_, src) -> f accu src
+  | DK_map (_, src, k) -> f (f accu src) k
 
 let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
@@ -2897,8 +2897,15 @@ let fold_map_transfer_kind f accu = function
     TKoperation xe, xa
 
 let fold_map_detach_kind f accu = function
-  | DK_option (ty, id) -> DK_option (ty, id), accu
-  | DK_map (ty, id, k) -> let ke, ka = f accu k in DK_map (ty, id, ke), ka
+  | DK_option (ty, src) -> begin
+      let srce, srca = f accu src in
+      DK_option (ty, srce), srca
+    end
+  | DK_map (ty, src, k) -> begin
+      let srce, srca = f accu src in
+      let ke, ka = f srca k in
+      DK_map (ty, srce, ke), ka
+    end
 
 let fold_map_term
     (g : mterm mterm_node -> mterm)
