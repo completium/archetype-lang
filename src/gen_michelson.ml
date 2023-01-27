@@ -1874,17 +1874,27 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   let fold env l = fold_gen fe env l in
 
   let assign env id v =
-    let n = get_sp_for_id env id in
-    (* print_env ~str:("assign:before " ^ id) env; *)
-    (* Format.eprintf "assign n: %d@." n; *)
-    let c, nenv =
-      match n with
-      | 0 -> T.cseq [ v ], env
-      | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
-      | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
-    in
-    (* print_env ~str:("assign:after " ^ id) nenv; *)
-    c, nenv
+    (* let n = get_sp_for_id env id in *)
+    let n, si = get_pos_stack_item env id in
+    if si.populated
+    then begin
+      (* print_env ~str:("assign:before " ^ id) env; *)
+      (* Format.eprintf "assign n: %d@." n; *)
+      let c, nenv =
+        match n with
+        | 0 -> T.cseq [ v ], env
+        | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
+        | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
+      in
+      (* print_env ~str:("assign:after " ^ id) nenv; *)
+      c, nenv
+    end
+    else begin
+      (* print_env ~str:("assign:before " ^ id) env; *)
+      let nenv = dug_env env id in
+      (* print_env ~str:("assign:after " ^ id) nenv; *)
+      T.cseq [ v; T.cdug (n - 1)], nenv
+    end
   in
 
   let z_op_to_code = function
