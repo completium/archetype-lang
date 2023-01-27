@@ -1184,6 +1184,7 @@ import * as ticket_record_list_var_2_2 from '../bindings/passed/ticket_record_li
 import * as ticket_record_list_var_3_0 from '../bindings/passed/ticket_record_list_var_3_0'
 import * as ticket_record_list_var_3_1 from '../bindings/passed/ticket_record_list_var_3_1'
 import * as ticket_record_list_var_3_2 from '../bindings/passed/ticket_record_list_var_3_2'
+import * as ticket_store_map from '../bindings/passed/ticket_store_map'
 import * as ticket_store_option from '../bindings/passed/ticket_store_option'
 import * as ticket_var_list from '../bindings/passed/ticket_var_list'
 import * as ticket_var_option from '../bindings/passed/ticket_var_option'
@@ -9504,6 +9505,19 @@ describe('passed', async () => {
     await ticket_record_list_var_3_2.ticket_record_list_var_3_2.exec({ as: alice });
     const res_after = await ticket_record_list_var_3_2.ticket_record_list_var_3_2.get_res();
     assert(res_after.equals(new Nat(6)))
+  })
+
+  it('ticket_store_map', async () => {
+    await ticket_store_map.ticket_store_map.deploy({ as: alice })
+    const mt_before = await ticket_store_map.ticket_store_map.get_mt();
+    assert(mt_before.length == 0);
+    const info_before = await ticket_store_map.ticket_store_map.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_store_map.ticket_store_map.exec({ as: alice })
+    const mt_after = await ticket_store_map.ticket_store_map.get_mt();
+    assert(mt_after.length == 0);
+    const info_after = await ticket_store_map.ticket_store_map.get_info()
+    assert(info_after.equals(Option.Some([ticket_store_map.ticket_store_map.get_address(), "info", new Nat(1)])));
   })
 
   it('ticket_store_option', async () => {

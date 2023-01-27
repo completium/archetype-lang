@@ -2444,7 +2444,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
         | KLVmap (ty, k) -> begin
             let k, _ = fe (inc_env env) k in
-            [T.cnone ty; k; T.cupdate]
+            [T.cnone ty; k; T.cget_and_update; T.cifnone ([T.cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); T.cfailwith], [])]
           end
       in
       let nenv = populate_env nenv v in

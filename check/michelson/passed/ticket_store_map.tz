@@ -1,0 +1,22 @@
+{ storage (pair (map %mt nat (ticket string)) (option %info (pair address string nat))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH nat 1 ;
+         PUSH string "info" ;
+         TICKET ;
+         PUSH nat 0 ;
+         UPDATE ;
+         NONE (ticket string) ;
+         PUSH nat 0 ;
+         GET_AND_UPDATE ;
+         IF_NONE { PUSH string "KEY_NOT_FOUND" ; FAILWITH } {} ;
+         READ_TICKET ;
+         SOME ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }
