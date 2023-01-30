@@ -1041,10 +1041,7 @@ expr_r:
      { Etransfer (TTself (x, id, args)) }
 
  | DETACH id=ident FROM src=simple_expr q=questionquestion_expr COLON f=simple_expr
-     { Edetach (id, src, None, q, f) }
-
- | DETACH id=ident FROM k=simple_expr IN src=simple_expr q=questionquestion_expr COLON f=simple_expr
-     { Edetach (id, src, Some k, q, f) }
+     { Edetach (id, src, q, f) }
 
  | DO_REQUIRE LPAREN x=expr COMMA y=expr RPAREN
      { Edorequire (x, y) }

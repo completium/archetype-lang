@@ -5719,9 +5719,14 @@ let rec for_instruction_r
 
       in env, mki (Itransfer tr)
 
-    | Edetach (id, src, k, _q, f) -> begin
+    | Edetach (id, src, q, f) -> begin
         let _ = check_and_emit_name_free env id in
-        let dk, dty =
+        let lv = for_lvalue kind env src in
+        let x, t  = Option.get_dfl
+            (`Var (mkloc (loc src) "<error>"), A.vtunit)
+            (Option.map (fun x -> x) lv)
+        in
+        (* let dk, dty =
           let src = for_expr kind env src in
           begin
             match src.node with
@@ -5749,10 +5754,11 @@ let rec for_instruction_r
               Env.emit_error env (src.loc, DetachInvalidExprFrom);
               bailout()
             end
-        in
-        let env = Env.Local.push env (id, dty) ~kind:`Const in
+        in *)
+        let env = Env.Local.push env (id, t) ~kind:`Const in
+        let q = Option.map (for_expr kind env) q in (* TODO: check type *)
         let f = for_expr kind env f in
-        env, mki (A.Idetach (id, dk, dty, f))
+        env, mki (A.Idetach (id, t, x, q, f))
       end
 
     | Eemit (ty, arg) ->

@@ -504,6 +504,11 @@ let pp_top f fmt (op, a1, a2, a3) =
   | Topen_chest        -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
   | Tcreate_contract _ -> pp "create_contract(%a, %a, %a)" f a1 f a2 f a3
 
+let rec pp_assign_path fmt = function
+  | AP_ident (_, id) -> Format.pp_print_string fmt id
+  | AP_tuple (ak, _, idx, l) -> Format.fprintf fmt "%a[%i/%i]" pp_assign_path ak idx l
+  | AP_map (ak, _, k) -> Format.fprintf fmt "%a[%a]" pp_assign_path ak pp_instruction k
+
 let rec pp_instruction fmt (i : instruction) =
   let pp s = Format.fprintf fmt s in
   let f = pp_instruction in
@@ -646,7 +651,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Ireverse (t, x)         -> pp "reverse<%a>(%a)" pp_type t f x
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
   | Iwildcard (_, id)       -> pp "$$%s$$" id
-  | Ireplace (id, v, _, fa) -> Format.fprintf fmt "replace %s, %s : %a" id v f fa
+  | Ireplace (id, lv, r, fa) -> Format.fprintf fmt "replace %s:%a by %a and fail with %a" id pp_assign_path lv f r f fa
   | Ireadticket (x)         -> pp "read_ticket(%a)" f x
 
 and pp_ritem fmt = function

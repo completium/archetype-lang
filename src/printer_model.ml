@@ -196,7 +196,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "let %a%a = %a in@\n%a%a"
         (pp_list ", " pp_mid) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
-        (fun fmt x -> match x with | LVsimple v -> f fmt v | LVreplace (id, _ty, x) -> Format.fprintf fmt "replace %a : %a" pp_mid id f x) a
+        (fun fmt x -> match x with | LVsimple v -> f fmt v | LVreplace (lv, _ty, r, fa) -> Format.fprintf fmt "replace %a ?? %a : %a" (pp_assign_kind f) lv f r f fa) a
         f b
         (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" f)) o
 
@@ -410,14 +410,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid e
         f x
 
-    | Mdetach (id, dk, _ty, fa) ->
-      let pp_dk fmt = function
-        | DK_option (_, src) -> pp_mterm fmt src
-        | DK_map (_, src, k) -> Format.fprintf fmt "%a in %a" pp_mterm k pp_mterm src
-      in
-      Format.fprintf fmt "detach %a from %a : %a"
+    | Mdetach (id, _ty, lv, q, fa) ->
+      let pp_q = pp_option (fun fmt x -> Format.fprintf fmt " ?? %a" pp_mterm x) in
+      Format.fprintf fmt "detach %a from %a %a: %a"
         pp_mid id
-        pp_dk dk
+        (pp_assign_kind f) lv
+        pp_q q
         f fa
 
     (* entrypoint *)

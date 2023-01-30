@@ -374,6 +374,12 @@ and access_value = {
 }
 [@@deriving show {with_path = false}]
 
+and assign_path =
+  | AP_ident of type_ * ident
+  | AP_tuple of assign_path * type_ * int * int
+  | AP_map   of assign_path * type_ * instruction
+[@@deriving show {with_path = false}]
+
 and instruction =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
@@ -406,7 +412,7 @@ and instruction =
   | Ireverse     of type_ * instruction
   | Imichelson   of instruction list * code * ident list
   | Iwildcard    of type_ * ident
-  | Ireplace     of ident * ident * klv * instruction
+  | Ireplace     of ident * assign_path * instruction * instruction
   | Ireadticket  of instruction
 [@@deriving show {with_path = false}]
 

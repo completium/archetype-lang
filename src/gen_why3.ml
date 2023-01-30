@@ -1820,7 +1820,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Memit (_e, _v) -> assert false
 
-    | Mdetach (_id, _v, _ty, _fa) -> assert false
+    | Mdetach (_id, _ty, _lv, _q, _fa) -> assert false
 
     (* entrypoint *)
 

@@ -1150,6 +1150,14 @@ let to_model (ast : A.ast) : M.model =
       let g = to_instruction env in
       let n : A.instruction_node = instr.node in
 
+      let to_ak (lv : A.lvalue) =
+        match lv with
+        | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar (M.mk_mident x))
+        | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(f o, to_mident rn, M.mk_mident fn) | _ -> M.Aasset (to_mident rn, M.mk_mident fn, f o))
+        | `Asset (an, k, fn) -> M.Aasset (to_mident an, M.mk_mident fn, f k)
+        | `Tuple (lv, i, l) -> M.Atuple (f lv, i, l)
+      in
+
       match n with
       | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
       | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
@@ -1185,13 +1193,6 @@ let to_model (ast : A.ast) : M.model =
       | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, M.mk_mident lid, g le, M.mk_mident rid, g re)
       | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, g hte, g ee)
       | A.Iassign (op, t, lv, e, fa) -> begin
-          let to_ak (lv : A.lvalue) =
-            match lv with
-            | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar (M.mk_mident x))
-            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(f o, to_mident rn, M.mk_mident fn) | _ -> M.Aasset (to_mident rn, M.mk_mident fn, f o))
-            | `Asset (an, k, fn) -> M.Aasset (to_mident an, M.mk_mident fn, f k)
-            | `Tuple (lv, i, l) -> M.Atuple (f lv, i, l)
-          in
           let e = f e in
           let t = type_to_type t in
           match fa with
@@ -1224,13 +1225,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Ilabel  i -> M.Mlabel (M.mk_mident i)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
-      | A.Idetach (id, dk, ty, fa) ->
-        let to_dk = function
-          | A.DK_option (ty, src) -> M.DK_option (type_to_type ty, f src)
-          | A.DK_map (ty, src, k) -> M.DK_map (type_to_type ty, f src, f k)
-        in
-        M.Mdetach (M.mk_mident id, to_dk dk, type_to_type ty, f fa)
-
+      | A.Idetach (id, ty, lv, q, fa) -> M.Mdetach (M.mk_mident id, type_to_type ty, to_ak lv, Option.map f q, f fa)
       | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 
       | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->

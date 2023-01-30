@@ -1027,6 +1027,16 @@ let replace_declvar_by_letin (model : model) : model =
   in
   let rec aux c (mt : mterm) : mterm =
     let bailout _ = raise (Error.Stop 5) in
+    let process_detach (id, ty, lv, q, fa) =
+      let dty, dr =
+        match get_ntype ty with
+        | Toption ty -> ty, mk_none ty
+        | Tmap (_kty, vty) -> vty, unit
+        | _ -> bailout ()
+      in
+      let r = match q with | Some v -> v | None -> dr in
+      process_declvar ([id], Some dty, LVreplace (lv, ty, r, fa)) []
+    in
     match mt.node with
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
@@ -1034,10 +1044,8 @@ let replace_declvar_by_letin (model : model) : model =
           | Mdeclvar (ids, t, v, _) ->
             let res =  process_declvar (ids, t, LVsimple (aux c v)) accu in
             [ res ]
-          | Mdetach (id, dk, tya, fa) ->
-            let src = match dk with | DK_option (_, src) -> src | DK_map (_, src, _) -> src in
-            let va = match src.node with | Mvar (id, _, _, _) -> id | _ -> bailout() in
-            let res = process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) accu in
+          | Mdetach (id, ty, lv, q, fa) ->
+            let res = process_detach (id, ty, lv, q, fa) in
             [ res ]
           | _ ->
             begin
@@ -1047,11 +1055,7 @@ let replace_declvar_by_letin (model : model) : model =
         ) l [] in
       { mt with node = Mseq ll }
     | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, LVsimple (aux c v)) []
-    | Mdetach (id, dk, tya, fa) -> begin
-        let src = match dk with | DK_option (_, src) -> src | DK_map (_, src, _) -> src in
-        let va = match src.node with | Mvar (id, _, _, _) -> id | _ -> bailout() in
-        process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) []
-      end
+    | Mdetach (id, ty, lv, q, fa) -> process_detach (id, ty, lv, q, fa)
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -2103,7 +2107,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
         mk_mterm (Mmin(a, b)) (process_type t)
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
-          node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (id, k, fa) -> LVreplace (id, k, aux fa)), Option.map process_type t, aux body, Option.map aux o)
+          node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (lv, ty, r, fa) -> LVreplace (lv, ty, aux r, aux fa)), Option.map process_type t, aux body, Option.map aux o)
         }
       | Mdeclvar (ids, t, v, c), _ ->
         { mt with
@@ -2497,7 +2501,11 @@ let extract_term_from_instruction f (model : model) : model =
     (* lambda *)
 
     | Mletin (i, a, t, b, o) ->
-      let ae, aa = match a with | LVsimple a -> let e, a = f a in (LVsimple e, a) | LVreplace (id, k, fa) -> let e, a = f fa in (LVreplace (id, k, e), a) in
+      let ae, aa = match a with | LVsimple a -> let e, a = f a in (LVsimple e, a) | LVreplace (lv, ty, r, fa) -> begin
+          let re, ra = f r in
+          let fae, faa = f fa in
+          (LVreplace (lv, ty, re, fae), ra @ faa)
+        end in
       let be = aux ctx b in
       let oe = Option.map (aux ctx) o in
       process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa

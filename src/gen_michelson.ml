@@ -712,13 +712,22 @@ let to_ir (model : M.model) : T.ir =
     (* lambda *)
 
     | Mletin ([id], v, _, b, _) -> begin
-        let to_dk = function
-          | M.DK_option (ty, _) -> T.KLVoption (ft ty)
-          | M.DK_map (kt, _, k) -> T.KLVmap (ft kt, f k)
-        in
         let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
 
-        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, dk, fa) -> T.Ireplace(M.unloc_mident id, M.unloc_mident idv, to_dk dk, f fa) in
+        let v = begin
+          match v with
+          | M.LVsimple v -> f v
+          | M.LVreplace (lv, ty, r, fa) -> begin
+              match lv with
+              | Avar id
+              | Avarstore id -> T.Ireplace(M.unloc_mident id, T.AP_ident (ft ty, M.unloc_mident id), f r, f fa)
+              | _ -> assert false
+              (* match ty with
+                 | _ -> ;
+                 T.Ireplace(M.unloc_mident id, M.unloc_mident idv, to_lv lv, f fa) *)
+            end
+        end
+        in
         T.IletIn (M.unloc_mident id, v, f b, is_unit)
       end
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
@@ -2433,20 +2442,24 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cpush (ty, data), inc_env env
     end
 
-  | Ireplace (id, v, k, fa) -> begin
+  | Ireplace (id, ap, r, fa) -> begin
       (* print_env ~str:"Ireplace before" env; *)
-      let n = get_sp_for_id env v in
       let a, _ = fe (inc_env env) fa in
       let nenv = add_var_env env id in
       (* print_env ~str:"Ireplace after" nenv; *)
-      let b =
-        match k with
-        | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
-        | KLVmap (ty, k) -> begin
-            let k, _ = fe (inc_env env) k in
-            [T.cnone ty; k; T.cget_and_update; T.cifnone ([T.cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); T.cfailwith], [])]
+      let v, b =
+        match ap with
+        | AP_ident (_ty, id) -> begin
+            let r, _ = fe (inc_env env) r in
+            id, [T.cifnone ([a; T.cfailwith], [r; T.cswap])]
           end
+        | AP_map (AP_ident (_, id), ty, k)-> begin
+            let k, _ = fe (inc_env env) k in
+            id, [T.cnone ty; k; T.cget_and_update; T.cifnone ([T.cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); T.cfailwith], [])]
+          end
+        | _ -> assert false
       in
+      let n = get_sp_for_id env v in
       let nenv = populate_env nenv v in
       T.cseq ([T.cdig n] @ b @ [(if n = 0 then T.cseq [] else T.cdip (1, [T.cdug n]))]), nenv
     end
