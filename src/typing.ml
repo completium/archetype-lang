@@ -5740,7 +5740,7 @@ let rec for_instruction_r
               match v.node with
               | A.Pcall(None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
                   (match m with
-                   | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some (A.Tmap(_, (Tticket _ as tty))); _} -> begin
+                   | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty))); _} -> begin
                        A.DK_map (tty, unloc id, k), tty
                      end
                    | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))

@@ -1160,6 +1160,12 @@ import * as test_var from '../bindings/passed/test_var'
 import * as test_voting from '../bindings/passed/test_voting'
 import * as ticket_create_ticket from '../bindings/passed/ticket_create_ticket'
 import * as ticket_create_ticket_list_prepend from '../bindings/passed/ticket_create_ticket_list_prepend'
+import * as ticket_detach_big_map from '../bindings/passed/ticket_detach_big_map'
+import * as ticket_detach_big_map_record from '../bindings/passed/ticket_detach_big_map_record'
+import * as ticket_detach_big_map_tuple from '../bindings/passed/ticket_detach_big_map_tuple'
+import * as ticket_detach_map from '../bindings/passed/ticket_detach_map'
+import * as ticket_detach_map_record from '../bindings/passed/ticket_detach_map_record'
+import * as ticket_detach_map_tuple from '../bindings/passed/ticket_detach_map_tuple'
 import * as ticket_detach_option from '../bindings/passed/ticket_detach_option'
 import * as ticket_fun_join_tickets from '../bindings/passed/ticket_fun_join_tickets'
 import * as ticket_fun_split_ticket from '../bindings/passed/ticket_fun_split_ticket'
@@ -9237,7 +9243,128 @@ describe('passed', async () => {
 
   it('ticket_create_ticket_list_prepend', async () => {
     await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.deploy({ as: alice })
-    // TODO
+    const res_before = await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.get_res();
+    assert(res_before.length == 0)
+    await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.exec({ as: alice })
+    const res_after = await ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.get_res();
+    assert(res_after.length == 1)
+    assert(res_after[0].equals(new Ticket<string>(ticket_create_ticket_list_prepend.ticket_create_ticket_list_prepend.get_address(), "mystr", new Nat(10))))
+  })
+
+  it('ticket_detach_big_map', async () => {
+    await ticket_detach_big_map.ticket_detach_big_map.deploy({ as: alice })
+    const input_before = await ticket_detach_big_map.ticket_detach_big_map.get_input_value(new Nat(0));
+    assert(input_before === undefined)
+    const output_before = await ticket_detach_big_map.ticket_detach_big_map.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_big_map.ticket_detach_big_map.init({ as: alice })
+    const input_init = await ticket_detach_big_map.ticket_detach_big_map.get_input_value(new Nat(0));
+    assert(input_init?.equals(new Ticket<string>(ticket_detach_big_map.ticket_detach_big_map.get_address(), "info", new Nat(1))))
+    const output_init = await ticket_detach_big_map.ticket_detach_big_map.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_big_map.ticket_detach_big_map.exec({ as: alice })
+    const input_after = await ticket_detach_big_map.ticket_detach_big_map.get_input_value(new Nat(0));
+    assert(input_after == undefined)
+    const output_after = await ticket_detach_big_map.ticket_detach_big_map.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_big_map.ticket_detach_big_map.get_address(), "info", new Nat(1)))))
+  })
+
+  it('ticket_detach_big_map_record', async () => {
+    await ticket_detach_big_map_record.ticket_detach_big_map_record.deploy({ as: alice })
+    const input_before = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_input_value(new Nat(0));
+    assert(input_before === undefined)
+    const output_before = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_big_map_record.ticket_detach_big_map_record.init({ as: alice })
+    const input_init = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_input_value(new Nat(0));
+    assert(input_init?.equals(new ticket_detach_big_map_record.my_record("mystr", new Ticket<string>(ticket_detach_big_map_record.ticket_detach_big_map_record.get_address(), "info", new Nat(1)))))
+    const output_init = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_big_map_record.ticket_detach_big_map_record.exec({ as: alice })
+    const input_after = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_input_value(new Nat(0));
+    assert(input_after == undefined)
+    const output_after = await ticket_detach_big_map_record.ticket_detach_big_map_record.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_big_map_record.ticket_detach_big_map_record.get_address(), "info", new Nat(1)))))
+  })
+
+  it('ticket_detach_big_map_tuple', async () => {
+    await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.deploy({ as: alice })
+    const input_before = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_input_value(new Nat(0));
+    assert(input_before === undefined)
+    const output_before = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.init({ as: alice })
+    const input_init = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_input_value(new Nat(0));
+    assert(input_init && input_init[0] == "mystr")
+    assert(input_init && input_init[1].equals(new Ticket<string>(ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_address(), "info", new Nat(1))))
+    const output_init = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.exec({ as: alice })
+    const input_after = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_input_value(new Nat(0));
+    assert(input_after == undefined)
+    const output_after = await ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_big_map_tuple.ticket_detach_big_map_tuple.get_address(), "info", new Nat(1)))))
+  })
+
+  it('ticket_detach_map', async () => {
+    await ticket_detach_map.ticket_detach_map.deploy({ as: alice })
+    const input_before = await ticket_detach_map.ticket_detach_map.get_input();
+    assert(input_before.length == 0)
+    const output_before = await ticket_detach_map.ticket_detach_map.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_map.ticket_detach_map.init({ as: alice })
+    const input_init = await ticket_detach_map.ticket_detach_map.get_input();
+    assert(input_init.length == 1)
+    assert(input_init[0][0].equals(new Nat(0)))
+    assert(input_init[0][1].equals(new Ticket<string>(ticket_detach_map.ticket_detach_map.get_address(), "info", new Nat(1))))
+    const output_init = await ticket_detach_map.ticket_detach_map.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_map.ticket_detach_map.exec({ as: alice })
+    const input_after = await ticket_detach_map.ticket_detach_map.get_input();
+    assert(input_after.length == 0)
+    const output_after = await ticket_detach_map.ticket_detach_map.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_map.ticket_detach_map.get_address(), "info", new Nat(1)))))
+  })
+
+  it('ticket_detach_map_record', async () => {
+    await ticket_detach_map_record.ticket_detach_map_record.deploy({ as: alice })
+    const input_before = await ticket_detach_map_record.ticket_detach_map_record.get_input();
+    assert(input_before.length == 0)
+    const output_before = await ticket_detach_map_record.ticket_detach_map_record.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_map_record.ticket_detach_map_record.init({ as: alice })
+    const input_init = await ticket_detach_map_record.ticket_detach_map_record.get_input();
+    assert(input_init.length == 1)
+    assert(input_init[0][0].equals(new Nat(0)))
+    assert(input_init[0][1].equals(new ticket_detach_map_record.my_record("mystr", new Ticket<string>(ticket_detach_map_record.ticket_detach_map_record.get_address(), "info", new Nat(1)))))
+    const output_init = await ticket_detach_map_record.ticket_detach_map_record.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_map_record.ticket_detach_map_record.exec({ as: alice })
+    const input_after = await ticket_detach_map_record.ticket_detach_map_record.get_input();
+    assert(input_after.length == 0)
+    const output_after = await ticket_detach_map_record.ticket_detach_map_record.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_map_record.ticket_detach_map_record.get_address(), "info", new Nat(1)))))
+  })
+
+  it('ticket_detach_map_tuple', async () => {
+    await ticket_detach_map_tuple.ticket_detach_map_tuple.deploy({ as: alice })
+    const input_before = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_input();
+    assert(input_before.length == 0)
+    const output_before = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_output();
+    assert(output_before.equals(Option.None()))
+    await ticket_detach_map_tuple.ticket_detach_map_tuple.init({ as: alice })
+    const input_init = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_input();
+    assert(input_init.length == 1)
+    assert(input_init[0][0].equals(new Nat(0)))
+    assert(input_init[0][1][0] == "mystr")
+    assert(input_init[0][1][1].equals(new Ticket<string>(ticket_detach_map_tuple.ticket_detach_map_tuple.get_address(), "info", new Nat(1))))
+    const output_init = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_output();
+    assert(output_init.equals(Option.None()))
+    await ticket_detach_map_tuple.ticket_detach_map_tuple.exec({ as: alice })
+    const input_after = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_input();
+    assert(input_after.length == 0)
+    const output_after = await ticket_detach_map_tuple.ticket_detach_map_tuple.get_output();
+    assert(output_after.equals(Option.Some(new Ticket<string>(ticket_detach_map_tuple.ticket_detach_map_tuple.get_address(), "info", new Nat(1)))))
   })
 
   it('ticket_detach_option', async () => {

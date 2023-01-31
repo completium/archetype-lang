@@ -1,0 +1,32 @@
+{ storage (pair (map %input nat (ticket string)) (option %output (ticket string))) ;
+  parameter (or (unit %init) (unit %exec)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         IF_LEFT
+           { DROP 1 ;
+             PUSH nat 1 ;
+             PUSH string "info" ;
+             TICKET ;
+             IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+             EMPTY_MAP nat (ticket string) ;
+             SWAP ;
+             SOME ;
+             PUSH nat 0 ;
+             UPDATE ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             PAIR ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             NONE (ticket string) ;
+             PUSH nat 0 ;
+             GET_AND_UPDATE ;
+             IF_NONE { PUSH string "KEY_NOT_FOUND" ; FAILWITH } {} ;
+             SOME ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
+             NIL operation ;
+             PAIR } } }

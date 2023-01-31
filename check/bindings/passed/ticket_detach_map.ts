@@ -1,9 +1,12 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
+const init_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
+}
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
-export class Ticket_create_ticket_list_prepend {
+export class Ticket_detach_map {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
@@ -21,12 +24,24 @@ export class Ticket_create_ticket_list_prepend {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("../tests/passed/ticket_create_ticket_list_prepend.arl", {}, params)).address;
+        const address = (await ex.deploy("../tests/passed/ticket_detach_map.arl", {}, params)).address;
         this.address = address;
+    }
+    async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "init", init_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
     }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_init_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "init", init_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -36,10 +51,20 @@ export class Ticket_create_ticket_list_prepend {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<Array<att.Ticket<string>>> {
+    async get_input(): Promise<Array<[
+        att.Nat,
+        att.Ticket<string>
+    ]>> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_list(storage, x => { return att.Ticket.from_mich(x, x => { return att.mich_to_string(x); }); });
+            return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Nat.from_mich(x), att.Ticket.from_mich(y, x => { return att.mich_to_string(x); })]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_output(): Promise<att.Option<att.Ticket<string>>> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Option.from_mich((storage as att.Mpair).args[1], x => { return att.Ticket.from_mich(x, x => { return att.mich_to_string(x); }); });
         }
         throw new Error("Contract not initialised");
     }
@@ -47,4 +72,4 @@ export class Ticket_create_ticket_list_prepend {
         ERROR: att.string_to_mich("\"ERROR\"")
     };
 }
-export const ticket_create_ticket_list_prepend = new Ticket_create_ticket_list_prepend();
+export const ticket_detach_map = new Ticket_detach_map();

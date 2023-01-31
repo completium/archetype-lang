@@ -1,12 +1,10 @@
-{ storage unit ;
+{ storage (list (ticket string)) ;
   parameter (unit %exec) ;
   code { CDR ;
-         NIL (ticket string) ;
          PUSH nat 10 ;
          PUSH string "mystr" ;
          TICKET ;
          IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
          CONS ;
-         DROP 1 ;
          NIL operation ;
          PAIR } }

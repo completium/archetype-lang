@@ -1,5 +1,10 @@
 archetype ticket_detach_map_record
 
+record my_record {
+  v : string;
+  t : ticket<string>
+}
+
 variable input : map<nat, my_record> = []
 
 variable output : option<ticket<string>> = none<ticket<string>>
@@ -10,6 +15,6 @@ entry init() {
 }
 
 entry exec() {
-  detach dt from m[0].t : "ERROR";
-  output := some(dt)
+  detach dt from input[0] : "ERROR";
+  output := some(dt.t)
 }
