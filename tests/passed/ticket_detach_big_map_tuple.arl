@@ -6,7 +6,7 @@ variable output : option<ticket<string>> = none<ticket<string>>
 
 entry init() {
   const nt ?= create_ticket("info", 1) : "ERROR";
-  input := [(0, ("mystr", nt))];
+  input.put(0, ("mystr", nt));
 }
 
 entry exec() {
