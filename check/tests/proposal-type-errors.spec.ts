@@ -109,9 +109,5 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/record_not_comparable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('ticket_get_map', async () => {
-    const stat = compile("../tests/proposal-type-errors/ticket_get_map.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
 })
   

@@ -521,14 +521,8 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt tr
 
-  | Edetach (id, x, k, q, f) ->
-      let pp_qq fmt x = Format.fprintf fmt " ?? %a" pp_simple_expr x in
-      let pp_value fmt (x, k) =
-      match k with
-      | Some k -> Format.fprintf fmt "%a in %a" pp_simple_expr k pp_simple_expr x
-      | None -> pp_simple_expr fmt x
-      in
-      Format.fprintf fmt "detach %a from %a %a: %a" pp_id id pp_value (x, k) (pp_option pp_qq) q pp_simple_expr f
+  | Edetach (id, x, f) ->
+      Format.fprintf fmt "detach %a from %a : %a" pp_id id pp_simple_expr x pp_simple_expr f
 
   | Edorequire (x, y) ->
 

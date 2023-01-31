@@ -1026,7 +1026,6 @@ let replace_declvar_by_letin (model : model) : model =
     end
   in
   let rec aux c (mt : mterm) : mterm =
-    let bailout _ = raise (Error.Stop 5) in
     match mt.node with
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
@@ -1035,8 +1034,7 @@ let replace_declvar_by_letin (model : model) : model =
             let res =  process_declvar (ids, t, LVsimple (aux c v)) accu in
             [ res ]
           | Mdetach (id, dk, tya, fa) ->
-            let src = match dk with | DK_option (_, src) -> src | DK_map (_, src, _) -> src in
-            let va = match src.node with | Mvar (id, _, _, _) -> id | _ -> bailout() in
+            let va = match dk with | DK_option (_, id) -> mk_mident (dumloc id) | DK_map (_, id, _) -> mk_mident (dumloc id) in
             let res = process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) accu in
             [ res ]
           | _ ->
@@ -1048,8 +1046,7 @@ let replace_declvar_by_letin (model : model) : model =
       { mt with node = Mseq ll }
     | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, LVsimple (aux c v)) []
     | Mdetach (id, dk, tya, fa) -> begin
-        let src = match dk with | DK_option (_, src) -> src | DK_map (_, src, _) -> src in
-        let va = match src.node with | Mvar (id, _, _, _) -> id | _ -> bailout() in
+        let va = match dk with | DK_option (_, id) -> mk_mident (dumloc id) | DK_map (_, id, _) -> mk_mident (dumloc id) in
         process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) []
       end
     | _ -> map_mterm (aux c) mt
