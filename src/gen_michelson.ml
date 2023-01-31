@@ -2031,14 +2031,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       then begin
         if av.av_value_no_dup
         then begin
-          let nenv = dig_env env av.av_ident in
-          if n == 0
-          then begin
-            T.cseq [], nenv
-          end
-          else begin
-            T.cseq ([T.cdig n]), nenv
-          end
+          let p = List.map (fun ai -> T.cget_n (compute_path_n ai)) av.av_path in
+          let nenv = dig_env env av.av_ident |> dec_env |> inc_env in
+          T.cseq ((if n == 0 then [T.cdig n] else []) @ p), nenv
         end
         else begin
           let c =
