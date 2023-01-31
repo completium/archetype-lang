@@ -1192,6 +1192,7 @@ import * as ticket_record_list_var_3_1 from '../bindings/passed/ticket_record_li
 import * as ticket_record_list_var_3_2 from '../bindings/passed/ticket_record_list_var_3_2'
 import * as ticket_store_map from '../bindings/passed/ticket_store_map'
 import * as ticket_store_option from '../bindings/passed/ticket_store_option'
+import * as ticket_var_detach_option from '../bindings/passed/ticket_var_detach_option'
 import * as ticket_var_list from '../bindings/passed/ticket_var_list'
 import * as ticket_var_option from '../bindings/passed/ticket_var_option'
 import * as ticket_var_or_left from '../bindings/passed/ticket_var_or_left'
@@ -9658,6 +9659,15 @@ describe('passed', async () => {
     assert(ot_after.equals(Option.None()));
     const info_after = await ticket_store_option.ticket_store_option.get_info()
     assert(info_after.equals(Option.Some([ticket_store_option.ticket_store_option.get_address(), "info", new Nat(1)])));
+  })
+
+  it('ticket_var_detach_option', async () => {
+    await ticket_var_detach_option.ticket_var_detach_option.deploy({ as: alice })
+    const info_before = await ticket_var_detach_option.ticket_var_detach_option.get_info()
+    assert(info_before.equals(Option.None()));
+    await ticket_var_detach_option.ticket_var_detach_option.exec({as: alice})
+    const info_after = await ticket_var_detach_option.ticket_var_detach_option.get_info()
+    assert(info_after.equals(Option.Some([ticket_var_detach_option.ticket_var_detach_option.get_address(), "info", new Nat(1)])));
   })
 
   it('ticket_var_list', async () => {
