@@ -6,9 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+  - Ticket support (beta)
   - Add `simplify_rational`, `get_numerator` and `get_denominator` builtin functions
   - Add `bytes_to_nat` and `nat_to_bytes` util functions
   - Add `head` and `tail` functions for list
+### Removed
+  - Comment of michelson storage in michelson output
+### Changed
+  - Output of michelson
+  - Improve michelson generation code
+### Fixed
+  - Complex type of contract interface for bindings
 
 ## [1.4.0] - 2022-12-06
 ### Added
