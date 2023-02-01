@@ -15,7 +15,7 @@ export class import_ticket_param implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): import_ticket_param {
-        return new import_ticket_param(att.Address.from_mich((input as att.Mpair).args[0]), att.Ticket.from_mich(att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 4)), x => { return (p => {
+        return new import_ticket_param(att.Address.from_mich((input as att.Mpair).args[0]), att.Ticket.from_mich((input as att.Mpair).args[1], x => { return (p => {
             return [att.Nat.from_mich((p as att.Mpair).args[0]), att.Option.from_mich((p as att.Mpair).args[1], x => { return att.Bytes.from_mich(x); })];
         })(x); }));
     }

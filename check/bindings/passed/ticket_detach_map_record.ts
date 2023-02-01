@@ -12,7 +12,7 @@ export class my_record implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): my_record {
-        return new my_record(att.mich_to_string((input as att.Mpair).args[0]), att.Ticket.from_mich(att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 4)), x => { return att.mich_to_string(x); }));
+        return new my_record(att.mich_to_string((input as att.Mpair).args[0]), att.Ticket.from_mich((input as att.Mpair).args[1], x => { return att.mich_to_string(x); }));
     }
 }
 export const my_record_mich_type: att.MichelineType = att.pair_array_to_mich_type([

@@ -43,7 +43,7 @@ export class Ticket_fun_split_ticket {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.Option.from_mich(storage, x => { return (p => {
-                return [att.Ticket.from_mich((p as att.Mpair).args[0], x => { return att.mich_to_string(x); }), att.Ticket.from_mich(att.pair_to_mich((p as att.Mpair as att.Mpair).args.slice(1, 4)), x => { return att.mich_to_string(x); })];
+                return [att.Ticket.from_mich((p as att.Mpair).args[0], x => { return att.mich_to_string(x); }), att.Ticket.from_mich((p as att.Mpair).args[1], x => { return att.mich_to_string(x); })];
             })(x); });
         }
         throw new Error("Contract not initialised");

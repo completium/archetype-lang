@@ -60,7 +60,7 @@ export class Ticket_detach_big_map_tuple {
             const data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair).args[0]).toString()), key.to_mich(), att.prim_annot_to_mich_type("nat", []));
             if (data != undefined) {
                 return (p => {
-                    return [att.mich_to_string((p as att.Mpair).args[0]), att.Ticket.from_mich(att.pair_to_mich((p as att.Mpair as att.Mpair).args.slice(1, 4)), x => { return att.mich_to_string(x); })];
+                    return [att.mich_to_string((p as att.Mpair).args[0]), att.Ticket.from_mich((p as att.Mpair).args[1], x => { return att.mich_to_string(x); })];
                 })(data);
             }
             else {

@@ -61,7 +61,7 @@ export class Ticket_detach_map_tuple {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Nat.from_mich(x), (p => {
-                    return [att.mich_to_string((p as att.Mpair).args[0]), att.Ticket.from_mich(att.pair_to_mich((p as att.Mpair as att.Mpair).args.slice(1, 4)), x => { return att.mich_to_string(x); })];
+                    return [att.mich_to_string((p as att.Mpair).args[0]), att.Ticket.from_mich((p as att.Mpair).args[1], x => { return att.mich_to_string(x); })];
                 })(y)]);
         }
         throw new Error("Contract not initialised");
