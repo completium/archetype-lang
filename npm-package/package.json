@@ -1,6 +1,6 @@
 {
   "name": "@completium/archetype",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "Archetype is a general purpose language to develop Smart Contracts on the Tezos blockchain.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
