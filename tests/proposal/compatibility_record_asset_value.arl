@@ -1,0 +1,21 @@
+archetype compatibility_record_asset_value
+
+asset my_asset {
+  a : bytes;
+  b : nat;
+  c : string;
+} initialized with {
+  {0x; 1; "mystr"}
+}
+
+record my_record {
+  x : nat;
+  y : string;
+}
+
+variable v : my_record = {0; ""}
+
+entry exec () {
+  const av : asset_value<my_asset> ?= my_asset[0x] : "ERROR";
+  v := av
+}

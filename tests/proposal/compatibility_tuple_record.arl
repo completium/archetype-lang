@@ -1,0 +1,13 @@
+archetype compatibility_tuple_record
+
+record my_record {
+  x : nat;
+  y : string;
+}
+
+variable my_tuple : (nat * string) = (0, "")
+
+entry exec () {
+  const v : my_record = {1; "mystr"}
+  my_tuple := v
+}

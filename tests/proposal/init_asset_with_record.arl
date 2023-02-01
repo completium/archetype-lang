@@ -1,0 +1,13 @@
+archetype init_asset_with_record
+
+record my_record {
+  x : nat;
+  y : string;
+}
+
+asset my_asset {
+  k : int;
+  r : my_record;
+} initialized with {
+  {0i; {x = 0; y = "mystr"}}
+}

@@ -1,0 +1,9 @@
+archetype event_storable
+
+event my_event {
+  x : nat;
+  y : string;
+}
+
+variable v : my_event = {x = 0; y = "mystr"}
+

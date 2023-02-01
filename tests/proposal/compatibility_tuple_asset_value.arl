@@ -1,0 +1,16 @@
+archetype compatibility_tuple_asset_value
+
+asset my_asset {
+  a : bytes;
+  b : nat;
+  c : string;
+} initialized with {
+  {0x; 1; "mystr"}
+}
+
+variable my_tuple : (nat * string) = (0, "")
+
+entry exec () {
+  const av : asset_value<my_asset> ?= my_asset[0x] : "ERROR";
+  my_tuple := av
+}
