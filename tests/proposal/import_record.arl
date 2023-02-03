@@ -1,4 +1,4 @@
-archetype import_contract
+archetype import_record
 
 import my_contract from "./tests/proposal/import_decl.arl"
 
@@ -7,6 +7,6 @@ variable res : my_contract::my_record = my_contract::{ n = 0; s = ::myc }
 variable myc : nat = 2
 
 entry exec () {
-  const r : my_contract::my_record = import_decl::{ n = myc; s = "mystr" };
+  const r : my_contract::my_record = my_contract::{ n = myc; s = "mystr" };
   res := r
 }
