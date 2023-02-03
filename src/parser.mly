@@ -23,7 +23,6 @@
 %}
 
 %token ACCEPT_TRANSFER
-%token ADDED
 %token ADDRESS_TO_CONTRACT
 %token AGGREGATE
 %token AMPEQUAL
@@ -37,8 +36,6 @@
 %token ASSET_KEY
 %token ASSET_VALUE
 %token ASSET_VIEW
-%token AT
-%token BEFORE
 %token BEGIN
 %token BIG_MAP
 %token BY
@@ -71,14 +68,12 @@
 %token EQUAL
 %token EQUIV
 %token EVENT
-%token EXISTS
 %token FAIL
 %token FAIL_IF
 %token FAILSOME
 %token FALSE
 %token FOLD
 %token FOR
-%token FORALL
 %token FROM
 %token FUNCTION
 %token GETTER
@@ -145,7 +140,6 @@
 %token RBRACKET
 %token RECORD
 %token REQUIRE_ENTRYPOINT
-%token REMOVED
 %token REQUIRE
 %token RETURN
 %token RIGHT
@@ -171,7 +165,6 @@
 %token TYPE
 %token UNDERSCORE
 %token UNIT
-%token UNMOVED
 %token UNPACK
 %token VAR
 %token VARIABLE
@@ -205,7 +198,7 @@
 
 %nonassoc IN
 
-%left COMMA SEMI_COLON
+%left SEMI_COLON
 
 %right OTHERWISE
 %right THEN ELSE
@@ -732,12 +725,6 @@ pname:
 %inline expr:
  | e=loc(expr_r) { e }
 
-%inline ident_typ_q_item:
- | LPAREN ids=ident+ t=quant_kind RPAREN { List.map (fun x -> (x, t)) ids }
-
-ident_typ_q:
- | xs=ident_typ_q_item+ { List.flatten xs }
-
 %inline colon_type_opt:
 |                { None }
 | COLON t=type_s { Some t }
@@ -779,16 +766,6 @@ expr_r:
 
  | c=expr QUESTION x=expr COLON y=expr %prec prec_tern
      { Eternary (c, x, y) }
-
- | q=quantifier id=ident t=quant_kind COMMA y=expr
-     { Equantifier (q, id, t, y) }
-
- | q=quantifier xs=ident_typ_q COMMA y=expr
-    {
-      (List.fold_right (fun (i, t) acc ->
-           let l = loc i in
-           mkloc l (Equantifier (q, i, t, acc))) xs y) |> unloc
-    }
 
  | LET SOME i=ident t=colon_type_opt EQUAL e=expr IN y=expr OTHERWISE o=expr
      { Eletin (i, t, e, y, Some o) }
@@ -951,8 +928,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | s=scope vt=vt x=ident
-     { Eterm (vt, (s, x)) }
+ | s=scope x=ident
+     { Eterm (s, x) }
 
  | SOME x=paren(simple_expr)
      { Eoption (OSome x) }
@@ -1026,42 +1003,21 @@ simple_expr_r:
  | BEGIN x=block_r END
      { x }
 
-%inline vt_vset:
-| ADDED   { (VSAdded   : var_vset) }
-| UNMOVED { (VSUnmoved : var_vset) }
-| REMOVED { (VSRemoved : var_vset) }
-
-%inline vt_lbl:
-| BEFORE
-   { VLBefore }
-
-| AT LPAREN l=ident RPAREN
-   { VLIdent l }
-
-%inline vt:
-| vset=ioption(postfix(vt_vset, DOT))
-   lbl=ioption(postfix(vt_lbl , DOT))
-   { (vset, lbl) }
-
-%inline quant_kind:
-| COLON t=type_s      { Qtype t }
-| IN    e=simple_expr { Qcollection e }
-
 literal:
- | x=NUMBERINT      { Lint            x }
- | x=NUMBERNAT      { Lnat            x }
- | x=DECIMAL        { Ldecimal        x }
- | x=TZ             { Ltz             x }
- | x=MTZ            { Lmtz            x }
- | x=UTZ            { Lutz            x }
- | x=STRING         { Lstring         x }
- | x=ADDRESS        { Laddress        x }
+ | x=NUMBERINT            { Lint            x }
+ | x=NUMBERNAT            { Lnat            x }
+ | x=DECIMAL              { Ldecimal        x }
+ | x=TZ                   { Ltz             x }
+ | x=MTZ                  { Lmtz            x }
+ | x=UTZ                  { Lutz            x }
+ | x=STRING               { Lstring         x }
+ | x=ADDRESS              { Laddress        x }
  | x=TX_ROLLUP_L2_ADDRESS { Ltx_rollup_l2_address x }
- | x=bool_value     { Lbool           x }
- | x=DURATION       { Lduration       x }
- | x=DATE           { Ldate           x }
- | x=BYTES          { Lbytes          x }
- | x=PERCENT_LIT    { Lpercent        x }
+ | x=bool_value           { Lbool           x }
+ | x=DURATION             { Lduration       x }
+ | x=DATE                 { Ldate           x }
+ | x=BYTES                { Lbytes          x }
+ | x=PERCENT_LIT          { Lpercent        x }
 
 %inline bool_value:
  | TRUE  { true }
@@ -1074,10 +1030,6 @@ record_item:
 
 recupdate_item:
  | id=ident EQUAL e=simple_expr { (id, e) }
-
-%inline quantifier:
- | FORALL { Forall }
- | EXISTS { Exists }
 
 %inline logical_operator:
  | AND   { And }

@@ -1534,19 +1534,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | M.OrAssign    -> A.OrAssign
   in
 
-  let for_temp = function
-    | M.Tbefore -> Some (A.VLBefore)
-    | M.Tat lbl -> Some (A.VLIdent (dumloc lbl))
-    | M.Tnone   -> None
-  in
-
-  let for_delta = function
-    | M.Dadded   -> Some (A.VSAdded)
-    | M.Dremoved -> Some (A.VSRemoved)
-    | M.Dunmoved -> Some (A.VSUnmoved)
-    | M.Dnone    -> None
-  in
-
   let rec for_expr (mt : M.mterm) : A.expr =
     let f = for_expr in
     match mt.node with
@@ -1913,16 +1900,16 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* variable *)
 
     | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
-    | Mvar(v, Vstorevar, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vstorecol, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vstorevar, _t, _d)         -> A.eterm (snd v)
+    | Mvar(v, Vstorecol, _t, _d)         -> A.eterm (snd v)
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
-    | Mvar(v, Vlocal, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vparam, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vlocal, _t, _d)            -> A.eterm (snd v)
+    | Mvar(v, Vparam, _t, _d)            -> A.eterm (snd v)
     | Mvar(_v, Vfield, _t, _d)           -> assert false
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
-    | Mvar(v, Vparameter, t, d)          -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Menumval (id, args, _e)             -> begin
+    | Mvar(v, Vparameter, _t, _d)        -> A.eterm (snd v)
+    | Menumval (id, args, _e)            -> begin
         match args with
         | [] -> A.eterm (snd id)
         | _  -> A.eapp (A.Fident (snd id)) []

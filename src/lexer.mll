@@ -18,7 +18,6 @@
 
   let keywords_ =
     [
-      "added"               , ADDED               ;
       "address_to_contract" , ADDRESS_TO_CONTRACT ;
       "aggregate"           , AGGREGATE           ;
       "and"                 , AND                 ;
@@ -31,8 +30,6 @@
       "asset_key"           , ASSET_KEY           ;
       "asset_value"         , ASSET_VALUE         ;
       "asset_view"          , ASSET_VIEW          ;
-      "at"                  , AT                  ;
-      "before"              , BEFORE              ;
       "begin"               , BEGIN               ;
       "big_map"             , BIG_MAP             ;
       "by"                  , BY                  ;
@@ -56,13 +53,11 @@
       "get_entrypoint"      , GET_ENTRYPOINT      ;
       "enum"                , ENUM                ;
       "event"               , EVENT               ;
-      "exists"              , EXISTS              ;
       "fail"                , FAIL                ;
       "fail_some"           , FAILSOME            ;
       "false"               , FALSE               ;
       "fold"                , FOLD                ;
       "for"                 , FOR                 ;
-      "forall"              , FORALL              ;
       "from"                , FROM                ;
       "function"            , FUNCTION            ;
       "getter"              , GETTER              ;
@@ -100,7 +95,6 @@
       "partition"           , PARTITION           ;
       "record"              , RECORD              ;
       "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;
-      "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
       "return"              , RETURN              ;
       "right"               , RIGHT               ;
@@ -119,7 +113,6 @@
       "transition"          , TRANSITION          ;
       "true"                , TRUE                ;
       "type"                , TYPE                ;
-      "unmoved"             , UNMOVED             ;
       "unpack"              , UNPACK              ;
       "Unit"                , UNIT                ;
       "var"                 , VAR                 ;

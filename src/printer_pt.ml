@@ -279,14 +279,6 @@ let pp_assignment_operator_record fmt op =
 let pp_assignment_operator_expr fmt op =
   Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
 
-let quantifier_to_str op =
-  match op with
-  | Forall -> "forall"
-  | Exists -> "exists"
-
-let pp_quantifier fmt op =
-  Format.fprintf fmt "%s" (quantifier_to_str op)
-
 let pp_pname fmt op =
   let x =
     match op with
@@ -337,26 +329,9 @@ let string_of_scope (s : scope) =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm ((vset, lbl), (scope, id)) ->
-    let pp_label fmt lbl =
-      let s =
-        match lbl with
-        | VLBefore   -> "before"
-        | VLIdent  x -> Format.asprintf "at(%a)" pp_id x
-      in Format.fprintf fmt "%s." s in
-
-    let pp_vset fmt vset =
-      let s =
-        match vset with
-        | VSAdded   -> "added"
-        | VSUnmoved -> "unmoved"
-        | VSRemoved -> "removed"
-      in Format.fprintf fmt "%s." s in
-
-    Format.fprintf fmt "%a%a%a%a"
+  | Eterm (scope, id) ->
+    Format.fprintf fmt "%a%a"
       pp_id_scope scope
-      (pp_option pp_vset ) vset
-      (pp_option pp_label) lbl
       pp_id id
 
   | Eliteral x ->
@@ -779,24 +754,6 @@ let rec pp_expr outer pos fmt a =
         (pp_option (fun fmt x -> Format.fprintf fmt " : %a" (pp_expr e_in PLeft) x)) fa
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, f)
-
-  | Equantifier (q, id, t, body) ->
-
-    let pp fmt (q, id, t, body) =
-      let pp_quantifier_kind fmt t =
-        match t with
-        | Qcollection e ->
-          Format.fprintf fmt "in %a" (pp_expr e_simple PNone) e
-        | Qtype t_ ->
-          Format.fprintf fmt ": %a" pp_type t_
-      in
-      Format.fprintf fmt "%a %a %a, %a"
-        pp_quantifier q
-        pp_id id
-        pp_quantifier_kind t
-        (pp_expr e_comma PRight) body
-    in
-    (maybe_paren outer e_default pos pp) fmt (q, id, t, body)
 
   | Eassert i ->
 

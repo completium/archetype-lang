@@ -83,10 +83,6 @@ and assignment_operator =
   | AndAssign
   | OrAssign
 
-and quantifier =
-  | Forall
-  | Exists
-
 and operator =
   | Logical of logical_operator
   | Cmp     of comparison_operator
@@ -108,10 +104,6 @@ and pname =
 
 and pattern = pattern_unloc loced
 
-and var_label = VLBefore | VLIdent of lident
-
-and var_vset  = VSAdded | VSUnmoved | VSRemoved
-
 and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
 and for_ident = for_ident_unloc loced
 
@@ -124,7 +116,7 @@ and transfer_t =
   | TToperation of expr
 
 and expr_unloc =
-  | Eterm          of (var_vset option * var_label option) * (id_scope * lident)
+  | Eterm          of (id_scope * lident)
   | Eliteral       of literal
   | Earray         of id_scope * expr list
   | Erecord        of id_scope * record_item list
@@ -156,7 +148,6 @@ and expr_unloc =
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
-  | Equantifier    of quantifier * lident * quantifier_kind * expr
   | Eassert        of lident
   | Elabel         of lident
   | Ereturn        of expr
@@ -183,10 +174,6 @@ and scope =
   | Fixed
   | Removed
   | Stable
-
-and quantifier_kind =
-  | Qcollection of expr
-  | Qtype of type_t
 
 and option_ =
   | OSome of expr
@@ -471,9 +458,9 @@ let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)
 let ebytes    v = mk_eliteral (Lbytes v)
 
-let eterm         ?(loc=dummy) ?(s=SINone) ?temp ?delta id = mkloc loc (Eterm ((delta, temp), (s, id)))
-let earray        ?(loc=dummy) ?(s=SINone) l               = mkloc loc (Earray (s, l))
-let erecord       ?(loc=dummy) ?(s=SINone) rl              = mkloc loc (Erecord (s, rl))
+let eterm         ?(loc=dummy) ?(s=SINone) id     = mkloc loc (Eterm (s, id))
+let earray        ?(loc=dummy) ?(s=SINone) l      = mkloc loc (Earray (s, l))
+let erecord       ?(loc=dummy) ?(s=SINone) rl     = mkloc loc (Erecord (s, rl))
 let etuple        ?(loc=dummy) l                  = mkloc loc (Etuple l)
 let edot          ?(loc=dummy) e id               = mkloc loc (Edot (e, id))
 let esqapp        ?(loc=dummy) e i                = mkloc loc (Esqapp (e, i))
@@ -496,7 +483,6 @@ let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c)
 let evaropt       ?(loc=dummy) ?t id e c f        = mkloc loc (Evaropt(id, t, e, f, c))
 let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
-let equantifier   ?(loc=dummy) q id qk e          = mkloc loc (Equantifier(q, id, qk, e))
 let eassert       ?(loc=dummy) id                 = mkloc loc (Eassert id)
 let elabel        ?(loc=dummy) id                 = mkloc loc (Elabel id)
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
