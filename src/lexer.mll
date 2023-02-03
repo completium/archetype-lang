@@ -108,7 +108,6 @@
       "sapling_transaction" , SAPLING_TRANSACTION ;
       "self"                , SELF                ;
       "set"                 , SET                 ;
-      "shadow"              , SHADOW              ;
       "some"                , SOME                ;
       "sorted"              , SORTED              ;
       "sourced"             , SOURCED             ;

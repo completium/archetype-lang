@@ -167,7 +167,7 @@ let make_outline_from_decl (d : PT.declaration) gl =
   | Darchetype (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
   | Dvariable (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, li) -> make_outline_from_enum (ek, li, l)
-  | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
+  | Dasset (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
   | Dentry (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dtransition (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]

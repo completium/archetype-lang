@@ -304,7 +304,6 @@ and enum_decl =
 and asset_decl =
   lident
   * field list
-  * field list (* shadow fields *)
   * asset_option list
   * asset_post_option list
   * asset_operation option
@@ -525,7 +524,7 @@ let mk_variable_decl ?dv id t vk : variable_decl = id, t, dv, vk
 
 let mk_enum_decl l : enum_decl = l
 
-let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao id : asset_decl = id, fs, sfs, aos, apos, ao
+let mk_asset_decl ?(fs=[]) ?(aos=[]) ?(apos=[]) ?ao id : asset_decl = id, fs, aos, apos, ao
 
 let mk_record_decl ?(fs=[]) ?pos id : record_decl = id, fs, pos
 
@@ -608,7 +607,7 @@ let get_name = function
   | Dvariable (id, _, _, _)         -> unloc id
   | Denum (EKenum id, _)            -> unloc id
   | Denum (EKstate, _)              -> "_state"
-  | Dasset (id, _, _, _, _, _)      -> unloc id
+  | Dasset (id, _, _, _, _)         -> unloc id
   | Drecord (id, _, _)              -> unloc id
   | Devent  (id, _, _)              -> unloc id
   | Dentry (id, _, _, _)            -> unloc id

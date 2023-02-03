@@ -155,7 +155,6 @@
 %token SELF
 %token SEMI_COLON
 %token SET
-%token SHADOW
 %token SLASH
 %token SLASHPERCENT
 %token SOME
@@ -486,10 +485,6 @@ type_s_unloc:
 | ASSET_VALUE      { AssetValue }
 | ASSET_VIEW       { AssetView }
 
-%inline shadow_asset_fields:
-| /* empty */ { [] }
-| SHADOW x=asset_fields { x }
-
 %inline record_position:
 | AS x=paren(expr) { x }
 
@@ -506,12 +501,11 @@ event:
 asset:
 | ASSET x=ident opts=asset_options?
         fields=asset_fields?
-        sfields=shadow_asset_fields
                  apo=asset_post_options
                        {
                          let fs = match fields with | None -> [] | Some x -> x in
                          let os = match opts with | None -> [] | Some x -> x in
-                         Dasset (x, fs, sfields, os, apo, None) }
+                         Dasset (x, fs, os, apo, None) }
 
 %inline by_or_with:
 | BY {}
