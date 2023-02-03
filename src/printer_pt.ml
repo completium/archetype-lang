@@ -896,26 +896,23 @@ and pp_ident_ident fmt a =
 
 and pp_ident_typ fmt a =
   match a with
-  | (x, y, exts) ->
-    Format.fprintf fmt "%a%a%a"
+  | (x, y) ->
+    Format.fprintf fmt "%a%a"
       pp_id x
-      pp_extensions exts
       (pp_prefix " : " pp_type) y
 
 and pp_ident_quant fmt a =
   match a with
-  | (x, y, exts) ->
-    Format.fprintf fmt "%a%a%a"
+  | (x, y) ->
+    Format.fprintf fmt "%a%a"
       pp_id x
-      pp_extensions exts
       (pp_prefix " in " pp_type) y
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with
-  | (x, y, exts) ->
-    Format.fprintf fmt "%a%a : %a"
+  | (x, y) ->
+    Format.fprintf fmt "%a : %a"
       pp_id x
-      pp_extensions exts
       pp_type y
 
 and pp_fun_args fmt args =
@@ -939,29 +936,14 @@ and pp_record_expr_internal fmt (scope, l) =
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f; _ } =
   match f with
-  | Ffield (id, typ, dv, exts) ->
-    Format.fprintf fmt "%a%a : %a%a"
+  | Ffield (id, typ, dv) ->
+    Format.fprintf fmt "%a : %a%a"
       pp_id id
-      pp_extensions exts
       pp_type typ
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
 (* -------------------------------------------------------------------------- *)
-and pp_extension fmt { pldesc = e; _ } =
-  match e with
-  | Eextension (id, args) ->
-    Format.fprintf fmt "[%%%%%a%a%%%%]"
-      pp_id id
-      pp_ext_args args
-
-and pp_extensions x = (pp_option (pp_list " " pp_extension)) x
-
 and pp_simple_expr fmt e = (pp_expr e_simple PNone) fmt e
-
-and pp_ext_args fmt l =
-  match l with
-  | [] -> ()
-  | _ -> Format.fprintf fmt "(%a)" (pp_list ", " pp_simple_expr) l
 
 (* -------------------------------------------------------------------------- *)
 let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
@@ -1092,15 +1074,13 @@ let pp_entry_properties fmt (props : entry_properties) =
     Format.fprintf fmt "no transfer%a@\n"
       (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) (snd props.accept_transfer)
   end;
-  map_option (fun (e, o, exts) ->
-      Format.fprintf fmt "sourced by%a %a%a@\n"
-        pp_extensions exts
+  map_option (fun (e, o) ->
+      Format.fprintf fmt "sourced by %a%a@\n"
         (pp_expr e_default PNone) e
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
     ) props.sourcedby;
-  map_option (fun (e, o, exts) ->
-      Format.fprintf fmt "called by%a %a%a@\n"
-        pp_extensions exts
+  map_option (fun (e, o) ->
+      Format.fprintf fmt "called by %a%a@\n"
         (pp_expr e_default PNone) e
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
     ) props.calledby;
@@ -1109,10 +1089,9 @@ let pp_entry_properties fmt (props : entry_properties) =
         pp_id x
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
     ) props.state_is;
-  let pp_rf s1 s2 fmt (l, exts) =
-    Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
+  let pp_rf s1 s2 fmt l =
+    Format.fprintf fmt "%s {@\n  @[%a@]@\n}@\n"
       s1
-      pp_extensions exts
       (pp_list ";@\n" (fun fmt (id, e, f) ->
            Format.fprintf fmt "%a: %a%a"
              pp_id id
@@ -1120,9 +1099,8 @@ let pp_entry_properties fmt (props : entry_properties) =
              (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
          )) l
   in
-  let pp_cf fmt (l, exts) =
-    Format.fprintf fmt "constant%a {@\n  @[%a@]@\n}@\n"
-      pp_extensions exts
+  let pp_cf fmt l =
+    Format.fprintf fmt "constant {@\n  @[%a@]@\n}@\n"
       (pp_list ";@\n" (fun fmt (id, e, f) ->
            Format.fprintf fmt "%a %s %a%a"
              pp_id id
@@ -1140,13 +1118,11 @@ let pp_transition fmt (to_, conditions, effect) =
   Format.fprintf fmt "to %a%a%a@\n"
     pp_id to_
     (pp_option (
-        fun fmt (e, exts) ->
-          Format.fprintf fmt " when%a { %a }"
-            pp_extensions exts
+        fun fmt e ->
+          Format.fprintf fmt " when { %a }"
             (pp_expr e_default PNone) e)) conditions
-    (pp_option (fun fmt (e, exts) ->
-         Format.fprintf fmt "@\nwith effect%a {@\n  @[%a@]@\n}"
-           pp_extensions exts
+    (pp_option (fun fmt e ->
+         Format.fprintf fmt "@\nwith effect {@\n  @[%a@]@\n}"
            pp_simple_expr e)) effect
 
 let pp_parameter fmt (id, ty, dv, c) =
@@ -1171,9 +1147,8 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     | None, None, None, [], None -> true
     | _ -> false in
   match e with
-  | Darchetype (id, ps, m, exts) ->
-    Format.fprintf fmt "archetype%a %a%a%a"
-      pp_extensions exts
+  | Darchetype (id, ps, m) ->
+    Format.fprintf fmt "archetype %a%a%a"
       pp_id id
       pp_parameters ps
       (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) m
@@ -1183,20 +1158,19 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       pp_id path
 
-  | Dvariable (id, typ, dv, kind, exts) ->
-    Format.fprintf fmt "%a%a %a : %a%a"
+  | Dvariable (id, typ, dv, kind) ->
+    Format.fprintf fmt "%a %a : %a%a"
       pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
-      pp_extensions exts
       pp_id id
       pp_type typ
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
-  | Denum (id, (ids, exts)) ->
+  | Denum (id, ids) ->
     Format.fprintf fmt "%a%a"
       (fun fmt id -> (
            match id with
-           | EKstate -> Format.fprintf fmt "states%a" pp_extensions exts
-           | EKenum id -> Format.fprintf fmt "enum%a %a" pp_extensions exts pp_id id
+           | EKstate -> Format.fprintf fmt "states"
+           | EKenum id -> Format.fprintf fmt "enum %a" pp_id id
          )) id
       (fun fmt ids -> (
            match ids with
@@ -1205,9 +1179,8 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                     (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
          )) ids
 
-  | Dasset (id, fields, shadow_fields, opts, apo, ops, exts) ->
-    Format.fprintf fmt "asset%a%a %a%a%a%a%a@\n"
-      pp_extensions exts
+  | Dasset (id, fields, shadow_fields, opts, apo, ops) ->
+    Format.fprintf fmt "asset%a %a%a%a%a%a@\n"
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
@@ -1215,23 +1188,20 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list " " pp_asset_post_option) apo
 
-  | Drecord (id, fields, pos, exts) ->
-    Format.fprintf fmt "record%a %a %a%a@\n"
-      pp_extensions exts
+  | Drecord (id, fields, pos) ->
+    Format.fprintf fmt "record %a %a%a@\n"
       pp_id id
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
       (pp_option (fun fmt x -> Format.fprintf fmt " as (%a)" (pp_expr e_default PNone) x)) pos
 
-  | Devent (id, fields, pos, exts) ->
-    Format.fprintf fmt "event%a %a %a%a@\n"
-      pp_extensions exts
+  | Devent (id, fields, pos) ->
+    Format.fprintf fmt "event %a %a%a@\n"
       pp_id id
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
       (pp_option (fun fmt x -> Format.fprintf fmt " as (%a)" (pp_expr e_default PNone) x)) pos
 
-  | Dentry (id, args, props, code, exts) ->
-    Format.fprintf fmt "entry%a %a%a%a"
-      pp_extensions exts
+  | Dentry (id, args, props, code) ->
+    Format.fprintf fmt "entry %a%a%a"
       pp_id id
       pp_fun_args args
       (pp_do_if (not (is_empty_entry_properties_opt props code))
@@ -1239,15 +1209,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
             let pr, cod = x in
             Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
               pp_entry_properties pr
-              (pp_option (fun fmt (code, exts) ->
-                   Format.fprintf fmt "effect%a {@\n  @[%a@]@\n}@\n"
-                     pp_extensions exts
+              (pp_option (fun fmt code ->
+                   Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
                      (pp_expr e_default PNone) code
                  )) cod)) (props, code)
 
-  | Dtransition (id, args, on, from, props, trs, exts) ->
-    Format.fprintf fmt "transition%a %a%a%a%a"
-      pp_extensions exts
+  | Dtransition (id, args, on, from, props, trs) ->
+    Format.fprintf fmt "transition %a%a%a%a"
       pp_id id
       pp_fun_args args
       (pp_option (fun fmt (a, b) ->
@@ -1260,11 +1228,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
            (pp_do_if (not (is_empty_entry_properties_opt props None)) pp_entry_properties) pr
            (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_list "@\n" pp_transition) ts) (props, trs)
-
-  | Dextension (id, args) ->
-    Format.fprintf fmt "%%%a%a"
-      pp_id id
-      pp_ext_args args
 
   | Dnamespace (id, ds) ->
     Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
@@ -1288,12 +1251,6 @@ let pp_archetype fmt { pldesc = m; _ } =
   match m with
   | Marchetype es ->
     Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
-  | Mextension (id, ds, es) ->
-    Format.fprintf fmt "archetype extension %a (@\n  @[%a@]@\n) {@\n  @[%a@]@\n}@\n"
-      pp_id id
-      (pp_list "@,\n" pp_declaration) ds
-      (pp_list "@,\n" pp_declaration) es
-
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

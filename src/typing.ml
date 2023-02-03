@@ -1334,7 +1334,7 @@ type acttx = [
 ]
 
 type groups = {
-  gr_archetypes  : (PT.lident * PT.exts)        loced list;
+  gr_archetypes  : PT.lident                    loced list;
   gr_imports     : (PT.lident * PT.lident)      loced list;
   gr_states      : PT.enum_decl                 loced list;
   gr_enums       : (PT.lident * PT.enum_decl)   loced list;
@@ -5230,7 +5230,7 @@ let for_cf
 let for_cfs = for_cf
 
 (* -------------------------------------------------------------------- *)
-let for_arg_decl ?(can_asset = false) (env : env) ((x, ty, _) : PT.lident_typ) =
+let for_arg_decl ?(can_asset = false) (env : env) ((x, ty) : PT.lident_typ) =
   let ty = for_type env ty in
   let b  = check_and_emit_name_free env x in
 
@@ -5995,17 +5995,17 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr (`Concrete `Entry) env ~ety:A.vtaddress cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_entry (env : env) (act : PT.entry_properties) i_exts =
+let for_entry (env : env) (act : PT.entry_properties) i =
   let fe = for_expr (`Concrete `Entry) env in
-  let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ proj3_2) act.sourcedby in
-  let calledby  = Option.map (fun (x, _, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ proj3_2) act.calledby  in
+  let sourcedby = Option.map (fun (x, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd) act.sourcedby in
+  let calledby  = Option.map (fun (x, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd) act.calledby  in
   let stateis   = Option.map (fun (x, o) -> for_named_state env x, Option.map fe o) act.state_is in
   let actfs     = fst act.accept_transfer, Option.map fe (snd act.accept_transfer) in
-  let env, cst  = Option.foldmap (for_cfs (`Concrete `Entry)) env (Option.fst act.constants) in
-  let env, req  = Option.foldmap (for_rfs (`Concrete `Entry)) env (Option.fst act.require) in
-  let env, fai  = Option.foldmap (for_rfs (`Concrete `Entry)) env (Option.fst act.failif) in
+  let env, cst  = Option.foldmap (for_cfs (`Concrete `Entry)) env act.constants in
+  let env, req  = Option.foldmap (for_rfs (`Concrete `Entry)) env act.require in
+  let env, fai  = Option.foldmap (for_rfs (`Concrete `Entry)) env act.failif in
   let env, poeffect =
-    Option.foldmap (for_effect (`Concrete `Entry)) env (Option.fst i_exts) in
+    Option.foldmap (for_effect (`Concrete `Entry)) env i in
   let effect = Option.map snd poeffect in
   let env, funs = List.fold_left_map for_function env act.functions in
   (env, (sourcedby, calledby, stateis, actfs, cst, req, fai, funs, effect))
@@ -6013,10 +6013,9 @@ let for_entry (env : env) (act : PT.entry_properties) i_exts =
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
   let tx_state  = for_named_state ?enum env state in
-  let tx_when   =
-    Option.map (for_formula env) (Option.fst when_) in
+  let tx_when   = Option.map (for_formula env) when_ in
   let env, tx_effect = snd_map (Option.map snd)
-      (Option.foldmap (for_effect (`Concrete `Entry)) env (Option.fst effect)) in
+      (Option.foldmap (for_effect (`Concrete `Entry)) env effect) in
 
   env, { tx_state; tx_when; tx_effect; }
 
@@ -6090,7 +6089,7 @@ let for_core_enum_decl (env : env) (enum : enum_core loced) =
 
 (* -------------------------------------------------------------------- *)
 let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
-  let (name, (ctors, _)) = unloc decl in
+  let (name, ctors) = unloc decl in
   let env, ctors = for_core_enum_decl env (mkloc (loc decl) ctors) in
   let env, decl =
     Option.foldbind (fun env (sd_init, ctors) ->
@@ -6108,7 +6107,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
-  let (x, ty, pe, ctt, _) = unloc decl in
+  let (x, ty, pe, ctt) = unloc decl in
 
   let ty = for_type env ty in
 
@@ -6146,7 +6145,7 @@ let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_vardecl_init (env : env) (decl : PT.variable_decl loced) =
-  let (x, _, pe, _, _) = unloc decl in
+  let (x, _, pe, _) = unloc decl in
 
   match Env.Var.lookup env (Current, unloc x) with
   | None ->
@@ -6188,7 +6187,7 @@ type pre_assetdecl = {
 }
 
 let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced) =
-  let (x, cfields, sfields, opts, postopts, _ (* FIXME *), _) = unloc decl in
+  let (x, cfields, sfields, opts, postopts, _ (* FIXME *)) = unloc decl in
 
   let for_field field =
     let (f, fty, init, shadow) = field in
@@ -6201,12 +6200,12 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
   let fields =
     let cfields =
       List.map
-        (fun { pldesc = PT.Ffield (x, ty, e, _) } -> (x, ty, e, false))
+        (fun { pldesc = PT.Ffield (x, ty, e) } -> (x, ty, e, false))
         cfields in
 
     let sfields =
       List.map
-        (fun { pldesc = PT.Ffield (x, ty, e, _) } -> (x, ty, e,  true))
+        (fun { pldesc = PT.Ffield (x, ty, e) } -> (x, ty, e,  true))
         sfields in
 
     List.pmap for_field (cfields @ sfields) in
@@ -6350,7 +6349,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 (* -------------------------------------------------------------------- *)
 let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
   let (b, env), adecls = List.fold_left_map (fun (b, env) decl ->
-      let (name, _, _, _, _, _, _) = unloc decl in
+      let (name, _, _, _, _, _) = unloc decl in
       let b = b && check_and_emit_name_free ~pre:`Asset env name in
       let d = { as_name   = (None, name); (* FIXME: namespace *)
                 as_fields = [];
@@ -6369,7 +6368,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
     if not b then
       raise E.Bailout;
 
-    let pkey = List.map (fun { pldesc = (x, _, _, _, _, _, _) } -> unloc x) decls in
+    let pkey = List.map (fun { pldesc = (x, _, _, _, _, _) } -> unloc x) decls in
 
     let _, decls =
       List.fold_left_map
@@ -6521,9 +6520,9 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_record_decl k (env : env) (decl : PT.record_decl loced) =
-  let name, fields, packing, _ = unloc decl in
+  let name, fields, packing = unloc decl in
   let fields =
-    let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in
+    let get_field { pldesc = PT.Ffield (x, ty, e) } = (x, ty, e) in
     List.map get_field fields in
 
   let fields =
@@ -6628,12 +6627,12 @@ let for_events_decl (env : env) (decls : PT.record_decl loced list) =
 let for_acttx_decl (env : env) (decl : acttx loced)
   =
   match unloc decl with
-  | `Entry (x, args, pt, i_exts, _exts) -> begin
+  | `Entry (x, args, pt, i) -> begin
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
             let env, (srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
-              for_entry env pt i_exts in
+              for_entry env pt i in
 
             let decl =
               { ad_name   = x;
@@ -6657,7 +6656,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       else (env, None)
     end
 
-  | `Transition (x, args, tgt, from_, entrys, tx, _exts) ->
+  | `Transition (x, args, tgt, from_, entrys, tx) ->
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -6727,8 +6726,8 @@ let group_declarations (decls : (PT.declaration list)) =
     let mk x = Location.mkloc loc x in
 
     match decl with
-    | PT.Darchetype (x, _, _, exts) ->
-      { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
+    | PT.Darchetype (x, _, _) ->
+      { g with gr_archetypes = mk x :: g.gr_archetypes }
 
     | PT.Dimport (id, path) ->
       { g with gr_imports = mk (id, path) :: g.gr_imports }
@@ -6762,7 +6761,6 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | Dtype      _  -> assert false
     | Dnamespace _  -> assert false
-    | Dextension _  -> assert false
     | Dinvalid      -> assert false
 
   in List.fold_right for1 decls empty
@@ -7119,7 +7117,7 @@ and for_grouped_declarations (env : env) (toploc, g) =
 
   let state, env =
     let for1 { plloc = loc; pldesc = state } =
-      match for_core_enum_decl env (mkloc loc (fst state)) with
+      match for_core_enum_decl env (mkloc loc state) with
       | env, Some state -> Some (env, loc, state)
       | _  , None       -> None in
 
@@ -7163,7 +7161,7 @@ and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
   let toploc = loc decls in
 
   match unloc decls with
-  | { pldesc = Darchetype (x, params, metadata, _exts) } :: decls ->
+  | { pldesc = Darchetype (x, params, metadata) } :: decls ->
     let groups = group_declarations decls in
     let env, parameters = for_parameters env params ?init in
     let metadata = Option.map (function | PT.Muri x -> A.MKuri x | PT.Mjson x -> A.MKjson x) metadata in
@@ -7195,16 +7193,16 @@ and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
 and pretype (env : env) (cmd : PT.declaration list) =
   let for1 (env : env) (decl : PT.declaration) =
     match unloc decl with
-    | Drecord (name, _, _, _) when Env.name_free env (unloc name) = `Free ->
+    | Drecord (name, _, _) when Env.name_free env (unloc name) = `Free ->
       Env.Record.push env (`Pre name)
 
-    | Drecord (name, _, _, _) when Env.name_free env (unloc name) = `Free ->
+    | Drecord (name, _, _) when Env.name_free env (unloc name) = `Free ->
       Env.Event.push env (`Pre name)
 
     | Denum (EKenum name, _) when Env.name_free env (unloc name) = `Free ->
       Env.State.push env (`Pre name)
 
-    | Dasset (name, _, _, _, _, _, _) when Env.name_free env (unloc name) = `Free ->
+    | Dasset (name, _, _, _, _, _) when Env.name_free env (unloc name) = `Free ->
       Env.Asset.push env (`Pre name)
 
     | _ -> env
@@ -7219,6 +7217,3 @@ and typing ?init (env : env) (cmd : PT.archetype) =
   | Marchetype decls ->
     let env = pretype env decls in
     for_declarations env (mkloc (loc cmd) decls) ?init
-
-  | Mextension _ ->
-    assert false

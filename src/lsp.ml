@@ -164,12 +164,12 @@ let make_outline_from_enum ((ek, li, l) : (PT.enum_kind * 'a * 'b) ) =
 let make_outline_from_decl (d : PT.declaration) gl =
   let l, v = Location.deloc d in
   match v with
-  | Darchetype (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
-  | Dvariable (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
-  | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
-  | Dasset (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
-  | Dentry (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
-  | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Darchetype (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
+  | Dvariable (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
+  | Denum (ek, li) -> make_outline_from_enum (ek, li, l)
+  | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
+  | Dentry (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Dtransition (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
   | _ -> []
@@ -214,7 +214,6 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
             outlines = lis;
           } in
           Format.asprintf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
-      | _ -> ""
     )
   | Errors ->
     try

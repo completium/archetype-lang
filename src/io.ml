@@ -53,8 +53,6 @@ let check_brackets_balance () =
     | RBRACKET -> "]"
     | LBRACE  -> "{"
     | RBRACE -> "}"
-    | LBRACKETPERCENT  -> "[%"
-    | PERCENTRBRACKET -> "%]"
     | _ -> assert false in
   let aux ((op, cp) : token * token) : unit =
     let rec aux_internal (st : ptoken Stack.t) ((op, cp) : token * token) pos : unit =
@@ -93,8 +91,7 @@ let check_brackets_balance () =
 
   aux (LPAREN   , RPAREN  );
   aux (LBRACKET , RBRACKET);
-  aux (LBRACE   , RBRACE  );
-  aux (LBRACKETPERCENT , PERCENTRBRACKET)
+  aux (LBRACE   , RBRACE  )
 
 (* -------------------------------------------------------------------- *)
 let resume_on_error last_reduction lex =

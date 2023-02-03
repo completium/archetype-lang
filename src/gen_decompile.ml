@@ -1989,7 +1989,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   in
 
   let for_fun (f : M.function__) : A.declaration =
-    let exts = None in
     match f.node with
     | Function (_fs, _t)
     | Getter (_fs, _t) -> assert false
@@ -1997,10 +1996,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in
-        let args = List.map (fun (id, t, _) -> (id, for_type t, None) ) fs.args in
+        let args = List.map (fun (id, t, _) -> (id, for_type t) ) fs.args in
 
         let ep = A.mk_entry_properties () in
-        let ed = A.mk_entry_decl ~args:(List.map (fun (x, y, z) -> (snd x, y, z)) args) (snd id) ep ~body:(body, exts) in
+        let ed = A.mk_entry_decl ~args:(List.map (fun (x, y) -> (snd x, y)) args) (snd id) ep ~body in
 
         A.mk_entry ed
       end

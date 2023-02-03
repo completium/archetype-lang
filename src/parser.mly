@@ -72,7 +72,6 @@
 %token EQUIV
 %token EVENT
 %token EXISTS
-%token EXTENSION
 %token FAIL
 %token FAIL_IF
 %token FAILSOME
@@ -99,7 +98,6 @@
 %token LAMBDA
 %token LBRACE
 %token LBRACKET
-%token LBRACKETPERCENT
 %token LEFT
 %token LESS
 %token LESS_EQUAL_GREATER
@@ -133,7 +131,6 @@
 %token OTHERWISE
 %token PARTITION
 %token PERCENT
-%token PERCENTRBRACKET
 %token PIPE
 %token PIPE_GREATER_GREATER
 %token PIPEEQUAL
@@ -282,11 +279,6 @@ main:
 
 archetype_r:
  | x=implementation_archetype EOF { x }
- | x=archetype_extension      EOF { x }
-
-archetype_extension:
- | ARCHETYPE EXTENSION id=ident xs=paren(declarations) ys=braced(declarations)
-     { Mextension (id, xs, ys) }
 
 implementation_archetype:
  | x=declarations { Marchetype x }
@@ -309,7 +301,6 @@ declaration_r:
  | x=entry              { x }
  | x=entry_simple       { x }
  | x=transition         { x }
- | x=dextension         { x }
  | x=namespace          { x }
  | x=function_decl      { x }
  | x=getter_decl        { x }
@@ -318,7 +309,7 @@ declaration_r:
  | INVALID_DECL         { Dinvalid }
 
 archetype:
-| ARCHETYPE exts=option(extensions) x=ident ps=parameters m=metadata { Darchetype (x, ps, m, exts) }
+| ARCHETYPE x=ident ps=parameters m=metadata { Darchetype (x, ps, m) }
 
 import:
 | IMPORT x=ident FROM y=loc(STRING) {Dimport (x, y)}
@@ -345,35 +336,19 @@ import:
  | EQUAL x=simple_expr { x }
 
 vc_decl(X):
-| X exts=extensions? x=ident COLON t=type_t dv=default_value?
-    { (x, t, dv, exts) }
+| X x=ident COLON t=type_t dv=default_value?
+    { (x, t, dv) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, dv, exts = x in
-                          Dvariable (x, t, dv, VKconstant, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, dv = x in
+                          Dvariable (x, t, dv, VKconstant) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, dv, exts = x in
-                          Dvariable (x, t, dv, VKvariable, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, dv = x in
+                          Dvariable (x, t, dv, VKvariable) }
 
 %inline default_value:
 | EQUAL x=expr { x }
-
-%inline ext_args:
- |                                           { [] }
- | LPAREN xs=snl(COMMA, simple_expr) RPAREN  { xs }
-
-dextension:
-| PERCENT x=ident args=ext_args { Dextension (x, args) }
-
-%inline extensions:
-| xs=extension+ { xs }
-
-%inline extension:
-| e=loc(extension_r) { e }
-
-extension_r:
-| LBRACKETPERCENT x=ident args=ext_args PERCENTRBRACKET { Eextension (x, args) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -449,11 +424,11 @@ type_decl:
 | TYPE id=ident EQUAL t=type_t    { Dtype (id, t) }
 
 enum:
-| STATES exts=extensions? body=prefix(EQUAL, enum_body)?
-    {Denum (EKstate, (Tools.Option.get_dfl [] body, exts))}
+| STATES body=prefix(EQUAL, enum_body)?
+    {Denum (EKstate, (Tools.Option.get_dfl [] body))}
 
-| ENUM exts=extensions? x=ident body=prefix(EQUAL, enum_body)?
-    {Denum (EKenum x, (Tools.Option.get_dfl [] body, exts))}
+| ENUM x=ident body=prefix(EQUAL, enum_body)?
+    {Denum (EKenum x, (Tools.Option.get_dfl [] body))}
 
 enum_body:
 | xs=enum_cdecl* { xs }
@@ -519,24 +494,24 @@ type_s_unloc:
 | AS x=paren(expr) { x }
 
 record:
-| RECORD exts=extensions? x=ident fields=asset_fields? pos=record_position?
+| RECORD x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
-  Drecord (x, fs, pos, exts) }
+  Drecord (x, fs, pos) }
 
 event:
-| EVENT exts=extensions? x=ident fields=asset_fields? pos=record_position?
+| EVENT x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
-  Devent (x, fs, pos, exts) }
+  Devent (x, fs, pos) }
 
 asset:
-| ASSET exts=extensions? x=ident opts=asset_options?
+| ASSET x=ident opts=asset_options?
         fields=asset_fields?
         sfields=shadow_asset_fields
                  apo=asset_post_options
                        {
                          let fs = match fields with | None -> [] | Some x -> x in
                          let os = match opts with | None -> [] | Some x -> x in
-                         Dasset (x, fs, sfields, os, apo, None, exts) }
+                         Dasset (x, fs, sfields, os, apo, None) }
 
 %inline by_or_with:
 | BY {}
@@ -576,10 +551,8 @@ asset_option:
 | xs=sl(SEMI_COLON, field) { xs }
 
 field_r:
-| x=ident exts=option(extensions)
-      COLON y=type_t
-          dv=default_value?
-    { Ffield (x, y, dv, exts) }
+| x=ident COLON y=type_t dv=default_value?
+    { Ffield (x, y, dv) }
 
 %inline field:
 | f=loc(field_r) { f }
@@ -594,14 +567,12 @@ field_r:
  |                    { SINone }
 
 entry:
-  ENTRY exts=option(extensions) x=ident
-    args=function_args xs=transitems_eq
-      { let a, b = xs in Dentry (x, args, a, b, exts) }
+  ENTRY x=ident args=function_args xs=transitems_eq
+      { let a, b = xs in Dentry (x, args, a, b) }
 
 entry_simple:
-  ENTRY exts=option(extensions) x=ident
-    args=function_args e=braced(block)
-      { Dentry (x, args, dummy_entry_properties, Some (e, None), exts) }
+  ENTRY x=ident args=function_args e=braced(block)
+      { Dentry (x, args, dummy_entry_properties, Some e) }
 
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
@@ -613,9 +584,10 @@ on_value:
  | ON LPAREN x=ident COLON y=type_t RPAREN { x, y }
 
 transition:
-  TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=simple_expr trs=transitions RBRACE
-      { Dtransition (x, args, on, f, xs, trs, exts) }
+  TRANSITION x=ident args=function_args on=on_value? LBRACE
+    xs=entry_properties FROM f=simple_expr trs=transitions
+  RBRACE
+      { Dtransition (x, args, on, f, xs, trs) }
 
 %inline transitems_eq:
 | { (dummy_entry_properties, None) }
@@ -645,10 +617,10 @@ entry_properties:
   }
 
 calledby:
-| CALLED BY exts=option(extensions) x=expr o=otherwise_section? { (x, o, exts) }
+| CALLED BY x=expr o=otherwise_section? { (x, o) }
 
 sourcedby:
-| SOURCED BY exts=option(extensions) x=expr o=otherwise_section? { (x, o, exts) }
+| SOURCED BY x=expr o=otherwise_section? { (x, o) }
 
 %inline state_is:
 | STATE_IS id=ident o=otherwise_section? { (id, o) }
@@ -679,26 +651,26 @@ cf:
 | id=ident QUESTIONIS e=expr OTHERWISE f=expr %prec prec_labelexpr { (id, e, Some f) }
 
 %inline constants:
- | CONSTANT exts=option(extensions) xs=braced(cfs)
-       { (xs, exts) }
+ | CONSTANT xs=braced(cfs)
+       { xs }
 
 %inline require:
- | REQUIRE exts=option(extensions) xs=braced(rfs(OTHERWISE))
-       { (xs, exts) }
+ | REQUIRE xs=braced(rfs(OTHERWISE))
+       { xs }
 
 %inline failif:
- | FAIL_IF exts=option(extensions) xs=braced(rfs(WITH))
-       { (xs, exts) }
+ | FAIL_IF xs=braced(rfs(WITH))
+       { xs }
 
 %inline require_value:
-| WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
+| WHEN e=braced(expr) { e }
 
 %inline with_effect:
 | WITH e=effect { e }
 
 effect:
- | EFFECT exts=option(extensions) e=braced(block) { (e, exts) }
- | INVALID_EFFECT                                 { (mkloc Location.dummy Einvalid, None) }
+ | EFFECT e=braced(block) { e }
+ | INVALID_EFFECT         { mkloc Location.dummy Einvalid }
 
 %inline function_return:
  | COLON ty=type_t { ty }
@@ -707,8 +679,8 @@ effect:
  | LPAREN xs=sl(COMMA, function_arg) RPAREN { xs }
 
 %inline function_arg:
- | id=ident exts=option(extensions) COLON ty=type_t
-     { (id, ty, exts) }
+ | id=ident COLON ty=type_t
+     { (id, ty) }
 
 %inline assignment_operator_record:
  | EQUAL                    { ValueAssign }

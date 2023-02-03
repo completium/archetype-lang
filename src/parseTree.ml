@@ -220,19 +220,11 @@ and record_item = (assignment_operator * lident) option * expr
 
 and expr = expr_unloc loced
 
-and lident_typ = lident * type_t * extension list option
-
-(* -------------------------------------------------------------------- *)
-and extension_unloc =
-  | Eextension of lident * expr list (** extension *)
-
-and extension = extension_unloc loced
-
-and exts = extension list option
+and lident_typ = lident * type_t
 
 (* -------------------------------------------------------------------- *)
 and field_unloc =
-  | Ffield of lident * type_t * expr option * exts   (** field *)
+  | Ffield of lident * type_t * expr option (** field *)
 
 and field = field_unloc loced
 
@@ -256,16 +248,16 @@ and s_function = {
 
 and entry_properties = {
   accept_transfer : bool * expr option;
-  sourcedby       : (expr * expr option * exts) option;
-  calledby        : (expr * expr option * exts) option;
+  sourcedby       : (expr * expr option) option;
+  calledby        : (expr * expr option) option;
   state_is        : (lident * expr option) option;
-  constants       : ((lident * expr * expr option) list * exts) option;
-  require         : ((lident * expr * expr option) list * exts) option;
-  failif          : ((lident * expr * expr option) list * exts) option;
+  constants       : ((lident * expr * expr option) list) option;
+  require         : ((lident * expr * expr option) list) option;
+  failif          : ((lident * expr * expr option) list) option;
   functions       : (s_function loced) list;
 }
 
-and transition = (lident * (expr * exts) option * (expr * exts) option) list
+and transition = (lident * expr option * expr option) list
 
 and parameter = (lident * type_t * expr option * bool) loced
 
@@ -286,7 +278,7 @@ and enum_kind =
 
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
-  | Darchetype     of lident * parameters * metadata option * exts
+  | Darchetype     of lident * parameters * metadata option
   | Dimport        of lident * lident
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
@@ -294,7 +286,6 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dtype          of lident * type_t
@@ -306,10 +297,9 @@ and variable_decl =
   * type_t
   * expr option
   * variable_kind
-  * exts
 
 and enum_decl =
-  (lident * type_t list * enum_option list) list * exts
+  (lident * type_t list * enum_option list) list
 
 and asset_decl =
   lident
@@ -318,20 +308,17 @@ and asset_decl =
   * asset_option list
   * asset_post_option list
   * asset_operation option
-  * exts
 
 and record_decl =
   lident
   * field list
   * expr option
-  * exts
 
 and entry_decl =
   lident
   * args
   * entry_properties
-  * (expr * exts) option
-  * exts
+  * expr option
 
 and transition_decl =
   lident
@@ -340,10 +327,6 @@ and transition_decl =
   * expr
   * entry_properties
   * transition
-  * exts
-
-and extension_decl =
-  lident * expr list
 
 and namespace_decl =
   lident * declaration list
@@ -378,7 +361,6 @@ and asset_operation =
 (* -------------------------------------------------------------------- *)
 and archetype_unloc =
   | Marchetype of declaration list
-  | Mextension of lident * declaration list * declaration list
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false},
@@ -537,21 +519,19 @@ let mk_s_function name args ret_t body getter view view_visibility : s_function 
 let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?(functions = []) _ : entry_properties =
   { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; functions }
 
-let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
+let mk_transition_item id eexto eexfrom : lident * expr option * expr option = id, eexto, eexfrom
 
-let mk_variable_decl ?dv ?exts id t vk : variable_decl = id, t, dv, vk, exts
+let mk_variable_decl ?dv id t vk : variable_decl = id, t, dv, vk
 
-let mk_enum_decl ?exts l : enum_decl = l, exts
+let mk_enum_decl l : enum_decl = l
 
-let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao ?exts id : asset_decl = id, fs, sfs, aos, apos, ao, exts
+let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao id : asset_decl = id, fs, sfs, aos, apos, ao
 
-let mk_record_decl ?(fs=[]) ?pos ?exts id : record_decl = id, fs, pos, exts
+let mk_record_decl ?(fs=[]) ?pos id : record_decl = id, fs, pos
 
-let mk_entry_decl ?(args=[]) ?body ?exts id ep : entry_decl = id, args, ep, body, exts
+let mk_entry_decl ?(args=[]) ?body id ep : entry_decl = id, args, ep, body
 
-let mk_transition_decl ?(args=[]) ?te ?(trs=[]) ?exts id body ep : transition_decl = id, args, te, body, ep, trs, exts
-
-let mk_extension_decl ?(es=[]) id : extension_decl = id, es
+let mk_transition_decl ?(args=[]) ?te ?(trs=[]) id body ep : transition_decl = id, args, te, body, ep, trs
 
 let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
 
@@ -570,8 +550,8 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_darchetype ?parameters ?metadata ?exts ?(loc=dummy) id =
-  mkloc loc (Darchetype (id, parameters, metadata, exts))
+let mk_darchetype ?parameters ?metadata ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, parameters, metadata))
 
 let mk_variable ?(loc=dummy) vd =
   mkloc loc (Dvariable vd)
@@ -590,9 +570,6 @@ let mk_entry ?(loc=dummy) ed =
 
 let mk_transition ?(loc=dummy) td =
   mkloc loc (Dtransition td)
-
-let mk_extension ?(loc=dummy) ed =
-  mkloc loc (Dextension ed)
 
 let mk_namespace ?(loc=dummy) nd =
   mkloc loc (Dnamespace nd)
@@ -626,18 +603,17 @@ let cst_min_block_time = "min_block_time"
 (* utils *)
 
 let get_name = function
-  | Darchetype  _                      -> "archetype"
-  | Dimport (id, _)                    -> unloc id
-  | Dvariable (id, _, _, _, _)         -> unloc id
-  | Denum (EKenum id, _)               -> unloc id
-  | Denum (EKstate, _)                 -> "_state"
-  | Dasset (id, _, _, _, _, _, _)      -> unloc id
-  | Drecord (id, _, _, _)              -> unloc id
-  | Devent  (id, _, _, _)              -> unloc id
-  | Dentry (id, _, _, _, _)            -> unloc id
-  | Dtransition (id, _, _, _, _, _, _) -> unloc id
-  | Dextension (id, _)                 -> unloc id
-  | Dnamespace (id, _)                 -> unloc id
-  | Dfunction fs                       -> unloc fs.name
-  | Dtype  (id, _)                     -> unloc id
-  | Dinvalid                           -> ""
+  | Darchetype  _                   -> "archetype"
+  | Dimport (id, _)                 -> unloc id
+  | Dvariable (id, _, _, _)         -> unloc id
+  | Denum (EKenum id, _)            -> unloc id
+  | Denum (EKstate, _)              -> "_state"
+  | Dasset (id, _, _, _, _, _)      -> unloc id
+  | Drecord (id, _, _)              -> unloc id
+  | Devent  (id, _, _)              -> unloc id
+  | Dentry (id, _, _, _)            -> unloc id
+  | Dtransition (id, _, _, _, _, _) -> unloc id
+  | Dnamespace (id, _)              -> unloc id
+  | Dfunction fs                    -> unloc fs.name
+  | Dtype  (id, _)                  -> unloc id
+  | Dinvalid                        -> ""

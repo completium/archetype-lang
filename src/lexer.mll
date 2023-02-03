@@ -57,7 +57,6 @@
       "enum"                , ENUM                ;
       "event"               , EVENT               ;
       "exists"              , EXISTS              ;
-      "extension"           , EXTENSION           ;
       "fail"                , FAIL                ;
       "fail_some"           , FAILSOME            ;
       "false"               , FALSE               ;
@@ -208,8 +207,6 @@ rule token = parse
   | "\""                  { let s, p = lexbuf.lex_start_pos, lexbuf.lex_start_p in let buf = string     (Buffer.create 0) lexbuf in lexbuf.lex_start_pos <- s; lexbuf.lex_start_p <- p; STRING     (Buffer.contents buf) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
-  | "[%%"                 { LBRACKETPERCENT }
-  | "%%]"                 { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
