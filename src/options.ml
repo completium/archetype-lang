@@ -98,19 +98,6 @@ let string_to_kind k =
 
 let opt_lsp_kind = ref (None : lsp_kind option)
 
-type service_kind =
-  | GetProperties
-[@@deriving yojson, show {with_path = false}]
-
-exception UnknownServiceKind of string
-
-let string_to_service_kind k =
-  match k with
-  | "get_properties" -> GetProperties
-  | v -> raise (UnknownServiceKind v)
-
-let opt_service_kind = ref (None : service_kind option)
-
 type language =
   | Typescript
   | Javascript

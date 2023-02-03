@@ -224,14 +224,6 @@ let type_ (pt : ParseTree.archetype) : Ast.ast =
   in
   Typing.typing Typing.empty pt ?init
 
-let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
-  match !Options.target with
-  | Markdown  -> (
-      Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
-      raise Stop
-    )
-  | _ -> pt
-
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
 let generate_api_storage      = Gen_api_storage.generate_api_storage
@@ -366,7 +358,6 @@ let compile_model pt =
   let cont c a x = if c then (a x; raise Stop) else x in
   pt
   |> cont !Options.opt_extpt output_pt
-  |> raise_if_error parse_error generate_target_pt
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model

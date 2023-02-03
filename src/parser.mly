@@ -41,7 +41,6 @@
 %token BEFORE
 %token BEGIN
 %token BIG_MAP
-%token BUT
 %token BY
 %token CALL
 %token CALLED
@@ -53,7 +52,6 @@
 %token CONST
 %token CONSTANT
 %token CONTRACT
-%token DEFINITION
 %token DETACH
 %token DIV
 %token DIVEQUAL
@@ -78,7 +76,6 @@
 %token FAIL
 %token FAIL_IF
 %token FAILSOME
-%token FAILS
 %token FALSE
 %token FOLD
 %token FOR
@@ -95,7 +92,6 @@
 %token IN
 %token INITIAL
 %token INITIALIZED
-%token INVARIANT
 %token IS
 %token ITER
 %token ITERABLE_BIG_MAP
@@ -143,8 +139,6 @@
 %token PIPEEQUAL
 %token PLUS
 %token PLUSEQUAL
-%token POSTCONDITION
-%token PREDICATE
 %token QUESTION
 %token QUESTIONCOLONEQUAL
 %token QUESTIONDOT
@@ -161,7 +155,6 @@
 %token RPAREN
 %token SAPLING_STATE
 %token SAPLING_TRANSACTION
-%token SECURITY
 %token SELF
 %token SEMI_COLON
 %token SET
@@ -171,7 +164,6 @@
 %token SOME
 %token SORTED
 %token SOURCED
-%token SPECIFICATION
 %token STATE_IS
 %token STATES
 %token THEN
@@ -185,7 +177,6 @@
 %token UNIT
 %token UNMOVED
 %token UNPACK
-%token USE
 %token VAR
 %token VARIABLE
 %token VIEW
@@ -323,13 +314,6 @@ declaration_r:
  | x=function_decl      { x }
  | x=getter_decl        { x }
  | x=view_decl          { x }
- | x=specification_decl { x }
- | x=specasset          { x }
- | x=specfun            { x }
- | x=specentry          { x }
- | x=specgetter         { x }
- | x=specvariable       { x }
- | x=security_decl      { x }
  | x=type_decl          { x }
  | INVALID_DECL         { Dinvalid }
 
@@ -360,21 +344,17 @@ import:
 %inline parameter_init:
  | EQUAL x=simple_expr { x }
 
-%inline invariants:
-| /* empty */                 { [] }
-| WITH xs=braced(label_exprs) { xs }
-
 vc_decl(X):
-| X exts=extensions? x=ident COLON t=type_t dv=default_value? invs=invariants
-    { (x, t, dv, invs, exts) }
+| X exts=extensions? x=ident COLON t=type_t dv=default_value?
+    { (x, t, dv, exts) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, dv, invs, exts = x in
-                          Dvariable (x, t, dv, VKconstant, invs, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, dv, exts = x in
+                          Dvariable (x, t, dv, VKconstant, exts) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, dv, invs, exts = x in
-                          Dvariable (x, t, dv, VKvariable, invs, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, dv, exts = x in
+                          Dvariable (x, t, dv, VKvariable, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }
@@ -399,21 +379,16 @@ namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
 %inline fun_body:
-| e=expr { (None, e) }
-| s=specification_fun
-      EFFECT e=braced(expr)
-        { (Some s, e) }
+| e=expr { e }
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
      r=function_return? LBRACE b=fun_body RBRACE {
-  let (s, e) = b in
   {
     name   = id;
     args   = xs;
     ret_t  = r;
-    spec   = s;
-    body   = e;
+    body   = b;
     getter = false;
     view   = false;
     view_visibility = VVnone;
@@ -431,13 +406,11 @@ function_decl:
 %inline getter_gen:
  | GETTER id=ident xs=function_args
      r=function_return? LBRACE b=fun_body RBRACE {
-  let (s, e) = b in
   {
     name   = id;
     args   = xs;
     ret_t  = r;
-    spec   = s;
-    body   = e;
+    body   = b;
     getter = true;
     view   = false;
     view_visibility = VVnone;
@@ -453,13 +426,11 @@ function_decl:
 %inline view_gen:
  | vv=view_visibility VIEW id=ident xs=function_args
      r=function_return? LBRACE b=fun_body RBRACE {
-  let (s, e) = b in
   {
     name   = id;
     args   = xs;
     ret_t  = r;
-    spec   = s;
-    body   = e;
+    body   = b;
     getter = false;
     view   = true;
     view_visibility = vv;
@@ -473,122 +444,6 @@ getter_decl:
 view_decl:
 | f=view_gen
     { Dfunction f }
-
-%inline spec_predicate:
-| PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
-
-%inline spec_fail_item:
-| lbl=ident WITH fid=ident? LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
-{ (lbl, fid, arg, t, f) }
-
-%inline spec_fail_items:
-| xs=spec_fail_item+ { xs }
-
-%inline spec_fails:
-| FAILS xs=braced(spec_fail_items) { Vfails xs }
-
-%inline spec_definition:
-| DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
-
-%inline spec_variable:
-| VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
-
-%inline spec_effect:
-| SHADOW EFFECT e=braced(block) { Veffect e }
-
-%inline invars:
-| INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }
-
-%inline uses:
-| /* empty */ { [] }
-| USE COLON ids=ident+ SEMI_COLON { ids }
-
-%inline spec_body:
-| e=expr xs=invars* u=uses { (e, xs, u) }
-
-%inline spec_assert:
-| ASSERT id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vassert (id, e, xs, u) }
-
-%inline spec_postcondition:
-| POSTCONDITION id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKPost) }
-
-%inline spec_contract_invariant:
-| CONTRACT INVARIANT id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKInv) }
-
-spec_items:
-| ds=loc(spec_definition)*
-  ps=loc(spec_predicate)*
-  fs=loc(spec_fails)*
-  vs=loc(spec_variable)*
-  es=loc(spec_effect)*
-  bs=loc(spec_assert)*
-  ss=loc(spec_postcondition)*
-  cs=loc(spec_contract_invariant)*
-   { ds @ ps @ fs @ vs @ es @ bs @ ss @ cs }
-
-%inline specification_unloc_c:
-| xs=spec_items { xs }
-
-| xs=label_exprs_non_empty
-        { let ll = List.map (fun x ->
-            let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
-            ll }
-
-%inline specification_with_exts_unloc_c:
-| x=specification_unloc_c { (x, None) }
-
-%inline specification_c:
-| x=loc(specification_with_exts_unloc_c) { x }
-
-%inline specification:
-| SPECIFICATION exts=option(extensions) LBRACE xs=specification_unloc_c RBRACE
-    { (xs, exts) }
-
-specification_fun:
-| x=loc(specification) { x }
-
-specification_decl:
-| x=loc(specification)      { Dspecification x }
-
-specasset:
-| SPECIFICATION ASSET id=ident LBRACE xs=label_exprs_non_empty RBRACE
-{ Dspecasset (id, xs) }
-
-specfun_gen(X):
-| SPECIFICATION X id=ident args=function_args LBRACE s=specification_c RBRACE
-{ (id, args, s) }
-
-specfun:
-| x=specfun_gen(FUNCTION) { let id, args, s = x in Dspecfun (SKfunction, id, args, s) }
-
-specentry:
-| x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (SKentry, id, args, s) }
-
-specgetter:
-| x=specfun_gen(GETTER)    { let id, args, s = x in Dspecfun (SKgetter, id, args, s) }
-
-specvariable:
-| SPECIFICATION VARIABLE id=ident LBRACE xs=label_exprs_non_empty RBRACE
-{ Dspecvariable (id, xs) }
-
-%inline security_item_unloc:
-| lbl=ident COLON id=ident args=security_args
-    { (lbl, id, args) }
-
-%inline security_item:
-| x=loc(security_item_unloc) { x }
-
-security_decl_unloc:
-| SECURITY exts=option(extensions) LBRACE
-    xs=sl(SEMI_COLON, security_item) RBRACE
-        { (xs, exts) }
-
-security_decl:
-| x=loc(security_decl_unloc)      { Dsecurity x }
 
 type_decl:
 | TYPE id=ident EQUAL t=type_t    { Dtype (id, t) }
@@ -613,7 +468,6 @@ enum_cdecl:
 
 enum_option:
 | INITIAL                     { EOinitial }
-| WITH xs=braced(label_exprs) { EOspecification (xs) }
 
 %inline type_t:
 | t=loc(type_r)                             { (t, None) }
@@ -690,7 +544,6 @@ asset:
 
 asset_post_option:
 | WITH STATES x=ident                                               { APOstates x }
-| WITH xs=braced(label_exprs)                                       { APOconstraints (xs) }
 | INITIALIZED by_or_with LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
 
 %inline record_expr:
@@ -777,7 +630,7 @@ transition:
 | ACCEPT_TRANSFER o=otherwise_section? { (true, o) }
 
 entry_properties:
-  sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cst=constants? cs=require? fi=failif? fs=function_item*
+  at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cst=constants? cs=require? fi=failif? fs=function_item*
   {
     {
       accept_transfer = at;
@@ -788,7 +641,6 @@ entry_properties:
       require         = cs;
       failif          = fi;
       functions       = fs;
-      spec_fun        = sp;
     }
   }
 
@@ -1225,19 +1077,6 @@ simple_expr_r:
    lbl=ioption(postfix(vt_lbl , DOT))
    { (vset, lbl) }
 
-%inline label_exprs:
-| /* empty */   { [] }
-| l=label_exprs_non_empty { l }
-
-%inline label_exprs_non_empty:
-| l=snl(SEMI_COLON, label_expr) { l }
-
-%inline label_expr:
-| le=loc(label_expr_unloc) { le }
-
-label_expr_unloc:
-| id=ident COLON e=expr %prec prec_labelexpr { (id, e) }
-
 %inline quant_kind:
 | COLON t=type_s      { Qtype t }
 | IN    e=simple_expr { Qcollection e }
@@ -1317,21 +1156,6 @@ recupdate_item:
 
 %inline ord_operator:
 | op=ordering_operator   { Cmp op }
-
-%inline security_args:
-| args=paren(separated_list(COMMA, security_arg)) { args}
-
-%inline security_arg:
- | e=loc(security_arg_unloc) { e }
-
-security_arg_unloc:
-| id=ident                                     { Sident id }
-| a=ident DOT b=ident                          { Sdot (a, b) }
-| xs=bracket(snl2(OR, security_arg))           { Slist xs }
-| id=ident xs=paren(sl(COMMA, security_arg))   { Sapp (id, xs) }
-| id=ident BUT arg=security_arg                { Sbut (id, arg) }
-| id=ident TO arg=security_arg                 { Sto (id, arg) }
-| x=paren(security_arg_unloc)                  { x }
 
 %inline postfix(X, P):
 | x=X P { x }

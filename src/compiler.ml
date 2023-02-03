@@ -70,14 +70,6 @@ let main () : unit =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
-      "--service", Arg.String (fun s ->
-          try
-            Options.opt_service_kind := Some (Options.string_to_service_kind s)
-          with
-          | _ ->
-            Format.eprintf
-              "Unknown service %s (--list-services to view all services)@." s;
-            exit 2), "<service> Generate service response to <service>";
       "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
       "-m", Arg.Set Options.opt_m, " Pretty print model tree";
       "--model", Arg.Set Options.opt_m, " Same as -m";
@@ -164,17 +156,16 @@ let main () : unit =
         let input = FIChannel (filename, channel) in
         begin
           let res =
-            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with
-            | _, _, _, _, true, _  , _, _, _ -> get_storage_values input
-            | _, _, _, _, _, true  , _, _, _ -> with_parameters input
-            | Some k, _, _, _, _, _, _, _, _ -> Lsp.process k input
-            | _, Some s, _, _, _, _, _, _, _ -> Services.process s input
-            | _, _, true, _  , _, _, _, _, _ -> decompile input
-            | _, _, _, Some v, _, _, _, _, _ -> process_expr ~tinput:input v
-            | _, _, _, _, _, _, true  , _, _ -> show_entries_from_input input
-            | _, _, _, _, _, _, _, true  , _ -> show_contract_interface input
-            | _, _, _, _, _, _, _, _  , true -> show_contract_interface_michelson input
-            | _               -> compile input
+            match !Options.opt_lsp_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with
+            | _, _, _, true, _  , _, _, _ -> get_storage_values input
+            | _, _, _, _, true  , _, _, _ -> with_parameters input
+            | Some k, _, _, _, _, _, _, _ -> Lsp.process k input
+            | _, true, _  , _, _, _, _, _ -> decompile input
+            | _, _, Some v, _, _, _, _, _ -> process_expr ~tinput:input v
+            | _, _, _, _, _, true  , _, _ -> show_entries_from_input input
+            | _, _, _, _, _, _, true  , _ -> show_contract_interface input
+            | _, _, _, _, _, _, _  , true -> show_contract_interface_michelson input
+            | _                           -> compile input
           in
           output res
         end;

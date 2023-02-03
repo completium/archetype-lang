@@ -146,53 +146,12 @@ let symbol_kind_to_int = function
   | Operator -> 25
   | TypeParameter -> 26
 
-let mk_outline_from_label_exprs (x : PT.label_exprs) =
-  (List.map (fun (x : PT.label_expr)  -> let id, _ = Location.unloc x in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
+type label_exprs = label_expr list
 
-let mk_outline_post_options (post_options : PT.asset_post_option list) =
-  let aux (a : PT.asset_post_option) =
-    match a with
-    | PT.APOconstraints l ->
-      List.map (fun (x : PT.label_expr) ->
-          let lo, v = Location.deloc x in
-          let id, _formula = v in
-          [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
-        ) l
-      |> List.flatten
-    | _ -> []
-  in
-  post_options
-  |> List.map aux
-  |> List.flatten
+and label_expr = (PT.lident * PT.expr) Location.loced
 
-let mk_outline_from_invariants (invariants : PT.invariants) =
-  List.map (fun x ->
-      let id, _ = x in
-      mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)
-    ) invariants
-
-let mk_outline_from_specification (spec : PT.specification) =
-  let vis, _ = Location.unloc spec in
-
-  List.fold_right (fun (i : PT.specification_item) accu ->
-      let l, v = Location.deloc i in
-      match v with
-      | Vassert (id, _, ivs, _)
-      | Vpostcondition (id, _, ivs, _, Some PKPost) ->
-        [(mk_outline (Location.unloc id, symbol_kind_to_int Property, l))]
-        @ mk_outline_from_invariants ivs
-        @ accu
-      | _ -> accu) vis []
-
-let mk_outline_from_security (sec : PT.security) =
-  let sec_loc, sec = Location.deloc sec in
-  mk_outline ("security", symbol_kind_to_int Namespace, sec_loc)
-  ::(
-    List.fold_right (fun (x : PT.security_item) accu ->
-        let secitem_loc, (id, _, _) = Location.deloc x in
-        (mk_outline (Location.unloc id, symbol_kind_to_int Property, secitem_loc))::accu) (fst sec) []
-  )
-
+let mk_outline_from_label_exprs (x : label_exprs) =
+  (List.map (fun (x : label_expr)  -> let id, _ = Location.unloc x in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
 
 let make_outline_from_enum ((ek, li, l) : (PT.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
@@ -206,15 +165,13 @@ let make_outline_from_decl (d : PT.declaration) gl =
   let l, v = Location.deloc d in
   match v with
   | Darchetype (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
-  | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
+  | Dvariable (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
-  | Dasset (id, _, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
-  | Dentry (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec_fun)
+  | Dasset (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
+  | Dentry (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
-  | Dspecification spec -> mk_outline_from_specification spec
-  | Dsecurity sec -> mk_outline_from_security sec
   | _ -> []
 
 let process_crash () = Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_yojson (mk_result Crash [])))

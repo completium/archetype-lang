@@ -77,11 +77,6 @@ let get_lsp_kind k =
   |> Js.to_string
   |> Options.string_to_kind
 
-let get_service_kind s =
-  s
-  |> Js.to_string
-  |> Options.string_to_service_kind
-
 let _ =
   Options.quiet := true;
   Options.opt_no_js_header := true;
@@ -146,10 +141,6 @@ let _ =
       method lsp k i = begin
         let kind = get_lsp_kind k in
         doit (Lsp.process_from_string kind) i
-      end
-      method services s i = begin
-        let service = get_service_kind s in
-        doit (Services.process_from_string service) i
       end
       val version = Js.string Options.version
     end)

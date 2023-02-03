@@ -222,10 +222,6 @@ and expr = expr_unloc loced
 
 and lident_typ = lident * type_t * extension list option
 
-and label_expr = (lident * expr) loced
-
-and label_exprs = label_expr list
-
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
   | Eextension of lident * expr list (** extension *)
@@ -242,43 +238,6 @@ and field = field_unloc loced
 
 and args = lident_typ list
 
-and invariants = (lident * expr list) list
-
-and specification_item_unloc =
-  | Vpredicate     of lident * args * expr
-  | Vdefinition    of lident * type_t * lident * expr
-  | Vvariable      of lident * type_t * expr option
-  | Veffect        of expr
-  | Vassert        of (lident * expr * invariants * lident list)
-  | Vfails         of (lident * lident option * lident * type_t * expr) list
-  | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
-
-and postkind = PKPost | PKInv
-
-and specification_item = specification_item_unloc loced
-
-and specification_unloc = specification_item list * exts
-
-and specification = specification_unloc loced
-
-and security_arg_unloc =
-  | Sident of lident
-  | Sdot   of lident * lident
-  | Slist  of security_arg list
-  | Sapp   of lident * security_arg list
-  | Sbut   of lident * security_arg
-  | Sto    of lident * security_arg
-
-and security_arg = security_arg_unloc loced
-
-and security_item_unloc = lident * lident * security_arg list
-
-and security_item = security_item_unloc loced
-
-and security_unloc = security_item list * exts
-
-and security = security_unloc loced
-
 and view_visibility =
   | VVonchain
   | VVoffchain
@@ -289,7 +248,6 @@ and s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
-  spec  : specification option;
   body  : expr;
   getter: bool;
   view  : bool;
@@ -304,7 +262,6 @@ and entry_properties = {
   constants       : ((lident * expr * expr option) list * exts) option;
   require         : ((lident * expr * expr option) list * exts) option;
   failif          : ((lident * expr * expr option) list * exts) option;
-  spec_fun        : specification option;
   functions       : (s_function loced) list;
 }
 
@@ -340,29 +297,15 @@ and declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
-  | Dspecification of specification
-  | Dspecasset     of (lident * label_exprs)
-  | Dspecfun       of specfun
-  | Dspecvariable  of (lident * label_exprs)
-  | Dsecurity      of security
   | Dtype          of lident * type_t
   | Devent         of record_decl
   | Dinvalid
-
-and specfun_kind =
-  | SKentry
-  | SKfunction
-  | SKgetter
-  | SKview
-
-and specfun = specfun_kind * lident * args * specification
 
 and variable_decl =
   lident
   * type_t
   * expr option
   * variable_kind
-  * label_exprs
   * exts
 
 and enum_decl =
@@ -417,12 +360,10 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of label_exprs
   | APOinit of expr list
 
 and enum_option =
   | EOinitial
-  | EOspecification of label_exprs
 
 and declaration = declaration_unloc loced
 
@@ -590,15 +531,15 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t spec body getter view view_visibility : s_function =
-  {name; args; ret_t; spec; body; getter; view; view_visibility}
+let mk_s_function name args ret_t body getter view view_visibility : s_function =
+  {name; args; ret_t; body; getter; view; view_visibility}
 
-let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
-  { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; spec_fun; functions }
+let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?(functions = []) _ : entry_properties =
+  { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; functions }
 
 let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
 
-let mk_variable_decl ?dv ?(le=[]) ?exts id t vk : variable_decl = id, t, dv, vk, le, exts
+let mk_variable_decl ?dv ?exts id t vk : variable_decl = id, t, dv, vk, exts
 
 let mk_enum_decl ?exts l : enum_decl = l, exts
 
@@ -619,11 +560,9 @@ let mk_asset_option_sortedby id      = AOsortedby id
 let mk_asset_option_to_map_kind x    = AOtoMapKind x
 
 let mk_asset_post_option_states id      = APOstates id
-let mk_asset_post_option_constraints ls = APOconstraints ls
 let mk_asset_post_option_init l         = APOinit l
 
 let mk_enum_option_initial _        = EOinitial
-let mk_enum_option_specification ls = EOspecification ls
 
 let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
@@ -661,21 +600,6 @@ let mk_namespace ?(loc=dummy) nd =
 let mk_function ?(loc=dummy) sf =
   mkloc loc (Dfunction sf)
 
-let mk_specification ?(loc=dummy) s =
-  mkloc loc (Dspecification s)
-
-let mk_specasset ?(loc=dummy) id ls =
-  mkloc loc (Dspecasset (id, ls))
-
-let mk_specfun ?(loc=dummy) sf id args s =
-  mkloc loc (Dspecfun (sf, id, args, s))
-
-let mk_specvariable ?(loc=dummy) id ls =
-  mkloc loc (Dspecvariable (id, ls))
-
-let mk_security ?(loc=dummy) s =
-  mkloc loc (Dsecurity s)
-
 let mk_dtype ?(loc=dummy) id t =
   mkloc loc (Dtype (id, t))
 
@@ -704,7 +628,7 @@ let cst_min_block_time = "min_block_time"
 let get_name = function
   | Darchetype  _                      -> "archetype"
   | Dimport (id, _)                    -> unloc id
-  | Dvariable (id, _, _, _, _, _)      -> unloc id
+  | Dvariable (id, _, _, _, _)         -> unloc id
   | Denum (EKenum id, _)               -> unloc id
   | Denum (EKstate, _)                 -> "_state"
   | Dasset (id, _, _, _, _, _, _)      -> unloc id
@@ -715,10 +639,5 @@ let get_name = function
   | Dextension (id, _)                 -> unloc id
   | Dnamespace (id, _)                 -> unloc id
   | Dfunction fs                       -> unloc fs.name
-  | Dspecification _                   -> ""
-  | Dspecasset _                       -> ""
-  | Dspecfun _                         -> ""
-  | Dspecvariable _                    -> ""
-  | Dsecurity _                        -> ""
   | Dtype  (id, _)                     -> unloc id
   | Dinvalid                           -> ""
