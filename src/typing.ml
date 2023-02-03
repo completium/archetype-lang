@@ -1812,9 +1812,11 @@ module Env : sig
 
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
+  type cache
+
   type ecallback = error -> unit
 
-  val create       : name:A.lident -> ecallback -> t
+  val create       : name:A.lident -> ?cache:cache -> ecallback -> t
   val emit_error   : t -> error -> unit
   val name_free    : t -> ident -> [`Free | `Clash of Location.t option]
   val lookup_entry : t -> longident -> (A.lident * entry) option
@@ -1913,9 +1915,15 @@ module Env : sig
   end
 
   module Import : sig
+    type key = int * int
+
     val lookup  : t -> ident -> t importdecl option
     val get     : t -> ident -> t importdecl
     val push    : t -> t importdecl -> t
+
+    val get_in_cache  : t -> key -> (t importdecl) option
+    val push_in_cache : t -> key -> t importdecl -> unit
+    val get_cache     : t -> cache
   end
 end = struct
   type ecallback = error -> unit
@@ -1925,6 +1933,13 @@ end = struct
   type record = [`Pre of A.lident | `Full of recorddecl]
   type state  = [`Pre of A.lident | `Full of statedecl ]
   type asset  = [`Pre of A.lident | `Full of assetdecl ]
+
+  module Mlib = Map.Make(struct
+    type t = int * int
+
+    let equal = Stdlib.(=)
+    let compare = Stdlib.compare
+  end)
 
   type entry = [
     | `Label       of t * label_kind
@@ -1948,19 +1963,23 @@ end = struct
   and t = {
     env_error    : ecallback;
     env_bindings : components;
+    env_loaded   : (t importdecl) Mlib.t ref;
     env_name     : A.lident;
     env_context  : assetdecl list;
     env_locals   : Sid.t;
     env_scopes   : Sid.t list;
   }
 
+  and cache = (t importdecl) Mlib.t ref
+
   and components = (Location.t option * entry) Mid.t
 
   let ctxtname = "the"
 
-  let create ~(name : A.lident) ecallback : t =
+  let create ~(name : A.lident) ?cache ecallback : t =
     { env_error    = ecallback;
       env_bindings = Mid.empty;
+      env_loaded   = Option.get_fdfl (fun () -> ref Mlib.empty) cache;
       env_name     = name;
       env_context  = [];
       env_locals   = Sid.empty;
@@ -2372,6 +2391,9 @@ end = struct
   end
 
   module Import = struct
+    type key   = int * int
+    type cache = (t importdecl) Mlib.t ref
+
     let proj = function `Import x -> Some x | _ -> None
 
     let lookup (env : t) (name : ident) : t importdecl option =
@@ -2382,6 +2404,15 @@ end = struct
 
     let push (env : t) (ipt : t importdecl) : t =
       push env ~loc:(loc ipt.id_name) (unloc ipt.id_name) (`Import ipt)
+
+    let get_in_cache (env : t) (key : key) : (t importdecl) option =
+      Mlib.find_opt key !(env.env_loaded)
+
+    let push_in_cache (env : t) (key : key) (ipt : t importdecl) =
+      env.env_loaded := Mlib.add key ipt !(env.env_loaded)
+
+    let get_cache (env : t) =
+      env.env_loaded
   end
 
 end
@@ -2521,14 +2552,14 @@ end
 
 let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
-let empty (nm : A.lident) : env =
+let empty ?cache (nm : A.lident) : env =
   let cb (lc, error) =
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
   in
 
-  let env = Env.create ~name:nm cb in
+  let env = Env.create ~name:nm ?cache cb in
 
   let env =
     List.fold_left
@@ -6547,7 +6578,6 @@ let group_declarations (decls : (PT.declaration list)) =
 
 (* -------------------------------------------------------------------- *)
 type decls = {
-  imports   : (env importdecl) list;
   state     : statedecl option;
   variables : vardecl option list;
   enums     : statedecl option list;
@@ -6819,7 +6849,7 @@ let sort_decl refs l =
 
 (* -------------------------------------------------------------------- *)
 let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  let for1 (env, accu : env * (env importdecl) list) (a : (PT.lident * PT.lident) loced) =
+  let for1 (env : env) (a : (PT.lident * PT.lident) loced) =
     let lo, (id, path) = deloc a in
     let ext = Filename.extension (unloc path) in
 
@@ -6853,18 +6883,28 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
                   then Env.Import.push env importdecl
                   else env in
 
-                (env, importdecl :: accu)
+                env
               end
 
             | None ->
-                Env.emit_error env (lo, InvalidTzFile); (env, accu)
+                Env.emit_error env (lo, InvalidTzFile); env
           end
 
         | None ->
-            Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu)
+            Env.emit_error env (lo, FileNotFound (unloc path)); env
       end
 
     | ".arl" -> begin
+        let stats =
+          try
+            let stats = Unix.stat (unloc path) in
+              (Some (stats.st_dev, stats.st_ino))
+          with Unix.Unix_error _ -> None in
+
+        let cached = stats |> Option.bind (Env.Import.get_in_cache env) in
+
+        match cached with Some cached -> Option.get cached.id_env | None ->
+
         let make_importdecl_from_ast ((ienv, iast) : env * A.ast) =
           let entrypoints, views =
             List.fold_left (fun (accu_entrypoints, accu_views) v ->
@@ -6922,25 +6962,28 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
 
         match opt with
         | Some pt -> begin
-            let import = typing (empty id) pt in
+            let import = typing (empty ~cache:(Env.Import.get_cache env) id) pt in
             let importdecl = make_importdecl_from_ast import in
-              let env =
-                if   check_and_emit_name_free env id
-                then Env.Import.push env importdecl
-                else env
-              in (env, importdecl :: accu)
+
+            Env.Import.push_in_cache env (Option.get stats) importdecl;
+
+            let env =
+              if   check_and_emit_name_free env id
+              then Env.Import.push env importdecl
+              else env
+            in env
           end
 
         | None ->
             Env.emit_error env (lo, InvalidArlFile);
-            (env, accu)
+            env
       end
 
     | _ ->
-        (Env.emit_error env (loc path, UnknownImportExtension ext);
-         (env, accu))
+        Env.emit_error env (loc path, UnknownImportExtension ext);
+        env
 
-  in List.fold_left for1 (env, []) decls
+  in List.fold_left for1 env decls
 
 (* -------------------------------------------------------------------- *)
 and for_grouped_declarations (env : env) (toploc, g) =
@@ -6973,7 +7016,7 @@ and for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, env) in
 
-  let env, imports      = for_import_decl    env g.gr_imports in
+  let env               = for_import_decl    env g.gr_imports in
   let env, _            = for_vars_decl      env g.gr_vars    in
   let env, enums        = for_enums_decl     env g.gr_enums   in
   let env, assets       = for_assets_decl    env g.gr_assets  in
@@ -6985,8 +7028,8 @@ and for_grouped_declarations (env : env) (toploc, g) =
   let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    in
 
   let output =
-    { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; records  ; events  ; imports; }
+    { state    ; variables; enums   ; assets ;
+      functions; acttxs   ; records ; events ; }
 
   in (env, output)
 
@@ -7004,7 +7047,6 @@ and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : e
     let model =
       A.mk_model
         ~parameters
-        ~imports:(imports_of_vdecls decls.imports)
         ?metadata
         ~decls:((
             List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @

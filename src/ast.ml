@@ -789,7 +789,6 @@ type import_struct = {
 type ast = {
   name           : lident;
   parameters     : parameter list;
-  imports        : import_struct list;
   metadata       : metadata_kind option;
   decls          : decl_ list;
   funs           : fun_ list;
@@ -900,8 +899,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; map_kind; state; init; specs; loc }
 
-let mk_model ?(parameters = []) ?(imports = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; parameters; imports; metadata; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; parameters; metadata; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
