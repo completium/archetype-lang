@@ -2,7 +2,7 @@ archetype import_export
 
 constant myc : nat = 0
 
-record myrecord {
+record my_record {
   n : nat;
   s : string;
 }
