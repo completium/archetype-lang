@@ -9,13 +9,10 @@ let pp_longident fmt (id : longident) =
   Format.fprintf fmt "%s" (Location.unloc (snd id))
 
 let pp_namespace fmt nm =
-  let str =
-    match nm with None -> "::" | Some i -> Location.unloc i ^ "::"
-  in
-  Format.pp_print_string fmt str
+  Format.fprintf fmt "%s::" (Location.unloc nm)
 
 let pp_longident fmt ((nm, id) : longident) =
-  Format.fprintf fmt "%a.%s" pp_namespace nm (Location.unloc id)
+  Format.fprintf fmt "%a%s" pp_namespace nm (Location.unloc id)
 
 let pp_with_paren pp fmt =
   if (!Options.opt_all_parenthesis)

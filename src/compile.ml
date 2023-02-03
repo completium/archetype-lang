@@ -222,7 +222,7 @@ let type_ (pt : ParseTree.archetype) : Ast.ast =
     | "" -> None
     | x  -> Some (Io.parse_expr (FIString x))
   in
-  Typing.typing Typing.empty pt ?init
+  snd (Typing.typing Typing.empty0 pt ?init)
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage

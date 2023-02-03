@@ -650,28 +650,28 @@ type opsig = {
 
 (* -------------------------------------------------------------------- *)
 type namespace =
-  | Resolve
   | Current
-  | Named  of ident
+  | Named of ident
 
 [@@deriving show {with_path = false}]
 
 let uknm = Current
 
 type longident = namespace * ident [@@deriving show {with_path = false}]
+type fullname  = A.lident * A.lident [@@deriving show {with_path = false}]
 
 let unloc_longident (lid : A.longident) = unloc (snd lid)
 
 let mknm (nm, id) =
   (match nm with None -> Current | Some x -> Named x), id
 
+let unloc_nm = function
+  | PT.SINone   -> Current
+  | PT.SIParent -> Current
+  | PT.SIId nm  -> Named (unloc nm)
+
 let unloc_nmid (nm, x) =
-  let nm =
-    match nm with
-    | PT.SINone   -> Resolve
-    | PT.SIParent -> Current
-    | PT.SIId nm  -> Named (unloc nm)
-  in (nm, unloc x)
+  (unloc_nm nm, unloc x)
 
 let loc_nmid (nm, x) =
   let nm =
@@ -923,8 +923,7 @@ let pp_operator fmt (op : PT.operator) : unit =
 let pp_namespace fmt nm =
   let nm =
     match nm with
-    | Resolve -> ""
-    | Current -> "::"
+    | Current -> ""
     | Named x -> Format.sprintf "%s::" x
   in Format.pp_print_string fmt nm
 
@@ -1615,26 +1614,27 @@ let allops : opinfo list =
   ticket_ops @ bls_ops @ mathops @ timelock_ops
 
 (* -------------------------------------------------------------------- *)
-type importdecl = {
+type 'env importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
   id_content     : Michelson.obj_micheline option;
   id_ast         : A.ast option;
   id_entrypoints : (ident * A.type_) list;
   id_views       : (ident * (A.type_ * A.type_)) list;
+  id_env         : 'env option;
 }
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
-  as_name   : A.longident;
+  as_name   : fullname;
   as_fields : fielddecl list;
   as_pkty   : A.ptyp;
   as_pk     : A.lident list;
   as_sortk  : A.lident list;
   as_bm     : A.map_kind;
   as_invs   : (A.lident option * A.pterm) list;
-  as_state  : A.longident option;
+  as_state  : fullname option;
   as_init   : (A.pterm list) list;
 }
 [@@deriving show {with_path = false}]
@@ -1650,7 +1650,7 @@ let get_field (x : ident) (decl : assetdecl) =
 
 (* -------------------------------------------------------------------- *)
 type recorddecl = {
-  rd_name    : A.longident;
+  rd_name    : fullname;
   rd_fields  : rfielddecl list;
   rd_packing : rpacking option;
 }
@@ -1679,7 +1679,7 @@ type vardecl = {
 }
 
 (* -------------------------------------------------------------------- *)
-type 'env fundecl = {
+type fundecl = {
   fs_name  : A.lident;
   fs_kind  : A.fun_kind;
   fs_args  : (A.lident * A.ptyp) list;
@@ -1701,14 +1701,14 @@ type txeffect = {
   tx_effect : A.instruction option;
 }
 
-type 'env tentrydecl = {
+type tentrydecl = {
   ad_name   : A.lident;
   ad_args   : (A.lident * A.ptyp) list;
   ad_srcby  : (A.pterm option) loced list * A.pterm option;
   ad_callby : (A.pterm option) loced list * A.pterm option;
   ad_stateis: (A.lident * A.pterm option) option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
-  ad_funs   : 'env fundecl option list;
+  ad_funs   : fundecl option list;
   ad_csts   : (A.lident option * A.pterm * A.pterm option) list;
   ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
   ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
@@ -1803,27 +1803,26 @@ module Env : sig
     | `Asset       of asset
     | `Record      of record
     | `Event       of record
-    | `Entry       of t tentrydecl
-    | `Function    of t fundecl
-    | `Field       of ident * [`Asset | `Record | `Event]
+    | `Entry       of tentrydecl
+    | `Function    of fundecl
+    | `Field       of fullname * [`Asset | `Record | `Event]
     | `Context     of assetdecl * ident option
-    | `Import      of importdecl
-    | `Namespace   of namespace
+    | `Import      of t importdecl
   ]
-
-  and namespace
 
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
   type ecallback = error -> unit
 
-  val create       : ecallback -> t
+  val create       : name:A.lident -> ecallback -> t
   val emit_error   : t -> error -> unit
   val name_free    : t -> ident -> [`Free | `Clash of Location.t option]
-  val lookup_entry : t -> longident -> entry option
+  val lookup_entry : t -> longident -> (A.lident * entry) option
   val open_        : t -> t
   val close        : t -> t
   val inscope      : t -> (t -> t * 'a) -> t * 'a
+  val name         : t -> A.lident
+  val relative     : t -> fullname -> longident
 
   module Label : sig
     val lookup : t -> ident -> (t * label_kind) option
@@ -1834,8 +1833,9 @@ module Env : sig
 
   module Type : sig
     val lookup  : t -> longident -> A.ptyp option
-    val get     : t -> longident -> A.ptyp
     val exists  : t -> longident -> bool
+    val get     : t -> fullname -> A.ptyp
+    val mem     : t -> fullname -> bool
     val push    : t -> (A.lident * A.ptyp) -> t
   end
 
@@ -1849,66 +1849,73 @@ module Env : sig
 
   module Var : sig
     val lookup : t -> longident -> vardecl option
-    val get    : t -> longident -> vardecl
     val exists : t -> longident -> bool
+    val get    : t -> fullname -> vardecl
+    val mem    : t -> fullname -> bool
     val push   : t -> vardecl -> t
   end
 
   module Function : sig
-    val lookup : t -> longident -> t fundecl option
-    val get    : t -> longident -> t fundecl
+    val lookup : t -> longident -> fundecl option
     val exists : t -> longident -> bool
-    val push   : t -> t fundecl -> t
+    val get    : t -> fullname -> fundecl
+    val mem    : t -> fullname -> bool
+    val push   : t -> fundecl -> t
   end
 
   module State : sig
     val lookup : t -> longident -> state option
-    val get    : t -> longident -> state
     val exists : t -> longident -> bool
+    val get    : t -> fullname -> state
+    val mem    : t -> fullname -> bool
     val byctor : t -> longident -> statedecl option
     val push   : t -> state -> t
   end
 
   module Record : sig
     val lookup  : t -> longident -> record option
-    val get     : t -> longident -> record
     val exists  : t -> longident -> bool
+    val get     : t -> fullname -> record
+    val mem     : t -> fullname -> bool
     val byfield : t -> longident -> (recorddecl * rfielddecl) option
     val push    : t -> record -> t
   end
 
   module Event : sig
     val lookup  : t -> longident -> record option
-    val get     : t -> longident -> record
     val exists  : t -> longident -> bool
+    val get     : t -> fullname -> record
+    val mem     : t -> fullname -> bool
     val byfield : t -> longident -> (recorddecl * rfielddecl) option
     val push    : t -> record -> t
   end
 
   module Asset : sig
     val lookup  : t -> longident -> asset option
-    val get     : t -> longident -> asset
     val exists  : t -> longident -> bool
+    val get     : t -> fullname -> asset
+    val mem     : t -> fullname -> bool
     val byfield : t -> longident -> (assetdecl * fielddecl) option
     val push    : t -> asset -> t
   end
 
   module Tentry : sig
-    val lookup  : t -> longident -> t tentrydecl option
-    val get     : t -> longident -> t tentrydecl
+    val lookup  : t -> longident -> tentrydecl option
     val exists  : t -> longident -> bool
-    val push    : t -> t tentrydecl -> t
+    val get     : t -> fullname -> tentrydecl
+    val mem     : t -> fullname -> bool
+    val push    : t -> tentrydecl -> t
   end
 
   module Context : sig
     val the  : ident
-    val push : t -> longident -> t
+    val push : t -> A.lident -> t
   end
 
   module Import : sig
-    val lookup  : t -> ident -> importdecl option
-    val get     : t -> ident -> importdecl
-    val push    : t -> importdecl -> t
+    val lookup  : t -> ident -> t importdecl option
+    val get     : t -> ident -> t importdecl
+    val push    : t -> t importdecl -> t
   end
 end = struct
   type ecallback = error -> unit
@@ -1929,31 +1936,32 @@ end = struct
     | `Asset       of asset
     | `Record      of record
     | `Event       of record
-    | `Entry       of t tentrydecl
-    | `Function    of t fundecl
-    | `Field       of ident * [`Asset | `Record | `Event]
+    | `Entry       of tentrydecl
+    | `Function    of fundecl
+    | `Field       of fullname * [`Asset | `Record | `Event]
     | `Context     of assetdecl * ident option
-    | `Import      of importdecl
-    | `Namespace   of namespace
+    | `Import      of t importdecl
   ]
 
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
   and t = {
     env_error    : ecallback;
-    env_bindings : namespace;
+    env_bindings : components;
+    env_name     : A.lident;
     env_context  : assetdecl list;
     env_locals   : Sid.t;
     env_scopes   : Sid.t list;
   }
 
-  and namespace = (Location.t option * entry) Mid.t
+  and components = (Location.t option * entry) Mid.t
 
   let ctxtname = "the"
 
-  let create ecallback : t =
+  let create ~(name : A.lident) ecallback : t =
     { env_error    = ecallback;
       env_bindings = Mid.empty;
+      env_name     = name;
       env_context  = [];
       env_locals   = Sid.empty;
       env_scopes   = []; }
@@ -1967,16 +1975,32 @@ end = struct
       Option.map fst (Mid.find_opt x env.env_bindings)
       |> Option.map_dfl (fun x -> `Clash x) `Free
 
-  let lookup_entry (env : t) ((_, name) : longident) : entry option =
-    let lookup = Option.map snd (Mid.find_opt name env.env_bindings) in
+  let lookup_entry (env : t) ((nm, name) : longident) : (A.lident * entry) option =
+    let env =
+      match nm with
+      | Current ->
+          Some env
+      | Named nm -> begin
+          match Mid.find_opt nm env.env_bindings with
+          | Some (_, `Import { id_env = Some ienv }) ->
+              Some ienv
+          | _ ->
+              None
+        end
+    in
 
-    if Option.is_none lookup && name = ctxtname then
-      Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
-    else
-      lookup
+    env |> Option.bind (fun env ->
+      let lookup = Option.map snd (Mid.find_opt name env.env_bindings) in
+      let lookup =
+        if Option.is_none lookup && name = ctxtname then
+          Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
+        else
+          lookup
+      in Option.map (fun entry -> (env.env_name, entry)) lookup
+   )
 
-  let lookup_gen (proj : entry -> 'a option) (env : t) (name : longident) : 'a option =
-    Option.bind proj (lookup_entry env name)
+  let lookup_gen (proj : A.lident -> entry -> 'a option) (env : t) (name : longident) : 'a option =
+    lookup_entry env name |> Option.bind (fun (name, entry) -> proj name entry)
 
   let push (env : t) ?(loc : Location.t option) (name : ident) (entry : entry) =
     let env = { env with
@@ -2004,6 +2028,16 @@ end = struct
   let inscope (env : t) (f : t -> t * 'a) =
     let env, aout = f (open_ env) in (close env, aout)
 
+  let name { env_name = name } =
+    name
+
+  let relative (env : t) ((nm, x) : fullname) : longident =
+    let nm =
+      if   unloc nm = unloc env.env_name
+      then Current
+      else Named (unloc nm)
+    in (nm, unloc x)
+
   module Label = struct
     let proj (entry : entry) =
       match entry with
@@ -2011,7 +2045,7 @@ end = struct
       | _           -> None
 
     let lookup (env : t) (name : ident) =
-      lookup_gen proj env (Current, name)
+      lookup_gen (fun _ -> proj) env (Current, name)
 
     let exists (env : t) (name : ident) =
       Option.is_some (lookup env name)
@@ -2024,31 +2058,31 @@ end = struct
   end
 
   module Type = struct
-    let proj (entry : entry) =
+    let proj (nm : A.lident) (entry : entry) =
       match entry with
       | `Type  x -> Some x
 
       | `Asset decl -> begin
           match decl with
-          | `Pre  name -> Some (A.Tasset (None, name))
+          | `Pre  name -> Some (A.Tasset (nm, name))
           | `Full decl -> Some (A.Tasset decl.as_name)
         end
 
       | `State decl -> begin
           match decl with
-          | `Pre name  -> Some (A.Tenum (None, name))
+          | `Pre name  -> Some (A.Tenum (nm, name))
           | `Full decl -> Some (A.Tenum decl.sd_name)
         end
 
       | `Record decl -> begin
           match decl with
-          | `Pre name  -> Some (A.Trecord (None, name))
+          | `Pre name  -> Some (A.Trecord (nm, name))
           | `Full decl -> Some (A.Trecord decl.rd_name)
         end
 
       | `Event decl -> begin
           match decl with
-          | `Pre  name -> Some (A.Tevent (None, name))
+          | `Pre  name -> Some (A.Tevent (nm, name))
           | `Full decl -> Some (A.Tevent decl.rd_name)
         end
       | _ ->
@@ -2060,8 +2094,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let push (env : t) ((name, ty) : A.lident * A.ptyp) =
       push env ~loc:(loc name) (unloc name) (`Type ty)
@@ -2074,17 +2111,20 @@ end = struct
       | _        -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let byctor (env : t) (name : longident) =
       match lookup_entry env name with
-      | Some (`StateByCtor (decl, _)) -> Some decl
+      | Some (_, `StateByCtor (decl, _)) -> Some decl
       | _ -> None
 
     let push (env : t) (decl : state) =
@@ -2105,7 +2145,9 @@ end = struct
     let proj = function `Local x -> Some x | _ -> None
 
     let lookup (env : t) (name : ident) =
-      Option.map (fun ty -> (name, ty)) (lookup_gen proj env (Current, name))
+      Option.map
+        (fun ty -> (name, ty))
+        (lookup_gen (fun _ -> proj) env (Current, name))
 
     let exists (env : t) (name : ident) =
       Option.is_some (lookup env name)
@@ -2142,13 +2184,16 @@ end = struct
       | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let push (env : t) (decl : vardecl) =
       (* FIXME: namespace = current namespace *)
@@ -2160,15 +2205,18 @@ end = struct
     let proj = function `Function x -> Some x | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
 
-    let push (env : t) (decl : t fundecl) =
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
+
+    let push (env : t) (decl : fundecl) =
       push env ~loc:(loc decl.fs_name) (unloc decl.fs_name) (`Function decl)
   end
 
@@ -2176,22 +2224,25 @@ end = struct
     let proj = function `Asset x -> Some x | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
         (function
-          | `Field (nm, `Asset) ->
-            let decl  = as_full (get env (fst fname, nm)) in
+          | _, `Field (fullname, `Asset) ->
+            let decl  = as_full (get env fullname) in
             let field = get_field (snd fname) decl in
             Some (decl, Option.get field)
-          | _ -> None)
+          | _, _ -> None)
         (lookup_entry env fname)
 
     let push (env : t) (decl : asset) : t =
@@ -2199,13 +2250,12 @@ end = struct
       | `Pre nm ->
         push env ~loc:(loc nm) (unloc nm) (`Asset decl)
       | `Full decl ->
-        (* FIXME: namespace = current namespace *)
-        let _, id  = decl.as_name in
+        let (_, id) as fullname  = decl.as_name in
         let env = push env ~loc:(loc id) (unloc id) (`Asset (`Full decl)) in
         List.fold_left
           (fun env fd ->
              push env ~loc:(loc fd.fd_name)
-               (unloc fd.fd_name) (`Field (unloc id, `Asset)))
+               (unloc fd.fd_name) (`Field (fullname, `Asset)))
           env decl.as_fields
   end
 
@@ -2213,22 +2263,25 @@ end = struct
     let proj = function `Record x -> Some x | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
         (function
-          | `Field (nm, `Record) ->
-            let decl  = as_full (get env (fst fname, nm)) in
+          | _, `Field (recname, `Record) ->
+            let decl  = as_full (get env recname) in
             let field = get_rfield (snd fname) decl in
             Some (decl, Option.get field)
-          | _ -> None)
+          | _, _ -> None)
         (lookup_entry env fname)
 
     let push (env : t) (decl : record) : t =
@@ -2236,13 +2289,12 @@ end = struct
       | `Pre nm ->
         push env ~loc:(loc nm) (unloc nm) (`Record decl)
       | `Full fd ->
-        (* FIXME: namespace = current namespace *)
-        let _, id = fd.rd_name in
+        let (_, id) as fullname = fd.rd_name in
         let env = push env ~loc:(loc id) (unloc id) (`Record decl) in
         List.fold_left
           (fun env fd ->
              push env ~loc:(loc fd.rfd_name)
-               (unloc fd.rfd_name) (`Field (unloc id, `Record)))
+               (unloc fd.rfd_name) (`Field (fullname, `Record)))
           env fd.rd_fields
   end
 
@@ -2250,22 +2302,25 @@ end = struct
     let proj = function `Event x -> Some x | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
+
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
         (function
-          | `Field (nm, `Event) ->
-            let decl  = as_full (get env (fst fname, nm)) in
+          | _, `Field (fullname, `Event) ->
+            let decl  = as_full (get env fullname) in
             let field = get_rfield (snd fname) decl in
             Some (decl, Option.get field)
-          | _ -> None)
+          | _, _ -> None)
         (lookup_entry env fname)
 
     let push (env : t) (decl : record) : t =
@@ -2273,13 +2328,12 @@ end = struct
       | `Pre nm ->
         push env ~loc:(loc nm) (unloc nm) (`Event decl)
       | `Full fd ->
-        (* FIXME: namespace = current namespace *)
-        let _, id = fd.rd_name in
+        let (_, id) as fullname = fd.rd_name in
         let env = push env ~loc:(loc id) (unloc id) (`Event decl) in
         List.fold_left
           (fun env fd ->
              push env ~loc:(loc fd.rfd_name)
-               (unloc fd.rfd_name) (`Field (unloc id, `Event)))
+               (unloc fd.rfd_name) (`Field (fullname, `Event)))
           env fd.rd_fields
   end
 
@@ -2287,23 +2341,26 @@ end = struct
     let proj = function `Entry x -> Some x | _ -> None
 
     let lookup (env : t) (name : longident) =
-      lookup_gen proj env name
+      lookup_gen (fun _ -> proj) env name
 
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) (name : longident) =
-      Option.get (lookup env name)
+    let get (env : t) ((nm, name) : fullname) =
+      Option.get (lookup env (Named (unloc nm), unloc name))
 
-    let push (env : t) (act : t tentrydecl) =
+    let mem (env : t) ((nm, name) : fullname) =
+      exists env (Named (unloc nm), unloc name)
+
+    let push (env : t) (act : tentrydecl) =
       push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Entry act)
   end
 
   module Context = struct
     let the : ident = ctxtname
 
-    let push (env : t) (asset : longident) =
-      let asset = as_full (Asset.get env asset) in
+    let push (env : t) (asset : A.lident) =
+      let asset = as_full (Asset.get env (env.env_name, asset)) in
       { env with
         env_context  = asset :: env.env_context;
         env_bindings =
@@ -2317,13 +2374,13 @@ end = struct
   module Import = struct
     let proj = function `Import x -> Some x | _ -> None
 
-    let lookup (env : t) (name : ident) : importdecl option =
-      lookup_gen proj env (Current, name)
+    let lookup (env : t) (name : ident) : t importdecl option =
+      lookup_gen (fun _ -> proj) env (Current, name)
 
-    let get (env : t) (name : ident) : importdecl =
+    let get (env : t) (name : ident) : t importdecl =
       Option.get (lookup env name)
 
-    let push (env : t) (ipt : importdecl) : t =
+    let push (env : t) (ipt : t importdecl) : t =
       push env ~loc:(loc ipt.id_name) (unloc ipt.id_name) (`Import ipt)
   end
 
@@ -2464,14 +2521,14 @@ end
 
 let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
-let empty : env =
+let empty (nm : A.lident) : env =
   let cb (lc, error) =
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
   in
 
-  let env = Env.create cb in
+  let env = Env.create ~name:nm cb in
 
   let env =
     List.fold_left
@@ -2489,16 +2546,19 @@ let empty : env =
 
     List.fold_left
       (fun env (name, const, ty) ->
-         Env.Var.push env (mk (None, mkloc L.dummy name) ty const))
+         Env.Var.push env (mk (nm, mkloc L.dummy name) ty const))
       env globals in
 
   env
+
+let empty0 : env =
+  empty (mkloc Location.dummy "<top>")
 
 let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
   let doit = normalize_type env in
   match ty with
   | A.Trecord rn -> begin
-      let rv = as_full (Env.Record.get env (mknm (A.unloc_longident rn))) in
+      let rv = as_full (Env.Record.get env rn) in
       match rv.rd_fields with
       | [ty] -> doit ty.rfd_type
       | _ -> begin
@@ -2526,10 +2586,8 @@ let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
 (* --------------------------------------------------------------------- *)
 let ty_of_init_ty (env : env) (ty : A.ptyp) =
   match ty with
-  | A.Tcontainer (A.Tasset asset, ctn)
-    when Env.Asset.exists env (mknm (A.unloc_longident asset))
-    ->
-    let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+  | A.Tcontainer (A.Tasset asset, ctn) when Env.Asset.mem env asset ->
+    let asset = as_full (Env.Asset.get env asset) in
     let pk = List.map
         (fun x -> (Option.get (get_field (unloc x) asset)).fd_type) asset.as_pk in
     A.Tcontainer (Type.create_tuple pk, ctn)
@@ -2608,7 +2666,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
           | true, PT.Arith PT.Minus,
             [Tcontainer (Tasset aty, (Aggregate | Partition)) as rty; Tlist sty] ->
 
-            let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident aty))) in
+            let asset = as_full (Env.Asset.get env aty) in
 
             if Type.compatible ~autoview:false ~for_eq:false ~from_:sty ~to_:asset.as_pkty then
               [{ osl_sig = tys; osl_ret = rty }]
@@ -2779,13 +2837,12 @@ let for_type_exn ?pkey (env : env) =
 
     | Tcontainer (ty, AssetKey) -> begin
         match doit ~canasset:true ty with
-        | A.Tasset x -> begin
-            let name = mknm (A.unloc_longident x) in
-            let decl = as_full (Env.Asset.get env name) in
+        | A.Tasset asset -> begin
+            let decl = as_full (Env.Asset.get env asset) in
 
             match pkey with
-            | Some map when List.mem (unloc (snd x)) map -> (* FIXME: namespaces *)
-              Tnamed (List.index_of ((=) (unloc (snd x))) map)
+            | Some map when List.mem (unloc (snd asset)) map -> (* FIXME: namespaces *)
+              Tnamed (List.index_of ((=) (unloc (snd asset))) map)
 
             | _ ->
               decl.as_pkty
@@ -3072,7 +3129,8 @@ let rec for_xexpr
   let bailout = fun () -> raise E.Bailout in
 
   let mk_sp type_ node = A.mk_sp ~loc:(loc tope) ?type_ node in
-  let dummy type_ : A.pterm = mk_sp type_ (A.Pvar (VTnone, Vnone, (None, mkloc (loc tope) "<error>"))) in
+  let dummy type_ : A.pterm =
+    mk_sp type_ (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", mkloc (loc tope) "<error>"))) in
 
   let require_literal_string (a : PT.expr) : A.lident =
     match unloc a with
@@ -3085,7 +3143,7 @@ let rec for_xexpr
     | Eterm x -> begin
         let lk = Env.lookup_entry env (unloc_nmid x) in
 
-        match lk with
+        match Option.map snd lk with
         | Some (`Local (xty, _)) ->
           assert (fst x = SINone);
 
@@ -3099,7 +3157,7 @@ let rec for_xexpr
             | `Only _ | `Yes None ->
               () end;
 
-          mk_sp (Some xty) (A.Pvar (VTnone, Vnone, (None, x)))
+          mk_sp (Some xty) (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", x)))
 
         | Some (`Global decl) -> begin
             if not capture.cp_global then
@@ -3133,7 +3191,7 @@ let rec for_xexpr
         | Some (`Context (asset, ofield)) -> begin
             let atype = A.Tasset asset.as_name in
             let var   = mkloc (loc tope) Env.Context.the in
-            let the   = mk_sp (Some atype) (A.Pvar (VTnone, Vnone, (None, var))) in
+            let the   = mk_sp (Some atype) (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", var))) in
 
             match ofield with
             | None ->
@@ -3211,7 +3269,9 @@ let rec for_xexpr
           bailout ()
       end
 
-    | Erecord (_, fields) -> begin
+    | Erecord (nm, fields) -> begin
+        let nm = unloc_nm nm in
+        
         let module E = struct
           type state = {
             hasupdate : bool;
@@ -3230,7 +3290,8 @@ let rec for_xexpr
 
         let infos = List.fold_left (fun state (fname, _) ->
             E.{ hasupdate = state.hasupdate || is_update fname;
-                fields    = Option.fold
+                fields    =
+                  Option.fold
                     (fun names (_, name)-> unloc name :: names)
                     state.fields fname;
                 anon      = state.anon || Option.is_none fname; })
@@ -3238,7 +3299,7 @@ let rec for_xexpr
 
         let get_target_field_type = function
           | A.Tcontainer (Tasset an, Aggregate) -> begin
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident an))) in
+              let asset = as_full (Env.Asset.get env an) in
               A.Tlist asset.as_pkty
             end
           | t -> t
@@ -3256,15 +3317,15 @@ let rec for_xexpr
           let dfields =
             match ety with
             | Some (A.Tasset asset) ->
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+              let asset = as_full (Env.Asset.get env asset) in
               List.map (fun fd -> fd.fd_type) asset.as_fields
 
             | Some (A.Trecord record) ->
-              let record = as_full (Env.Record.get env (mknm (A.unloc_longident record))) in
+              let record = as_full (Env.Record.get env record) in
               List.map (fun fd -> fd.rfd_type) record.rd_fields
 
             | Some (A.Tevent record) ->
-              let event = as_full (Env.Event.get env (mknm (A.unloc_longident record))) in
+              let event = as_full (Env.Event.get env record) in
               List.map (fun fd -> fd.rfd_type) event.rd_fields
 
             | _ ->
@@ -3291,19 +3352,19 @@ let rec for_xexpr
                 let fname = unloc (snd (Option.get fname)) in
 
                 Mid.update fname (function
-                    | None when Option.is_some (Env.Asset.byfield env (uknm, fname)) -> begin
-                        let asset, fd = Option.get (Env.Asset.byfield env (uknm, fname)) in
-                        Some ((Some (`Asset (A.unloc_longident asset.as_name), fd.fd_type), [e]))
+                    | None when Option.is_some (Env.Asset.byfield env (nm, fname)) -> begin
+                        let asset, fd = Option.get (Env.Asset.byfield env (nm, fname)) in
+                        Some ((Some (`Asset asset.as_name, fd.fd_type), [e]))
                       end
 
-                    | None when Option.is_some (Env.Record.byfield env (uknm, fname)) -> begin
-                        let record, fd = Option.get (Env.Record.byfield env (uknm, fname)) in
-                        Some ((Some (`Record (A.unloc_longident record.rd_name), fd.rfd_type), [e]))
+                    | None when Option.is_some (Env.Record.byfield env (nm, fname)) -> begin
+                        let record, fd = Option.get (Env.Record.byfield env (nm, fname)) in
+                        Some ((Some (`Record record.rd_name, fd.rfd_type), [e]))
                       end
 
-                    | None when Option.is_some (Env.Event.byfield env (uknm, fname)) -> begin
-                        let record, fd = Option.get (Env.Event.byfield env (uknm, fname)) in
-                        Some ((Some (`Event (A.unloc_longident record.rd_name), fd.rfd_type), [e]))
+                    | None when Option.is_some (Env.Event.byfield env (nm, fname)) -> begin
+                        let record, fd = Option.get (Env.Event.byfield env (nm, fname)) in
+                        Some ((Some (`Event record.rd_name, fd.rfd_type), [e]))
                       end
 
                     | None ->
@@ -3336,15 +3397,16 @@ let rec for_xexpr
 
             | _ :: _ :: _ ->
               let err =
-                let for1 = function `Record x | `Event x | `Asset x -> x in
-                MixedFieldNamesInAssetOrRecordLiteral (List.map mknm (List.map for1 sources)) in
+                let for1 = function `Record x | `Event x | `Asset x ->
+                  Env.relative env x
+                in MixedFieldNamesInAssetOrRecordLiteral (List.map for1 sources) in
               Env.emit_error env (loc tope, err); bailout ()
 
             | [src] ->
               let sfields, rty =
                 match src with
                 | `Asset aname ->
-                  let asset   = as_full (Env.Asset.get env (mknm aname)) in
+                  let asset   = as_full (Env.Asset.get env (aname)) in
                   let sfields =
                     List.map
                       (fun fd -> fd.fd_name, fd.fd_type, fd.fd_dfl)
@@ -3352,7 +3414,7 @@ let rec for_xexpr
                   in (sfields, A.Tasset asset.as_name)
 
                 | `Record rname ->
-                  let record = as_full (Env.Record.get env (mknm rname)) in
+                  let record = as_full (Env.Record.get env rname) in
                   let sfields =
                     List.map
                       (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
@@ -3360,7 +3422,7 @@ let rec for_xexpr
                   in (sfields, A.Trecord record.rd_name)
 
                 | `Event rname ->
-                  let record = as_full (Env.Event.get env (mknm rname)) in
+                  let record = as_full (Env.Event.get env rname) in
                   let sfields =
                     List.map
                       (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
@@ -3393,21 +3455,21 @@ let rec for_xexpr
         let fields, isasset =
           match e.A.type_ with
           | Some (Trecord rname) -> begin
-              let recd = as_full (Env.Record.get env (mknm (A.unloc_longident rname))) in
+              let recd = as_full (Env.Record.get env rname) in
               let fields = List.map
                   (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
               (fields, None)
             end
 
           | Some (Tevent rname) -> begin
-              let recd = as_full (Env.Event.get env (mknm (A.unloc_longident rname))) in
+              let recd = as_full (Env.Event.get env rname) in
               let fields = List.map
                   (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
               (fields, None)
             end
 
           | Some (Tasset aname) -> begin
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident aname))) in
+              let asset = as_full (Env.Asset.get env aname) in
               let fields = List.map
                   (fun fd -> unloc fd.fd_name, fd.fd_type) asset.as_fields in
               (fields, Some (List.map unloc asset.as_pk))
@@ -3515,11 +3577,11 @@ let rec for_xexpr
             bailout ()
 
           | { type_ = Some (A.Tasset asset) } -> begin
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+              let asset = as_full (Env.Asset.get env asset) in
 
               match get_field (unloc x) asset with
               | None ->
-                let err = UnknownField (mknm (A.unloc_longident asset.as_name), unloc x) in
+                let err = UnknownField (Env.relative env asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty } ->
@@ -3527,11 +3589,11 @@ let rec for_xexpr
             end
 
           | {type_ = Some (A.Trecord record)} -> begin
-              let record = as_full (Env.Record.get env (mknm (A.unloc_longident record))) in
+              let record = as_full (Env.Record.get env record) in
 
               match get_rfield (unloc x) record with
               | None ->
-                let err = UnknownField (mknm (A.unloc_longident record.rd_name), unloc x) in
+                let err = UnknownField (Env.relative env record.rd_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { rfd_type = fty } ->
@@ -3547,11 +3609,11 @@ let rec for_xexpr
 
           | {type_ = Some (A.Tcontainer (A.Tasset asset, AssetValue))} -> begin
               (* TODO: reject if the field is or contains pk *)
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+              let asset = as_full (Env.Asset.get env asset) in
 
               match get_field (unloc x) asset with
               | None ->
-                let err = UnknownField (mknm (A.unloc_longident asset.as_name), unloc x) in
+                let err = UnknownField (Env.relative env asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty } ->
@@ -3575,11 +3637,11 @@ let rec for_xexpr
             bailout ()
 
           | {type_ = Some (A.Tasset asset)} -> begin
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+              let asset = as_full (Env.Asset.get env asset) in
 
               match get_field (unloc x) asset with
               | None ->
-                let err = UnknownField (mknm (A.unloc_longident asset.as_name), unloc x) in
+                let err = UnknownField (Env.relative env asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty } ->
@@ -3598,11 +3660,11 @@ let rec for_xexpr
 
           | {type_ = Some (A.Tcontainer (A.Tasset asset, AssetValue))} -> begin
               (* TODO: reject if the field is or contains pk *)
-              let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+              let asset = as_full (Env.Asset.get env asset) in
 
               match get_field (unloc x) asset with
               | None ->
-                let err = UnknownField (mknm (A.unloc_longident asset.as_name), unloc x) in
+                let err = UnknownField (Env.relative env asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
               | Some { fd_type = fty } ->
@@ -3622,8 +3684,11 @@ let rec for_xexpr
     | Eternary (c, a, b) -> begin
         let c = for_xexpr env c in
         let env_a = match c with
-          | { node = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]); type_ = Some (A.Tcontainer (Tasset an, AssetValue))} ->
-            Some (Env.Context.push env (mknm (A.unloc_longident an)))
+          | {
+              node  = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]);
+              type_ = Some (A.Tcontainer (Tasset an, AssetValue))
+            } ->
+            Some (Env.Context.push env (snd an)) (* FIXME: context *)
           | { type_ = Some (A.Tbuiltin VTbool)} -> Some env
           | { type_ = Some (A.Toption xty)} -> Some (Env.Local.push env (dumloc "the", xty))
           | _ -> None
@@ -3767,7 +3832,7 @@ let rec for_xexpr
       end
 
     | Eapp (Fident f, args) when Env.Function.exists env (Current, unloc f) ->
-      let fun_ = Env.Function.get env (Current, unloc f) in
+      let fun_ = Option.get (Env.Function.lookup env (Current, unloc f)) in
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
       begin
@@ -3901,7 +3966,7 @@ let rec for_xexpr
             let eta = for_type env ta in
             let asset =
               match eta with
-              | Some (A.Tasset an) -> as_full (Env.Asset.get env (mknm (A.unloc_longident an)))
+              | Some (A.Tasset an) -> as_full (Env.Asset.get env an)
               | _ -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout()
             in
             let vk = for_xexpr ~ety:asset.as_pkty env k in
@@ -4325,7 +4390,7 @@ and cast_expr ?(autoview = false) (env : env) (to_ : A.ptyp option) (e : A.pterm
   | Some (A.Tlist xty as to_),
     { type_ = Some (A.Tcontainer (A.Tasset asset, A.AssetView) as from_) } ->
 
-    let decl = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+    let decl = as_full (Env.Asset.get env asset) in
 
     if not (Type.equal xty decl.as_pkty) then
       Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
@@ -4373,7 +4438,7 @@ and for_gen_matchwith
       None
 
     | Some (A.Tenum x) ->
-      Some (`Enum, (as_full (Env.State.get env (mknm (A.unloc_longident x)))).sd_ctors)
+      Some (`Enum, (as_full (Env.State.get env x)).sd_ctors)
 
     | Some (A.Tlist ty) ->
       Some (`List ty, [
@@ -4507,7 +4572,7 @@ and for_asset_expr mode (env : env) (tope : PT.expr) =
       None
 
     | Some (Some asset) ->
-      Some (Env.Asset.get env (mknm (A.unloc_longident asset)))
+      Some (Env.Asset.get env asset)
 
   in (ast, typ)
 
@@ -4530,7 +4595,7 @@ and for_asset_collection_expr mode (env : env) tope =
       None
 
     | Some (Some (asset, c)) ->
-      Some (as_full (Env.Asset.get env (mknm (A.unloc_longident asset))), c)
+      Some (as_full (Env.Asset.get env asset), c)
 
   in (ast, typ)
 
@@ -4667,7 +4732,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         end
 
       | (`Pred capture | `RExpr capture) as sub -> begin
-          let env     = Env.Context.push env (mknm (A.unloc_longident asset.as_name)) in
+          let env     = Env.Context.push env (snd asset.as_name) in
           let theid   = mkloc (loc arg) Env.Context.the in
           let thety   = A.Tasset asset.as_name in
           let mode    = match sub with `Pred _ -> { mode with em_pred = true; } | _ -> mode in
@@ -4681,8 +4746,9 @@ and for_gen_method_call mode env theloc (the, m, args)
           let closure =
             List.map
               (fun (x, (loc, xty)) ->
-                 let xterm = A.mk_sp ~loc ~type_:xty (A.Pvar (VTnone, Vnone, (None, mkloc loc x))) in
-                 (mkloc loc x, xty, xterm))
+                 let xterm =
+                   A.mk_sp ~loc ~type_:xty (A.Pvar (VTnone, Vnone, (mkloc theloc "", mkloc loc x)))
+                 in (mkloc loc x, xty, xterm))
               (Mid.bindings !map) in
 
           begin match sub with
@@ -4697,7 +4763,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         end
 
       | `Ef update ->
-        let env = Env.Context.push env (mknm (A.unloc_longident asset.as_name)) in
+        let env = Env.Context.push env (snd asset.as_name) in
         A.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
 
       | `Coll ->
@@ -4779,7 +4845,7 @@ and for_arg_effect
             let rfty =
               match fty with
               | A.Tcontainer (A.Tasset subasset, A.Aggregate) -> begin
-                  let subasset = as_full (Env.Asset.get env (mknm (A.unloc_longident subasset))) in
+                  let subasset = as_full (Env.Asset.get env subasset) in
                   A.Tlist subasset.as_pkty
                 end
               | _ -> fty
@@ -4800,7 +4866,8 @@ and for_arg_effect
               Mid.add (unloc x) (x, `Assign op, e) map
 
           | None ->
-            Env.emit_error env (loc x, UnknownField (mknm (A.unloc_longident asset.as_name), unloc x));
+            Env.emit_error env
+              (loc x, UnknownField (Env.relative env asset.as_name, unloc x));
             map
         end
     in
@@ -4978,7 +5045,7 @@ let for_args_decl ?can_asset (env : env) (xs : PT.args) =
 let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
   match unloc e with
   | Eterm (SINone, x) -> begin
-      match Env.lookup_entry env (Current, unloc x) with
+      match Option.snd (Env.lookup_entry env (Current, unloc x)) with
       | Some (`Local (xty, kind)) -> begin
           match kind with
           | `LoopIndex ->
@@ -5017,14 +5084,14 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
     end
 
   | Edot ({pldesc = Esqapp ({pldesc = Eterm (SINone, asset)}, key)}, (SINone, x)) -> begin (* FIXME: namespace *)
-      let asset = as_full (Env.Asset.get env (Current, unloc asset)) in
+      let asset = as_full (Option.get (Env.Asset.lookup env (Current, unloc asset))) in
       if List.exists (fun f -> unloc f = unloc x) asset.as_pk then begin
         Env.emit_error env (loc x, CannotUpdatePKey);
         None
       end else begin
         match get_field (unloc x) asset with
         | None ->
-          let err = UnknownField (mknm (A.unloc_longident asset.as_name), unloc x) in
+          let err = UnknownField (Env.relative env asset.as_name, unloc x) in
           Env.emit_error env (loc x, err); None
 
         | Some { fd_type = fty } ->
@@ -5039,7 +5106,7 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
 
       match tg.A.type_ with
       | Some (Trecord record) -> begin
-          let record = as_full (Env.Record.get env (mknm (A.unloc_longident record))) in
+          let record = as_full (Env.Record.get env record) in
           let field  = get_rfield (unloc x) record in
 
           match field with
@@ -5152,8 +5219,8 @@ let rec for_instruction_r
               let aout =
                 if se then begin
                   match the.node with
-                  | Pvar (VTnone, Vnone, (None, x)) -> begin
-                      (match Env.lookup_entry env (Current, unloc x) with
+                  | Pvar (VTnone, Vnone, (nm, x)) -> begin (* FIXME *)
+                      (match Option.snd (Env.lookup_entry env (Named (unloc nm), unloc x)) with
                        | Some (`Global _) -> check_side_effect();
                        | Some (`Local (_, kind)) -> begin
                            match kind with
@@ -5249,7 +5316,7 @@ let rec for_instruction_r
         | TTentry (e, name, arg) -> begin
             let x  = for_expr kind env ~ety:A.vtcurrency e in
             let nty =
-              match Env.lookup_entry env (Current, unloc name) with
+              match Option.snd (Env.lookup_entry env (Current, unloc name)) with
               | Some (`Local (nty, (`Standard | `Const | `Argument | `Pattern))) ->
                 nty
 
@@ -5268,7 +5335,7 @@ let rec for_instruction_r
             let aty = Option.get (Type.as_contract nty) in
             let arg = for_expr kind env ~ety:aty arg in
 
-            let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, (None, name))) in
+            let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, (mkloc (loc name) "", name))) in
 
             A.TTentry (x, e, arg)
           end
@@ -5346,9 +5413,12 @@ let rec for_instruction_r
               in
               A.DK_option (ty, unloc_longident lid), ty
             end
-          | A.Pcall(None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
+          | A.Pcall (None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
               (match m with
-               | {node = Pvar (VTnone, Vnone, (None, id)); type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty))); _} -> begin
+               | {
+                   node = Pvar (VTnone, Vnone, (_, id)); (* FIXME:NM *)
+                   type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
+                 } -> begin
                    A.DK_map (tty, unloc id, k), tty
                  end
                | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
@@ -5363,7 +5433,7 @@ let rec for_instruction_r
 
       let idt, ety =
         match for_type env ty with
-        | Some ((A.Tevent (None, v)) as t) -> (v, t)
+        | Some ((A.Tevent (_, v)) as t) -> (v, t) (* FIXME:NM *)
         | _ ->
           Env.emit_error env (loc i, InvalidEventType);
           bailout ()
@@ -5395,9 +5465,9 @@ let rec for_instruction_r
         in
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, c)) ->
-          let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident asset))) in
+          let asset = as_full (Env.Asset.get env asset) in
           if (match asset.as_bm with | A.MKBigMap -> true | _ -> false) && (match c with | Collection -> true | _ -> false) then
-            Env.emit_error env (loc pe, NonIterableBigMapAsset (mknm (A.unloc_longident asset.as_name)));
+            Env.emit_error env (loc pe, NonIterableBigMapAsset (Env.relative env asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
           else Some [asset.as_pkty]
@@ -5710,7 +5780,7 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     (for_callby env kind e1) @ (for_callby env kind e2)
 
   | Eterm ((SINone, _) as an) when Env.Asset.exists env (unloc_nmid an)->
-    let asset = as_full (Env.Asset.get env (unloc_nmid an)) in
+    let asset = as_full (Option.get (Env.Asset.lookup env (unloc_nmid an))) in
     if (not (Type.is_address asset.as_pkty))
     then Env.emit_error env (loc cb, match kind with | `Called -> InvalidCallByAsset | `Sourced -> InvalidSourcedByAsset );
     [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc_nmid an) ~type_:(A.Tcontainer (Tasset asset.as_name, Collection)) (A.Pvar (VTnone, Vnone, asset.as_name))))]
@@ -5817,7 +5887,7 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   let env, decl =
     Option.foldbind (fun env (sd_init, ctors) ->
         let sd_ctors = List.map (fun (x, cty) -> (x, cty)) ctors in
-        let enum = { sd_name = (None, name); sd_ctors; sd_init; sd_state = false; } in (* FIXME: namespace *)
+        let enum = { sd_name = (Env.name env , name); sd_ctors; sd_init; sd_state = false; } in
         if   check_and_emit_name_free ~pre:`Enum env name
         then Env.State.push env (`Full enum), Some enum
         else env, None) env ctors in
@@ -5852,7 +5922,7 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
 
   | Some ty ->
     let decl = {
-      vr_name = (None, x);      (* FIXME: namespace *)
+      vr_name = (Env.name env, x);
       vr_type = ty;
       vr_kind = ctt;
       vr_core = None;
@@ -5948,7 +6018,10 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
     | PT.MKBigMap -> A.MKBigMap
     | PT.MKIterableBigMap -> A.MKIterableBigMap in
 
-  let bigmaps : A.map_kind = List.fold_left (fun accu x -> match x with | PT.AOtoMapKind x -> to_a_map_kind x | _ -> accu) A.MKMap opts in
+  let bigmaps : A.map_kind =
+    List.fold_left
+      (fun accu x -> match x with | PT.AOtoMapKind x -> to_a_map_kind x | _ -> accu)
+      A.MKMap opts in
 
   let pks =
     let dokey key =
@@ -6022,7 +6095,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
       let fddfl =
         fdinit |> Option.map (fun fdinit ->
             A.mk_sp ~type_:fdty ~loc:(loc fdinit)
-              (A.Pvar (VTnone, Vnone, (None, mkloc (loc fdinit) "<init>")))) in (* FIXME: namespace *)
+              (A.Pvar (VTnone, Vnone, (Env.name env, mkloc (loc fdinit) "<init>")))) in
       { fd_name  = mkloc fdloc fd;
         fd_type  = fdty;
         fd_dfl   = fddfl; } in
@@ -6061,7 +6134,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
   let (b, env), adecls = List.fold_left_map (fun (b, env) decl ->
       let (name, _, _, _, _) = unloc decl in
       let b = b && check_and_emit_name_free ~pre:`Asset env name in
-      let d = { as_name   = (None, name); (* FIXME: namespace *)
+      let d = { as_name   = (Env.name env, name);
                 as_fields = [];
                 as_pkty   = A.vtunit;
                 as_pk     = [];
@@ -6108,14 +6181,14 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           let fddfl =
             fdinit |> Option.map (fun fdinit ->
                 A.mk_sp ~type_:fdty ~loc:(loc fdinit)
-                  (A.Pvar (VTnone, Vnone, (None, mkloc (loc fdinit) "<init>")))) in (* FIXME: namespace *)
+                  (A.Pvar (VTnone, Vnone, (Env.name env, mkloc (loc fdinit) "<init>")))) in
 
           { fd_name  = mkloc fdloc fd;
             fd_type  = fdty;
             fd_dfl   = fddfl; }
         in
 
-        { as_name   = (None, decl.pas_name); (* FIXME: namespace *)
+        { as_name   = (Env.name env, decl.pas_name); (* FIXME: namespace *)
           as_fields = List.map for_ctor decl.pas_fields;
           as_pkty   = decl.pas_pkty;
           as_pk     = decl.pas_pk;
@@ -6315,7 +6388,7 @@ let for_record_decl k (env : env) (decl : PT.record_decl loced) =
           None) in
 
   if check_and_emit_name_free env ~pre:(k :> prekind) name then
-    let rdecl = { rd_name    = (None, name); (* FIXME: namespace *)
+    let rdecl = { rd_name    = (Env.name env, name);
                   rd_fields  = fields ;
                   rd_packing = packing; } in
     match k with
@@ -6371,7 +6444,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
             let env, aout =
               Option.foldbind (fun env (vtg, ttg) ->
                   Option.foldbind (fun env aname ->
-                      let asset = as_full (Env.Asset.get env (mknm (A.unloc_longident aname))) in
+                      let asset = as_full (Env.Asset.get env aname) in
                       let env =
                         if check_and_emit_name_free env vtg then
                           Env.Local.push env (vtg, asset.as_pkty)
@@ -6474,15 +6547,15 @@ let group_declarations (decls : (PT.declaration list)) =
 
 (* -------------------------------------------------------------------- *)
 type decls = {
-  imports   : importdecl list;
+  imports   : (env importdecl) list;
   state     : statedecl option;
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
   events    : recorddecl option list;
   assets    : assetdecl option list;
-  functions : env fundecl option list;
-  acttxs    : env tentrydecl option list;
+  functions : fundecl option list;
+  acttxs    : tentrydecl option list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -6497,7 +6570,9 @@ let enums_of_statedecl (enums : statedecl list) : A.enum list =
 
     let items = List.map for_ctor1 tg.sd_ctors in
     let kind  =
-      if tg.sd_state then A.EKstate (fst tg.sd_name) else A.EKenum tg.sd_name in (* FIXME: namespace *)
+      if   tg.sd_state
+      then A.EKstate (fst tg.sd_name)
+      else A.EKenum tg.sd_name in (* FIXME: namespace *)
 
     A.{ kind; items; loc = Location.dummy; }
 
@@ -6567,7 +6642,7 @@ let variables_of_vdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let imports_of_vdecls idecls : A.import_struct list =
-  let for1 (decl : importdecl) : A.import_struct =
+  let for1 (decl : env importdecl) : A.import_struct =
     A.{
       name = decl.id_name;
       path = decl.id_path;
@@ -6580,7 +6655,7 @@ let imports_of_vdecls idecls : A.import_struct list =
 
 (* -------------------------------------------------------------------- *)
 let functions_of_fdecls fdecls =
-  let for1 (decl : env fundecl) =
+  let for1 (decl : fundecl) =
     let args = List.map (fun (x, ty) -> A.{
         name = x; typ = Some ty; default = None; shadow  = false; loc = loc x;
       }) decl.fs_args in
@@ -6605,8 +6680,11 @@ let transentrys_of_tdecls tdecls =
           Option.get_dfl A.Rany (Option.map (
               fun (e : A.pterm) ->
                 match e with
-                | { node = Pvar (VTnone, Vnone, _); type_= Some (A.Tcontainer(Tasset an, Collection)) } ->
-                  A.Rasset an
+                | {
+                    node = Pvar (VTnone, Vnone, _);
+                    type_= Some (A.Tcontainer(Tasset an, Collection))
+                  } ->
+                    A.Rasset an
                 | _ -> A.Rexpr e) (unloc x))
         in A.mk_sp ~loc:(loc x) node in
 
@@ -6674,7 +6752,7 @@ let for_parameters ?init env params =
               | None -> (Env.emit_error env (loc p, InvalidTypeForParameter); assert false)
             in
             let decl = {
-              vr_name = (None, pname); (* FIXME: namespace *)
+              vr_name = (Env.name env, pname);
               vr_type = typ;
               vr_kind = if const then `Constant else `Variable;
               vr_core = None;
@@ -6741,7 +6819,7 @@ let sort_decl refs l =
 
 (* -------------------------------------------------------------------- *)
 let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  let for1 (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) =
+  let for1 (env, accu : env * (env importdecl) list) (a : (PT.lident * PT.lident) loced) =
     let lo, (id, path) = deloc a in
     let ext = Filename.extension (unloc path) in
 
@@ -6752,28 +6830,56 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
             let views = Micheline.get_views content in
             match Micheline.get_entrypoints content with
             | Some entrypoints -> begin
-                let remove_percent str = if String.length str > 1 && String.get str 0 = '%' then String.sub str 1 (String.length str - 1) else str in
-                let entrypoints = List.map (fun (name, args) -> (remove_percent name, args)) entrypoints in
-                let importdecl = { id_name = id; id_path = path; id_content = Some content; id_ast = None; id_entrypoints = entrypoints; id_views = views } in
-                (if   check_and_emit_name_free env id
-                 then Env.Import.push env importdecl
-                 else env), importdecl::accu
+                let remove_percent str =
+                  if   String.length str > 1 && str.[0] = '%'
+                  then String.sub str 1 (String.length str - 1)
+                  else str in
+                let entrypoints =
+                  List.map
+                    (fun (name, args) -> (remove_percent name, args))
+                    entrypoints in
+                let importdecl = {
+                  id_name        = id;
+                  id_path        = path;
+                  id_content     = Some content;
+                  id_ast         = None;
+                  id_entrypoints = entrypoints;
+                  id_views       = views;
+                  id_env         = None;
+                } in
+
+                let env =
+                  if   check_and_emit_name_free env id
+                  then Env.Import.push env importdecl
+                  else env in
+
+                (env, importdecl :: accu)
               end
-            | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
+
+            | None ->
+                Env.emit_error env (lo, InvalidTzFile); (env, accu)
           end
-        | None -> (Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
+
+        | None ->
+            Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu)
       end
 
     | ".arl" -> begin
-        let make_importdecl_from_ast (ast : A.ast) =
-          let entrypoints, views = List.fold_left (fun (accu_entrypoints, accu_views) v ->
+        let make_importdecl_from_ast ((ienv, iast) : env * A.ast) =
+          let entrypoints, views =
+            List.fold_left (fun (accu_entrypoints, accu_views) v ->
               let args_to_type args =
-                let l = List.fold_right (fun (x : A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> []) args [] in
-                match l with
-                | [] -> A.vtunit
-                | [v] -> v
-                | vs -> A.Ttuple vs
+                let l =
+                  List.fold_right
+                    (fun (x : A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> [])
+                    args []
+                in
+                  match l with
+                  | [] -> A.vtunit
+                  | [v] -> v
+                  | vs -> A.Ttuple vs
               in
+
               match v with
               | A.Ffunction fs -> begin
                   let name = unloc fs.name in
@@ -6794,30 +6900,45 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
               | A.Ftransaction ts -> begin
                   let typ_ = args_to_type ts.args in
                   ((unloc ts.name, typ_)::accu_entrypoints, accu_views)
-                end)
-              ([], []) ast.funs in
-          { id_name = id; id_path = path; id_content = None; id_ast = Some ast; id_entrypoints = entrypoints; id_views = views }
+                end
+            ) ([], []) iast.funs in
+
+          { id_name        = id;
+            id_path        = path;
+            id_content     = None;
+            id_ast         = Some iast;
+            id_entrypoints = entrypoints;
+            id_views       = views;
+            id_env         = Some ienv; }
+
         in
-        let filename = unloc path in
-        let opt = begin
+
+        let opt =
+          let filename = unloc path in
           try
-            let channel = open_in filename in
-            Some (Io.parse_archetype (Core.FIChannel (filename, channel)))
-          with
-            _ -> None
-        end
-        in
+            filename |> Core.with_open_in (fun channel ->
+              Some (Io.parse_archetype (Core.FIChannel (filename, channel))))
+          with Sys_error _ -> None in
+
         match opt with
         | Some pt -> begin
-            let ast = typing empty pt in
-            let importdecl = make_importdecl_from_ast ast in
-            (if check_and_emit_name_free env id then Env.Import.push env importdecl else env), importdecl::accu
+            let import = typing (empty id) pt in
+            let importdecl = make_importdecl_from_ast import in
+              let env =
+                if   check_and_emit_name_free env id
+                then Env.Import.push env importdecl
+                else env
+              in (env, importdecl :: accu)
           end
-        | None -> Env.emit_error env (lo, InvalidArlFile); (env, accu)
+
+        | None ->
+            Env.emit_error env (lo, InvalidArlFile);
+            (env, accu)
       end
 
     | _ ->
-        (Env.emit_error env (loc path, UnknownImportExtension ext); (env, accu))
+        (Env.emit_error env (loc path, UnknownImportExtension ext);
+         (env, accu))
 
   in List.fold_left for1 (env, []) decls
 
@@ -6837,12 +6958,12 @@ and for_grouped_declarations (env : env) (toploc, g) =
 
     match List.pmap for1 g.gr_states with
     | (env, loc, (init, ctors)) :: _ ->
-      let decl = { sd_name  = (None, mkloc loc ("$" ^ statename)); (* FIXME: namespace *)
+      let decl = { sd_name  = (Env.name env, mkloc loc ("$" ^ statename));
                    sd_state = true;
                    sd_ctors = ctors;
                    sd_init  = init; } in
-      let vdecl = { vr_name = (None, (mkloc loc statename)); (* FIXME: namespace *)
-                    vr_type = A.Tenum (None, mkloc loc ("$" ^ statename)); (* FIXME: namespace *)
+      let vdecl = { vr_name = (Env.name env, (mkloc loc statename));
+                    vr_type = A.Tenum (Env.name env, mkloc loc ("$" ^ statename));
                     vr_kind = `Constant;
                     vr_def  = None;
                     vr_core = Some Cstate; } in
@@ -6870,7 +6991,7 @@ and for_grouped_declarations (env : env) (toploc, g) =
   in (env, output)
 
 (* -------------------------------------------------------------------- *)
-and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A.ast =
+and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : env * A.ast =
   let sorted_decl_ids = List.map (PT.get_name |@ unloc) (unloc decls) in
   let toploc = loc decls in
 
@@ -6879,29 +7000,30 @@ and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
     let groups = group_declarations decls in
     let env, parameters = for_parameters env params ?init in
     let metadata = Option.map (function | PT.Muri x -> A.MKuri x | PT.Mjson x -> A.MKjson x) metadata in
-    let _env, decls = for_grouped_declarations env (toploc, groups) in
-
-    A.mk_model
-      ~parameters
-      ~imports:(imports_of_vdecls decls.imports)
-      ?metadata
-      ~decls:((
-          List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
-          List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
-          List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
-          List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
-          List.map (fun x -> A.Devent x)    (records_of_rdecls (List.pmap id decls.events))
-        ) |> sort_decl sorted_decl_ids)
-      ~funs:(
-        List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @
-        List.map (fun x -> A.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
-      )
-      ~loc:toploc
-      x
+    let env, decls = for_grouped_declarations env (toploc, groups) in
+    let model =
+      A.mk_model
+        ~parameters
+        ~imports:(imports_of_vdecls decls.imports)
+        ?metadata
+        ~decls:((
+            List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
+            List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
+            List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
+            List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
+            List.map (fun x -> A.Devent x)    (records_of_rdecls (List.pmap id decls.events))
+          ) |> sort_decl sorted_decl_ids)
+        ~funs:(
+          List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @
+          List.map (fun x -> A.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
+        )
+        ~loc:toploc
+        x
+    in env, model
 
   | _ ->
     Env.emit_error env (loc decls, InvalidArcheTypeDecl);
-    { (A.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
+    (env, { (A.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls })
 
 (* -------------------------------------------------------------------- *)
 and pretype (env : env) (cmd : PT.declaration list) =
@@ -6926,7 +7048,6 @@ and pretype (env : env) (cmd : PT.declaration list) =
 
 (* -------------------------------------------------------------------- *)
 and typing ?init (env : env) (cmd : PT.archetype) =
-
   match unloc cmd with
   | Marchetype decls ->
     let env = pretype env decls in

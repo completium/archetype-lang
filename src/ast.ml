@@ -8,11 +8,11 @@ type lident = ident loced
 type namespace = lident
 [@@deriving show {with_path = false}]
 
-type longident = namespace option * lident
+type longident = namespace * lident
 [@@deriving show {with_path = false}]
 
 let unloc_longident ((nm, id) : longident) =
-  (Option.map unloc nm, unloc id)
+  (unloc nm, unloc id)
 
 let pp_ident fmt i = Format.fprintf fmt "%s" i
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
@@ -711,7 +711,7 @@ type enum_item_struct = {
 
 type enum_kind =
   | EKenum of longident
-  | EKstate of namespace option
+  | EKstate of namespace
 [@@deriving show {with_path = false}]
 
 type enum = {

@@ -31,13 +31,13 @@ let emit_error (lc, error : Location.t * error_desc) =
 let bailout = fun () -> raise (Error.Stop 5)
 
 let to_mident ((nm, id) : A.longident) : M.mident =
-  M.mk_mident ~namespace:(Option.to_list nm) id
+  M.mk_mident ~namespace:[nm] id
 
 let unloc_longident (lid : A.longident) : ident = unloc (snd lid)
 
 let longident_to_lident (lid : A.longident) : M.lident = snd lid
 
-let longident_to_mident (lid : A.longident) : M.mident = ((match fst lid with | Some v -> [v] | None -> []), snd lid)
+let longident_to_mident (lid : A.longident) : M.mident = ([fst lid], snd lid)
 
 type env = {
   formula: bool;
