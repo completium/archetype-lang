@@ -4,14 +4,10 @@
 .PHONY: all js merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build compiler # plugin
+all: build compiler
 
 build:
 	@dune build
-
-plugin:
-	$(MAKE) -C src plugin
-	cp -f _build/default/src/archetype_plugin.cmxs ./why3/
 
 compiler:
 	$(MAKE) -C src compiler.exe
@@ -57,4 +53,4 @@ build-deps: _opam
 	opam install . --deps-only --working-dir -y
 
 build-deps-dev: build-deps
-	opam install merlin ocp-indent why3.1.4.0 -y
+	opam install merlin ocp-indent -y

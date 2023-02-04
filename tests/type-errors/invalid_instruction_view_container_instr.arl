@@ -1,4 +1,4 @@
-archetype invalid_instruction_fun_asset
+archetype invalid_instruction_view_container_instr
 
 variable res : nat = 0
 

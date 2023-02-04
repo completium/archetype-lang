@@ -1,9 +1,0 @@
-archetype hello
-
-variable name : string = ""
-
-entry main (str : string) {
-  effect {
-    name := str
-  }
-}
