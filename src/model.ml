@@ -296,6 +296,7 @@ type 'term mterm_node  =
   | MsaplingTransaction of int * string
   | Mchest            of string
   | Mchest_key        of string
+  | Mtz_expr          of string
   (* control expression *)
   | Mexprif           of 'term * 'term * 'term
   | Mexprmatchwith    of 'term * (pattern * 'term) list
@@ -386,6 +387,7 @@ type 'term mterm_node  =
   | Mrecupdate        of 'term * (ident * 'term) list
   | Mmakeasset        of ident * 'term * 'term
   | Mtocontainer      of ident
+  | Mglobal_constant  of type_ * 'term
   (* set api expression *)
   | Msetadd           of type_ * 'term * 'term
   | Msetremove        of type_ * 'term * 'term
@@ -1209,10 +1211,11 @@ let mk_tx_rollup_l2_address x = mk_mterm (Mtx_rollup_l2_address x) ttx_rollup_l2
 let unit              = mk_mterm (Munit) tunit
 let mk_sapling_state_empty n = mk_mterm (MsaplingStateEmpty n) (tsapling_state n)
 let mk_sapling_transaction n x = mk_mterm (MsaplingTransaction (n, x)) (tsapling_transaction n)
-let mk_chest    x = mk_mterm (Mchest x) tchest
-let mk_chest_key  x = mk_mterm (Mchest_key x) tchest_key
-let mk_date     x = mk_mterm (Mdate x) tdate
-let mk_duration x = mk_mterm (Mduration x) tduration
+let mk_chest     x = mk_mterm (Mchest x) tchest
+let mk_chest_key x = mk_mterm (Mchest_key x) tchest_key
+let mk_tz_expr   x = mk_mterm (Mtz_expr x) tunit
+let mk_date      x = mk_mterm (Mdate x) tdate
+let mk_duration  x = mk_mterm (Mduration x) tduration
 let mk_pair (x : mterm list) = mk_mterm (Mtuple x) (ttuple (List.map (fun (x : mterm) -> x.type_) x))
 (* let mk_left     x = mk_mterm (Mleft x) tdate
    let mk_right    x = mk_mterm (Mright x) tduration *)
@@ -1595,6 +1598,7 @@ let cmp_mterm_node
     | MsaplingTransaction (n1, v1), MsaplingTransaction (n2, v2)                       -> cmp_int n1 n2 && cmp_ident v1 v2
     | Mchest v1, Mchest v2                                                             -> cmp_ident v1 v2
     | Mchest_key v1, Mchest_key v2                                                     -> cmp_ident v1 v2
+    | Mtz_expr v1, Mtz_expr v2                                                         -> cmp_ident v1 v2
     (* control expression *)
     | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
@@ -1685,6 +1689,7 @@ let cmp_mterm_node
     | Mrecupdate (x1, l1), Mrecupdate (x2, l2)                                         -> cmp x1 x2 && List.for_all2 (fun (i1, v1) (i2, v2) -> cmp_ident i1 i2 && cmp v1 v2) l1 l2
     | Mmakeasset (an1, k1, v1), Mmakeasset (an2, k2, v2)                               -> cmp_ident an1 an2 && cmp k1 k2 && cmp v1 v2
     | Mtocontainer an1, Mtocontainer an2                                               -> cmp_ident an1 an2
+    | Mglobal_constant (t1, v1), Mglobal_constant (t2, v2)                             -> cmp_type t1 t2 && cmp v1 v2
     (* set api expression *)
     | Msetadd (t1, c1, a1), Msetadd (t2, c2, a2)                                       -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -2106,6 +2111,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | MsaplingTransaction (n, v)     -> MsaplingTransaction (n, v)
   | Mchest v                       -> Mchest v
   | Mchest_key v                   -> Mchest_key v
+  | Mtz_expr v                     -> Mtz_expr v
   (* control expression *)
   | Mexprif (c, t, e)              -> Mexprif        (f c, f t, f e)
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
@@ -2196,6 +2202,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mrecupdate (x, l)              -> Mrecupdate (f x, List.map (fun (i, v) -> i, f v) l)
   | Mmakeasset (an, k, v)          -> Mmakeasset (fi an, f k, f v)
   | Mtocontainer an                -> Mtocontainer an
+  | Mglobal_constant (t, v)        -> Mglobal_constant (ft t, f v)
   (* set api expression *)
   | Msetadd (t, c, a)              -> Msetadd (ft t, f c, f a)
   | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
@@ -2584,6 +2591,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | MsaplingTransaction _                 -> accu
   | Mchest _                              -> accu
   | Mchest_key _                          -> accu
+  | Mtz_expr _                            -> accu
   (* control expression *)
   | Mexprif (c, t, e)                     -> f (f (f accu c) t) e
   | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
@@ -2674,6 +2682,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mrecupdate (x, l)                     -> List.fold_left (fun accu (_, v) -> f accu v) (f accu x) l
   | Mmakeasset (_, k, v)                  -> f (f accu k) v
   | Mtocontainer _                        -> accu
+  | Mglobal_constant (_, v)               -> f accu v
   (* set api expression *)
   | Msetadd (_, c, a)                     -> f (f accu c) a
   | Msetremove (_, c, a)                  -> f (f accu c) a
@@ -3179,6 +3188,9 @@ let fold_map_term
   | Mchest_key v ->
     g (Mchest_key v), accu
 
+  | Mtz_expr v ->
+    g (Mtz_expr v), accu
+
 
   (* control expression *)
 
@@ -3654,6 +3666,10 @@ let fold_map_term
 
   | Mtocontainer an ->
     g (Mtocontainer an), accu
+
+  | Mglobal_constant (t, v) ->
+    let ve, va = f accu v in
+    g (Mglobal_constant (t, ve)), va
 
   (* set api expression *)
 

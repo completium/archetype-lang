@@ -1275,6 +1275,7 @@ end = struct
     | DIrCode _        -> assert false
     | Dcode _          -> assert false
     | Dlambda_rec _    -> assert false
+    | Dconstant _      -> assert false
 
   let get_storage_list tstorage =
     let rec aux (x : T.type_) =
@@ -1644,6 +1645,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | MsaplingTransaction (_, v) -> A.ebytes v
     | Mchest v           -> A.ebytes v
     | Mchest_key v       -> A.ebytes v
+    | Mtz_expr _v        -> assert false
 
 
     (* control expression *)
@@ -1756,6 +1758,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mrecupdate (_x, _l)    -> assert false
     | Mmakeasset (_an, _k, _v) -> assert false
     | Mtocontainer _an         -> assert false
+    | Mglobal_constant (_t, _v)-> assert false
 
 
     (* set api expression *)

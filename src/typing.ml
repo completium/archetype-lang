@@ -791,6 +791,7 @@ type error_desc =
   | InvalidTypeForEntrypoint
   | InvalidTypeForFail
   | InvalidTypeForFailSome
+  | InvalidTypeForGlobalConstant
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
   | InvalidTypeForMake
@@ -1047,6 +1048,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
   | InvalidTypeForFail                 -> pp "Invalid type for fail, must be typed packable type"
   | InvalidTypeForFailSome             -> pp "Invalid type for fail_some, must be typed option of packable type"
+  | InvalidTypeForGlobalConstant       -> pp "Invalid argument for 'global_constant`"
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMake                 -> pp "Invalid type for Make"
@@ -1935,11 +1937,11 @@ end = struct
   type asset  = [`Pre of A.lident | `Full of assetdecl ]
 
   module Mlib = Map.Make(struct
-    type t = int * int
+      type t = int * int
 
-    let equal = Stdlib.(=)
-    let compare = Stdlib.compare
-  end)
+      let equal = Stdlib.(=)
+      let compare = Stdlib.compare
+    end)
 
   type entry = [
     | `Label       of t * label_kind
@@ -1998,25 +2000,25 @@ end = struct
     let env =
       match nm with
       | Current ->
-          Some env
+        Some env
       | Named nm -> begin
           match Mid.find_opt nm env.env_bindings with
           | Some (_, `Import { id_env = Some ienv }) ->
-              Some ienv
+            Some ienv
           | _ ->
-              None
+            None
         end
     in
 
     env |> Option.bind (fun env ->
-      let lookup = Option.map snd (Mid.find_opt name env.env_bindings) in
-      let lookup =
-        if Option.is_none lookup && name = ctxtname then
-          Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
-        else
-          lookup
-      in Option.map (fun entry -> (env.env_name, entry)) lookup
-   )
+        let lookup = Option.map snd (Mid.find_opt name env.env_bindings) in
+        let lookup =
+          if Option.is_none lookup && name = ctxtname then
+            Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
+          else
+            lookup
+        in Option.map (fun entry -> (env.env_name, entry)) lookup
+      )
 
   let lookup_gen (proj : A.lident -> entry -> 'a option) (env : t) (name : longident) : 'a option =
     lookup_entry env name |> Option.bind (fun (name, entry) -> proj name entry)
@@ -3302,7 +3304,7 @@ let rec for_xexpr
 
     | Erecord (nm, fields) -> begin
         let nm = unloc_nm nm in
-        
+
         let module E = struct
           type state = {
             hasupdate : bool;
@@ -3591,9 +3593,9 @@ let rec for_xexpr
                 A.Toption (A.Tcontainer (asset, AssetValue))) in
 
             asset |> Option.iter (fun x ->
-              match snd x with
-              | A.Collection -> ()
-              | c -> Env.emit_error env (loc tope, InvalidAssetGetContainer c));
+                match snd x with
+                | A.Collection -> ()
+                | c -> Env.emit_error env (loc tope, InvalidAssetGetContainer c));
 
             mk_sp
               aoutty
@@ -3716,9 +3718,9 @@ let rec for_xexpr
         let c = for_xexpr env c in
         let env_a = match c with
           | {
-              node  = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]);
-              type_ = Some (A.Tcontainer (Tasset an, AssetValue))
-            } ->
+            node  = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]);
+            type_ = Some (A.Tcontainer (Tasset an, AssetValue))
+          } ->
             Some (Env.Context.push env (snd an)) (* FIXME: context *)
           | { type_ = Some (A.Tbuiltin VTbool)} -> Some env
           | { type_ = Some (A.Toption xty)} -> Some (Env.Local.push env (dumloc "the", xty))
@@ -4010,6 +4012,11 @@ let rec for_xexpr
             let id = require_literal_string id in
             mk_sp (Some A.Toperation) (A.Pcall (None, A.Cconst Cmakeevent, [ty], [AIdent id; AExpr vv]))
           end
+        | "global_constant", [ty], [v] -> begin
+            let ty = (match for_type env ty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForGlobalConstant); bailout()) in
+            let v = for_xexpr env v in
+            mk_sp (Some ty) (A.Pcall (None, A.Cconst Cglobalconstant, [ty], [AExpr v]))
+          end
         | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc id, [])); bailout ()
       end
 
@@ -4053,7 +4060,7 @@ let rec for_xexpr
 
             match the.A.type_ with
             | None ->
-                bailout ()
+              bailout ()
 
             | Some ty ->
               match Type.as_asset_collection ty with
@@ -4077,7 +4084,7 @@ let rec for_xexpr
                   begin
                     match method_.mth_map_type, ty, asset.as_bm with
                     | `Standard, Tcontainer (Tasset _, Collection), A.MKBigMap ->
-                        Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+                      Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
                     | _ -> ()
                   end;
 
@@ -4315,7 +4322,8 @@ let rec for_xexpr
     | Eunit ->
       let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
       mk_sp (Some A.vtunit) (A.Plit lit)
-
+    | Etz_expr v ->
+      mk_sp (Some A.vtunit) (A.Ptz_expr v)
     | Eself name -> begin
         let decl =
           match Env.Tentry.lookup env (uknm, unloc name) with
@@ -4455,10 +4463,10 @@ and join_expr ?autoview (env : env) (ety : A.ptyp option) (es : A.pterm list) =
 and for_gen_matchwith
     (mode : emode_t) (capture : capture) (env : env) theloc pe bs
   : (    pattern
-       * ctordecl list
-       * A.pterm
-       * (int option * int option Mstr.t * (A.lident * A.ptyp) list list)
-       * PT.expr list
+         * ctordecl list
+         * A.pterm
+         * (int option * int option Mstr.t * (A.lident * A.ptyp) list list)
+         * PT.expr list
     ) option
   =
   let me = for_xexpr mode ~capture env pe in
@@ -4946,10 +4954,10 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
         e.type_
-          |> Option.bind (fun ety ->
-               select_operator env ~asset orloc (op, [lfty; ety]))
-          |> Option.map (fun sig_ ->
-               cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e)))
+        |> Option.bind (fun ety ->
+            select_operator env ~asset orloc (op, [lfty; ety]))
+        |> Option.map (fun sig_ ->
+            cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e)))
 
 (* -------------------------------------------------------------------- *)
 and for_role (env : env) (name : PT.lident) =
@@ -4965,22 +4973,22 @@ and for_role (env : env) (name : PT.lident) =
 
 (* -------------------------------------------------------------------- *)
 let for_expr
-     (kind     : ekind)
+    (kind     : ekind)
     ?(autoview : bool option)
-     (env      : env)
+    (env      : env)
     ?(ety      : A.type_ option)
-     (tope     : PT.expr) : A.pterm
+    (tope     : PT.expr) : A.pterm
   =
-  
+
   let emode = { em_pred = false; em_kind = kind } in
   for_xexpr emode ?autoview env ?ety tope
 
 (* -------------------------------------------------------------------- *)
 let for_rf
-     (ekind : ekind)
+    (ekind : ekind)
     ?(ety   : A.ptyp option)
-     (env   : env)
-     (topf  : (PT.lident * PT.expr * PT.expr option) list)
+    (env   : env)
+    (topf  : (PT.lident * PT.expr * PT.expr option) list)
   : env * (A.lident option * A.pterm * A.pterm option) list
   =
   let aux
@@ -5012,14 +5020,14 @@ let for_rfs = for_rf ~ety:(A.Tbuiltin A.VTbool)
 (* -------------------------------------------------------------------- *)
 let for_cf
     (ekind : ekind)
-   ?(ety   : A.ptyp option)
+    ?(ety   : A.ptyp option)
     (env   : env)
     (topf  : (PT.lident * PT.expr * PT.expr option) list)
   : env * (A.lident option * A.pterm * A.pterm option) list
   =
   let aux
       (ekind        : ekind)
-     ?(ety          : A.ptyp option)
+      ?(ety          : A.ptyp option)
       (env          : env)
       ((id, e, err) : PT.lident * PT.expr * PT.expr option)
     : env * (A.lident option * A.pterm * A.pterm option)
@@ -5099,11 +5107,11 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
         begin match vd.vr_kind, kind, vd.vr_core with
           | `Variable, `Entry, _
           | _, _, Some (A.Coperations | A.Cmetadata) ->
-              ()
+            ()
           | `Variable, `Function, _ ->
-              Env.emit_error env (loc e, CannotAssignStorageVariableInFunction (unloc x));
+            Env.emit_error env (loc e, CannotAssignStorageVariableInFunction (unloc x));
           | `Variable, `View, _ ->
-              Env.emit_error env (loc e, CannotAssignStorageVariableInView (unloc x));
+            Env.emit_error env (loc e, CannotAssignStorageVariableInView (unloc x));
           | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
@@ -5447,9 +5455,9 @@ let rec for_instruction_r
           | A.Pcall (None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
               (match m with
                | {
-                   node = Pvar (VTnone, Vnone, (_, id)); (* FIXME:NM *)
-                   type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
-                 } -> begin
+                 node = Pvar (VTnone, Vnone, (_, id)); (* FIXME:NM *)
+                 type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
+               } -> begin
                    A.DK_map (tty, unloc id, k), tty
                  end
                | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
@@ -5881,7 +5889,7 @@ let for_core_enum_decl (env : env) (enum : enum_core loced) =
         List.fold_left (fun init option ->
             match option with
             | PT.EOinitial ->
-                init+1
+              init+1
           ) 0 options in
 
       if init > 1 then
@@ -6711,10 +6719,10 @@ let transentrys_of_tdecls tdecls =
               fun (e : A.pterm) ->
                 match e with
                 | {
-                    node = Pvar (VTnone, Vnone, _);
-                    type_= Some (A.Tcontainer(Tasset an, Collection))
-                  } ->
-                    A.Rasset an
+                  node = Pvar (VTnone, Vnone, _);
+                  type_= Some (A.Tcontainer(Tasset an, Collection))
+                } ->
+                  A.Rasset an
                 | _ -> A.Rexpr e) (unloc x))
         in A.mk_sp ~loc:(loc x) node in
 
@@ -6887,101 +6895,101 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
               end
 
             | None ->
-                Env.emit_error env (lo, InvalidTzFile); env
+              Env.emit_error env (lo, InvalidTzFile); env
           end
 
         | None ->
-            Env.emit_error env (lo, FileNotFound (unloc path)); env
+          Env.emit_error env (lo, FileNotFound (unloc path)); env
       end
 
     | ".arl" -> begin
         let stats =
           try
             let stats = Unix.stat (unloc path) in
-              (Some (stats.st_dev, stats.st_ino))
+            (Some (stats.st_dev, stats.st_ino))
           with Unix.Unix_error _ -> None in
 
         let cached = stats |> Option.bind (Env.Import.get_in_cache env) in
 
         match cached with Some cached -> Option.get cached.id_env | None ->
 
-        let make_importdecl_from_ast ((ienv, iast) : env * A.ast) =
-          let entrypoints, views =
-            List.fold_left (fun (accu_entrypoints, accu_views) v ->
-              let args_to_type args =
-                let l =
-                  List.fold_right
-                    (fun (x : A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> [])
-                    args []
-                in
-                  match l with
-                  | [] -> A.vtunit
-                  | [v] -> v
-                  | vs -> A.Ttuple vs
-              in
+          let make_importdecl_from_ast ((ienv, iast) : env * A.ast) =
+            let entrypoints, views =
+              List.fold_left (fun (accu_entrypoints, accu_views) v ->
+                  let args_to_type args =
+                    let l =
+                      List.fold_right
+                        (fun (x : A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> [])
+                        args []
+                    in
+                    match l with
+                    | [] -> A.vtunit
+                    | [v] -> v
+                    | vs -> A.Ttuple vs
+                  in
 
-              match v with
-              | A.Ffunction fs -> begin
-                  let name = unloc fs.name in
-                  let rt = fs.return in
-                  match fs.kind with
-                  | FKfunction -> (accu_entrypoints, accu_views)
-                  | FKgetter -> begin
-                      let typ_ = args_to_type fs.args in
-                      let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
-                      ((name, typ_)::accu_entrypoints, accu_views)
+                  match v with
+                  | A.Ffunction fs -> begin
+                      let name = unloc fs.name in
+                      let rt = fs.return in
+                      match fs.kind with
+                      | FKfunction -> (accu_entrypoints, accu_views)
+                      | FKgetter -> begin
+                          let typ_ = args_to_type fs.args in
+                          let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
+                          ((name, typ_)::accu_entrypoints, accu_views)
+                        end
+                      | FKview (VVonchain | VVonoffchain )-> begin
+                          let typ_ = args_to_type fs.args in
+                          (accu_entrypoints, (name, (typ_, rt))::accu_views)
+                        end
+                      | FKview VVoffchain -> (accu_entrypoints, accu_views)
                     end
-                  | FKview (VVonchain | VVonoffchain )-> begin
-                      let typ_ = args_to_type fs.args in
-                      (accu_entrypoints, (name, (typ_, rt))::accu_views)
+                  | A.Ftransaction ts -> begin
+                      let typ_ = args_to_type ts.args in
+                      ((unloc ts.name, typ_)::accu_entrypoints, accu_views)
                     end
-                  | FKview VVoffchain -> (accu_entrypoints, accu_views)
-                end
-              | A.Ftransaction ts -> begin
-                  let typ_ = args_to_type ts.args in
-                  ((unloc ts.name, typ_)::accu_entrypoints, accu_views)
-                end
-            ) ([], []) iast.funs in
+                ) ([], []) iast.funs in
 
-          { id_name        = id;
-            id_path        = path;
-            id_content     = None;
-            id_ast         = Some iast;
-            id_entrypoints = entrypoints;
-            id_views       = views;
-            id_env         = Some ienv; }
+            { id_name        = id;
+              id_path        = path;
+              id_content     = None;
+              id_ast         = Some iast;
+              id_entrypoints = entrypoints;
+              id_views       = views;
+              id_env         = Some ienv; }
 
-        in
+          in
 
-        let opt =
-          let filename = unloc path in
-          try
-            filename |> Core.with_open_in (fun channel ->
-              Some (Io.parse_archetype (Core.FIChannel (filename, channel))))
-          with Sys_error _ -> None in
+          let opt =
+            let filename = unloc path in
+            try
+              filename |> Core.with_open_in (fun channel ->
+                  Some (Io.parse_archetype (Core.FIChannel (filename, channel))))
+            with Sys_error _ -> None in
 
-        match opt with
-        | Some pt -> begin
-            let import = typing (empty ~cache:(Env.Import.get_cache env) id) pt in
-            let importdecl = make_importdecl_from_ast import in
+          match opt with
+          | Some pt -> begin
+              let import = typing (empty ~cache:(Env.Import.get_cache env) id) pt in
+              let importdecl = make_importdecl_from_ast import in
 
-            Env.Import.push_in_cache env (Option.get stats) importdecl;
+              Env.Import.push_in_cache env (Option.get stats) importdecl;
 
-            let env =
-              if   check_and_emit_name_free env id
-              then Env.Import.push env importdecl
-              else env
-            in env
-          end
+              let env =
+                if   check_and_emit_name_free env id
+                then Env.Import.push env importdecl
+                else env
+              in env
+            end
 
-        | None ->
+          | None ->
             Env.emit_error env (lo, InvalidArlFile);
             env
       end
 
     | _ ->
-        Env.emit_error env (loc path, UnknownImportExtension ext);
-        env
+      Env.emit_error env (loc path, UnknownImportExtension ext);
+      env
 
   in List.fold_left for1 env decls
 

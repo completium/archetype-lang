@@ -296,6 +296,7 @@ let to_const = function
   | Csimplifyrational      -> "simplify_rational"
   | Cgetnumerator          -> "get_numerator"
   | Cgetdenominator        -> "get_denominator"
+  | Cglobalconstant        -> "global_constant"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"
@@ -699,6 +700,11 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (ms, okh, amount, arg_storage)
 
+    | Ptz_expr v ->
+      let pp fmt v =
+        Format.pp_print_string fmt v
+      in
+      (pp_no_paren pp) fmt v
   in
   pp_struct_poly pp_node fmt pterm
 
@@ -975,8 +981,8 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Idetach (id, dk, ty, f) ->
       let pp_dk fmt = function
-      | DK_option (_, id) -> Format.pp_print_string fmt id
-      | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
+        | DK_option (_, id) -> Format.pp_print_string fmt id
+        | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
       in
       let pp fmt (id, dk, _ty, f) =
         Format.fprintf fmt "detach %a from %a : %a"

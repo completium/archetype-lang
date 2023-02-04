@@ -274,6 +274,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | MsaplingTransaction (_, b) -> Some (T.Dbytes b)
   | Mchest     b               -> Some (T.Dbytes b)
   | Mchest_key b               -> Some (T.Dbytes b)
+  | Mtz_expr   v               -> Some (T.Dconstant v)
   | Mnone                      -> Some (T.Dnone)
   | Msome      v               -> let v = f v in (match v with | Some x -> Some (T.Dsome x) | None -> None)
   | Mtuple     l               -> let v = dolist  l in (match v with | Some l -> Some (to_one_data l) | None -> None)
@@ -503,6 +504,7 @@ let to_ir (model : M.model) : T.ir =
     | MsaplingTransaction (_, b) -> T.Dbytes b
     | Mchest     b      -> T.Dbytes b
     | Mchest_key b      -> T.Dbytes b
+    | Mtz_expr   v      -> T.Dconstant v
     | Mnone             -> T.Dnone
     | Msome      v      -> T.Dsome (to_data v)
     | Mtuple     l      -> to_one_data (List.map to_data l)
@@ -889,6 +891,7 @@ let to_ir (model : M.model) : T.ir =
     | MsaplingTransaction (n, v) -> T.Iconst (T.mk_type (Tsapling_transaction n), Dbytes v)
     | Mchest v           -> T.Iconst (T.mk_type Tchest, Dbytes v)
     | Mchest_key v       -> T.Iconst (T.mk_type Tchest_key, Dbytes v)
+    | Mtz_expr _         -> emit_error (UnsupportedTerm ("Mtz_expr"))
 
     (* control expression *)
 
@@ -1079,6 +1082,7 @@ let to_ir (model : M.model) : T.ir =
       T.Irecupdate (f x, ru)
     | Mmakeasset _ -> emit_error (UnsupportedTerm ("Mmakeasset"))
     | Mtocontainer _ -> emit_error (UnsupportedTerm ("Mtocontainer"))
+    | Mglobal_constant (ty, v) -> T.Iconst (ft ty, to_data v)
 
     (* set api expression *)
 

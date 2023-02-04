@@ -505,6 +505,7 @@ let pp_mterm fmt (mt : mterm) =
     | MsaplingTransaction (_, v) -> Format.fprintf fmt "0x%s" v
     | Mchest v -> Format.fprintf fmt "0x%s" v
     | Mchest_key v -> Format.fprintf fmt "0x%s" v
+    | Mtz_expr v -> Format.fprintf fmt "%s" v
 
     (* control expression *)
 
@@ -1167,6 +1168,14 @@ let pp_mterm fmt (mt : mterm) =
           an
       in
       pp fmt an
+
+    | Mglobal_constant (t, v) ->
+      let pp fmt v =
+        Format.fprintf fmt "global_constant<%a>(%a)"
+          pp_type t
+          f v
+      in
+      pp fmt v
 
     (* set api expression *)
 
