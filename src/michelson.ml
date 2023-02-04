@@ -89,6 +89,7 @@ type data =
   | DIrCode            of ident * instruction
   | Dcode              of code
   | Dlambda_rec        of code
+  | Dconstant          of string
 [@@deriving show {with_path = false}]
 
 and code_node =
@@ -1200,23 +1201,24 @@ and cmp_dexpr e1 e2 =
 (* -------------------------------------------------------------------- *)
 
 let map_data (f : data -> data) = function
-  | Dint n       -> Dint n
-  | Dstring v    -> Dstring v
-  | Dbytes v     -> Dbytes v
-  | Dunit        -> Dunit
-  | Dtrue        -> Dtrue
-  | Dfalse       -> Dfalse
-  | Dpair l      -> Dpair (List.map f l)
-  | Dleft v      -> Dleft (f v)
-  | Dright v     -> Dright (f v)
-  | Dsome v      -> Dsome (f v)
-  | Dnone        -> Dnone
-  | Dlist l      -> Dlist (List.map f l)
-  | Delt (l, r)  -> Delt (f l, f r)
-  | Dvar (c, t, b) -> Dvar (c, t, b)
+  | Dint n          -> Dint n
+  | Dstring v       -> Dstring v
+  | Dbytes v        -> Dbytes v
+  | Dunit           -> Dunit
+  | Dtrue           -> Dtrue
+  | Dfalse          -> Dfalse
+  | Dpair l         -> Dpair (List.map f l)
+  | Dleft v         -> Dleft (f v)
+  | Dright v        -> Dright (f v)
+  | Dsome v         -> Dsome (f v)
+  | Dnone           -> Dnone
+  | Dlist l         -> Dlist (List.map f l)
+  | Delt (l, r)     -> Delt (f l, f r)
+  | Dvar (c, t, b)  -> Dvar (c, t, b)
   | DIrCode (id, c) -> DIrCode (id, c)
-  | Dcode c      -> Dcode c
-  | Dlambda_rec c -> Dlambda_rec c
+  | Dcode c         -> Dcode c
+  | Dlambda_rec c   -> Dlambda_rec c
+  | Dconstant v     -> Dconstant v
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (x : code) : code =
   let node =
@@ -1696,6 +1698,7 @@ end = struct
     | DIrCode (_id, _c) -> Oarray ([])
     | Dcode c           -> code_to_micheline c
     | Dlambda_rec c     -> Oprim (mk_prim ~args:[code_to_micheline c] "Lambda_rec")
+    | Dconstant v       -> Oprim (mk_prim ~args:[Ostring v] "constant")
 
   and code_to_micheline (c : code) : obj_micheline =
     let f = code_to_micheline in

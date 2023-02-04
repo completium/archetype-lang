@@ -470,6 +470,8 @@ let to_model (ast : A.ast) : M.model =
         in
         M.Mcreatecontract (to_michelson_struct ms, f okh, f amount, f arg_storage)
 
+      | A.Ptz_expr s -> M.Mtz_expr s
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
@@ -872,6 +874,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mget_denominator (fx)
 
+      | A.Pcall (None, A.Cconst A.Cglobalconstant, [ty], [AExpr x]) ->
+        let fx = f x in
+        M.Mglobal_constant (type_to_type ty, fx)
 
       | A.Pcall (None, A.Cconst A.Cchecksignature, [], [AExpr k; AExpr s; AExpr x]) ->
         let fk = f k in

@@ -70,6 +70,7 @@
       "from"                , FROM                ;
       "function"            , FUNCTION            ;
       "getter"              , GETTER              ;
+      "global_constant"     , GLOBAL_CONSTANT     ;
       "identified"          , IDENTIFIED          ;
       "if"                  , IF                  ;
       "import"              , IMPORT              ;
@@ -176,6 +177,7 @@ let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 let tz_tx_rollup_l2_address = "tz4" ['0'-'9' 'a'-'z' 'A'-'Z']+
+let tz_expr  = "expr" ['0'-'9' 'a'-'z' 'A'-'Z']+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -188,6 +190,7 @@ rule token = parse
   | "state" blank+ "is"      { STATE_IS }
   | "with" blank+ "metadata" { WITH_METADATA }
 
+  | tz_expr as e          { if (String.length e <> 54) then lex_error lexbuf (Printf.sprintf "invalid expr: %s" e); TZ_EXPR e }
   | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
   | tz_tx_rollup_l2_address as a  { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid tx_rollup_l2_address: %s" a); TX_ROLLUP_L2_ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> (if (String.length id > 254) then lex_error lexbuf "Invalid identifier size, must be less than 255 charaters"; IDENT id) }

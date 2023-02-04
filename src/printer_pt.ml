@@ -859,6 +859,8 @@ let rec pp_expr outer pos fmt a =
 
   | Eunit -> Format.fprintf fmt "Unit"
 
+  | Etz_expr s -> Format.pp_print_string fmt s
+
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 

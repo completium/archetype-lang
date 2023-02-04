@@ -86,6 +86,7 @@
 %token FROM
 %token FUNCTION
 %token GETTER
+%token GLOBAL_CONSTANT
 %token GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
@@ -211,6 +212,7 @@
 %token <string> UTZ
 %token <string> ADDRESS
 %token <string> TX_ROLLUP_L2_ADDRESS
+%token <string> TZ_EXPR
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
@@ -945,6 +947,7 @@ ident_typ_q:
 
 %inline get_typed_id:
  | ADDRESS_TO_CONTRACT { Location.dumloc "address_to_contract" }
+ | GLOBAL_CONSTANT     { Location.dumloc "global_constant"     }
  | MAKE_SET            { Location.dumloc "make_set"            }
  | MAKE_LIST           { Location.dumloc "make_list"           }
  | MAKE_MAP            { Location.dumloc "make_map"            }
@@ -1198,6 +1201,9 @@ simple_expr_r:
 
  | UNIT
      { Eunit }
+
+ | x=TZ_EXPR
+     { Etz_expr x }
 
  | INVALID_EXPR
      { Einvalid }

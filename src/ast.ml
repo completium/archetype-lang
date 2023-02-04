@@ -222,6 +222,7 @@ type const =
   | Csimplifyrational
   | Cgetnumerator
   | Cgetdenominator
+  | Cglobalconstant
   (* set *)
   | Csadd
   | Csremove
@@ -419,6 +420,7 @@ and pterm_node  =
   | Pself of lident
   | Pternary of pterm * pterm * pterm
   | Pcreatecontract of michelson_struct * pterm * pterm * pterm
+  | Ptz_expr of string
 [@@deriving show {with_path = false}]
 
 and pterm_arg =

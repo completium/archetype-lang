@@ -1,0 +1,8 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat (constant "exprubuoE4JFvkSpxsZJXAvhTdozCNZpgfCnyg6WsiAYX79q4z3bXu") ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

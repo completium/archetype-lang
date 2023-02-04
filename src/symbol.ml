@@ -16,6 +16,7 @@ let string_of_token = function
   | UNMOVED              -> "UNMOVED"
   | UNIT                 -> "UNIT"
   | UNDERSCORE           -> "UNDERSCORE"
+  | TZ_EXPR s            -> Printf.sprintf "TZ_EXPR(%s)" s
   | TZ n                 -> Printf.sprintf "TZ(%s)" n
   | TYPE                 -> "TYPE"
   | TX_ROLLUP_L2_ADDRESS s -> Printf.sprintf "TX_ROLLUP_L2_ADDRESS(%s)" s
@@ -123,8 +124,9 @@ let string_of_token = function
   | IDENT s              -> Printf.sprintf "IDENT(%s)" s
   | GREATEREQUAL         -> "GREATEREQUAL"
   | GREATER              -> "GREATER"
+  | GLOBAL_CONSTANT      -> "GLOBAL_CONSTANT"
   | GETTER               -> "GETTER"
-  | GET_ENTRYPOINT           -> "GET_ENTRYPOINT"
+  | GET_ENTRYPOINT       -> "GET_ENTRYPOINT"
   | FUNCTION             -> "FUNCTION"
   | FROM                 -> "FROM"
   | FORALL               -> "FORALL"
@@ -210,6 +212,7 @@ let string_of_symbol = function
   | X (T T_UNIT) -> "Unit"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"
+  | X (T T_TZ_EXPR) -> "a tz_expr"
   | X (T T_TYPE) -> "a type"
   | X (T T_TX_ROLLUP_L2_ADDRESS) -> "tx_rollup_l2_address"
   | X (T T_TRUE) -> "true"
@@ -316,6 +319,7 @@ let string_of_symbol = function
   | X (T T_IDENT) -> "an ident"
   | X (T T_GREATEREQUAL) -> ">="
   | X (T T_GREATER) -> ">"
+  | X (T T_GLOBAL_CONSTANT) -> "global_constant"
   | X (T T_GETTER) -> "getter"
   | X (T T_GET_ENTRYPOINT) -> "get_entrypoint"
   | X (T T_FUNCTION) -> "function"

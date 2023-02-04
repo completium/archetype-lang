@@ -739,6 +739,7 @@ type error_desc =
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
   | InvalidArcheTypeDecl
+  | InvalidArgForGlobalConstant
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
   | InvalidAssetGetContainer           of A.container
@@ -1004,6 +1005,7 @@ let pp_error_desc fmt e =
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
+  | InvalidArgForGlobalConstant        -> pp "Invalid argument for `global_constant', must be a constant expr"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
@@ -4150,6 +4152,11 @@ let rec for_xexpr
             let id = require_literal_string id in
             mk_sp (Some A.Toperation) (A.Pcall (None, A.Cconst Cmakeevent, [ty], [AIdent id; AExpr vv]))
           end
+        | "global_constant", [ty], [v] -> begin
+            let ty = (match for_type env ty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidArgForGlobalConstant); bailout()) in
+            let v = for_xexpr env v in
+            mk_sp (Some ty) (A.Pcall (None, A.Cconst Cglobalconstant, [ty], [AExpr v]))
+          end
         | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc id, [])); bailout ()
       end
 
@@ -4519,7 +4526,8 @@ let rec for_xexpr
     | Eunit ->
       let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
       mk_sp (Some A.vtunit) (A.Plit lit)
-
+    | Etz_expr v ->
+      mk_sp (Some A.vtunit) (A.Ptz_expr v)
     | Eself name when is_expr_kind mode.em_kind -> begin
         let decl =
           match Env.Tentry.lookup env (uknm, unloc name) with

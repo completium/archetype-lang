@@ -172,6 +172,7 @@ and expr_unloc =
   | Eany
   | Enothing
   | Eunit
+  | Etz_expr       of string
   | Einvalid
 
 and branch = (pattern list * expr)

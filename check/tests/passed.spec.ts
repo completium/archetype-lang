@@ -1,5 +1,5 @@
 /* DO NOT EDIT, GENERATED FILE */
-import { expect_to_fail, get_account, set_mockup, set_quiet } from '@completium/experiment-ts';
+import { expect_to_fail, get_account, register_global_constant, set_mockup, set_quiet } from '@completium/experiment-ts';
 import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
@@ -1083,6 +1083,7 @@ import * as test_getter from '../bindings/passed/test_getter'
 import * as test_getter2 from '../bindings/passed/test_getter2'
 import * as test_getter_with_arg from '../bindings/passed/test_getter_with_arg'
 import * as test_getter_with_args from '../bindings/passed/test_getter_with_args'
+import * as test_global_constant from '../bindings/passed/test_global_constant'
 import * as test_if_int_nat from '../bindings/passed/test_if_int_nat'
 import * as test_init_asset from '../bindings/passed/test_init_asset'
 import * as test_init_asset2 from '../bindings/passed/test_init_asset2'
@@ -8856,6 +8857,16 @@ describe('passed', async () => {
   it('test_getter_with_args', async () => {
     await test_getter_with_args.test_getter_with_args.deploy({ as: alice })
     // TODO
+  })
+
+  it('test_global_constant', async () => {
+    await register_global_constant(new Nat(2).to_mich(), {as: alice});
+    await test_global_constant.test_global_constant.deploy({ as: alice })
+    const res_before = await test_global_constant.test_global_constant.get_res()
+    assert(res_before.equals(new Nat(0)))
+    await test_global_constant.test_global_constant.exec({as : alice})
+    const res_after = await test_global_constant.test_global_constant.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('test_if_int_nat', async () => {
