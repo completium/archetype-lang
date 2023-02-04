@@ -3,10 +3,5 @@ archetype expr_arith_plus_str_str
 variable res : string = ""
 
 entry exec () {
-  specification {
-    s0: res = "ab";
-  }
-  effect {
-    res := "a" + "b"
-  }
+  res := "a" + "b"
 }

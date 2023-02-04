@@ -3,10 +3,5 @@ archetype expr_fun_min_date
 variable res : date = 2020-01-01
 
 entry exec () {
-  specification {
-    s0: res = 2019-01-01;
-  }
-  effect {
-    res := min(2019-01-01, 2020-01-02)
-  }
+  res := min(2019-01-01, 2020-01-02)
 }

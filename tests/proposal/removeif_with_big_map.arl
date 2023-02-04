@@ -10,13 +10,8 @@ asset a to big_map {
 }
 
 entry exec() {
-  // specification {
-  //   s1: a[0].p.count() = 1
-  // }
-  effect {
-    a[0].p.add({0});
-    a[0].p.add({1});
-    a[0].p.add({2});
-    a[0].p.remove_if(id >= 1);
-  }
+  a[0].p.add({0});
+  a[0].p.add({1});
+  a[0].p.add({2});
+  a[0].p.remove_if(id >= 1);
 }

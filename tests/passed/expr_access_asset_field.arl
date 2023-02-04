@@ -12,13 +12,6 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
-
-  specification {
-    s: res = 2;
-  }
-
-  effect {
-    res := my_asset["id2"].value;
-    do_require (res = 2, "ko")
-  }
+  res := my_asset["id2"].value;
+  do_require (res = 2, "ko")
 }

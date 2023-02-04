@@ -3,10 +3,5 @@ archetype expr_fun_max_date
 variable res : date = 2020-01-01
 
 entry exec () {
-  specification {
-    s0: res = 2020-01-02;
-  }
-  effect {
-    res := max(2019-01-01, 2020-01-02)
-  }
+  res := max(2019-01-01, 2020-01-02)
 }

@@ -28,9 +28,3 @@ entry reclaim (witness : address) {
     transfer bid[caller].val to caller
   }
 }
-
-specification {
-  contract invariant s1 {
-    forall b in bid, balance > b.val
-  }
-}

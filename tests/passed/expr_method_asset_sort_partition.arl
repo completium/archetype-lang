@@ -16,10 +16,5 @@ asset my_asset identified by id {
 variable res : bool = true
 
 entry exec () {
-  specification {
-    s0: not res;
-  }
-  effect {
-    var l = my_asset["id0"].col.sort(oid);
-  }
+  var l = my_asset["id0"].col.sort(oid);
 }

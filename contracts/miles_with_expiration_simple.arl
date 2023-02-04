@@ -26,24 +26,6 @@ entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile
 }
 
 entry consume (ow : address, qty : int) {
-    specification {
-        postcondition p0 {
-            let some before_o = before.owner[ow] in
-                let some after_o = owner[ow] in
-                after_o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity) - qty
-                otherwise true
-            otherwise true
-            invariant for loop {
-                let some before_o = before.owner[ow] in
-                let some o = owner[ow] in
-                    o.miles.sum(the.quantity) =
-                        before_o.miles.sum(the.quantity) - qty + remainder
-                otherwise true
-                otherwise true;
-                0 <= remainder <= toiterate.sum(the.quantity)
-            }
-        }
-    }
     called by admin
     require {
         r2: qty > 0;

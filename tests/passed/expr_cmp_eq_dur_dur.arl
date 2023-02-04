@@ -3,10 +3,5 @@ archetype expr_cmp_eq_dur_dur
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 1h = 1h
-  }
+  res := 1h = 1h
 }

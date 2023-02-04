@@ -11,13 +11,8 @@ asset myasset identified by id {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 6;
-  }
-  effect {
-    res := 0;
-    for i in myasset do
-      res += i;
-    done;
-  }
+  res := 0;
+  for i in myasset do
+    res += i;
+  done;
 }

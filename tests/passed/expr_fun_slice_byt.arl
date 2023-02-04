@@ -3,10 +3,5 @@ archetype expr_fun_slice_byt
 variable res : option<bytes> = none
 
 entry exec () {
-  specification {
-    s0: res = some(0xcdef);
-  }
-  effect {
-    res := slice(0xabcdef01, 1, 2)
-  }
+  res := slice(0xabcdef01, 1, 2)
 }

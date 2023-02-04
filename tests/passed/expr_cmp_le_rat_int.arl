@@ -3,10 +3,5 @@ archetype expr_cmp_le_rat_int
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 0.5 <= 3i
-  }
+  res := 0.5 <= 3i
 }

@@ -3,10 +3,5 @@ archetype expr_lit_bytes
 variable res : bytes = 0x00
 
 entry exec () {
-  specification {
-    s0: res = 0x1f;
-  }
-  effect {
-    res := 0x1f
-  }
+  res := 0x1f
 }

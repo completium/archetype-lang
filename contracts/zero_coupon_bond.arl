@@ -19,11 +19,6 @@ states =
   | Collected (* owner has collected payment *)
 
 transition confirm () {
-  specification {
-    postcondition s1 {
-      balance = 0tz
-    }
-  }
 
   from Created
   to Confirmed

@@ -18,15 +18,6 @@ entry add (ow : address, value : int) {
 }
 
 entry consume (ow : address, value : int) {
-  specification {
-    postcondition s1 {
-      let some ba = before.account[ow] in
-      let some a = account[ow] in
-      ba.amount = a.amount + value
-      otherwise true
-      otherwise true
-    }
-  }
 
   called by validator
 

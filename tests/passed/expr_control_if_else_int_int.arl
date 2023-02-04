@@ -3,10 +3,5 @@ archetype expr_control_if_else_int_int
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 1i;
-  }
-  effect {
-    res := (if true then 1i else 2i)
-  }
+  res := (if true then 1i else 2i)
 }

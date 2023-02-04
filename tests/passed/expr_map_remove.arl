@@ -3,10 +3,5 @@ archetype expr_map_remove
 variable res : map<nat, string> = [(0, "0")]
 
 entry exec () {
-  specification {
-    s0: length(res) = 0;
-  }
-  effect {
-    res := remove(res, 0);
-  }
+  res := remove(res, 0);
 }

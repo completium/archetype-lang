@@ -3,10 +3,5 @@ archetype expr_arith_lsl_bytes_nat
 variable res : bytes = 0x
 
 entry exec () {
-  specification {
-    s0: res = 0x08;
-  }
-  effect {
-    res := 0x04 <<| 1
-  }
+  res := 0x04 <<| 1
 }

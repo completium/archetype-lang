@@ -35,9 +35,3 @@ entry reclaim () {
     transfer bid[caller].value to caller
   }
 }
-
-specification {
-  contract invariant s1 {
-    forall b in bid, balance > b.value
-  }
-}

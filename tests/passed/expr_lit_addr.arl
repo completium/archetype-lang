@@ -1,12 +1,7 @@
 archetype expr_lit_addr
 
-variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable res : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 entry exec () {
-  specification {
-    s0: res = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB;
-  }
-  effect {
-    res := @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
-  }
+  res := tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 }

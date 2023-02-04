@@ -3,10 +3,5 @@ archetype expr_arith_not_bool
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := not false
-  }
+  res := not false
 }

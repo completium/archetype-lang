@@ -3,10 +3,5 @@ archetype expr_fun_int_to_nat
 variable res : option<nat> = none
 
 entry exec () {
-  specification {
-    s0: res = some(2);
-  }
-  effect {
-    res := int_to_nat(2i)
-  }
+  res := int_to_nat(2i)
 }

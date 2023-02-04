@@ -3,11 +3,6 @@ archetype expr_set_contains
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res;
-  }
-  effect {
-    var l : set<string> = ["1"; "2"; "3"];
-    res := contains(l, "2");
-  }
+  var l : set<string> = ["1"; "2"; "3"];
+  res := contains(l, "2");
 }

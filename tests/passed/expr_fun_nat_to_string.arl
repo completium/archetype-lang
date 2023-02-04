@@ -3,10 +3,5 @@ archetype expr_fun_nat_to_string
 variable res : string = ""
 
 entry exec () {
-  specification {
-    s0: res = "42";
-  }
-  effect {
-    res := nat_to_string(42)
-  }
+  res := nat_to_string(42)
 }

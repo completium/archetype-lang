@@ -12,9 +12,6 @@ enum myenum =
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 10;
-  }
   effect {
   const l : list<myenum> = [abc({a = 1; b = "abc"}); xyz({a = 2; b = "wxyz"})];
   res := 0;

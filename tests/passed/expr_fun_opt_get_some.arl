@@ -3,12 +3,7 @@ archetype expr_fun_opt_get_some
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    var i_opt : option<nat> = some(1);
-    var i ?= i_opt : "ERROR";
-    res := i = 1
-  }
+  var i_opt : option<nat> = some(1);
+  var i ?= i_opt : "ERROR";
+  res := i = 1
 }

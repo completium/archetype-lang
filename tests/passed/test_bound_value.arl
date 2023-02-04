@@ -2,12 +2,6 @@ archetype test_bound_value
 
 variable x : int = 1
 
-specification {
-  contract invariant s1 {
-    0 < x <= 1
-  }
-}
-
 entry exec () {
   effect {
     var a : int = 0;

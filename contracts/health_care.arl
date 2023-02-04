@@ -58,11 +58,6 @@ entry declare_consultation (v : tez) {
 }
 
 entry pay_doctor (docid : address) {
-  specification {
-    postcondition idem_balance_pay_doctor {
-      balance = before.balance
-    }
-  }
   accept transfer
   called by insurer
   require {
@@ -78,11 +73,6 @@ entry pay_doctor (docid : address) {
 }
 
 entry pay_fee () {
-  specification {
-    postcondition idem_balance_pay_fee {
-      balance = before.balance
-    }
-  }
   accept transfer
   called by patient
   require {
@@ -99,9 +89,6 @@ entry pay_fee () {
 }
 
 entry pay_consulation () {
-  specification {
-    idem_balance_pay_consultation : balance = before.balance;
-  }
   accept transfer
   called by patient
   require {

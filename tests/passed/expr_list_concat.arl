@@ -3,12 +3,7 @@ archetype expr_list_concat
 variable res : list<string> = []
 
 entry exec () {
-  specification {
-    s0: res = ["1"; "2"; "3"; "4"; "5"; "6"];
-  }
-  effect {
-    var l0 : list<string> = ["1"; "2"; "3"];
-    var l1 : list<string> = ["4"; "5"; "6"];
-    res := concat(l0, l1)
-  }
+  var l0 : list<string> = ["1"; "2"; "3"];
+  var l1 : list<string> = ["4"; "5"; "6"];
+  res := concat(l0, l1)
 }

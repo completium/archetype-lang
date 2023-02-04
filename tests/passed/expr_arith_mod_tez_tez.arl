@@ -3,10 +3,5 @@ archetype expr_arith_mod_tez_tez
 variable res : tez = 0tz
 
 entry exec () {
-  specification {
-    s0: res = 1000000utz;
-  }
-  effect {
-    res := 4tz % 3tz
-  }
+  res := 4tz % 3tz
 }

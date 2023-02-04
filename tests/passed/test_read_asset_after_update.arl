@@ -8,13 +8,8 @@ asset my_asset {
 }
 
 entry exec () {
-  specification {
-    i1: forall a : my_asset, a.v = 0;
-  }
-  effect {
-    for a in my_asset do
-      my_asset.update(a, {v = 0});
-      do_require(my_asset[a].v = 0, "ko")
-    done
-  }
+  for a in my_asset do
+    my_asset.update(a, {v = 0});
+    do_require(my_asset[a].v = 0, "ko")
+  done
 }

@@ -79,22 +79,6 @@ transition bury () {
   }
 }
 
-specification {
-  contract invariant s3 {
-    startDate < deadline
-  }
-  contract invariant s4 {
-    (voter.select(the.hasVoted = true)).count() = ballot.sum(the.nbvotes)
-  }
-  contract invariant s5 {
-    forall w in winner,
-           forall b in ballot,
-             let some wb = ballot[w.winvalue] in
-             b.nbvotes <= wb.nbvotes
-             otherwise false
-  }
-}
-
 entry assign_new_chairperson (newrole : address) {
   called by chairperson
   effect {

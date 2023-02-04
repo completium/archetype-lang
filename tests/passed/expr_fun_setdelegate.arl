@@ -3,14 +3,9 @@ archetype expr_fun_setdelegate
 variable res : option<string> = none
 
 entry exec () {
-  specification {
-    s0: length(operations) = 1
-  }
-  effect {
-    var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
-    var kh : key_hash = key_to_key_hash(k);
-    var okh : option<key_hash> = some(kh);
-    var op : operation = set_delegate(okh);
-    operations := prepend(operations, op)
-  }
+  var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
+  var kh : key_hash = key_to_key_hash(k);
+  var okh : option<key_hash> = some(kh);
+  var op : operation = set_delegate(okh);
+  operations := prepend(operations, op)
 }

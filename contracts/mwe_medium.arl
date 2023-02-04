@@ -29,16 +29,6 @@ entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile
 }
 
 entry consume (ow : address, qty : int) {
-    specification {
-        postcondition p0 {
-             mile.sum(the.quantity) = before.mile.sum(the.quantity) - qty
-             invariant for loop {
-                mile.sum(the.quantity) =
-                  before.mile.sum(the.quantity) - qty + remainder;
-                0 <= remainder <= toiterate.sum(the.quantity)
-            }
-        }
-    }
     called by admin
     require {
         r2: qty > 0;

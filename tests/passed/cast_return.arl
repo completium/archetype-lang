@@ -7,10 +7,5 @@ function f () : int {
 }
 
 entry exec () {
-  specification {
-    s0: res = 2;
-  }
-  effect {
-    res := f();
-  }
+  res := f();
 }

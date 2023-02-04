@@ -3,13 +3,7 @@ archetype expr_fun_unpack_bool
 variable res : option<bool> = none
 
 entry exec () {
-  specification {
-    s0: is_some(res);
-    s1: let some r = res in r otherwise false;
-  }
-  effect {
-    res := unpack<bool>(0x05030a);
-    const actual ?= res : "ERROR";
-    do_require (actual, "ko")
-  }
+  res := unpack<bool>(0x05030a);
+  const actual ?= res : "ERROR";
+  do_require (actual, "ko")
 }

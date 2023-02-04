@@ -3,10 +3,5 @@ archetype expr_fun_min_nat_rat
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 0.5;
-  }
-  effect {
-    res := min(1, 0.5)
-  }
+  res := min(1, 0.5)
 }

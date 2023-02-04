@@ -35,30 +35,6 @@ entry add (ow : address, newmile_id : string, newmile_amount : int, newmile_expi
 
 entry consume (a : address, quantity : int) {
 
-  specification {
-
-    assert p1 {
-      remainder = 0
-    }
-    postcondition p2 {
-      mile.sum(the.amount) = before.mile.sum(the.amount) - quantity
-      invariant for loop {
-        0 <= remainder <= toiterate.sum(the.amount);
-        before.mile.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
-      }
-    }
-    postcondition p3 {
-      forall m in removed.mile, m.expiration >= now
-      invariant for loop {
-        removed.mile.subsetof(by_expiration)
-      }
-    }
-    postcondition p4 {
-      added.mile.isempty()
-    }
-
-  }
-
   called by admin
 
   require {
@@ -83,14 +59,6 @@ entry consume (a : address, quantity : int) {
 }
 
 entry clear_expired () {
-  specification {
-    postcondition s3 {
-      forall m in removed.mile, m.expiration < now
-      invariant for loop2 {
-        forall m in removed.mile, m.expiration < now
-      }
-    }
-  }
 
   called by admin
 

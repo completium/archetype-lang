@@ -3,10 +3,5 @@ archetype expr_fun_sub_nat
 variable res : option<nat> = none
 
 entry exec () {
-  specification {
-    s0: res = some(1);
-  }
-  effect {
-    res := sub_nat(3, 2)
-  }
+  res := sub_nat(3, 2)
 }

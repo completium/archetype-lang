@@ -3,11 +3,6 @@ archetype lang_entry
 constant admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 entry exec () {
-  specification {
-    postcondition c1 {
-      true -> true
-    }
-  }
   accept transfer
   called by admin
   constant {

@@ -13,11 +13,6 @@ function mynth(l : list<string>, idx : nat) : option<string> {
 }
 
 entry exec () {
-  specification {
-    s0: res = some("2");
-  }
-  effect {
-    var l : list<string> = ["1"; "2"; "3"];
-    res := mynth(l, 1)
-  }
+  var l : list<string> = ["1"; "2"; "3"];
+  res := mynth(l, 1)
 }

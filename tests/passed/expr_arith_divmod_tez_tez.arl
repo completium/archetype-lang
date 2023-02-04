@@ -3,10 +3,5 @@ archetype expr_arith_divmod_tez_tez
 variable res : option<nat * tez> = none
 
 entry exec () {
-  specification {
-    s0: res = some(((4, 1tz)));
-  }
-  effect {
-    res := 9tz /% 2tz
-  }
+  res := 9tz /% 2tz
 }

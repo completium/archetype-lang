@@ -3,11 +3,6 @@ archetype expr_option_map
 variable res : option<nat> = none
 
 entry exec () {
-  specification {
-    s0: res = some(2);
-  }
-  effect {
-    var o : option<int> = some(1i);
-    res := map(o, x -> abs(x) + 1)
-  }
+  var o : option<int> = some(1i);
+  res := map(o, x -> abs(x) + 1)
 }

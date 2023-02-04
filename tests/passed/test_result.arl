@@ -1,18 +1,11 @@
 archetype test_result
 
+variable res : int = 0i
+
 function f (i : int) : int {
-  specification {
-    postcondition c1 {
-      forall n : int, result = n
-    }
-  }
-  effect {
-    return i
-  }
+  return i
 }
 
 entry exec () {
-  effect {
-    var res : int = f(0)
-  }
+  res := f(0)
 }

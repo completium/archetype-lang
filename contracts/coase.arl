@@ -35,11 +35,6 @@ entry transfer_single (card_to_transfer : asset_key<card>, destination : address
 }
 
 entry sell_single (card_to_sell : asset_key<card>) {
-  specification {
-    shadow effect {
-      card_pattern.update(card[card_to_sell].card_pattern_card, {sellcount += 1})
-    }
-  }
   require {
     ss1: caller = card[card_to_sell].card_owner;
   }
@@ -54,19 +49,6 @@ entry sell_single (card_to_sell : asset_key<card>) {
 }
 
 entry buy_single (card_to_buy : asset_key<card_pattern>) {
-  specification {
-    postcondition bs1 {
-      card.count() = before.card.count() + 1
-    }
-    postcondition bs2 {
-      let some cp = card_pattern[card_to_buy] in
-      balance = before.balance + cp.quantity * cp.coefficient
-      otherwise true
-    }
-    postcondition bs3 {
-      card.select(card_owner = caller).count() >= 1
-    }
-  }
   accept transfer
   effect {
     var price : tez = (card_pattern[card_to_buy].quantity + 1) * card_pattern[card_to_buy].coefficient;
@@ -75,8 +57,4 @@ entry buy_single (card_to_buy : asset_key<card_pattern>) {
     card.add({card_id = next_id; card_owner = caller; card_pattern_card = card_to_buy});
     next_id += 1
   }
-}
-
-specification {
-  g1: balance = card_pattern.sum(((quantity * (quantity + 1)) / 2 + sellcount) * coefficient)
 }

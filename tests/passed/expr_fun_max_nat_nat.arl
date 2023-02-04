@@ -3,10 +3,5 @@ archetype expr_fun_max_nat_nat
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 2;
-  }
-  effect {
-    res := max(1, 2)
-  }
+  res := max(1, 2)
 }

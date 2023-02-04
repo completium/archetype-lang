@@ -3,10 +3,5 @@ archetype expr_control_if_else_nat_nat
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    res := (if true then 1 else 2)
-  }
+  res := (if true then 1 else 2)
 }

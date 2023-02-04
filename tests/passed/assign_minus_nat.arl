@@ -3,11 +3,6 @@ archetype assign_minus_nat
 variable n : nat = 10
 
 entry exec () {
-  specification {
-    s1: n = 9;
-  }
-  effect {
-    n -= 1;
-    do_require(n = 9, "ko")
-  }
+  n -= 1;
+  do_require(n = 9, "ko")
 }

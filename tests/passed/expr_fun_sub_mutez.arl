@@ -3,10 +3,5 @@ archetype expr_fun_sub_mutez
 variable res : option<tez> = none
 
 entry exec () {
-  specification {
-    s0: res = some(1tz);
-  }
-  effect {
-    res := sub_mutez(3tz, 2tz)
-  }
+  res := sub_mutez(3tz, 2tz)
 }

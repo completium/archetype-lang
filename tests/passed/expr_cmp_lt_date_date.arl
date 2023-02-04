@@ -3,10 +3,5 @@ archetype expr_cmp_lt_date_date
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 2020-01-01 < 2020-01-02
-  }
+  res := 2020-01-01 < 2020-01-02
 }

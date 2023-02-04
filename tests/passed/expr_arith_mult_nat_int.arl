@@ -3,10 +3,5 @@ archetype expr_arith_mult_nat_int
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 8i;
-  }
-  effect {
-    res := 4 * 2i
-  }
+  res := 4 * 2i
 }

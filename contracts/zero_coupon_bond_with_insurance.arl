@@ -28,10 +28,6 @@ transition insured () {
 }
 
 transition confirm () {
-  specification {
-    s1 : balance = 0tz
-  }
-
   from Insured
   to Confirmed
   when { transferred = price }

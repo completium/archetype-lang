@@ -3,10 +3,5 @@ archetype expr_fun_abs_int
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    res := abs(-1)
-  }
+  res := abs(-1)
 }

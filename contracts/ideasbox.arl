@@ -33,12 +33,6 @@ entry add_idea(description : string) {
 }
 
 entry vote(n : int, weight : int) {
-    specification {
-        p1 : let some v = voter[caller] in
-             let some bv = before.voter[caller] in
-                v.remaining = bv.remaining - weight
-             otherwise true otherwise true
-    }
     require {
         r1 : voter.contains(caller);
         r2 : expiration - 2d < now <= expiration;
@@ -61,8 +55,4 @@ entry finalize() {
             selected.add({i})
         done
     }
-}
-
-specification {
-    i1 : 5 * voter.count() = idea.sum(nbvotes) + voter.sum(remaining)
 }

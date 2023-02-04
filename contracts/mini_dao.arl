@@ -6,13 +6,6 @@ asset shares identified by addr {
 }
 
 entry withdraw () {
-  specification {
-    postcondition p1 {
-      let some s = shares[caller] in
-      balance = before.balance - s.value
-      otherwise true
-    }
-  }
   require {
     r0 : shares.contains(caller);
     r1 : shares[caller].value > 0tz;

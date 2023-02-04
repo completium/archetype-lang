@@ -12,7 +12,3 @@ asset ledger identified by holder to big_map {
 entry %transfer (from_ : int) {
   ledger.update(from_, { tokens += 1 });
 }
-
-specification {
-  s1: ledger.sum(tokens) = totalsupply;
-}

@@ -11,10 +11,5 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 6;
-  }
-  effect {
-    res := my_asset.sum(id)
-  }
+  res := my_asset.sum(id)
 }

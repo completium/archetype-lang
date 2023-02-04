@@ -3,10 +3,5 @@ archetype expr_cmp_ge_tez_tez
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 2tz >= 1tz
-  }
+  res := 2tz >= 1tz
 }

@@ -3,10 +3,5 @@ archetype not_nat
 variable res : int = 0
 
 entry exec() {
-  specification {
-    s0: res = -8
-  }
-  effect {
-    res := not 7;
-  }
+  res := not 7
 }

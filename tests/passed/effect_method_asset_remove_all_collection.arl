@@ -10,11 +10,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  specification {
-    s1: my_asset.isempty();
-    s2: my_asset.count() = 0;
-  }
-  effect {
-    my_asset.remove_all()
-  }
+  my_asset.remove_all()
 }

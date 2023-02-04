@@ -3,10 +3,5 @@ archetype expr_arith_xor_bytes_bytes
 variable res : bytes = 0x
 
 entry exec () {
-  specification {
-    s0: res = 0x02
-  }
-  effect {
-    res := 0x01 xor 0x03
-  }
+  res := 0x01 xor 0x03
 }

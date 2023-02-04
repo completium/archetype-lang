@@ -3,10 +3,5 @@ archetype expr_fun_min_nat_nat
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    res := min(1, 2)
-  }
+  res := min(1, 2)
 }

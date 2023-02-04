@@ -3,11 +3,6 @@ archetype expr_map_contains
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res;
-  }
-  effect {
-    var m : map<nat, string> = [(0, "0")];
-    res := contains(m, 0);
-  }
+  var m : map<nat, string> = [(0, "0")];
+  res := contains(m, 0);
 }
