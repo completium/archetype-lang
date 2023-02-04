@@ -135,9 +135,9 @@ and expr_unloc =
   | Eassign        of assignment_operator * expr * expr
   | Eassignopt     of expr * expr * expr
   | Eif            of expr * expr * expr option
-  | Efor           of lident option * for_ident * expr * expr
-  | Eiter          of lident option * lident * expr option * expr * expr
-  | Ewhile         of lident option * expr * expr
+  | Efor           of for_ident * expr * expr
+  | Eiter          of lident * expr option * expr * expr
+  | Ewhile         of expr * expr
   | Eseq           of expr * expr
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident * type_t option * expr * bool (* const or not *)
@@ -471,9 +471,9 @@ let efail         ?(loc=dummy) e                  = mkloc loc (Efail e)
 let eassign       ?(loc=dummy) op e v             = mkloc loc (Eassign(op, e, v))
 let eassignopt    ?(loc=dummy) e v f              = mkloc loc (Eassignopt(e, v, f))
 let eif           ?(loc=dummy) ?e c t             = mkloc loc (Eif(c, t, e))
-let efor          ?(loc=dummy) ?lbl id c b        = mkloc loc (Efor(lbl, id, c, b))
-let eiter         ?(loc=dummy) ?lbl ?min id max e = mkloc loc (Eiter(lbl, id, min, max, e))
-let ewhile        ?(loc=dummy) ?lbl c b           = mkloc loc (Ewhile(lbl, c, b))
+let efor          ?(loc=dummy) id c b             = mkloc loc (Efor(id, c, b))
+let eiter         ?(loc=dummy) ?min id max e      = mkloc loc (Eiter(id, min, max, e))
+let ewhile        ?(loc=dummy) c b                = mkloc loc (Ewhile(c, b))
 let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
 let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
 let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c))

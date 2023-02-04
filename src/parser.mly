@@ -725,10 +725,6 @@ pname:
 |                { None }
 | COLON t=type_s { Some t }
 
-%inline colon_ident:
-|                { None }
-| COLON i=ident  { Some i }
-
 %inline for_ident_unloc:
 | i=ident                             { FIsimple i }
 | LPAREN x=ident COMMA y=ident RPAREN { FIdouble (x, y) }
@@ -782,14 +778,14 @@ expr_r:
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
 
- | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
-     { Efor (lbl, x, y, body) }
+ | FOR x=for_ident IN y=expr DO body=block DONE
+     { Efor (x, y, body) }
 
- | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
-     { Eiter (lbl, x, a, b, body) }
+ | ITER x=ident a=from_expr TO b=expr DO body=block DONE
+     { Eiter (x, a, b, body) }
 
- | WHILE lbl=colon_ident c=expr DO body=block DONE
-     { Ewhile (lbl, c, body) }
+ | WHILE c=expr DO body=block DONE
+     { Ewhile (c, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }

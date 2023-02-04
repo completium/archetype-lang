@@ -5472,7 +5472,7 @@ let rec for_instruction_r
       Env.emit_error env (loc i, NoLetInInstruction);
       bailout ()
 
-    | Efor (lbl, x, pe, i) ->
+    | Efor (x, pe, i) ->
       let e = for_expr kind env pe in
 
       let kty =
@@ -5519,25 +5519,16 @@ let rec for_instruction_r
                  env idents)
               env kty in
 
-          let env =
-            match e.A.type_ with
-            | None ->
-              env
-            | Some lblty ->
-              Option.fold (fun env lbl ->
-                  if (check_and_emit_name_free env lbl) then
-                    Env.Label.push env (lbl, `Loop lblty)
-                  else env) env lbl
-          in for_instruction ~ret kind env i) in
+          for_instruction ~ret kind env i) in
 
       let x : A.for_ident =
         match unloc x with
         | PT.FIsimple  i     -> A.FIsimple i
         | PT.FIdouble (x, y) -> A.FIdouble (x, y)
 
-      in env, mki (A.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
+      in env, mki (A.Ifor (x, e, i))
 
-    | Eiter (lbl, x, a, b, i) ->
+    | Eiter (x, a, b, i) ->
       let zero_b = A.mk_sp (A.BVint Big_int.zero_big_int) ~type_:A.vtint in
       let zero : A.pterm = A.mk_sp (A.Plit zero_b) ~type_:A.vtint in
       let a = Option.map_dfl (fun x -> for_expr kind env ~ety:A.vtint x) zero a in
@@ -5546,12 +5537,12 @@ let rec for_instruction_r
           let _ : bool = check_and_emit_name_free env x in
           let env = Env.Local.push env ~kind:`LoopIndex (x, A.vtint) in
           for_instruction ~ret kind env i) in
-      env, mki (A.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
+      env, mki (A.Iiter (x, a, b, i))
 
-    | Ewhile (lbl, c, i) ->
+    | Ewhile (c, i) ->
       let c = for_expr kind env ~ety:A.vtbool c in
       let env, i = for_instruction ~ret kind env i in
-      env, mki (A.Iwhile (c, i)) ?label:(Option.map unloc lbl)
+      env, mki (A.Iwhile (c, i))
 
     | Edorequire (e, f) ->
       let e = for_expr ~ety:A.vtbool kind env e in

@@ -653,11 +653,10 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (e, l)
 
-  | Efor (lbl, fid, expr, body) ->
+  | Efor (fid, expr, body) ->
 
-    let pp fmt (lbl, fid, expr, body) =
-      Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
+    let pp fmt (fid, expr, body) =
+      Format.fprintf fmt "for %a in %a do@\n  @[%a@]@\ndone"
         (fun fmt fid ->
            match unloc fid with
            | FIsimple i -> pp_id fmt i
@@ -665,29 +664,27 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (lbl, fid, expr, body)
+    (maybe_paren outer e_default pos pp) fmt (fid, expr, body)
 
-  | Eiter (lbl, id, a, b, body) ->
+  | Eiter (id, a, b, body) ->
 
-    let pp fmt (lbl, id, a, b, body) =
-      Format.fprintf fmt "iter %a%a %ato %a do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
+    let pp fmt (id, a, b, body) =
+      Format.fprintf fmt "iter %a %ato %a do@\n  @[%a@]@\ndone"
         pp_id id
         (pp_option (fun fmt -> Format.fprintf fmt "from %a " (pp_expr e_default PNone))) a
         (pp_expr e_default PNone) b
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (lbl, id, a, b, body)
+    (maybe_paren outer e_default pos pp) fmt (id, a, b, body)
 
-  | Ewhile (lbl, cond, body) ->
+  | Ewhile (cond, body) ->
 
-    let pp fmt (lbl, cond, body) =
-      Format.fprintf fmt "while %a%a do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
+    let pp fmt (cond, body) =
+      Format.fprintf fmt "while %a do@\n  @[%a@]@\ndone"
         (pp_expr e_default PNone) cond
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (lbl, cond, body)
+    (maybe_paren outer e_default pos pp) fmt (cond, body)
 
   | Eseq (x, y) ->
 
