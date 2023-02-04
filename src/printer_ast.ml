@@ -110,9 +110,6 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "operation"
   | Tcontract et ->
     Format.fprintf fmt "contract<%a>" pp_type et
-  | Ttrace t ->
-    Format.fprintf fmt "%a"
-      pp_trtyp t
   | Tticket et ->
     Format.fprintf fmt "ticket<%a>" pp_type et
   | Tsapling_state n ->
@@ -154,8 +151,6 @@ let pp_logical_operator fmt = function
   | And   -> pp_str fmt "and"
   | Or    -> pp_str fmt "or"
   | Xor   -> pp_str fmt "xor"
-  | Imply -> pp_str fmt "->"
-  | Equiv -> pp_str fmt "<->"
 
 let pp_comparison_operator fmt = function
   | Equal  -> pp_str fmt "="
@@ -207,10 +202,6 @@ let rec pp_qualid fmt (q : qualid) =
   in
   pp_struct_poly pp_node fmt q
 
-let pp_quantifier fmt = function
-  | Forall -> pp_str fmt "forall"
-  | Exists -> pp_str fmt "exists"
-
 let pp_pattern fmt (p : pattern) =
   let pp_node fmt = function
     | Mconst (c, []) -> pp_id fmt c
@@ -229,12 +220,6 @@ let to_const = function
   | Cbalance               -> "balance"
   | Csource                -> "source"
   | Cselfaddress           -> "self_address"
-  | Cconditions            -> "conditions"
-  | Centries               -> "entries"
-  | Cnone                  -> "none"
-  | Cany                   -> "any"
-  | Canyentry              -> "anyentry"
-  | Cresult                -> "result"
   | Cselfchainid           -> "self_chain_id"
   | Coperations            -> "operations"
   | Cmetadata              -> "metadata"
@@ -346,18 +331,6 @@ let to_const = function
   | Copen_chest            -> "open_chest"
   (* event *)
   | Cemit                  -> "emit"
-  (* vset *)
-  | Cbefore                -> "before"
-  | Citerated              -> "iterated"
-  | Ctoiterate             -> "toiterate"
-  (* formula *)
-  | Cempty                 -> "empty"
-  | Cisempty               -> "isempty"
-  | Csingleton             -> "singleton"
-  | Csubsetof              -> "subsetof"
-  | Cunion                 -> "union"
-  | Cinter                 -> "inter"
-  | Cdiff                  -> "diff"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id
@@ -371,16 +344,6 @@ let pp_entry_description fmt = function
 
 let rec pp_pterm fmt (pterm : pterm) =
   let pp_node fmt = function
-    | Pquantifer (q, i, (a, t), b) ->
-      let pp fmt (q, i, (_a, t), b) =
-        Format.fprintf fmt "%a (%a : %a), %a"
-          pp_quantifier q
-          pp_id i
-          pp_type t
-          pp_pterm b
-      in
-      (pp_with_paren pp) fmt (q, i, (a, t), b)
-
     | Pif (c, t, e) ->
       let pp fmt (c, t, e) =
         Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
@@ -553,23 +516,11 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (i, t, v)
 
-    | Pvar (vt, vs, id) ->
-      let pp fmt (vt, vs, id) =
-        let vs_val = match vs with
-          | Vadded -> "added."
-          | Vremoved -> "removed."
-          | Vunmoved -> "unmoved."
-          | Vnone -> ""
-        in
-        let vt_val =
-          match vt with
-          | VTbefore -> "before."
-          | VTat lbl -> Format.asprintf "at(%s)." lbl
-          | VTnone   -> ""
-        in
-        Format.fprintf fmt "%s%s%a" vs_val vt_val pp_longident id
+    | Pvar id ->
+      let pp fmt id =
+        Format.fprintf fmt "%a" pp_longident id
       in
-      (pp_no_paren pp) fmt (vt, vs, id)
+      (pp_no_paren pp) fmt id
 
     | Parray l ->
       let pp fmt l =
@@ -584,7 +535,7 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt v
 
-    | Pdot ({ node = Pcall (Some { node = Pvar (VTnone, Vnone, an) },
+    | Pdot ({ node = Pcall (Some { node = Pvar an },
                             Cconst Cget, [], [AExpr k]) }, fn)
       ->
       let pp fmt (an, k, fn) =
@@ -958,13 +909,6 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt pt
 
-    | Ilabel id ->
-      let pp fmt id =
-        Format.fprintf fmt "assert %a" (** TODO: must be label *)
-          pp_id id
-      in
-      (pp_with_paren pp) fmt id
-
     | Ifail pt ->
       let pp fmt pt =
         Format.fprintf fmt "fail (%a)"
@@ -1000,183 +944,16 @@ let pp_label_term fmt (lt : label_term) =
     (pp_option (pp_postfix " : " pp_id)) lt.label
     pp_pterm lt.term
 
-let pp_specification fmt (v : specification) =
-  let empty = List.is_empty v.predicates
-              && List.is_empty v.definitions
-              && List.is_empty v.lemmas
-              && List.is_empty v.fails
-              && List.is_empty v.theorems
-              && List.is_empty v.variables
-              && List.is_empty v.invariants
-              && Option.is_none v.effect
-              && List.is_empty v.specs
-              && List.is_empty v.asserts
-  in
-  let pp_predicate fmt (p : predicate) =
-    Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
-      pp_id p.name
-      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_type typ)) p.args
-      pp_pterm p.body
-  in
-  let pp_definitions fmt (d : definition) =
-    Format.fprintf fmt "definition %a =@\n  @[{ %a : %a | %a }@]"
-      pp_id d.name
-      pp_id d.var
-      pp_type d.typ
-      pp_pterm d.body
-  in
-  let pp_fail fmt (f : fail) =
-    Format.fprintf fmt "%a with %a(%a : %a):@\n  @[%a@];@\n"
-      pp_id f.label
-      (pp_option pp_id) f.fid
-      pp_id f.arg
-      pp_type f.atype
-      pp_pterm f.formula
-  in
-  let pp_fails fmt l = if List.is_empty l then () else Format.fprintf fmt "fails {@\n  @[%a@]@\n}" (pp_list "@\n" pp_fail) l in
-  let pp_variable_spec fmt (v : variable) =
-    let decl = v.decl in
-    Format.fprintf fmt "variable %a%a%a"
-      pp_id decl.name
-      (pp_option (pp_prefix " : " pp_type)) decl.typ
-      (pp_option (pp_prefix " := " pp_pterm)) decl.default
-  in
-  let pp_invariant fmt (i : invariant) =
-    Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
-      pp_id i.label
-      (pp_list ";@\n" pp_pterm) i.formulas
-  in
-  let pp_invariants fmt is =
-    (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
-  in
-  let pp_use fmt u =
-    (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
-  in
-  let pp_assert fmt (s : assert_) : unit =
-    Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
-      pp_id s.name
-      pp_pterm s.formula
-      pp_invariants s.invariants
-      pp_use s.uses
-  in
-  let pp_postcondition fmt (s : postcondition) : unit =
-    Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}"
-      pp_id s.name
-      pp_pterm s.formula
-      pp_invariants s.invariants
-      pp_use s.uses
-  in
-  if empty
-  then ()
-  else
-    Format.fprintf fmt "specification {@\n  @[%a%a%a%a%a%a%a%a%a%a@]@\n}@\n"
-      (pp_no_empty_list2 pp_predicate) v.predicates
-      (pp_no_empty_list2 pp_definitions) v.definitions
-      pp_fails v.fails
-      (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
-      (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
-      (pp_no_empty_list2 pp_variable_spec) v.variables
-      (pp_no_empty_list2 (fun fmt (id, l : lident * label_term list) ->
-           Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
-             (pp_list "@\n" (fun fmt (lt : label_term) ->
-                  Format.fprintf fmt "%a : %a"
-                    pp_id id
-                    pp_label_term lt
-                )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n" pp_instruction)) v.effect
-      (pp_no_empty_list2 pp_assert) v.asserts
-      (pp_no_empty_list2 pp_postcondition) v.specs
-
-let pp_security fmt (s : security) =
-  let pp_security_entry fmt (a : security_entry)=
-    match a with
-    | Sany -> Format.fprintf fmt "any"
-    | Sentry l ->
-      if List.length l = 1
-      then pp_id fmt (List.nth l 0)
-      else Format.fprintf fmt "[%a]" (pp_list " or " pp_id) l
-  in
-  let pp_security_role = pp_id in
-  let pp_security_roles fmt l =
-    if List.length l = 1
-    then pp_id fmt (List.nth l 0)
-    else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) l
-  in
-  let pp_security_predicate fmt (sp : security_predicate) =
-    match sp.s_node with
-    | SonlyByRole (ad, roles) ->
-      Format.fprintf fmt "only_by_role (%a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-
-    | SonlyInEntry (ad, entry) ->
-      Format.fprintf fmt "only_in_entry (%a, %a)"
-        pp_entry_description ad
-        pp_security_entry entry
-
-    | SonlyByRoleInEntry (ad, roles, entry) ->
-      Format.fprintf fmt "only_by_role_in_entry (%a, %a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-        pp_security_entry entry
-
-    | SnotByRole (ad, roles) ->
-      Format.fprintf fmt "not_by_role (%a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-
-    | SnotInEntry (ad, entry) ->
-      Format.fprintf fmt "not_in_entry (%a, %a)"
-        pp_entry_description ad
-        pp_security_entry entry
-
-    | SnotByRoleInEntry (ad, roles, entry) ->
-      Format.fprintf fmt "not_by_role_in_entry (%a, %a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-        pp_security_entry entry
-
-    | StransferredBy ad ->
-      Format.fprintf fmt "transferred_by (%a)"
-        pp_entry_description ad
-
-    | StransferredTo ad ->
-      Format.fprintf fmt "transferred_to (%a)"
-        pp_entry_description ad
-
-    | SnoStorageFail entry ->
-      Format.fprintf fmt "no_storage_fail (%a)"
-        pp_security_entry entry
-  in
-
-  let pp_security_item fmt (si : security_item) =
-    Format.fprintf fmt "%a : %a;"
-      pp_id si.label
-      pp_security_predicate si.predicate
-  in
-  let empty = List.is_empty s.items
-  in
-  if empty
-  then ()
-  else
-    Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
-      (pp_no_empty_list pp_security_item) s.items
-
 let pp_variable_kind fmt = function
   | VKconstant  -> Format.fprintf fmt "constant"
   | VKvariable  -> Format.fprintf fmt "variable"
 
 let pp_variable fmt (v : variable) =
-  Format.fprintf fmt "%a %a : %a%a%a@\n"
+  Format.fprintf fmt "%a %a : %a%a@\n"
     pp_variable_kind v.kind
     pp_id v.decl.name
     pp_type (Option.get v.decl.typ)
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default
-    (fun fmt l ->
-       if List.is_empty l
-       then ()
-       else Format.fprintf fmt " { @[%a@] }" (pp_list ";@\n" pp_label_term) l
-    ) v.invs
 
 let pp_field fmt (f : decl_gen) =
   Format.fprintf fmt "%a : %a%a;"
@@ -1283,21 +1060,19 @@ let pp_fun_args fmt args =
     (pp_list " " pp_fun_ident_typ) args
 
 let pp_function fmt (f : function_) =
-  Format.fprintf fmt "%s %a%a : %a =@\n  @[%a%a@]@\n"
+  Format.fprintf fmt "%s %a%a : %a =@\n  @[%a@]@\n"
     (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview vv -> ((match vv with | VVonchain -> "onchain" | VVoffchain -> "offchain" | VVonoffchain -> "offchain onchain") ^ " view"))
     pp_id f.name
     pp_fun_args f.args
     pp_type f.return
-    (pp_option pp_specification) f.specification
     pp_instruction f.body
 
 let pp_otherwise fmt o = pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" pp_pterm x) fmt o
 
 let pp_transaction_entry fmt (t : transaction) =
-  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    (pp_option pp_specification) t.specification
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
@@ -1315,11 +1090,10 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : transition) =
-  Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
     (pp_option (pp_prefix " on " (fun fmt (k, _, an, _) -> Format.fprintf fmt "(%a : asset_key<%a>)" pp_id k pp_id an))) tr.on
-    (pp_option pp_specification) t.specification
     (pp_option (fun fmt (x, _) -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
@@ -1385,8 +1159,6 @@ let pp_ast fmt (ast : ast) =
   pp_parameter_values fmt ast.parameters;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;
-  (pp_no_empty_list2 pp_specification) fmt ast.specifications;
-  (pp_no_empty_list2 pp_security) fmt ast.securities;
   Format.fprintf fmt "@."
 
 (* -------------------------------------------------------------------------- *)

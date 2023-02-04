@@ -20,8 +20,7 @@
   micheline micheline_printer
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
-  gen_why3 mlwtree printer_mlwtree
-  gen_extra mtyping extract_w
+  gen_extra mtyping
   binding gen_contract_interface compile
   lsp
   )

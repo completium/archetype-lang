@@ -1514,12 +1514,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tevent id                  -> A.tref (M.unloc_mident id)
     | Tlambda _                  -> assert false
     | Tunit                      -> A.tunit
-    | Tstorage                   -> assert false
     | Toperation                 -> A.toperation
     | Tcontract t                -> A.mk_tcontract (f t)
-    | Tprog _                    -> assert false
-    | Tvset _                    -> assert false
-    | Ttrace _                   -> assert false
     | Tticket t                  -> A.mk_tticket (f t)
     | Tsapling_state n           -> A.mk_sapling_state (Big_int.big_int_of_int n)
     | Tsapling_transaction n     -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
@@ -1581,8 +1577,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         | e::t -> List.fold_left (fun accu x -> A.eseq (f x) accu) (f e) t
       end
     | Mreturn _x                 -> assert false
-    | Mlabel _i                  -> assert false
-    | Mmark (_i, _x)             -> assert false
 
 
     (* effect *)
@@ -1902,16 +1896,15 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* variable *)
 
-    | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
-    | Mvar(v, Vstorevar, _t, _d)         -> A.eterm (snd v)
-    | Mvar(v, Vstorecol, _t, _d)         -> A.eterm (snd v)
-    | Mvar(_v, Vdefinition, _t, _d)      -> assert false
-    | Mvar(v, Vlocal, _t, _d)            -> A.eterm (snd v)
-    | Mvar(v, Vparam, _t, _d)            -> A.eterm (snd v)
-    | Mvar(_v, Vfield, _t, _d)           -> assert false
-    | Mvar(_, Vthe, _t, _d)              -> assert false
-    | Mvar(_, Vstate, _t, _d)            -> assert false
-    | Mvar(v, Vparameter, _t, _d)        -> A.eterm (snd v)
+    | Mvar (_an, Vassetstate _k) -> assert false
+    | Mvar(v, Vstorevar)         -> A.eterm (snd v)
+    | Mvar(v, Vstorecol)         -> A.eterm (snd v)
+    | Mvar(v, Vlocal)            -> A.eterm (snd v)
+    | Mvar(v, Vparam)            -> A.eterm (snd v)
+    | Mvar(_v, Vfield)           -> assert false
+    | Mvar(_, Vthe)              -> assert false
+    | Mvar(_, Vstate)            -> assert false
+    | Mvar(v, Vparameter)        -> A.eterm (snd v)
     | Menumval (id, args, _e)            -> begin
         match args with
         | [] -> A.eterm (snd id)
@@ -1935,37 +1928,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minttodate         _ -> assert false
     | Mmuteztonat        _ -> assert false
-
-
-    (* quantifiers *)
-
-    | Mforall (_i, _t, None, _e)    -> assert false
-    | Mforall (_i, _t, Some _s, _e) -> assert false
-    | Mexists (_i, _t, None, _e)    -> assert false
-    | Mexists (_i, _t, Some _s, _e) -> assert false
-
-
-    (* formula operators *)
-
-    | Mimply (_l, _r)  -> assert false
-    | Mequiv (_l, _r)  -> assert false
-
-
-    (* formula asset collection *)
-
-    | Msetiterated  _e -> assert false
-    | Msettoiterate _e -> assert false
-
-
-    (* formula asset collection methods *)
-
-    | Mempty _an              -> assert false
-    | Msingleton (_an, _k)    -> assert false
-    | Msubsetof (_an, _c, _i) -> assert false
-    | Misempty  (_l, _r)      -> assert false
-    | Munion (_an, _l, _r)    -> assert false
-    | Minter (_an, _l, _r)    -> assert false
-    | Mdiff (_an, _l, _r)     -> assert false
 
   in
 

@@ -56,13 +56,6 @@ type vtyp =
   | VTtx_rollup_l2_address
 [@@deriving show {with_path = false}]
 
-type trtyp =
-  | TRentry
-  | TRaction (* add; remove; update *)
-  | TRasset
-  | TRfield
-[@@deriving show {with_path = false}]
-
 type ptyp =
   | Tnamed of int
   | Tasset of longident
@@ -82,7 +75,6 @@ type ptyp =
   | Toption of type_
   | Toperation
   | Tcontract of type_
-  | Ttrace of trtyp
   | Tticket of type_
   | Tsapling_state       of int
   | Tsapling_transaction of int
@@ -96,8 +88,6 @@ type logical_operator =
   | And
   | Or
   | Xor
-  | Imply
-  | Equiv
 [@@deriving show {with_path = false}]
 
 type comparison_operator =
@@ -155,12 +145,6 @@ type const =
   | Cbalance
   | Csource
   | Cselfaddress
-  | Cconditions
-  | Centries
-  | Cnone
-  | Cany
-  | Canyentry
-  | Cresult
   | Cselfchainid
   | Coperations
   | Cmetadata
@@ -273,18 +257,6 @@ type const =
   | Copen_chest
   (* event *)
   | Cemit
-  (* vset *)
-  | Cbefore
-  | Citerated
-  | Ctoiterate
-  (* formula *)
-  | Cempty
-  | Cisempty
-  | Csingleton
-  | Csubsetof
-  | Cunion
-  | Cinter
-  | Cdiff
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {
@@ -337,13 +309,6 @@ and bval_node =
   | BVunit
 [@@deriving show {with_path = false}]
 
-(* -------------------------------------------------------------------- *)
-
-type quantifier =
-  | Forall
-  | Exists
-[@@deriving show {with_path = false}]
-
 
 (* -------------------------------------------------------------------- *)
 
@@ -363,19 +328,6 @@ type call_kind =
   | Cconst of const
 [@@deriving show {with_path = false}]
 
-type var_temporality =
-  | VTbefore
-  | VTat of ident
-  | VTnone
-[@@deriving show {with_path = false}]
-
-type vset =
-  | Vadded
-  | Vremoved
-  | Vunmoved
-  | Vnone
-[@@deriving show {with_path = false}]
-
 type michelson_struct = {
   ms_content: Michelson.obj_micheline
 }
@@ -384,7 +336,6 @@ type michelson_struct = {
 type pterm = pterm_node struct_poly
 
 and pterm_node  =
-  | Pquantifer of quantifier * lident * (pterm option * type_) * pterm
   | Pif of (pterm * pterm * pterm)
   | Pmatchwith of pterm * (pattern * pterm) list
   | Pmatchoption of pterm * lident * pterm * pterm
@@ -403,7 +354,7 @@ and pterm_node  =
   | Precupdate of pterm * (lident * pterm) list
   | Pletin of lident * pterm * type_ option * pterm * pterm option (* ident * init * type * body * otherwise *)
   | Pdeclvar of lident * type_ option * pterm * bool
-  | Pvar of var_temporality * vset * longident
+  | Pvar of longident
   | Parray of pterm list
   | Plit of bval
   | Pdot of pterm * lident
@@ -473,7 +424,6 @@ and instruction_node =
   | Iemit of lident * pterm
   | Icall of (pterm option * call_kind * pterm_arg list)
   | Ireturn of pterm
-  | Ilabel of lident
   | Ifail of pterm
   | Ifailsome of pterm
   | Idetach of lident * detach_kind * type_ * pterm
@@ -515,58 +465,7 @@ type variable_kind =
 type variable = {
   decl : decl_gen; (* TODO *)
   kind : variable_kind;
-  invs : label_term list;
   loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type predicate = {
-  name : lident;
-  args : (lident * type_) list;
-  body : pterm;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type definition = {
-  name : lident;
-  typ  : type_;
-  var  : lident;
-  body : pterm;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type fail = {
-  label: lident;
-  fid: lident option;
-  arg: lident;
-  atype: type_;
-  formula: pterm;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type invariant = {
-  label: lident;
-  formulas: pterm list;
-}
-[@@deriving show {with_path = false}]
-
-type postcondition = {
-  name: lident;
-  formula: pterm;
-  invariants: invariant list;
-  uses: lident list;
-}
-[@@deriving show {with_path = false}]
-
-type assert_ = {
-  name: lident;
-  label: lident;
-  formula: pterm;
-  invariants: invariant list;
-  uses: lident list;
 }
 [@@deriving show {with_path = false}]
 
@@ -577,21 +476,6 @@ type parameter = {
   value   : pterm option;
   const   : bool;
   loc     : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type specification = {
-  predicates  : predicate list;
-  definitions : definition list;
-  fails       : fail list;
-  lemmas      : label_term list;
-  theorems    : label_term list;
-  variables   : variable list;
-  invariants  : (lident * label_term list) list;
-  effect      : instruction option;
-  specs       : postcondition list;
-  asserts     : assert_ list;
-  loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -606,37 +490,6 @@ type security_role   = lident
 type security_entry =
   | Sany
   | Sentry of lident list
-[@@deriving show {with_path = false}]
-
-type security_node =
-  | SonlyByRole         of entry_description * security_role list
-  | SonlyInEntry        of entry_description * security_entry
-  | SonlyByRoleInEntry  of entry_description * security_role list * security_entry
-  | SnotByRole          of entry_description * security_role list
-  | SnotInEntry         of entry_description * security_entry
-  | SnotByRoleInEntry   of entry_description * security_role list * security_entry
-  | StransferredBy      of entry_description
-  | StransferredTo      of entry_description
-  | SnoStorageFail      of security_entry
-[@@deriving show {with_path = false}]
-
-type security_predicate = {
-  s_node: security_node;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type security_item = {
-  label       : lident;
-  predicate   : security_predicate;
-  loc         : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type security = {
-  items       : security_item list;
-  loc         : Location.t [@opaque];
-}
 [@@deriving show {with_path = false}]
 
 type view_visibility =
@@ -656,7 +509,6 @@ type function_ = {
   kind          : fun_kind;
   args          : decl_gen list;
   body          : instruction;
-  specification : specification option;
   return        : type_;
   loc           : Location.t [@opaque];
 }
@@ -695,7 +547,6 @@ type transaction = {
   require         : label_term list option;
   failif          : label_term list option;
   transition      : transition option;
-  specification   : specification option;
   functions       : function_ list;
   effect          : instruction option;
   loc             : Location.t [@opaque];
@@ -794,8 +645,6 @@ type ast = {
   metadata       : metadata_kind option;
   decls          : decl_ list;
   funs           : fun_ list;
-  specifications : specification list;
-  securities     : security list;
   loc            : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -856,38 +705,17 @@ let mk_instr ?label ?(loc = Location.dummy) node =
 let mk_label_term ?label ?error ?(loc = Location.dummy) term =
   { label; term; error; loc }
 
-let mk_variable ?(invs = []) ?(loc = Location.dummy) decl kind =
-  { decl; kind; invs; loc }
+let mk_variable ?(loc = Location.dummy) decl kind =
+  { decl; kind; loc }
 
-let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
-  { name; args; body; loc }
-
-let mk_definition ?(loc = Location.dummy) name typ var body =
-  { name; typ; var; body; loc }
-
-let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
-  { label; fid; arg; atype; formula; loc }
-
-let mk_invariant ?(formulas = []) label =
-  { label; formulas }
-
-let mk_postcondition ?(invariants = []) ?(uses = []) name formula =
-  { name; formula; invariants; uses }
-
-let mk_assert ?(invariants = []) ?(uses = []) name label formula =
-  { name; label; formula; invariants; uses }
-
-let mk_specification ?(predicates = []) ?(definitions = []) ?(fails = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; fails; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
-
-let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name kind body return =
-  { name; kind; args; body; specification; return; loc }
+let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return =
+  { name; kind; args; body; return; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
 
-let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
-  { name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; specification; functions; effect; loc }
+let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?(functions = []) ?effect ?(loc = Location.dummy) name =
+  { name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; functions; effect; loc }
 
 let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : enum_item_struct =
   { name; initial; args; invariants; loc }
@@ -901,8 +729,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; map_kind; state; init; specs; loc }
 
-let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; parameters; metadata; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(loc = Location.dummy) name =
+  { name; parameters; metadata; decls; funs; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -930,7 +758,6 @@ let map_ptyp ft t =
   | Toption t                  -> Toption (ft t)
   | Toperation                 -> Toperation
   | Tcontract t                -> Tcontract (ft t)
-  | Ttrace trtyp               -> Ttrace trtyp
   | Tticket t                  -> Tticket (ft t)
   | Tsapling_state n           -> Tsapling_state n
   | Tsapling_transaction n     -> Tsapling_transaction n
@@ -948,7 +775,6 @@ module Utils : sig
   val is_asset                  : ast -> lident -> bool
   val is_enum_value             : ast -> lident -> bool
   val is_parameter              : ast -> lident -> bool
-  val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : enum -> lident
   val get_enum_values           : ast -> lident -> lident option
@@ -973,24 +799,6 @@ end = struct
   let get_variables ast = List.fold_right (fun (x : decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
   let get_assets ast    = List.fold_right (fun (x : decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
   let get_enums ast     = List.fold_right (fun (x : decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
-
-  let get_definitions (ast : ast) =
-    let for_spec s = s.definitions in
-    let for_spec_accu accu s =
-      accu @ for_spec s
-    in
-    let for_spec_accu_opt accu s =
-      Option.map_dfl (fun x -> for_spec_accu accu x) accu s
-    in
-    []
-    |> (fun acc -> List.fold_left (fun accu (fu : fun_) ->
-        let s =
-          match fu with
-          | Ffunction fs -> fs.specification
-          | Ftransaction ts -> ts.specification
-        in
-        for_spec_accu_opt accu s) acc ast.funs)
-    |> fun acc -> List.fold_left (fun accu s -> for_spec_accu accu s) acc ast.specifications
 
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
@@ -1062,13 +870,6 @@ end = struct
         else accu
     ) None (get_enums ast)
 
-  let get_definition ast ident =
-    List.fold_left (fun accu (x : definition) ->
-        if (Location.unloc x.name) = (Location.unloc ident)
-        then Some x
-        else accu
-      ) None (get_definitions ast)
-
   let get_variable_opt ast ident : variable option =
     List.fold_left (
       fun accu (x : variable) ->
@@ -1084,11 +885,6 @@ end = struct
 
   let is_asset ast ident =
     match get_asset_opt ast ident with
-    | Some _ -> true
-    | None   -> false
-
-  let is_definition ast ident =
-    match get_definition ast ident with
     | Some _ -> true
     | None   -> false
 

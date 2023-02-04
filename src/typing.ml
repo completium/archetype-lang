@@ -186,7 +186,6 @@ end = struct
       | A.Toption              _ -> true
       | A.Toperation             -> true
       | A.Tcontract            _ -> true
-      | A.Ttrace               _ -> false
       | A.Tticket              _ -> true
       | A.Tsapling_state       _ -> true
       | A.Tsapling_transaction _ -> true
@@ -232,7 +231,6 @@ end = struct
       | A.Toption             ty -> is_comparable ty
       | A.Toperation             -> false
       | A.Tcontract            _ -> false
-      | A.Ttrace               _ -> false
       | A.Tticket              _ -> false
       | A.Tsapling_state       _ -> false
       | A.Tsapling_transaction _ -> false
@@ -279,7 +277,6 @@ end = struct
       | A.Toption              _ -> true
       | A.Toperation             -> false
       | A.Tcontract            _ -> true
-      | A.Ttrace               _ -> false
       | A.Tticket              t -> is_passable t
       | A.Tsapling_state       _ -> true
       | A.Tsapling_transaction _ -> true
@@ -327,7 +324,6 @@ end = struct
       | A.Toperation             -> false
       | A.Tcontract            _ -> false
       | A.Tticket              t -> is_storable t
-      | A.Ttrace               _ -> false
       | A.Tsapling_state       _ -> true
       | A.Tsapling_transaction _ -> true
 
@@ -374,7 +370,6 @@ end = struct
       | A.Toperation             -> false
       | A.Tcontract            _ -> true
       | A.Tticket              _ -> false
-      | A.Ttrace               _ -> false
       | A.Tsapling_state       _ -> false
       | A.Tsapling_transaction _ -> true
 
@@ -421,7 +416,6 @@ end = struct
       | A.Toperation             -> false
       | A.Tcontract            _ -> true
       | A.Tticket              t -> is_big_map_value t
-      | A.Ttrace               _ -> false
       | A.Tsapling_state       _ -> false
       | A.Tsapling_transaction _ -> true
 
@@ -560,9 +554,6 @@ end = struct
         | Tenum     x, Tenum     y ->
           if x <> y then raise E.Error
 
-        | Ttrace x, Ttrace y ->
-          if x <> y then raise E.Error
-
         | Tbuiltin x, Tbuiltin y ->
           if x <> y then raise E.Error
 
@@ -613,7 +604,6 @@ end = struct
       | Tenum     _
       | Tevent    _
       | Toperation
-      | Ttrace    _
       | Tsapling_state _
       | Tsapling_transaction _
       | Tbuiltin  _ -> ty
@@ -687,7 +677,6 @@ type error_desc =
   | AEntryExpected                     of A.ptyp
   | AlienPattern
   | AnonymousFieldInEffect
-  | AssertInGlobalSpec
   | AssetExpected                      of A.ptyp
   | AssetOrRecordExpected              of A.ptyp
   | AssetUpdateInNonFormula
@@ -899,8 +888,6 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Logical And   -> pp "and"
   | Logical Or    -> pp "or"
   | Logical Xor   -> pp "xor"
-  | Logical Imply -> pp "->"
-  | Logical Equiv -> pp "<->"
   | Cmp Equal     -> pp "="
   | Cmp Nequal    -> pp "<>"
   | Cmp Gt        -> pp ">"
@@ -941,7 +928,6 @@ let pp_error_desc fmt e =
   | AEntryExpected ty                  -> pp "Expecting an entry point, not a `%a'" Printer_ast.pp_ptyp ty
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
-  | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetOrRecordExpected ty           -> pp "Asset or record expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetUpdateInNonFormula            -> pp "Asset record updated can only appear in formulas"
@@ -1240,7 +1226,7 @@ let opsigs =
 
   let bools : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
-    let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
+    let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or] in
 
     List.map (fun op -> (op, ([A.VTbool], A.VTbool))) unas
     @ List.map (fun op -> (op, ([A.VTbool; A.VTbool], A.VTbool))) bins in
@@ -2394,7 +2380,6 @@ end = struct
 
   module Import = struct
     type key   = int * int
-    type cache = (t importdecl) Mlib.t ref
 
     let proj = function `Import x -> Some x | _ -> None
 
@@ -2787,7 +2772,6 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toption   ty    -> valid_var_or_arg_type ty
   | Tcontract  _    -> true
   | Toperation      -> true
-  | Ttrace     _    -> false
 
   | Tcontainer (_, A.AssetView)      -> true
   | Tcontainer (_, A.AssetKey)       -> true
@@ -2824,8 +2808,6 @@ let tt_logical_operator (op : PT.logical_operator) =
   | And   -> A.And
   | Or    -> A.Or
   | Xor   -> A.Xor
-  | Imply -> A.Imply
-  | Equiv -> A.Equiv
 
 (* -------------------------------------------------------------------- *)
 let tt_arith_operator (op : PT.arithmetic_operator) =
@@ -3163,7 +3145,7 @@ let rec for_xexpr
 
   let mk_sp type_ node = A.mk_sp ~loc:(loc tope) ?type_ node in
   let dummy type_ : A.pterm =
-    mk_sp type_ (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", mkloc (loc tope) "<error>"))) in
+    mk_sp type_ (A.Pvar (mkloc (loc tope) "", mkloc (loc tope) "<error>")) in
 
   let require_literal_string (a : PT.expr) : A.lident =
     match unloc a with
@@ -3190,7 +3172,7 @@ let rec for_xexpr
             | `Only _ | `Yes None ->
               () end;
 
-          mk_sp (Some xty) (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", x)))
+          mk_sp (Some xty) (A.Pvar (mkloc (loc tope) "", x))
 
         | Some (`Global decl) -> begin
             if not capture.cp_global then
@@ -3200,13 +3182,13 @@ let rec for_xexpr
             | Some (body, `Inline) ->
               { body with loc = loc tope }
             | _ ->
-              mk_sp (Some decl.vr_type) (A.Pvar (VTnone, Vnone, decl.vr_name))
+              mk_sp (Some decl.vr_type) (A.Pvar decl.vr_name)
           end
 
         | Some (`Asset decl) ->
           let decl = as_full decl in
           let typ = A.Tcontainer ((A.Tasset decl.as_name), A.Collection) in
-          mk_sp (Some typ) (A.Pvar (VTnone, Vnone, decl.as_name))
+          mk_sp (Some typ) (A.Pvar decl.as_name)
 
         | Some (`StateByCtor (decl, ctor)) ->
           let ctor = Option.get (get_ctor (unloc ctor) decl.sd_ctors) in
@@ -3219,12 +3201,12 @@ let rec for_xexpr
 
           let name = (fst decl.sd_name, snd x) in
           let typ = A.Tenum decl.sd_name in
-          mk_sp (Some typ) (A.Pvar (VTnone, Vnone, name))
+          mk_sp (Some typ) (A.Pvar name)
 
         | Some (`Context (asset, ofield)) -> begin
             let atype = A.Tasset asset.as_name in
             let var   = mkloc (loc tope) Env.Context.the in
-            let the   = mk_sp (Some atype) (A.Pvar (VTnone, Vnone, (mkloc (loc tope) "", var))) in
+            let the   = mk_sp (Some atype) (A.Pvar (mkloc (loc tope) "", var)) in
 
             match ofield with
             | None ->
@@ -4387,8 +4369,6 @@ let rec for_xexpr
     | Evaropt    _
     | Efail      _
     | Efailsome  _
-    | Eassert    _
-    | Elabel     _
     | Eassign    _
     | Eassignopt _
     | Edofailif  _
@@ -4786,7 +4766,7 @@ and for_gen_method_call mode env theloc (the, m, args)
             List.map
               (fun (x, (loc, xty)) ->
                  let xterm =
-                   A.mk_sp ~loc ~type_:xty (A.Pvar (VTnone, Vnone, (mkloc theloc "", mkloc loc x)))
+                   A.mk_sp ~loc ~type_:xty (A.Pvar (mkloc theloc "", mkloc loc x))
                  in (mkloc loc x, xty, xterm))
               (Mid.bindings !map) in
 
@@ -5258,7 +5238,7 @@ let rec for_instruction_r
               let aout =
                 if se then begin
                   match the.node with
-                  | Pvar (VTnone, Vnone, (nm, x)) -> begin (* FIXME *)
+                  | Pvar (nm, x) -> begin (* FIXME *)
                       (match Option.snd (Env.lookup_entry env (Named (unloc nm), unloc x)) with
                        | Some (`Global _) -> check_side_effect();
                        | Some (`Local (_, kind)) -> begin
@@ -5271,7 +5251,7 @@ let rec for_instruction_r
                     end
                   | Pconst Cmetadata -> check_side_effect(); assign (`Var (mkloc the.loc "metadata"))
                   | Pconst Coperations -> check_side_effect(); assign (`Var (mkloc the.loc "operations"))
-                  | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
+                  | Pdot ({node = Pvar _; type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
                   | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) ->
                     check_side_effect(); assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
@@ -5374,7 +5354,7 @@ let rec for_instruction_r
             let aty = Option.get (Type.as_contract nty) in
             let arg = for_expr kind env ~ety:aty arg in
 
-            let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, (mkloc (loc name) "", name))) in
+            let e = A.mk_sp ~type_:nty (A.Pvar (mkloc (loc name) "", name)) in
 
             A.TTentry (x, e, arg)
           end
@@ -5445,7 +5425,7 @@ let rec for_instruction_r
         let dk, ticket_type =
           let v = for_expr kind env v in
           match v.node with
-          | A.Pvar (_, _, lid) -> begin
+          | A.Pvar lid -> begin
               let ty = match v.type_ with
                 | Some (A.Toption ((A.Tticket _) as tty)) -> tty
                 | _ -> (Env.emit_error env (v.loc, DetachInvalidType (unloc_longident lid)); bailout())
@@ -5455,7 +5435,7 @@ let rec for_instruction_r
           | A.Pcall (None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
               (match m with
                | {
-                 node = Pvar (VTnone, Vnone, (_, id)); (* FIXME:NM *)
+                 node = Pvar (_, id); (* FIXME:NM *)
                  type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
                } -> begin
                    A.DK_map (tty, unloc id, k), tty
@@ -5612,13 +5592,6 @@ let rec for_instruction_r
 
       env, mki (A.Ifailsome e)
 
-    | Eassert lbl ->
-      let env =
-        if (check_and_emit_name_free env lbl) then
-          Env.Label.push env (lbl, `Plain)
-        else env in
-      env, mki (Ilabel lbl)
-
     | Ematchwith (e, bs) -> begin
         let mode = { em_pred = false; em_kind = kind; } in
         match for_gen_matchwith mode capture0 env (loc i) e bs with
@@ -5662,13 +5635,6 @@ let rec for_instruction_r
 
           in env, mki aout
       end
-
-    | Elabel lbl ->
-      let env =
-        if   check_and_emit_name_free env lbl
-        then Env.Label.push env (lbl, `Code)
-        else env
-      in env, mki (Ilabel lbl)
 
     | Enothing ->
       env, mki (Iseq [])
@@ -5822,7 +5788,7 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     let asset = as_full (Option.get (Env.Asset.lookup env (unloc_nmid an))) in
     if (not (Type.is_address asset.as_pkty))
     then Env.emit_error env (loc cb, match kind with | `Called -> InvalidCallByAsset | `Sourced -> InvalidSourcedByAsset );
-    [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc_nmid an) ~type_:(A.Tcontainer (Tasset asset.as_name, Collection)) (A.Pvar (VTnone, Vnone, asset.as_name))))]
+    [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc_nmid an) ~type_:(A.Tcontainer (Tasset asset.as_name, Collection)) (A.Pvar asset.as_name)))]
 
   | _ ->
     [mkloc (loc cb) (Some (for_expr `Entry env ~ety:A.vtaddress cb))]
@@ -6134,7 +6100,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
       let fddfl =
         fdinit |> Option.map (fun fdinit ->
             A.mk_sp ~type_:fdty ~loc:(loc fdinit)
-              (A.Pvar (VTnone, Vnone, (Env.name env, mkloc (loc fdinit) "<init>")))) in
+              (A.Pvar (Env.name env, mkloc (loc fdinit) "<init>"))) in
       { fd_name  = mkloc fdloc fd;
         fd_type  = fdty;
         fd_dfl   = fddfl; } in
@@ -6220,7 +6186,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           let fddfl =
             fdinit |> Option.map (fun fdinit ->
                 A.mk_sp ~type_:fdty ~loc:(loc fdinit)
-                  (A.Pvar (VTnone, Vnone, (Env.name env, mkloc (loc fdinit) "<init>")))) in
+                  (A.Pvar (Env.name env, mkloc (loc fdinit) "<init>"))) in
 
           { fd_name  = mkloc fdloc fd;
             fd_type  = fdty;
@@ -6673,7 +6639,6 @@ let variables_of_vdecls fdecls =
               shadow  = false;
               loc     = loc (snd decl.vr_name); }; (* FIXME: namespace *)
         kind     = (match decl.vr_kind with | `Constant -> VKconstant | `Variable -> VKvariable | _ -> VKvariable);
-        invs     = [];
         loc      = loc (snd decl.vr_name); } (* FIXME: namespace *)
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
@@ -6702,7 +6667,6 @@ let functions_of_fdecls fdecls =
         kind          = decl.fs_kind;
         args          = args;
         body          = decl.fs_body;
-        specification = None;
         return        = decl.fs_retty;
         loc           = loc decl.fs_name; }
 
@@ -6719,7 +6683,7 @@ let transentrys_of_tdecls tdecls =
               fun (e : A.pterm) ->
                 match e with
                 | {
-                  node = Pvar (VTnone, Vnone, _);
+                  node = Pvar _;
                   type_= Some (A.Tcontainer(Tasset an, Collection))
                 } ->
                   A.Rasset an
@@ -6766,7 +6730,6 @@ let transentrys_of_tdecls tdecls =
         require         = Some (List.map mkl tdecl.ad_reqs);
         failif          = Some (List.map mkl tdecl.ad_fais);
         transition      = transition;
-        specification   = None;
         functions       = functions_of_fdecls tdecl.ad_funs;
         effect          = effect;
         loc             = loc tdecl.ad_name; }

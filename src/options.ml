@@ -2,7 +2,6 @@ type target_lang =
   | Michelson
   | MichelsonStorage
   | OffchainViews
-  | Whyml
   | Javascript
   | Markdown
   | BindingsJs
@@ -17,7 +16,6 @@ let string_to_target_lang = function
   | "michelson-storage" -> MichelsonStorage
   | "offchain-views"    -> OffchainViews
   | "contract-metadata" -> ContractMetadata
-  | "whyml"             -> Whyml
   | "javascript"        -> Javascript
   | "markdown"          -> Markdown
   | "bindings-js"       -> BindingsJs
@@ -49,7 +47,6 @@ let opt_mici    = ref false
 let opt_all_parenthesis = ref false
 let opt_m     = ref false
 let opt_raw   = ref false
-let opt_raw_whytree = ref false
 let opt_raw_ir = ref false
 let opt_raw_michelson = ref false
 let opt_caller = ref "$CALLER_ADDRESS"

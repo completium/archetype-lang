@@ -93,15 +93,10 @@ let rec pp_type fmt t =
       Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
       Format.fprintf fmt "unit"
-    | Tstorage ->
-      Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
     | Tcontract t ->
       Format.fprintf fmt "contract<%a>" pp_type t
-    | Tprog _
-    | Tvset _
-    | Ttrace _ -> Format.fprintf fmt "todo"
     | Tticket t ->
       Format.fprintf fmt "ticket<%a>" pp_type t
     | Tsapling_state n -> Format.fprintf fmt "sapling_state(%i)" n
@@ -133,33 +128,10 @@ let pp_sort_kind fmt = function
   | SKasc -> pp_str fmt "asc"
   | SKdesc -> pp_str fmt "desc"
 
-let pp_entry_description fmt ad =
-  match ad with
-  | ADany         -> pp_str fmt "anyentry"
-  | ADadd      id -> Format.fprintf fmt "add (%a)" pp_ident id
-  | ADremove   id -> Format.fprintf fmt "remove (%a)" pp_ident id
-  | ADupdate   id -> Format.fprintf fmt "update (%a)" pp_ident id
-  | ADtransfer id -> Format.fprintf fmt "transfer (%a)" pp_ident id
-  | ADget      id -> Format.fprintf fmt "get (%a)" pp_ident id
-  | ADiterate  id -> Format.fprintf fmt "iterate (%a)" pp_ident id
-  | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
-
-let pp_temp fmt = function
-  | Tbefore -> Format.fprintf fmt "before."
-  | Tat i   -> Format.fprintf fmt "at(%s)." i
-  | Tnone   -> ()
-
-let pp_delta fmt = function
-  | Dadded   -> Format.fprintf fmt "added."
-  | Dremoved -> Format.fprintf fmt "removed."
-  | Dunmoved -> Format.fprintf fmt "unmoved."
-  | Dnone    -> ()
-
 let pp_container_kind f fmt = function
-  | CKcoll (t, d)              -> Format.fprintf fmt "_%a%aColl_" pp_temp t pp_delta d
-  | CKview mt                  -> f fmt mt
-  | CKfield (an, fn, mt, t, d) -> Format.fprintf fmt "%a%aCKfield (%s, %s, %a)" pp_temp t pp_delta d an fn f mt
-  | CKdef v                    -> Format.fprintf fmt "_Def(%s)_" v
+  | CKcoll               -> Format.fprintf fmt "_Coll_"
+  | CKview mt            -> f fmt mt
+  | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
 
 let pp_iter_container_kind f fmt = function
   | ICKcoll  an         -> Format.fprintf fmt "%a" pp_str an
@@ -365,15 +337,6 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mreturn x ->
       Format.fprintf fmt "return %a"
-        f x
-
-    | Mlabel i ->
-      Format.fprintf fmt "label %a"
-        pp_mid i
-
-    | Mmark (i, x) ->
-      Format.fprintf fmt "label %a in@\n@[%a@]"
-        pp_mid i
         f x
 
 
@@ -1577,16 +1540,15 @@ let pp_mterm fmt (mt : mterm) =
 
     (* variable *)
 
-    | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (unloc_mident an) f k
-    | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(v, Vfield, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
-    | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
-    | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
-    | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_mid v
+    | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc_mident an) f k
+    | Mvar(v, Vstorevar)       -> Format.fprintf fmt "s.%a" pp_mid v
+    | Mvar(v, Vstorecol)       -> Format.fprintf fmt "%a" pp_mid v
+    | Mvar(v, Vlocal)          -> Format.fprintf fmt "%a" pp_mid v
+    | Mvar(v, Vparam)          -> Format.fprintf fmt "%a" pp_mid v
+    | Mvar(v, Vfield)          -> Format.fprintf fmt "%a" pp_mid v
+    | Mvar(_, Vthe)            -> Format.fprintf fmt "the"
+    | Mvar(_, Vstate)          -> Format.fprintf fmt "state"
+    | Mvar(v, Vparameter)      -> Format.fprintf fmt "%a" pp_mid v
     | Menumval (id, args, _e)        -> begin
         match args with
         | [] -> Format.fprintf fmt "%a" pp_mid id
@@ -1699,133 +1661,8 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt v
 
-    (* quantifiers *)
-
-    | Mforall (i, t, None, e) ->
-      Format.fprintf fmt "forall (%a : %a), %a"
-        pp_mid i
-        pp_type t
-        f e
-
-    | Mforall (i, t, Some s, e) ->
-      Format.fprintf fmt "forall (%a : %a) in %a, %a"
-        pp_mid i
-        pp_type t
-        f s
-        f e
-
-    | Mexists (i, t, None, e) ->
-      Format.fprintf fmt "exists (%a : %a), %a"
-        pp_mid i
-        pp_type t
-        f e
-
-    | Mexists (i, t, Some s, e) ->
-      Format.fprintf fmt "exists (%a : %a) in %a, %a"
-        pp_mid i
-        pp_type t
-        f s
-        f e
-
-
-    (* formula operators *)
-
-    | Mimply (l, r) ->
-      let pp fmt (l, r) =
-        Format.fprintf fmt "%a -> %a"
-          f l
-          f r
-      in
-      pp fmt (l, r)
-
-    | Mequiv  (l, r) ->
-      let pp fmt (l, r) =
-        Format.fprintf fmt "%a <-> %a"
-          f l
-          f r
-      in
-      pp fmt (l, r)
-
-
-    (* formula asset collection *)
-
-    | Msetiterated e ->
-      Format.fprintf fmt "iterated (%a)"
-        (pp_iter_container_kind f) e
-
-    | Msettoiterate e ->
-      Format.fprintf fmt "to_iterate (%a)"
-        (pp_iter_container_kind f) e
-
-
-    (* formula asset collection methods *)
-
-    | Mempty an ->
-      let pp fmt an =
-        Format.fprintf fmt "empty_%a"
-          pp_str an
-      in
-      pp fmt an
-
-    | Msingleton (an, k) ->
-      let pp fmt (an, k) =
-        Format.fprintf fmt "singleton_%a (%a)"
-          pp_str an
-          f k
-      in
-      pp fmt (an, k)
-
-    | Msubsetof (an, c, i) ->
-      let pp fmt (an, c, i) =
-        Format.fprintf fmt "subset_%a (%a, %a)"
-          pp_str an
-          (pp_container_kind f) c
-          f i
-      in
-      pp fmt (an, c, i)
-
-    | Misempty  (l, r) ->
-      let pp fmt (l, r) =
-        Format.fprintf fmt "isempty (%a, %a)"
-          pp_str l
-          f r
-      in
-      pp fmt (l, r)
-
-    | Munion (an, l, r) ->
-      let pp fmt (an, l, r) =
-        Format.fprintf fmt "union_%a (%a, %a)"
-          pp_str an
-          f l
-          f r
-      in
-      pp fmt (an, l, r)
-
-    | Minter (an, l, r) ->
-      let pp fmt (an, l, r) =
-        Format.fprintf fmt "inter_%a (%a, %a)"
-          pp_str an
-          f l
-          f r
-      in
-      pp fmt (an, l, r)
-
-    | Mdiff (an, l, r) ->
-      let pp fmt (an, l, r) =
-        Format.fprintf fmt "diff_%a (%a, %a)"
-          pp_str an
-          f l
-          f r
-      in
-      pp fmt (an, l, r)
-
   in
   f fmt mt
-
-let pp_label_term fmt (lt : label_term) =
-  Format.fprintf fmt "%a : %a"
-    pp_mid lt.label
-    pp_mterm lt.term
 
 let pp_ck fmt = function
   | Coll  -> Format.fprintf fmt "collection"
@@ -1888,13 +1725,9 @@ let pp_api_item_node fmt = function
   | APIBuiltin    v -> pp_api_builtin  fmt v
   | APIInternal   v -> pp_api_internal fmt v
 
-let pp_api_verif fmt = function
-  | StorageInvariant (l, an, mt) -> Format.fprintf fmt "storage_invariant on %a %a %a" pp_ident l pp_ident an pp_mterm mt
-
 let pp_api_storage fmt (api_storage : api_storage) =
-  Format.fprintf fmt "%a %a"
+  Format.fprintf fmt "%a"
     pp_api_item_node api_storage.node_item
-    pp_api_loc api_storage.api_loc
 
 let pp_api_items fmt l =
   if List.is_empty l
@@ -1904,24 +1737,19 @@ let pp_api_items fmt l =
       (pp_list "@\n" pp_api_storage) l
 
 let pp_var fmt (var : var) =
-  Format.fprintf fmt "%a : %a%a%a"
+  Format.fprintf fmt "%a : %a%a"
     pp_mid var.name
     pp_type var.type_
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
-    (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
 let pp_enum_item fmt (ei : enum_item) =
-  Format.fprintf fmt "| %a%a%a"
+  Format.fprintf fmt "| %a%a"
     pp_mid ei.name
     (fun fmt l ->
        if List.is_empty l
        then ()
        else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
     ) ei.args
-    (pp_do_if (not (List.is_empty ei.invariants)) (
-        fun fmt ->
-          Format.fprintf fmt " with {@[%a@]}"
-            (pp_list ";@\n" pp_label_term))) ei.invariants
 
 let pp_enum fmt (enum : enum) =
   Format.fprintf fmt "enum %a =@\n@[<v 2>  %a@]@\n"
@@ -1942,7 +1770,7 @@ let pp_map_kind fmt = function
 let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
-  Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a%a@\n"
+  Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_mid asset.name
     (pp_list " " pp_str) asset.keys
     (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_mid) xs)) asset.sort
@@ -1950,7 +1778,6 @@ let pp_asset fmt (asset : asset) =
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
     (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init
-    (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
 
 let pp_record fmt (r : record) =
@@ -1994,197 +1821,6 @@ let pp_storage fmt (s : storage) =
     Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
       (pp_list "@\n" pp_storage_item) s
 
-let pp_invariant fmt (inv : invariant) =
-  Format.fprintf fmt "invariant %a {@\n\
-                      @[<v 2>  %a@]@\n\
-                      }"
-    pp_mid inv.label
-    (pp_list "@\n" pp_mterm) inv.formulas
-
-let pp_invariants fmt is =
-  (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
-
-let pp_use fmt u =
-  (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_mid))) fmt u
-
-let pp_postcondition fmt (postcondition : postcondition) =
-  Format.fprintf fmt "%s %a {@\n  @[%a@]%a%a@\n}@\n"
-    (match postcondition.mode with | Post -> "postcondition" | Assert -> "assert" )
-    pp_mid postcondition.name
-    pp_mterm postcondition.formula
-    pp_invariants postcondition.invariants
-    pp_use postcondition.uses
-
-let pp_assert_ fmt (s : assert_) =
-  Format.fprintf fmt "assert %a on %a {@\n  @[%a@]%a%a@\n}@\n"
-    pp_mid s.name
-    pp_mid s.label
-    pp_mterm s.formula
-    pp_invariants s.invariants
-    pp_use s.uses
-
-let pp_specification fmt (v : specification) =
-  let pp_predicate fmt (p : predicate) =
-    Format.fprintf fmt "predicate %a (%a) {@\n  @[%a@]@\n}@\n"
-      pp_mid p.name
-      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_mid id pp_type typ)) p.args
-      pp_mterm p.body
-  in
-  let pp_definitions fmt (d : definition) =
-    Format.fprintf fmt "definition %a {@\n  @[%a : %a |@\n  %a @]@\n}@\n"
-      pp_mid d.name
-      pp_mid d.var
-      pp_type d.typ
-      pp_mterm d.body
-  in
-  let pp_fail fmt (f : fail) =
-    Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];"
-      pp_mid f.label
-      pp_mid f.arg
-      pp_type f.atype
-      pp_mterm f.formula
-  in
-  let pp_fails fmt l = if List.is_empty l then () else Format.fprintf fmt "fails {@\n  @[%a@]@\n}" (pp_list "@\n" pp_fail) l in
-  let pp_variable_spec fmt (v : variable) =
-    let id, type_, dv = v.decl in
-    Format.fprintf fmt "%a %a : %a%a@\n"
-      pp_variable_kind v.kind
-      pp_mid id
-      pp_type type_
-      (pp_option (pp_prefix " = " pp_mterm)) dv
-  in
-  let pp_shadow_effect fmt (instrs : mterm list) =
-    match instrs with
-    | [] -> ()
-    | _ ->
-      Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n@\n" (pp_list ";@\n" pp_mterm) instrs
-  in
-  (*let pp_invariant fmt (i : lident invariant) =
-    Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
-      pp_id i.label
-      (pp_list ";@\n" pp_pterm) i.formulas
-    in
-    let pp_invariants fmt is =
-    (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
-    in
-    let pp_use fmt u =
-    (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
-    in
-    let pp_assert fmt (s : lident assert_) : unit =
-    Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
-      pp_id s.name
-      pp_pterm s.formula
-      pp_invariants s.invariants
-      pp_use s.uses
-    in *)
-  let pp_main fmt (v : specification) =
-    (pp_no_empty_list2 pp_predicate) fmt v.predicates;
-    (pp_no_empty_list2 pp_definitions) fmt v.definitions;
-    (* (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas *)
-    (* (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems *)
-    pp_fails fmt v.fails;
-    (pp_no_empty_list2 pp_variable_spec) fmt v.variables;
-    (* (pp_no_empty_list2 (fun fmt (id, l : lident * lident label_term list) ->
-         Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
-           (pp_list "@\n" (fun fmt (lt : lident label_term) ->
-                Format.fprintf fmt "%a : %a"
-                  pp_id id
-                  pp_label_term lt
-              )) l)) v.invariants *)
-    (* (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n" pp_instruction)) v.effect *)
-    pp_shadow_effect fmt v.effects;
-    (pp_no_empty_list2 pp_postcondition) fmt v.postconditions
-  in
-  let empty =
-    List.is_empty v.predicates     &&
-    List.is_empty v.definitions    &&
-    List.is_empty v.lemmas         &&
-    List.is_empty v.theorems       &&
-    List.is_empty v.variables      &&
-    List.is_empty v.fails          &&
-    List.is_empty v.invariants     &&
-    List.is_empty v.effects        &&
-    List.is_empty v.postconditions
-  in
-  if empty
-  then ()
-  else Format.fprintf fmt "specification {@\n  @[%a@]@\n}@\n" pp_main v
-
-let pp_security fmt (s : security) =
-  let pp_security_entry fmt (a : security_entry)=
-    match a with
-    | Sany -> Format.fprintf fmt "any"
-    | Sentry l ->
-      if List.length l = 1
-      then pp_id fmt (List.nth l 0)
-      else Format.fprintf fmt "[%a]" (pp_list " or " pp_id) l
-  in
-  let pp_security_role = pp_id in
-  let pp_security_roles fmt l =
-    if List.length l = 1
-    then pp_id fmt (List.nth l 0)
-    else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) l
-  in
-  let pp_security_predicate fmt (sp : security_predicate) =
-    match sp.s_node with
-    | SonlyByRole (ad, roles) ->
-      Format.fprintf fmt "only_by_role (%a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-
-    | SonlyInEntry (ad, entry) ->
-      Format.fprintf fmt "only_in_entry (%a, %a)"
-        pp_entry_description ad
-        pp_security_entry entry
-
-    | SonlyByRoleInEntry (ad, roles, entry) ->
-      Format.fprintf fmt "only_by_role_in_entry (%a, %a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-        pp_security_entry entry
-
-    | SnotByRole (ad, roles) ->
-      Format.fprintf fmt "not_by_role (%a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-
-    | SnotInEntry (ad, entry) ->
-      Format.fprintf fmt "not_in_entry (%a, %a)"
-        pp_entry_description ad
-        pp_security_entry entry
-
-    | SnotByRoleInEntry (ad, roles, entry) ->
-      Format.fprintf fmt "not_by_role_in_entry (%a, %a, %a)"
-        pp_entry_description ad
-        pp_security_roles roles
-        pp_security_entry entry
-
-    | StransferredBy ad ->
-      Format.fprintf fmt "transferred_by (%a)"
-        pp_entry_description ad
-
-    | StransferredTo ad ->
-      Format.fprintf fmt "transferred_to (%a)"
-        pp_entry_description ad
-
-    | SnoStorageFail entry ->
-      Format.fprintf fmt "no_storage_fail (%a)"
-        pp_security_entry entry
-  in
-
-  let pp_security_item fmt (si : security_item) =
-    Format.fprintf fmt "%a : %a;"
-      pp_id si.label
-      pp_security_predicate si.predicate
-  in
-  let empty = List.is_empty s.items
-  in
-  if empty
-  then ()
-  else
-    Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
-      (pp_no_empty_list pp_security_item) s.items
-
 let pp_argument fmt ((id, t, dv) : argument) =
   Format.fprintf fmt "%a : %a%a"
     pp_mid id
@@ -2199,12 +1835,11 @@ let pp_function fmt f =
     | View (f, a, vv) -> (vv_to_str vv ^ "view"), f, Some a
     | Function (f, a) -> "function", f, Some a
   in
-  Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"
+  Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a@]@\n}@\n"
     pp_str k
     pp_mid fs.name
     (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
     (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
-    (pp_option pp_specification) f.spec
     pp_mterm fs.body
 
 let pp_parameters fmt = function
@@ -2227,20 +1862,14 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
-                      @\n@\n%a\
-                      @\n@\n%a\
-                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_parameters model.parameters
     (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) model.metadata
     pp_api_items model.api_items
-    (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
-    pp_specification model.specification
-    pp_security model.security
 
 (* -------------------------------------------------------------------------- *)
 

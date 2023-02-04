@@ -1,7 +1,0 @@
-(install
- (section share)
- (files
-  (archetype.mlw as mlw/archetype.mlw)
-  (fset.mlw as mlw/fset.mlw)
- )
-)

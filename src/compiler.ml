@@ -21,7 +21,6 @@ let main () : unit =
     | "michelson-storage" -> Options.target := MichelsonStorage
     | "offchain-views"    -> Options.target := OffchainViews
     | "contract-metadata" -> Options.target := ContractMetadata
-    | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
     | "markdown"          -> Options.target := Markdown
     | "bindings-js"       -> Options.target := BindingsJs
@@ -40,7 +39,7 @@ let main () : unit =
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  offchain-views@\n  whyml@\n  javascript@\n  bindings-js@\n  bindings-ts@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  offchain-views@\n  javascript@\n  bindings-js@\n  bindings-ts@\n"; exit 0), " List available target languages";
       "-o", Arg.String (fun s -> Options.opt_out := s), " Place the output into <file>";
       "--output", Arg.String (fun s -> Options.opt_out := s), " Same as -o";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
@@ -51,8 +50,6 @@ let main () : unit =
       "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
       "-omdl", Arg.Set Options.opt_omdl, " Generate optimized model";
       "--optimized-model", Arg.Set Options.opt_omdl, " Same as -omdl";
-      "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
-      "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
       "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
       "-mu", Arg.String (fun s -> Options.opt_metadata_uri := s), " Set metadata uri";
@@ -75,8 +72,6 @@ let main () : unit =
       "--model", Arg.Set Options.opt_m, " Same as -m";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
-      "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
-      "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
       "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
       "-dir", Arg.Set Options.opt_dir, " Generate intermediate decompilation";

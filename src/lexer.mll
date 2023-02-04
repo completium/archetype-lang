@@ -24,7 +24,6 @@
       "any"                 , ANY                 ;
       "archetype"           , ARCHETYPE           ;
       "as"                  , AS                  ;
-      "assert"              , ASSERT              ;
       "asset"               , ASSET               ;
       "asset_container"     , ASSET_CONTAINER     ;
       "asset_key"           , ASSET_KEY           ;
@@ -71,7 +70,6 @@
       "is"                  , IS                  ;
       "iter"                , ITER                ;
       "iterable_big_map"    , ITERABLE_BIG_MAP    ;
-      "label"               , LABEL               ;
       "lambda"              , LAMBDA              ;
       "left"                , LEFT                ;
       "let"                 , LET                 ;
@@ -221,7 +219,6 @@ rule token = parse
   | "&="                  { AMPEQUAL }
   | "|="                  { PIPEEQUAL }
   | "->"                  { IMPLY }
-  | "<->"                 { EQUIV }
   | "="                   { EQUAL }
   | "<>"                  { NEQUAL }
   | "<"                   { LESS }

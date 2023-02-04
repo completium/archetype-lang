@@ -47,8 +47,6 @@ and logical_operator =
   | And
   | Or
   | Xor
-  | Imply
-  | Equiv
 
 and comparison_operator =
   | Equal
@@ -148,8 +146,6 @@ and expr_unloc =
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
-  | Eassert        of lident
-  | Elabel         of lident
   | Ereturn        of expr
   | Eoption        of option_
   | Eor            of or_
@@ -484,8 +480,6 @@ let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c)
 let evaropt       ?(loc=dummy) ?t id e c f        = mkloc loc (Evaropt(id, t, e, f, c))
 let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
-let eassert       ?(loc=dummy) id                 = mkloc loc (Eassert id)
-let elabel        ?(loc=dummy) id                 = mkloc loc (Elabel id)
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
 let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)
 let eleft         ?(loc=dummy) t e                = mkloc loc (Eor (Oleft (None, t, e)))

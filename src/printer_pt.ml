@@ -31,7 +31,6 @@ let e_opspec2       =  (35,  NonAssoc) (* op spec 2  *)
 let e_opspec3       =  (35,  NonAssoc) (* op spec 3  *)
 let e_opspec4       =  (35,  NonAssoc) (* op spec 4  *)
 let e_imply         =  (40,  Right)    (* ->  *)
-let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_or            =  (60,  Left)     (* or  *)
 let e_xor           =  (60,  Left)     (* xor *)
 let e_and           =  (70,  Left)     (* and *)
@@ -68,8 +67,6 @@ let get_prec_from_operator (op : operator) =
   | Logical And     -> e_and
   | Logical Or      -> e_or
   | Logical Xor     -> e_xor
-  | Logical Imply   -> e_imply
-  | Logical Equiv   -> e_equiv
   | Cmp Equal       -> e_equal
   | Cmp Nequal      -> e_nequal
   | Cmp Gt          -> e_gt
@@ -214,8 +211,6 @@ let logical_operator_to_str op =
   | And   -> "and"
   | Or    -> "or"
   | Xor   -> "xor"
-  | Imply -> "->"
-  | Equiv -> "<->"
 
 let comparison_operator_to_str op =
   match op with
@@ -754,22 +749,6 @@ let rec pp_expr outer pos fmt a =
         (pp_option (fun fmt x -> Format.fprintf fmt " : %a" (pp_expr e_in PLeft) x)) fa
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, f)
-
-  | Eassert i ->
-
-    let pp fmt i =
-      Format.fprintf fmt "assert %a"
-        pp_id i
-    in
-    (maybe_paren outer e_colon pos pp) fmt i
-
-  | Elabel i ->
-
-    let pp fmt i =
-      Format.fprintf fmt "label %a"
-        pp_id i
-    in
-    (maybe_paren outer e_colon pos pp) fmt i
 
   | Eunpack (t, arg) ->
     let pp fmt (t, arg) =

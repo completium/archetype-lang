@@ -10,10 +10,9 @@ type error_desc =
 let generate_api_storage ?(verif=false) (model : model) : model =
 
   let to_ck = function
-    | CKcoll _                  -> Coll
-    | CKview _                  -> View
-    | CKfield (an, fn, _, _, _) -> Field (an, fn)
-    | CKdef _                   -> Coll
+    | CKcoll              -> Coll
+    | CKview _            -> View
+    | CKfield (an, fn, _) -> Field (an, fn)
   in
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
@@ -39,17 +38,17 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name))]
-      | Mremoveall (asset_name, ((CKcoll _) as c)) ->
+      | Mremoveall (asset_name, CKcoll) ->
         let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
-        List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) @ [APIAsset (RemoveAll (asset_name, to_ck c))]
-      | Mremoveall (asset_name, ((CKfield (aan, field_name, _, _, _)) as c)) ->
+        List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) @ [APIAsset (RemoveAll (asset_name, to_ck CKcoll))]
+      | Mremoveall (asset_name, ((CKfield (aan, field_name, _)) as c)) ->
         let (pa,_,_) = Utils.get_container_asset_key model aan field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, to_ck c))]
-      | Mremoveif (asset_name, (CKcoll _ as c), la, lb, _) ->
+      | Mremoveif (asset_name, CKcoll, la, lb, _) ->
         let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
         let l = List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) in
-        [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))] @ l
-      | Mremoveif (_, ((CKfield (an, fn, _, _, _)) as c), la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck CKcoll, la, lb))] @ l
+      | Mremoveif (_, ((CKfield (an, fn, _)) as c), la, lb, _) ->
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
           match get_ntype t with
@@ -61,7 +60,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mclear (an , ((CKview _) as c)) ->
         let ans : ident list = Utils.get_asset_partitions model an |> List.map snd in
         List.map (fun x -> APIAsset (Remove x)) (an::ans) @ [APIAsset (Clear (an, to_ck c))]
-      | Mclear (an , ((CKfield (aan, fn, _, _, _)) as c)) ->
+      | Mclear (an , ((CKfield (aan, fn, _)) as c)) ->
         let (pa,_,_) = Utils.get_container_asset_key model aan fn in
         [APIAsset (Remove pa); APIAsset (FieldRemove (aan, fn)); APIAsset (Clear (an, to_ck c))]
       | Mselect (asset_name, c, la, lb, _) ->
@@ -132,7 +131,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIBuiltin (Bfail mt.type_)]
       | _ -> []
     in
-    let accu = List.fold_left (fun accu v -> Utils.add_api_storage_in_list accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
+    let accu = List.fold_left (fun accu v -> Utils.add_api_storage_in_list accu (Model.mk_api_item v)) accu api_items in
     fold_term (f ctx) accu term
   in
   let l = fold_model f model []

@@ -29,7 +29,6 @@
 %token AND
 %token ANY
 %token ARCHETYPE
-%token ASSERT
 %token AS
 %token ASSET
 %token ASSET_CONTAINER
@@ -66,7 +65,6 @@
 %token ENUM
 %token EOF
 %token EQUAL
-%token EQUIV
 %token EVENT
 %token FAIL
 %token FAIL_IF
@@ -90,7 +88,6 @@
 %token IS
 %token ITER
 %token ITERABLE_BIG_MAP
-%token LABEL
 %token LAMBDA
 %token LBRACE
 %token LBRACKET
@@ -208,9 +205,6 @@
 %nonassoc prec_var
 %nonassoc QUESTIONCOLONEQUAL COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 %right COLON
-
-%right IMPLY
-%nonassoc EQUIV
 
 %nonassoc QUESTION
 
@@ -788,12 +782,6 @@ expr_r:
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
 
- | ASSERT id=ident
-     { Eassert id }
-
- | LABEL id=ident
-     { Elabel id }
-
  | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
@@ -1041,8 +1029,6 @@ recupdate_item:
  | AND   { And }
  | OR    { Or }
  | XOR   { Xor }
- | IMPLY { Imply }
- | EQUIV { Equiv }
 
 %inline comparison_operator:
  | EQUAL        { Equal }

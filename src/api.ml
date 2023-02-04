@@ -44,7 +44,6 @@ let set_options settings =
   Archetype.Options.opt_all_parenthesis  := process_boolean_false "all_parenthesis";
   Archetype.Options.opt_m                := process_boolean_false "m";
   Archetype.Options.opt_raw              := process_boolean_false "raw";
-  Archetype.Options.opt_raw_whytree      := process_boolean_false "raw_whytree";
   Archetype.Options.opt_raw_ir           := process_boolean_false "raw_ir";
   Archetype.Options.opt_raw_michelson    := process_boolean_false "raw_michelson";
   Archetype.Options.opt_caller           := process_string "$CALLER_ADDRESS" "caller";

@@ -65,12 +65,8 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tevent _id                      -> unsupported()
   | Tlambda (_ity, _rty)            -> doit any    id_f
   | Tunit                           -> doit any    id_f
-  | Tstorage                        -> unsupported()
   | Toperation                      -> unsupported()
   | Tcontract _                     -> unsupported()
-  | Tprog _                         -> unsupported()
-  | Tvset _                         -> unsupported()
-  | Ttrace _                        -> unsupported()
   | Tticket _                       -> unsupported()
   | Tsapling_state _                -> unsupported()
   | Tsapling_transaction _          -> doit bytes  id_f
