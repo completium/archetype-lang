@@ -37,7 +37,7 @@ entry consume (a : address, quantity : int) {
     var by_expiration = owner[a].miles.sort(expiration).select(the.expiration > now);
     do_require (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
     var remainder = quantity;
-    for : loop m in by_expiration do
+    for m in by_expiration do
       if remainder > 0
       then (
         if mile[m].amount > remainder
@@ -62,7 +62,7 @@ entry consume (a : address, quantity : int) {
 entry clear_expired () {
   called by admin
   effect {
-    for : loop2 o in owner do
+    for o in owner do
       owner[o].miles.remove_if(the.expiration < now)
     done
   }
