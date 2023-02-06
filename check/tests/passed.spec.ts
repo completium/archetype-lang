@@ -821,6 +821,7 @@ import * as not_nat from '../bindings/passed/not_nat'
 import * as nothing from '../bindings/passed/nothing'
 import * as one_constant from '../bindings/passed/one_constant'
 import * as op_assign_rat_update_asset from '../bindings/passed/op_assign_rat_update_asset'
+import * as param_const from '../bindings/passed/param_const'
 import * as parameter_expr_map from '../bindings/passed/parameter_expr_map'
 import * as partial_record from '../bindings/passed/partial_record'
 import * as rat_arith_div from '../bindings/passed/rat_arith_div'
@@ -7431,6 +7432,15 @@ describe('passed', async () => {
     // TODO
   })
 
+  it('param_const', async () => {
+    await param_const.param_const.deploy(new Nat(2), { as: alice })
+    const res_before = await param_const.param_const.get_res();
+    assert(res_before.equals(new Nat(0)), "Invalid Value")
+    await param_const.param_const.exec({ as: alice })
+    const res_after = await param_const.param_const.get_res();
+    assert(res_after.equals(new Nat(2)), "Invalid Value")
+  })
+
   it('parameter_expr_map', async () => {
     await parameter_expr_map.parameter_expr_map.deploy({ as: alice })
     // TODO
@@ -8860,11 +8870,11 @@ describe('passed', async () => {
   })
 
   it('test_global_constant', async () => {
-    await register_global_constant(new Nat(2).to_mich(), {as: alice});
+    await register_global_constant(new Nat(2).to_mich(), { as: alice });
     await test_global_constant.test_global_constant.deploy({ as: alice })
     const res_before = await test_global_constant.test_global_constant.get_res()
     assert(res_before.equals(new Nat(0)))
-    await test_global_constant.test_global_constant.exec({as : alice})
+    await test_global_constant.test_global_constant.exec({ as: alice })
     const res_after = await test_global_constant.test_global_constant.get_res()
     assert(res_after.equals(new Nat(2)))
   })
@@ -9676,7 +9686,7 @@ describe('passed', async () => {
     await ticket_var_detach_option.ticket_var_detach_option.deploy({ as: alice })
     const info_before = await ticket_var_detach_option.ticket_var_detach_option.get_info()
     assert(info_before.equals(Option.None()));
-    await ticket_var_detach_option.ticket_var_detach_option.exec({as: alice})
+    await ticket_var_detach_option.ticket_var_detach_option.exec({ as: alice })
     const info_after = await ticket_var_detach_option.ticket_var_detach_option.get_info()
     assert(info_after.equals(Option.Some([ticket_var_detach_option.ticket_var_detach_option.get_address(), "info", new Nat(1)])));
   })
