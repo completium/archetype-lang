@@ -531,7 +531,6 @@ and rexpr_node =
 
 type transition = {
   from : sexpr;
-  on   : (lident * type_ * lident * type_) option; (* key ident * key type * asset name * asset state type *)
   trs  : (lident * pterm option * instruction option) list; (* to * condition * entry*)
 }
 [@@deriving show {with_path = false}]
@@ -587,7 +586,6 @@ type asset = {
   keys     : lident list;   (* TODO: option ? *)
   sort     : lident list;
   map_kind : map_kind;
-  state    : lident option;
   init     : pterm list list;
   specs    : label_term list;
   loc      : Location.t [@opaque];
@@ -711,8 +709,8 @@ let mk_variable ?(loc = Location.dummy) decl kind =
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return =
   { name; kind; args; body; return; loc }
 
-let mk_transition ?on ?(trs = []) from =
-  { from; on; trs }
+let mk_transition ?(trs = []) from =
+  { from; trs }
 
 let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?(functions = []) ?effect ?(loc = Location.dummy) name =
   { name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; functions; effect; loc }
@@ -726,8 +724,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; keys; sort; map_kind; state; init; specs; loc }
+let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; keys; sort; map_kind; init; specs; loc }
 
 let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(loc = Location.dummy) name =
   { name; parameters; metadata; decls; funs; loc }

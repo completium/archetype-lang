@@ -138,7 +138,6 @@ import * as contract_caller from '../bindings/passed/contract_caller'
 import * as contract_empty from '../bindings/passed/contract_empty'
 import * as contract_to_address from '../bindings/passed/contract_to_address'
 import * as contract_transition from '../bindings/passed/contract_transition'
-import * as contract_transition_on_asset from '../bindings/passed/contract_transition_on_asset'
 import * as counter from '../bindings/passed/counter'
 import * as counter_proxy from '../bindings/passed/counter_proxy'
 import * as custom_args_with_record from '../bindings/passed/custom_args_with_record'
@@ -3746,11 +3745,6 @@ describe('passed', async () => {
 
   it('contract_transition', async () => {
     await contract_transition.contract_transition.deploy({ as: alice })
-    // TODO
-  })
-
-  it('contract_transition_on_asset', async () => {
-    await contract_transition_on_asset.contract_transition_on_asset.deploy({ as: alice })
     // TODO
   })
 

@@ -1089,10 +1089,9 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : transition) =
-  Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    (pp_option (pp_prefix " on " (fun fmt (k, _, an, _) -> Format.fprintf fmt "(%a : asset_key<%a>)" pp_id k pp_id an))) tr.on
     (pp_option (fun fmt (x, _) -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require

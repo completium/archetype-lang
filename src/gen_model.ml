@@ -1447,12 +1447,7 @@ let to_model (ast : A.ast) : M.model =
         let body = to_instruction env e in
         args, body, env
       | Some t, None ->
-        let p_on =
-          match t.on with
-          | Some (key_ident, key_type, {pldesc = asset_name}, enum_type) ->
-            Some (key_ident, type_to_type key_type, asset_name, type_to_type enum_type)
-          | None -> None
-        in
+        let p_on = None in
         let args =
           match p_on with
           | Some (ki, kt, _an, _) -> args @ [(M.mk_mident ki, kt, None)]

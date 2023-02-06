@@ -1624,7 +1624,6 @@ type assetdecl = {
   as_sortk  : A.lident list;
   as_bm     : A.map_kind;
   as_invs   : (A.lident option * A.pterm) list;
-  as_state  : fullname option;
   as_init   : (A.pterm list) list;
 }
 [@@deriving show {with_path = false}]
@@ -1705,7 +1704,7 @@ type tentrydecl = {
   ad_actfs  : bool * A.pterm option;
 }
 
-and transition = A.sexpr * (A.lident * assetdecl) option * txeffect list
+and transition = A.sexpr * txeffect list
 
 (* -------------------------------------------------------------------- *)
 type statedecl = {
@@ -5973,7 +5972,6 @@ type pre_assetdecl = {
   pas_pk     : A.lident list;
   pas_sortk  : A.lident list;
   pas_bm     : A.map_kind;
-  pas_state  : statedecl option;
   pas_init   : PT.expr list;
 }
 
@@ -6106,7 +6104,6 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
           pas_pk     = pks;
           pas_sortk  = sortks;
           pas_bm     = bigmaps;
-          pas_state  = None;
           pas_init   = List.flatten inits; }
 
       in env, Some aout
@@ -6125,7 +6122,6 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 as_sortk  = [];
                 as_bm     = A.MKMap;
                 as_invs   = [];
-                as_state  = None;
                 as_init   = []; } in
       ((b, Env.Asset.push env (`Full d)), d)) (true, env) decls in
 
@@ -6179,7 +6175,6 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           as_sortk  = decl.pas_sortk;
           as_bm     = decl.pas_bm;
           as_invs   = [];
-          as_state  = Option.map (fun x -> x.sd_name) decl.pas_state;
           as_init   = []; }
 
       in List.map for1 decls in
@@ -6424,7 +6419,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
-          let env, enum, tgt =
+          let env, enum, _tgt =
             let env, aout =
               Option.foldbind (fun env (vtg, ttg) ->
                   Option.foldbind (fun env aname ->
@@ -6432,9 +6427,9 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                       let env =
                         if check_and_emit_name_free env vtg then
                           Env.Local.push env (vtg, asset.as_pkty)
-                        else env in
-                      let tgt = (vtg, asset) in
-                      (env, Option.map (fun x -> (unloc (snd x), tgt)) asset.as_state)) (* FIXME: namespace *)
+                        else env
+                        in
+                      (env, None)) (* FIXME: namespace *)
                     env (for_asset_keyof_type env ttg))
                 env None in
             env, Option.map fst aout, Option.map snd aout in
@@ -6452,7 +6447,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
               ad_srcby  = Option.get_dfl [] (fst srcby),  snd srcby;
               ad_callby = Option.get_dfl [] (fst callby), snd callby;
               ad_stateis= stateis;
-              ad_effect = Some (`Tx (from_, tgt, tx));
+              ad_effect = Some (`Tx (from_, tx));
               ad_funs   = funs;
               ad_csts   = Option.get_dfl [] csts;
               ad_reqs   = Option.get_dfl [] reqs;
@@ -6578,7 +6573,6 @@ let assets_of_adecls adecls =
         fields   = List.map for_field decl.as_fields;        keys     = decl.as_pk;
         sort     = decl.as_sortk;
         map_kind = decl.as_bm;
-        state    = None;
         init     = decl.as_init;
         specs    = List.map spec decl.as_invs;
         loc      = loc (snd decl.as_name); } (* FIXME: namespace *)
@@ -6680,15 +6674,9 @@ let transentrys_of_tdecls tdecls =
 
     let transition =
       match tdecl.ad_effect with
-      | Some (`Tx (from_, tgt, x)) ->
-        let on =
-          Option.map (fun (on, asset) ->
-              let pkty = asset.as_pkty in
-              let stty = A.Tenum (Option.get asset.as_state) in
-              (on, pkty, snd asset.as_name, stty) (* FIXME: namespace *)
-            ) tgt in
+      | Some (`Tx (from_, x)) ->
         let trs = List.map (fun tx -> (tx.tx_state, tx.tx_when, tx.tx_effect)) x in
-        Some (A.{ from = from_; on; trs })
+        Some (A.{ from = from_; trs })
 
       | _ -> None in
 
