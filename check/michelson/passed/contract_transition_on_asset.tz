@@ -24,6 +24,20 @@
                      {} ;
                    CDR ;
                    DUP 5 ;
+                   PAIR ;
+                   SOME ;
+                   DUP 4 ;
+                   UPDATE ;
+                   DIP 1 { DIG 3 ; DROP 1 } ;
+                   DUG 3 ;
+                   DUP 4 ;
+                   DUP 5 ;
+                   DUP 4 ;
+                   GET ;
+                   IF_NONE
+                     { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                     {} ;
+                   UNPAIR ;
                    SWAP ;
                    DROP 1 ;
                    PUSH int 1 ;
