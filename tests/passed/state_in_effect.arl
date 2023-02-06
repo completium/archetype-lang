@@ -10,9 +10,6 @@ states =
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
   effect {
     if (state = S2)
     then ();

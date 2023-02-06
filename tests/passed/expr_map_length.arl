@@ -3,11 +3,6 @@ archetype expr_map_length
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    var m : map<nat, string> = [(0, "0")];
-    res := length(m);
-  }
+  var m : map<nat, string> = [(0, "0")];
+  res := length(m);
 }

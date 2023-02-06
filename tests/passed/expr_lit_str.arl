@@ -3,10 +3,5 @@ archetype expr_lit_str
 variable res : string = ""
 
 entry exec () {
-  specification {
-    s0: res = "a";
-  }
-  effect {
-    res := "a"
-  }
+  res := "a"
 }

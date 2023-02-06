@@ -3,10 +3,5 @@ archetype expr_arith_and_int_nat
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 1i
-  }
-  effect {
-    res := 1i and 3
-  }
+  res := 1i and 3
 }

@@ -1,13 +1,29 @@
 archetype import_export
 
-constant myc : nat = 0
+constant my_constant : nat = 2
 
-record myrecord {
+record my_record {
   n : nat;
   s : string;
 }
 
+asset my_asset {
+  k : nat;
+  x : string;
+  y : bytes;
+  z : int;
+}
+
+enum my_enum =
+| eFirst
+| eSecond
+| eThird
+
 entry e(i : nat) {
+
+}
+
+entry e2(r : my_record) {
 
 }
 

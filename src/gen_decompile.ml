@@ -1514,12 +1514,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tevent id                  -> A.tref (M.unloc_mident id)
     | Tlambda _                  -> assert false
     | Tunit                      -> A.tunit
-    | Tstorage                   -> assert false
     | Toperation                 -> A.toperation
     | Tcontract t                -> A.mk_tcontract (f t)
-    | Tprog _                    -> assert false
-    | Tvset _                    -> assert false
-    | Ttrace _                   -> assert false
     | Tticket t                  -> A.mk_tticket (f t)
     | Tsapling_state n           -> A.mk_sapling_state (Big_int.big_int_of_int n)
     | Tsapling_transaction n     -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
@@ -1533,19 +1529,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | M.DivAssign   -> A.DivAssign
     | M.AndAssign   -> A.AndAssign
     | M.OrAssign    -> A.OrAssign
-  in
-
-  let for_temp = function
-    | M.Tbefore -> Some (A.VLBefore)
-    | M.Tat lbl -> Some (A.VLIdent (dumloc lbl))
-    | M.Tnone   -> None
-  in
-
-  let for_delta = function
-    | M.Dadded   -> Some (A.VSAdded)
-    | M.Dremoved -> Some (A.VSRemoved)
-    | M.Dunmoved -> Some (A.VSUnmoved)
-    | M.Dnone    -> None
   in
 
   let rec for_expr (mt : M.mterm) : A.expr =
@@ -1594,8 +1577,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         | e::t -> List.fold_left (fun accu x -> A.eseq (f x) accu) (f e) t
       end
     | Mreturn _x                 -> assert false
-    | Mlabel _i                  -> assert false
-    | Mmark (_i, _x)             -> assert false
 
 
     (* effect *)
@@ -1915,17 +1896,16 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* variable *)
 
-    | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
-    | Mvar(v, Vstorevar, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vstorecol, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(_v, Vdefinition, _t, _d)      -> assert false
-    | Mvar(v, Vlocal, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vparam, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(_v, Vfield, _t, _d)           -> assert false
-    | Mvar(_, Vthe, _t, _d)              -> assert false
-    | Mvar(_, Vstate, _t, _d)            -> assert false
-    | Mvar(v, Vparameter, t, d)          -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
-    | Menumval (id, args, _e)             -> begin
+    | Mvar (_an, Vassetstate _k) -> assert false
+    | Mvar(v, Vstorevar)         -> A.eterm (snd v)
+    | Mvar(v, Vstorecol)         -> A.eterm (snd v)
+    | Mvar(v, Vlocal)            -> A.eterm (snd v)
+    | Mvar(v, Vparam)            -> A.eterm (snd v)
+    | Mvar(_v, Vfield)           -> assert false
+    | Mvar(_, Vthe)              -> assert false
+    | Mvar(_, Vstate)            -> assert false
+    | Mvar(v, Vparameter)        -> A.eterm (snd v)
+    | Menumval (id, args, _e)            -> begin
         match args with
         | [] -> A.eterm (snd id)
         | _  -> A.eapp (A.Fident (snd id)) []
@@ -1949,37 +1929,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Minttodate         _ -> assert false
     | Mmuteztonat        _ -> assert false
 
-
-    (* quantifiers *)
-
-    | Mforall (_i, _t, None, _e)    -> assert false
-    | Mforall (_i, _t, Some _s, _e) -> assert false
-    | Mexists (_i, _t, None, _e)    -> assert false
-    | Mexists (_i, _t, Some _s, _e) -> assert false
-
-
-    (* formula operators *)
-
-    | Mimply (_l, _r)  -> assert false
-    | Mequiv (_l, _r)  -> assert false
-
-
-    (* formula asset collection *)
-
-    | Msetiterated  _e -> assert false
-    | Msettoiterate _e -> assert false
-
-
-    (* formula asset collection methods *)
-
-    | Mempty _an              -> assert false
-    | Msingleton (_an, _k)    -> assert false
-    | Msubsetof (_an, _c, _i) -> assert false
-    | Misempty  (_l, _r)      -> assert false
-    | Munion (_an, _l, _r)    -> assert false
-    | Minter (_an, _l, _r)    -> assert false
-    | Mdiff (_an, _l, _r)     -> assert false
-
   in
 
   let for_storage_item (si : M.storage_item) : A.declaration =
@@ -1992,7 +1941,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   in
 
   let for_fun (f : M.function__) : A.declaration =
-    let exts = None in
     match f.node with
     | Function (_fs, _t)
     | Getter (_fs, _t) -> assert false
@@ -2000,10 +1948,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in
-        let args = List.map (fun (id, t, _) -> (id, for_type t, None) ) fs.args in
+        let args = List.map (fun (id, t, _) -> (id, for_type t) ) fs.args in
 
         let ep = A.mk_entry_properties () in
-        let ed = A.mk_entry_decl ~args:(List.map (fun (x, y, z) -> (snd x, y, z)) args) (snd id) ep ~body:(body, exts) in
+        let ed = A.mk_entry_decl ~args:(List.map (fun (x, y) -> (snd x, y)) args) (snd id) ep ~body in
 
         A.mk_entry ed
       end

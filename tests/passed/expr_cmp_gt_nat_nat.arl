@@ -3,10 +3,5 @@ archetype expr_cmp_gt_nat_nat
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 2 > 1
-  }
+  res := 2 > 1
 }

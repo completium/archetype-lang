@@ -3,10 +3,5 @@ archetype expr_arith_mult_tez_nat
 variable res : tez = 0tz
 
 entry exec () {
-  specification {
-    s0: res = 2tz;
-  }
-  effect {
-    res := 1tz * 2
-  }
+  res := 1tz * 2
 }

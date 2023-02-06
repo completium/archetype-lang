@@ -3,11 +3,6 @@ archetype expr_arith_mult_rat_dur
 variable res : duration = 0s
 
 entry exec () {
-  specification {
-    s0: res = 30m;
-  }
-  effect {
-    res := 0.5 * 1h;
-    do_require(res = 30m, "ko")
-  }
+  res := 0.5 * 1h;
+  do_require(res = 30m, "ko")
 }

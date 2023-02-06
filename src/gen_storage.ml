@@ -27,7 +27,7 @@ let generate_storage (model : model) : model =
     | _ when String.equal (unloc_mident e.name) "state" ->
       begin
         let iv = e.initial in
-        let dv = mk_mterm (Mvar (iv, Vlocal, Tnone, Dnone)) tstate in
+        let dv = mk_mterm (Mvar (iv, Vlocal)) tstate in
         [ mk_storage_item e.name MTstate tstate dv ]
       end
     | _ -> []
@@ -69,12 +69,8 @@ let generate_storage (model : model) : model =
       | Tevent _                 -> emit_error (NoInitExprFor "event")
       | Tlambda _                -> emit_error (NoInitExprFor "lambda")
       | Tunit                    -> emit_error (NoInitExprFor "unit")
-      | Tstorage                 -> emit_error (NoInitExprFor "storage")
       | Toperation               -> emit_error (NoInitExprFor "operation")
       | Tcontract _              -> emit_error (NoInitExprFor "contract")
-      | Tprog _                  -> emit_error (NoInitExprFor "prog")
-      | Tvset _                  -> emit_error (NoInitExprFor "vset")
-      | Ttrace _                 -> emit_error (NoInitExprFor "trace")
       | Tstate                   -> emit_error (NoInitExprFor "state")
       | Tticket _                -> emit_error (NoInitExprFor "ticket")
       | Tsapling_state n         -> mk_mterm   (MsaplingStateEmpty n) ty
@@ -117,8 +113,8 @@ let generate_storage (model : model) : model =
           let vv = aux c v in
           mk_mterm (Massign (op, t, Avarstore id, vv)) tunit
         end
-      | Mvar (id, Vlocal, t, d) when Model.Utils.is_field_storage model (unloc_mident id) ->
-        mk_mterm (Mvar (id, Vstorevar, t, d)) mt.type_
+      | Mvar (id, Vlocal) when Model.Utils.is_field_storage model (unloc_mident id) ->
+        mk_mterm (Mvar (id, Vstorevar)) mt.type_
       | _ -> map_mterm (aux c) mt
     in
     Model.map_mterm_model aux model

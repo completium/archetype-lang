@@ -3,10 +3,5 @@ archetype expr_fun_concat_byt
 variable res : bytes = 0x00
 
 entry exec () {
-  specification {
-    s0: res = 0x12ef;
-  }
-  effect {
-    res := concat(0x12, 0xef)
-  }
+  res := concat(0x12, 0xef)
 }

@@ -18,8 +18,3 @@ asset my_asset identified by id {
 entry exec () {
   my_asset["id0"].col.remove_all()
 }
-
-specification {
-  s0: o_asset.count() = 0;
-  s1: o_asset.sum(val) = 0;
-}

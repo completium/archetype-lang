@@ -1,14 +1,9 @@
 archetype expr_fun_key_hash_to_contract
 
 entry exec () {
-  specification {
-    s0: length(operations) = 1
-  }
-  effect {
-    var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
-    var kh : key_hash = key_to_key_hash(k);
-    var c : contract<unit> = key_hash_to_contract(kh);
-    var op  : operation = make_operation(0tz, c, Unit);
-    operations := prepend(operations, op);
-  }
+  var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
+  var kh : key_hash = key_to_key_hash(k);
+  var c : contract<unit> = key_hash_to_contract(kh);
+  var op  : operation = make_operation(0tz, c, Unit);
+  operations := prepend(operations, op)
 }

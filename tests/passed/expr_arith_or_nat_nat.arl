@@ -3,10 +3,5 @@ archetype expr_arith_or_nat_nat
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 3
-  }
-  effect {
-    res := 3 or 2
-  }
+  res := 3 or 2
 }

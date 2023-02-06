@@ -44,7 +44,6 @@ let set_options settings =
   Archetype.Options.opt_all_parenthesis  := process_boolean_false "all_parenthesis";
   Archetype.Options.opt_m                := process_boolean_false "m";
   Archetype.Options.opt_raw              := process_boolean_false "raw";
-  Archetype.Options.opt_raw_whytree      := process_boolean_false "raw_whytree";
   Archetype.Options.opt_raw_ir           := process_boolean_false "raw_ir";
   Archetype.Options.opt_raw_michelson    := process_boolean_false "raw_michelson";
   Archetype.Options.opt_caller           := process_string "$CALLER_ADDRESS" "caller";
@@ -76,11 +75,6 @@ let get_lsp_kind k =
   k
   |> Js.to_string
   |> Options.string_to_kind
-
-let get_service_kind s =
-  s
-  |> Js.to_string
-  |> Options.string_to_service_kind
 
 let _ =
   Options.quiet := true;
@@ -146,10 +140,6 @@ let _ =
       method lsp k i = begin
         let kind = get_lsp_kind k in
         doit (Lsp.process_from_string kind) i
-      end
-      method services s i = begin
-        let service = get_service_kind s in
-        doit (Services.process_from_string service) i
       end
       val version = Js.string Options.version
     end)

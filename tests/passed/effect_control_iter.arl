@@ -3,12 +3,7 @@ archetype effect_control_iter
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = before.res + 6;
-  }
-  effect {
-    iter i to 3 do
-      res += i
-    done
-  }
+  iter i to 3 do
+    res += i
+  done
 }

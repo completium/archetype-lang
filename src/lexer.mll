@@ -18,24 +18,19 @@
 
   let keywords_ =
     [
-      "added"               , ADDED               ;
       "address_to_contract" , ADDRESS_TO_CONTRACT ;
       "aggregate"           , AGGREGATE           ;
       "and"                 , AND                 ;
       "any"                 , ANY                 ;
       "archetype"           , ARCHETYPE           ;
       "as"                  , AS                  ;
-      "assert"              , ASSERT              ;
       "asset"               , ASSET               ;
       "asset_container"     , ASSET_CONTAINER     ;
       "asset_key"           , ASSET_KEY           ;
       "asset_value"         , ASSET_VALUE         ;
       "asset_view"          , ASSET_VIEW          ;
-      "at"                  , AT                  ;
-      "before"              , BEFORE              ;
       "begin"               , BEGIN               ;
       "big_map"             , BIG_MAP             ;
-      "but"                 , BUT                 ;
       "by"                  , BY                  ;
       "call"                , CALL                ;
       "called"              , CALLED              ;
@@ -43,7 +38,6 @@
       "const"               , CONST               ;
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;
-      "definition"          , DEFINITION          ;
       "detach"              , DETACH              ;
       "div"                 , DIV                 ;
       "do"                  , DO                  ;
@@ -58,15 +52,11 @@
       "get_entrypoint"      , GET_ENTRYPOINT      ;
       "enum"                , ENUM                ;
       "event"               , EVENT               ;
-      "exists"              , EXISTS              ;
-      "extension"           , EXTENSION           ;
       "fail"                , FAIL                ;
       "fail_some"           , FAILSOME            ;
-      "fails"               , FAILS               ;
       "false"               , FALSE               ;
       "fold"                , FOLD                ;
       "for"                 , FOR                 ;
-      "forall"              , FORALL              ;
       "from"                , FROM                ;
       "function"            , FUNCTION            ;
       "getter"              , GETTER              ;
@@ -77,11 +67,9 @@
       "in"                  , IN                  ;
       "initial"             , INITIAL             ;
       "initialized"         , INITIALIZED         ;
-      "invariant"           , INVARIANT           ;
       "is"                  , IS                  ;
       "iter"                , ITER                ;
       "iterable_big_map"    , ITERABLE_BIG_MAP    ;
-      "label"               , LABEL               ;
       "lambda"              , LAMBDA              ;
       "left"                , LEFT                ;
       "let"                 , LET                 ;
@@ -104,24 +92,18 @@
       "or"                  , OR                  ;
       "otherwise"           , OTHERWISE           ;
       "partition"           , PARTITION           ;
-      "postcondition"       , POSTCONDITION       ;
-      "predicate"           , PREDICATE           ;
       "record"              , RECORD              ;
       "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;
-      "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
       "return"              , RETURN              ;
       "right"               , RIGHT               ;
       "sapling_state"       , SAPLING_STATE       ;
       "sapling_transaction" , SAPLING_TRANSACTION ;
-      "security"            , SECURITY            ;
       "self"                , SELF                ;
       "set"                 , SET                 ;
-      "shadow"              , SHADOW              ;
       "some"                , SOME                ;
       "sorted"              , SORTED              ;
       "sourced"             , SOURCED             ;
-      "specification"       , SPECIFICATION       ;
       "states"              , STATES              ;
       "then"                , THEN                ;
       "ticket"              , TICKET              ;
@@ -130,10 +112,8 @@
       "transition"          , TRANSITION          ;
       "true"                , TRUE                ;
       "type"                , TYPE                ;
-      "unmoved"             , UNMOVED             ;
       "unpack"              , UNPACK              ;
       "Unit"                , UNIT                ;
-      "use"                 , USE                 ;
       "var"                 , VAR                 ;
       "variable"            , VARIABLE            ;
       "view"                , VIEW                ;
@@ -220,8 +200,6 @@ rule token = parse
   | "\""                  { let s, p = lexbuf.lex_start_pos, lexbuf.lex_start_p in let buf = string     (Buffer.create 0) lexbuf in lexbuf.lex_start_pos <- s; lexbuf.lex_start_p <- p; STRING     (Buffer.contents buf) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
-  | "[%%"                 { LBRACKETPERCENT }
-  | "%%]"                 { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
@@ -241,7 +219,6 @@ rule token = parse
   | "&="                  { AMPEQUAL }
   | "|="                  { PIPEEQUAL }
   | "->"                  { IMPLY }
-  | "<->"                 { EQUIV }
   | "="                   { EQUAL }
   | "<>"                  { NEQUAL }
   | "<"                   { LESS }

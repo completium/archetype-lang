@@ -10,16 +10,11 @@ enum t =
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 3.0;
-  }
-  effect {
-    var x : t = C3;
-    res :=
-      match x with
-      | C1 | C2 -> 1.0
-      | C3 -> 3i
-      | _ -> 2.0
-      end
-  }
+  var x : t = C3;
+  res :=
+    match x with
+    | C1 | C2 -> 1.0
+    | C3 -> 3i
+    | _ -> 2.0
+    end
 }

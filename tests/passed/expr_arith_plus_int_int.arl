@@ -3,10 +3,5 @@ archetype expr_arith_plus_int_int
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 6i;
-  }
-  effect {
-    res := 4i + 2i
-  }
+  res := 4i + 2i
 }

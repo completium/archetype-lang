@@ -32,7 +32,6 @@ let check_json (pt : archetype) =
   | Marchetype ds -> begin
       List.iter (fun d ->
           match unloc d with
-          | Darchetype (_, _, Some Mjson data, _) -> process data
+          | Darchetype (_, _, Some Mjson data) -> process data
           | _ ->  ()) ds
     end
-  | _ -> ()

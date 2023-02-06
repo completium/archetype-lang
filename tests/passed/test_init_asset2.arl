@@ -1,15 +1,10 @@
 archetype test_init_asset2
 
 constant total : int = 1000000
-with {
-  i0: total > 0
-}
 
 asset my_asset {
   id      : address;
   tokens  : int = 0;
-} with {
-  i1: tokens >= 0;
 } initialized by {
   { id = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; tokens = total }
 }

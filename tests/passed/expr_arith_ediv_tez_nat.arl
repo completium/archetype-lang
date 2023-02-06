@@ -3,11 +3,6 @@ archetype expr_arith_ediv_tez_nat
 variable res : tez = 0tz
 
 entry exec () {
-  specification {
-    s0: res = 1000utz;
-  }
-  effect {
-    res := 1tz div 1000;
-    do_require(res = 1000utz, "ko")
-  }
+  res := 1tz div 1000;
+  do_require(res = 1000utz, "ko")
 }

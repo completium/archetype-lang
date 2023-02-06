@@ -3,10 +3,5 @@ archetype expr_arith_div_nat_int
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 2.0;
-  }
-  effect {
-    res := 4 / 2i
-  }
+  res := 4 / 2i
 }

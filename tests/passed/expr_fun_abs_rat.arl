@@ -4,12 +4,6 @@ variable rn : rational = 0
 variable rp : rational = 0
 
 entry exec () {
-  specification {
-    s0: rn = 0.5;
-    s0: rp = 0.5;
-  }
-  effect {
-    rn := abs(0.5);
-    rp := abs(-0.5);
-  }
+  rn := abs(0.5);
+  rp := abs(-0.5);
 }

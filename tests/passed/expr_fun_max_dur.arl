@@ -3,10 +3,5 @@ archetype expr_fun_max_dur
 variable res : duration = 0s
 
 entry exec () {
-  specification {
-    s0: res = 1h;
-  }
-  effect {
-    res := max(1h, 1s)
-  }
+  res := max(1h, 1s)
 }

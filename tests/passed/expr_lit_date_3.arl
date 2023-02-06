@@ -3,10 +3,5 @@ archetype expr_lit_date_3
 variable res : date = 1970-01-01
 
 entry exec () {
-  specification {
-    s0: res = 2019-01-01T00:00:00+01:00;
-  }
-  effect {
-    res := 2019-01-01T00:00:00+01:00
-  }
+  res := 2019-01-01T00:00:00+01:00
 }

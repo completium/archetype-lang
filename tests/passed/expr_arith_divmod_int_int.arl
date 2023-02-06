@@ -3,10 +3,5 @@ archetype expr_arith_divmod_int_int
 variable res : option<int * nat> = none
 
 entry exec () {
-  specification {
-    s0: res = some(((4i, 1)));
-  }
-  effect {
-    res := 9i /% 2i
-  }
+  res := 9i /% 2i
 }

@@ -10,11 +10,4 @@ asset myasset identified by id {
 }
 
 
-entry exec () {
-  specification {
-    s1: before.myasset.contains(1);
-  }
-  effect {
-    ()
-  }
-}
+entry exec () { }

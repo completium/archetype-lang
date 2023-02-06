@@ -3,10 +3,5 @@ archetype expr_arith_mult_nat_rat
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 1.5;
-  }
-  effect {
-    res := 3 * 0.5
-  }
+  res := 3 * 0.5
 }

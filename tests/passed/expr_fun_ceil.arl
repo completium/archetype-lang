@@ -4,11 +4,6 @@ variable r0 : int = 0
 variable r1 : int = 0
 
 entry exec () {
-  specification {
-    s0: r0 = 2 and r1 = -1;
-  }
-  effect {
-    r0 := ceil(5 / 3);
-    r1 := ceil(-5 / 3);
-  }
+  r0 := ceil(5 / 3);
+  r1 := ceil(-5 / 3);
 }

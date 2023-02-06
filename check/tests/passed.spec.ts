@@ -492,48 +492,6 @@ import * as expr_cst_total_voting_power from '../bindings/passed/expr_cst_total_
 import * as expr_cst_transferred from '../bindings/passed/expr_cst_transferred'
 import * as expr_fail_some_none from '../bindings/passed/expr_fail_some_none'
 import * as expr_fail_some_some from '../bindings/passed/expr_fail_some_some'
-import * as expr_formula_asset_method_contains from '../bindings/passed/expr_formula_asset_method_contains'
-import * as expr_formula_asset_method_count from '../bindings/passed/expr_formula_asset_method_count'
-import * as expr_formula_asset_method_diff_view from '../bindings/passed/expr_formula_asset_method_diff_view'
-import * as expr_formula_asset_method_empty from '../bindings/passed/expr_formula_asset_method_empty'
-import * as expr_formula_asset_method_get from '../bindings/passed/expr_formula_asset_method_get'
-import * as expr_formula_asset_method_head from '../bindings/passed/expr_formula_asset_method_head'
-import * as expr_formula_asset_method_inter_view from '../bindings/passed/expr_formula_asset_method_inter_view'
-import * as expr_formula_asset_method_isempty from '../bindings/passed/expr_formula_asset_method_isempty'
-import * as expr_formula_asset_method_nth from '../bindings/passed/expr_formula_asset_method_nth'
-import * as expr_formula_asset_method_select from '../bindings/passed/expr_formula_asset_method_select'
-import * as expr_formula_asset_method_singleton from '../bindings/passed/expr_formula_asset_method_singleton'
-import * as expr_formula_asset_method_subsetof_aggregate from '../bindings/passed/expr_formula_asset_method_subsetof_aggregate'
-import * as expr_formula_asset_method_subsetof_collection from '../bindings/passed/expr_formula_asset_method_subsetof_collection'
-import * as expr_formula_asset_method_subsetof_partition from '../bindings/passed/expr_formula_asset_method_subsetof_partition'
-import * as expr_formula_asset_method_subsetof_view from '../bindings/passed/expr_formula_asset_method_subsetof_view'
-import * as expr_formula_asset_method_sum from '../bindings/passed/expr_formula_asset_method_sum'
-import * as expr_formula_asset_method_tail from '../bindings/passed/expr_formula_asset_method_tail'
-import * as expr_formula_asset_method_union_view from '../bindings/passed/expr_formula_asset_method_union_view'
-import * as expr_formula_at from '../bindings/passed/expr_formula_at'
-import * as expr_formula_before from '../bindings/passed/expr_formula_before'
-import * as expr_formula_cmp_eq_list from '../bindings/passed/expr_formula_cmp_eq_list'
-import * as expr_formula_cmp_eq_map from '../bindings/passed/expr_formula_cmp_eq_map'
-import * as expr_formula_cmp_eq_option from '../bindings/passed/expr_formula_cmp_eq_option'
-import * as expr_formula_cmp_eq_set from '../bindings/passed/expr_formula_cmp_eq_set'
-import * as expr_formula_cmp_ne_list from '../bindings/passed/expr_formula_cmp_ne_list'
-import * as expr_formula_cmp_ne_map from '../bindings/passed/expr_formula_cmp_ne_map'
-import * as expr_formula_cmp_ne_option from '../bindings/passed/expr_formula_cmp_ne_option'
-import * as expr_formula_cmp_ne_set from '../bindings/passed/expr_formula_cmp_ne_set'
-import * as expr_formula_equiv from '../bindings/passed/expr_formula_equiv'
-import * as expr_formula_exists_asset from '../bindings/passed/expr_formula_exists_asset'
-import * as expr_formula_exists_builtin from '../bindings/passed/expr_formula_exists_builtin'
-import * as expr_formula_forall_asset from '../bindings/passed/expr_formula_forall_asset'
-import * as expr_formula_forall_builtin from '../bindings/passed/expr_formula_forall_builtin'
-import * as expr_formula_implication from '../bindings/passed/expr_formula_implication'
-import * as expr_formula_iterated_aggregate from '../bindings/passed/expr_formula_iterated_aggregate'
-import * as expr_formula_iterated_collection from '../bindings/passed/expr_formula_iterated_collection'
-import * as expr_formula_iterated_partition from '../bindings/passed/expr_formula_iterated_partition'
-import * as expr_formula_iterated_view from '../bindings/passed/expr_formula_iterated_view'
-import * as expr_formula_toiterate_aggregate from '../bindings/passed/expr_formula_toiterate_aggregate'
-import * as expr_formula_toiterate_collection from '../bindings/passed/expr_formula_toiterate_collection'
-import * as expr_formula_toiterate_partition from '../bindings/passed/expr_formula_toiterate_partition'
-import * as expr_formula_toiterate_view from '../bindings/passed/expr_formula_toiterate_view'
 import * as expr_fun_abs_int from '../bindings/passed/expr_fun_abs_int'
 import * as expr_fun_abs_rat from '../bindings/passed/expr_fun_abs_rat'
 import * as expr_fun_address_to_contract from '../bindings/passed/expr_fun_address_to_contract'
@@ -706,9 +664,7 @@ import * as expr_method_asset_tail_view from '../bindings/passed/expr_method_ass
 import * as expr_multicmp from '../bindings/passed/expr_multicmp'
 import * as expr_option_map from '../bindings/passed/expr_option_map'
 import * as expr_record_lit from '../bindings/passed/expr_record_lit'
-import * as expr_record_update_asset_in_formula from '../bindings/passed/expr_record_update_asset_in_formula'
 import * as expr_record_update_record_in_exec from '../bindings/passed/expr_record_update_record_in_exec'
-import * as expr_record_update_record_in_formula from '../bindings/passed/expr_record_update_record_in_formula'
 import * as expr_set_add from '../bindings/passed/expr_set_add'
 import * as expr_set_contains from '../bindings/passed/expr_set_contains'
 import * as expr_set_length from '../bindings/passed/expr_set_length'
@@ -733,7 +689,6 @@ import * as fail_match_option from '../bindings/passed/fail_match_option'
 import * as fail_while from '../bindings/passed/fail_while'
 import * as fail_with_tuple_lit from '../bindings/passed/fail_with_tuple_lit'
 import * as fold_reverse from '../bindings/passed/fold_reverse'
-import * as formula_added_asset from '../bindings/passed/formula_added_asset'
 import * as fun from '../bindings/passed/fun'
 import * as function_with_nat_to_string from '../bindings/passed/function_with_nat_to_string'
 import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
@@ -779,13 +734,11 @@ import * as lang_crypto from '../bindings/passed/lang_crypto'
 import * as lang_cst from '../bindings/passed/lang_cst'
 import * as lang_entry from '../bindings/passed/lang_entry'
 import * as lang_enum from '../bindings/passed/lang_enum'
-import * as lang_formula_asset_api from '../bindings/passed/lang_formula_asset_api'
 import * as lang_funs from '../bindings/passed/lang_funs'
 import * as lang_list from '../bindings/passed/lang_list'
 import * as lang_literals from '../bindings/passed/lang_literals'
 import * as lang_map from '../bindings/passed/lang_map'
 import * as lang_methods_asset from '../bindings/passed/lang_methods_asset'
-import * as lang_security from '../bindings/passed/lang_security'
 import * as lang_set from '../bindings/passed/lang_set'
 import * as large_if from '../bindings/passed/large_if'
 import * as list_list from '../bindings/passed/list_list'
@@ -845,7 +798,6 @@ import * as rat_tez_big from '../bindings/passed/rat_tez_big'
 import * as rational_cmp from '../bindings/passed/rational_cmp'
 import * as rational_duration from '../bindings/passed/rational_duration'
 import * as rational_full from '../bindings/passed/rational_full'
-import * as rational_in_formula from '../bindings/passed/rational_in_formula'
 import * as rational_rat_tez_mult from '../bindings/passed/rational_rat_tez_mult'
 import * as rational_simple from '../bindings/passed/rational_simple'
 import * as rational_tez_rat_mult from '../bindings/passed/rational_tez_rat_mult'
@@ -870,25 +822,12 @@ import * as sapling_var from '../bindings/passed/sapling_var'
 import * as sapling_verify_update from '../bindings/passed/sapling_verify_update'
 import * as section_constant_effect from '../bindings/passed/section_constant_effect'
 import * as section_constant_transition from '../bindings/passed/section_constant_transition'
-import * as security_pred_no_storage_fail from '../bindings/passed/security_pred_no_storage_fail'
-import * as security_pred_not_by_role from '../bindings/passed/security_pred_not_by_role'
-import * as security_pred_not_by_role_in_entry from '../bindings/passed/security_pred_not_by_role_in_entry'
-import * as security_pred_not_in_entry from '../bindings/passed/security_pred_not_in_entry'
-import * as security_pred_only_by_role from '../bindings/passed/security_pred_only_by_role'
-import * as security_pred_only_by_role_in_entry from '../bindings/passed/security_pred_only_by_role_in_entry'
-import * as security_pred_only_in_entry from '../bindings/passed/security_pred_only_in_entry'
-import * as security_pred_transferred_by from '../bindings/passed/security_pred_transferred_by'
-import * as security_pred_transferred_to from '../bindings/passed/security_pred_transferred_to'
 import * as select_partition from '../bindings/passed/select_partition'
 import * as select_partition_big_map from '../bindings/passed/select_partition_big_map'
 import * as select_with_extra_var from '../bindings/passed/select_with_extra_var'
 import * as select_with_extra_var2 from '../bindings/passed/select_with_extra_var2'
 import * as select_with_function_in_predicate from '../bindings/passed/select_with_function_in_predicate'
 import * as setdelegate from '../bindings/passed/setdelegate'
-import * as shadow_field from '../bindings/passed/shadow_field'
-import * as shadow_global_var_effect from '../bindings/passed/shadow_global_var_effect'
-import * as shadow_var from '../bindings/passed/shadow_var'
-import * as shadow_var_scope from '../bindings/passed/shadow_var_scope'
 import * as simple from '../bindings/passed/simple'
 import * as simple2 from '../bindings/passed/simple2'
 import * as simple3 from '../bindings/passed/simple3'
@@ -947,18 +886,6 @@ import * as simple_with_arg_view from '../bindings/passed/simple_with_arg_view'
 import * as simple_with_type_annot from '../bindings/passed/simple_with_type_annot'
 import * as simple_with_view from '../bindings/passed/simple_with_view'
 import * as sourced_by from '../bindings/passed/sourced_by'
-import * as spec_asset from '../bindings/passed/spec_asset'
-import * as spec_definition from '../bindings/passed/spec_definition'
-import * as spec_definition_2 from '../bindings/passed/spec_definition_2'
-import * as spec_definition_with_param from '../bindings/passed/spec_definition_with_param'
-import * as spec_entry from '../bindings/passed/spec_entry'
-import * as spec_fail_caller from '../bindings/passed/spec_fail_caller'
-import * as spec_fail_source from '../bindings/passed/spec_fail_source'
-import * as spec_fails from '../bindings/passed/spec_fails'
-import * as spec_full from '../bindings/passed/spec_full'
-import * as spec_function from '../bindings/passed/spec_function'
-import * as spec_predicate from '../bindings/passed/spec_predicate'
-import * as spec_variable from '../bindings/passed/spec_variable'
 import * as state_in_effect from '../bindings/passed/state_in_effect'
 import * as state_is from '../bindings/passed/state_is'
 import * as state_var from '../bindings/passed/state_var'
@@ -1112,7 +1039,6 @@ import * as test_oracle from '../bindings/passed/test_oracle'
 import * as test_parameter from '../bindings/passed/test_parameter'
 import * as test_parameter_const from '../bindings/passed/test_parameter_const'
 import * as test_prec from '../bindings/passed/test_prec'
-import * as test_quantifiers from '../bindings/passed/test_quantifiers'
 import * as test_rational from '../bindings/passed/test_rational'
 import * as test_read_asset_after_operation from '../bindings/passed/test_read_asset_after_operation'
 import * as test_read_asset_after_update from '../bindings/passed/test_read_asset_after_update'
@@ -1147,10 +1073,6 @@ import * as test_removeif_part_0 from '../bindings/passed/test_removeif_part_0'
 import * as test_removeif_part_1 from '../bindings/passed/test_removeif_part_1'
 import * as test_removeif_part_2 from '../bindings/passed/test_removeif_part_2'
 import * as test_result from '../bindings/passed/test_result'
-import * as test_security from '../bindings/passed/test_security'
-import * as test_specasset from '../bindings/passed/test_specasset'
-import * as test_specfun from '../bindings/passed/test_specfun'
-import * as test_specvar from '../bindings/passed/test_specvar'
 import * as test_tez from '../bindings/passed/test_tez'
 import * as test_transfer from '../bindings/passed/test_transfer'
 import * as test_transition from '../bindings/passed/test_transition'
@@ -1219,12 +1141,8 @@ import * as unused_argument from '../bindings/passed/unused_argument'
 import * as unused_variable from '../bindings/passed/unused_variable'
 import * as unused_variable_opt from '../bindings/passed/unused_variable_opt'
 import * as update_minus_equal from '../bindings/passed/update_minus_equal'
-import * as var_in_spec from '../bindings/passed/var_in_spec'
-import * as var_in_state_inv from '../bindings/passed/var_in_state_inv'
 import * as var_without_effect from '../bindings/passed/var_without_effect'
 import * as variable_in_container from '../bindings/passed/variable_in_container'
-import * as verif_fail from '../bindings/passed/verif_fail'
-import * as verif_simple from '../bindings/passed/verif_simple'
 import * as very_simple from '../bindings/passed/very_simple'
 import * as view_0 from '../bindings/passed/view_0'
 import * as view_all_chain from '../bindings/passed/view_all_chain'
@@ -5613,216 +5531,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('expr_formula_asset_method_contains', async () => {
-    await expr_formula_asset_method_contains.expr_formula_asset_method_contains.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_count', async () => {
-    await expr_formula_asset_method_count.expr_formula_asset_method_count.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_diff_view', async () => {
-    await expr_formula_asset_method_diff_view.expr_formula_asset_method_diff_view.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_empty', async () => {
-    await expr_formula_asset_method_empty.expr_formula_asset_method_empty.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_get', async () => {
-    await expr_formula_asset_method_get.expr_formula_asset_method_get.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_head', async () => {
-    await expr_formula_asset_method_head.expr_formula_asset_method_head.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_inter_view', async () => {
-    await expr_formula_asset_method_inter_view.expr_formula_asset_method_inter_view.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_isempty', async () => {
-    await expr_formula_asset_method_isempty.expr_formula_asset_method_isempty.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_nth', async () => {
-    await expr_formula_asset_method_nth.expr_formula_asset_method_nth.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_select', async () => {
-    await expr_formula_asset_method_select.expr_formula_asset_method_select.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_singleton', async () => {
-    await expr_formula_asset_method_singleton.expr_formula_asset_method_singleton.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_subsetof_aggregate', async () => {
-    await expr_formula_asset_method_subsetof_aggregate.expr_formula_asset_method_subsetof_aggregate.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_subsetof_collection', async () => {
-    await expr_formula_asset_method_subsetof_collection.expr_formula_asset_method_subsetof_collection.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_subsetof_partition', async () => {
-    await expr_formula_asset_method_subsetof_partition.expr_formula_asset_method_subsetof_partition.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_subsetof_view', async () => {
-    await expr_formula_asset_method_subsetof_view.expr_formula_asset_method_subsetof_view.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_sum', async () => {
-    await expr_formula_asset_method_sum.expr_formula_asset_method_sum.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_tail', async () => {
-    await expr_formula_asset_method_tail.expr_formula_asset_method_tail.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_asset_method_union_view', async () => {
-    await expr_formula_asset_method_union_view.expr_formula_asset_method_union_view.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_at', async () => {
-    await expr_formula_at.expr_formula_at.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_before', async () => {
-    await expr_formula_before.expr_formula_before.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_eq_list', async () => {
-    await expr_formula_cmp_eq_list.expr_formula_cmp_eq_list.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_eq_map', async () => {
-    await expr_formula_cmp_eq_map.expr_formula_cmp_eq_map.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_eq_option', async () => {
-    await expr_formula_cmp_eq_option.expr_formula_cmp_eq_option.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_eq_set', async () => {
-    await expr_formula_cmp_eq_set.expr_formula_cmp_eq_set.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_ne_list', async () => {
-    await expr_formula_cmp_ne_list.expr_formula_cmp_ne_list.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_ne_map', async () => {
-    await expr_formula_cmp_ne_map.expr_formula_cmp_ne_map.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_ne_option', async () => {
-    await expr_formula_cmp_ne_option.expr_formula_cmp_ne_option.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_cmp_ne_set', async () => {
-    await expr_formula_cmp_ne_set.expr_formula_cmp_ne_set.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_equiv', async () => {
-    await expr_formula_equiv.expr_formula_equiv.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_exists_asset', async () => {
-    await expr_formula_exists_asset.expr_formula_exists_asset.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_exists_builtin', async () => {
-    await expr_formula_exists_builtin.expr_formula_exists_builtin.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_forall_asset', async () => {
-    await expr_formula_forall_asset.expr_formula_forall_asset.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_forall_builtin', async () => {
-    await expr_formula_forall_builtin.expr_formula_forall_builtin.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_implication', async () => {
-    await expr_formula_implication.expr_formula_implication.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_iterated_aggregate', async () => {
-    await expr_formula_iterated_aggregate.expr_formula_iterated_aggregate.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_iterated_collection', async () => {
-    await expr_formula_iterated_collection.expr_formula_iterated_collection.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_iterated_partition', async () => {
-    await expr_formula_iterated_partition.expr_formula_iterated_partition.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_iterated_view', async () => {
-    await expr_formula_iterated_view.expr_formula_iterated_view.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_toiterate_aggregate', async () => {
-    await expr_formula_toiterate_aggregate.expr_formula_toiterate_aggregate.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_toiterate_collection', async () => {
-    await expr_formula_toiterate_collection.expr_formula_toiterate_collection.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_toiterate_partition', async () => {
-    await expr_formula_toiterate_partition.expr_formula_toiterate_partition.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_formula_toiterate_view', async () => {
-    await expr_formula_toiterate_view.expr_formula_toiterate_view.deploy({ as: alice })
-    // TODO
-  })
-
   it('expr_fun_abs_int', async () => {
     await expr_fun_abs_int.expr_fun_abs_int.deploy({ as: alice })
     // TODO
@@ -6789,18 +6497,8 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('expr_record_update_asset_in_formula', async () => {
-    await expr_record_update_asset_in_formula.expr_record_update_asset_in_formula.deploy({ as: alice })
-    // TODO
-  })
-
   it('expr_record_update_record_in_exec', async () => {
     await expr_record_update_record_in_exec.expr_record_update_record_in_exec.deploy({ as: alice })
-    // TODO
-  })
-
-  it('expr_record_update_record_in_formula', async () => {
-    await expr_record_update_record_in_formula.expr_record_update_record_in_formula.deploy({ as: alice })
     // TODO
   })
 
@@ -6947,11 +6645,6 @@ describe('passed', async () => {
 
   it('fold_reverse', async () => {
     await fold_reverse.fold_reverse.deploy({ as: alice })
-    // TODO
-  })
-
-  it('formula_added_asset', async () => {
-    await formula_added_asset.formula_added_asset.deploy({ as: alice })
     // TODO
   })
 
@@ -7187,11 +6880,6 @@ describe('passed', async () => {
     await lang_enum.lang_enum.deploy({ as: alice })
   })
 
-  it('lang_formula_asset_api', async () => {
-    await lang_formula_asset_api.lang_formula_asset_api.deploy({ as: alice })
-    // TODO
-  })
-
   it('lang_funs', async () => {
     await lang_funs.lang_funs.deploy({ as: alice })
     // TODO
@@ -7214,11 +6902,6 @@ describe('passed', async () => {
 
   it('lang_methods_asset', async () => {
     await lang_methods_asset.lang_methods_asset.deploy({ as: alice })
-    // TODO
-  })
-
-  it('lang_security', async () => {
-    await lang_security.lang_security.deploy({ as: alice })
     // TODO
   })
 
@@ -7556,11 +7239,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('rational_in_formula', async () => {
-    await rational_in_formula.rational_in_formula.deploy({ as: alice })
-    // TODO
-  })
-
   it('rational_rat_tez_mult', async () => {
     await rational_rat_tez_mult.rational_rat_tez_mult.deploy({ as: alice })
     // TODO
@@ -7797,51 +7475,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('security_pred_no_storage_fail', async () => {
-    await security_pred_no_storage_fail.security_pred_no_storage_fail.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_not_by_role', async () => {
-    await security_pred_not_by_role.security_pred_not_by_role.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_not_by_role_in_entry', async () => {
-    await security_pred_not_by_role_in_entry.security_pred_not_by_role_in_entry.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_not_in_entry', async () => {
-    await security_pred_not_in_entry.security_pred_not_in_entry.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_only_by_role', async () => {
-    await security_pred_only_by_role.security_pred_only_by_role.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_only_by_role_in_entry', async () => {
-    await security_pred_only_by_role_in_entry.security_pred_only_by_role_in_entry.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_only_in_entry', async () => {
-    await security_pred_only_in_entry.security_pred_only_in_entry.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_transferred_by', async () => {
-    await security_pred_transferred_by.security_pred_transferred_by.deploy({ as: alice })
-    // TODO
-  })
-
-  it('security_pred_transferred_to', async () => {
-    await security_pred_transferred_to.security_pred_transferred_to.deploy({ as: alice })
-    // TODO
-  })
-
   it('select_partition', async () => {
     await select_partition.select_partition.deploy({ as: alice })
     // TODO
@@ -7869,26 +7502,6 @@ describe('passed', async () => {
 
   it('setdelegate', async () => {
     await setdelegate.setdelegate.deploy({ as: alice })
-    // TODO
-  })
-
-  it('shadow_field', async () => {
-    await shadow_field.shadow_field.deploy({ as: alice })
-    // TODO
-  })
-
-  it('shadow_global_var_effect', async () => {
-    await shadow_global_var_effect.shadow_global_var_effect.deploy({ as: alice })
-    // TODO
-  })
-
-  it('shadow_var', async () => {
-    await shadow_var.shadow_var.deploy({ as: alice })
-    // TODO
-  })
-
-  it('shadow_var_scope', async () => {
-    await shadow_var_scope.shadow_var_scope.deploy({ as: alice })
     // TODO
   })
 
@@ -8183,65 +7796,6 @@ describe('passed', async () => {
 
   it('sourced_by', async () => {
     await sourced_by.sourced_by.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_asset', async () => {
-    await spec_asset.spec_asset.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_definition', async () => {
-    await spec_definition.spec_definition.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_definition_2', async () => {
-    await spec_definition_2.spec_definition_2.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_definition_with_param', async () => {
-    await spec_definition_with_param.spec_definition_with_param.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_entry', async () => {
-    await spec_entry.spec_entry.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_fail_caller', async () => {
-    await spec_fail_caller.spec_fail_caller.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_fail_source', async () => {
-    await spec_fail_source.spec_fail_source.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_fails', async () => {
-    await spec_fails.spec_fails.deploy({ as: alice })
-  })
-
-  it('spec_full', async () => {
-    await spec_full.spec_full.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_function', async () => {
-    await spec_function.spec_function.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_predicate', async () => {
-    await spec_predicate.spec_predicate.deploy({ as: alice })
-    // TODO
-  })
-
-  it('spec_variable', async () => {
-    await spec_variable.spec_variable.deploy({ as: alice })
     // TODO
   })
 
@@ -9014,11 +8568,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('test_quantifiers', async () => {
-    await test_quantifiers.test_quantifiers.deploy({ as: alice })
-    // TODO
-  })
-
   it('test_rational', async () => {
     await test_rational.test_rational.deploy({ as: alice })
     // TODO
@@ -9186,26 +8735,6 @@ describe('passed', async () => {
 
   it('test_result', async () => {
     await test_result.test_result.deploy({ as: alice })
-    // TODO
-  })
-
-  it('test_security', async () => {
-    await test_security.test_security.deploy({ as: alice })
-    // TODO
-  })
-
-  it('test_specasset', async () => {
-    await test_specasset.test_specasset.deploy({ as: alice })
-    // TODO
-  })
-
-  it('test_specfun', async () => {
-    await test_specfun.test_specfun.deploy({ as: alice })
-    // TODO
-  })
-
-  it('test_specvar', async () => {
-    await test_specvar.test_specvar.deploy({ as: alice })
     // TODO
   })
 
@@ -9831,16 +9360,6 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('var_in_spec', async () => {
-    await var_in_spec.var_in_spec.deploy({ as: alice })
-    // TODO
-  })
-
-  it('var_in_state_inv', async () => {
-    await var_in_state_inv.var_in_state_inv.deploy({ as: alice })
-    // TODO
-  })
-
   it('var_without_effect', async () => {
     await var_without_effect.var_without_effect.deploy({ as: alice })
     // TODO
@@ -9848,15 +9367,6 @@ describe('passed', async () => {
 
   it('variable_in_container', async () => {
     await variable_in_container.variable_in_container.deploy({ as: alice })
-    // TODO
-  })
-
-  it('verif_fail', async () => {
-    await verif_fail.verif_fail.deploy({ as: alice })
-  })
-
-  it('verif_simple', async () => {
-    await verif_simple.verif_simple.deploy({ as: alice })
     // TODO
   })
 

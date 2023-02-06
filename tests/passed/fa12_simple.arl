@@ -13,7 +13,3 @@ entry %transfer (from_ : int, to_ : int, value : nat) {
   ledger./*add*/update(to_, { tokens += (value + 1) });
   ledger.update(from_, { tokens -= value });
 }
-
-specification {
-  s1: ledger.sum(tokens) = totalsupply;
-}

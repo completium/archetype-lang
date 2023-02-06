@@ -3,13 +3,7 @@ archetype expr_fun_unpack_string
 variable res : option<string> = none
 
 entry exec () {
-  specification {
-    s0: is_some(res);
-    s1: let some str = res in str = "archetype" otherwise false;
-  }
-  effect {
-    res := unpack<string>(0x050100000009617263686574797065);
-    const actual ?= res : "ERROR";
-    do_require (actual = "archetype", "ko")
-  }
+  res := unpack<string>(0x050100000009617263686574797065);
+  const actual ?= res : "ERROR";
+  do_require (actual = "archetype", "ko")
 }

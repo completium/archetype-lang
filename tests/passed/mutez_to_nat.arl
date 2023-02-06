@@ -3,10 +3,5 @@ archetype mutez_to_nat
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 2_000_000;
-  }
-  effect {
-    res := mutez_to_nat(2tz)
-  }
+  res := mutez_to_nat(2tz)
 }

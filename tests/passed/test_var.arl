@@ -1,9 +1,6 @@
 archetype test_var
 
 variable n : int = 0
-with {
-  inv_n: n >= 0;
-}
 
 entry exec () {
   effect {

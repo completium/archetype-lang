@@ -3,11 +3,6 @@ archetype expr_fun_concat_list_str
 variable res : string = ""
 
 entry exec () {
-  specification {
-    s0: res = "abcdef";
-  }
-  effect {
-    var l : list<string> = ["abc"; "def"];
-    res := concat(l)
-  }
+  var l : list<string> = ["abc"; "def"];
+  res := concat(l)
 }

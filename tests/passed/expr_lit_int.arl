@@ -3,10 +3,5 @@ archetype expr_lit_int
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 1i;
-  }
-  effect {
-    res := 1i
-  }
+  res := 1i
 }

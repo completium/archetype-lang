@@ -3,10 +3,5 @@ archetype expr_fun_min_tez
 variable res : tez = 0tz
 
 entry exec () {
-  specification {
-    s0: res = 1tz;
-  }
-  effect {
-    res := min(1tz, 2tz)
-  }
+  res := min(1tz, 2tz)
 }

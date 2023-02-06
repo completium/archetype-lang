@@ -12,18 +12,14 @@ src/*.o
 *.exe
 .merlin
 test.liq
-./why3/archetype.cmxs
-why3/archetype.cmxs
 archetypeLib.cmxa
 archetypeLib.cma
 archetypeLib.cmxs
 archetypeLib.a
 archetypeLib.ml-gen
 _build
-why3/archetype_plugin.cmxs
 archetype.install
 contracts/*.liq
-contracts/*.ligo
 contracts/*.py
 contracts/*.mlw
 contracts/*.ml
@@ -32,7 +28,6 @@ contracts/*.tz
 contracts/*.md
 attic/
 .history
-extra/script/internal_check_ligo.sh
 _opam
 tests/passed/test.arl
 repo_contracts

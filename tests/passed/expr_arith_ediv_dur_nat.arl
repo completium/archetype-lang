@@ -3,11 +3,6 @@ archetype expr_arith_ediv_dur_nat
 variable res : duration = 0s
 
 entry exec () {
-  specification {
-    s0: res = 1h;
-  }
-  effect {
-    res := 4h div 4;
-    do_require(res = 1h, "ko")
-  }
+  res := 4h div 4;
+  do_require(res = 1h, "ko")
 }

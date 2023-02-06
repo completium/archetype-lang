@@ -3,14 +3,9 @@ archetype effect_control_while
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 3;
-  }
-  effect {
-    res := 0;
-    while:loop res < 3 do
-      res += 1
-    done;
-    do_require (res = 3, "ko")
-  }
+  res := 0;
+  while res < 3 do
+    res += 1
+  done;
+  do_require (res = 3, "ko")
 }

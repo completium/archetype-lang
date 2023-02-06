@@ -236,10 +236,6 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   | Tunit                      -> T.mk_type ?annotation (T.Tunit)
   | Toperation                 -> T.mk_type ?annotation (T.Toperation)
   | Tcontract t                -> T.mk_type ?annotation (T.Tcontract (to_type t))
-  | Tstorage                   -> assert false
-  | Tprog  _                   -> assert false
-  | Tvset  _                   -> assert false
-  | Ttrace _                   -> assert false
   | Tticket t                  -> T.mk_type ?annotation (T.Tticket (to_type t))
   | Tsapling_state n           -> T.mk_type ?annotation (T.Tsapling_state n)
   | Tsapling_transaction n     -> T.mk_type ?annotation (T.Tsapling_transaction n)
@@ -285,7 +281,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
   | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)
   | Mcast (_, _, v)            -> f v
-  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (M.unloc_mident x, to_type model mt.type_, false))
+  | Mvar (x, Vparameter)       -> Some (T.Dvar (M.unloc_mident x, to_type model mt.type_, false))
   | _ -> None
 
 let to_ir (model : M.model) : T.ir =
@@ -465,12 +461,12 @@ let to_ir (model : M.model) : T.ir =
     | Avar id       -> T.Iupdate (Uvar (M.unloc_mident id), op)
     | Avarstore id  -> T.Iupdate (Uvar (M.unloc_mident id), op)
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
-    | Arecord ({node = Mvar(id, _, _, _)}, rn, fn) -> begin
+    | Arecord ({node = Mvar(id, _)}, rn, fn) -> begin
         let l = Model.Utils.get_record_pos model (M.unloc_mident rn) (M.unloc_mident fn) in
         T.Iupdate (Urec (M.unloc_mident id, l), op)
       end
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
-    | Atuple ({node = Mvar(id, _, _, _)}, n, l) -> T.Iupdate (Urec (M.unloc_mident id, [n, l]), op)
+    | Atuple ({node = Mvar(id, _)}, n, l) -> T.Iupdate (Urec (M.unloc_mident id, [n, l]), op)
     | Atuple _     -> emit_error (UnsupportedTerm "Atuple")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
     | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
@@ -516,7 +512,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (M.unloc_mident x, to_type model mt.type_, false)
+    | Mvar (x, Vparameter) -> T.Dvar (M.unloc_mident x, to_type model mt.type_, false)
     | Mlitrecord l      -> begin
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
@@ -680,7 +676,7 @@ let to_ir (model : M.model) : T.ir =
             let length = match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0 in
             aux (T.{ai_index = idx; ai_length = length}::accu) x
           end
-        | M.Mvar (id, kind, _, _) -> begin
+        | M.Mvar (id, kind) -> begin
 
             let f x =
               T.Ivar_access {
@@ -695,7 +691,6 @@ let to_ir (model : M.model) : T.ir =
             | Vassetstate _k   -> None
             | Vstorevar        -> Some (f (M.unloc_mident id))
             | Vstorecol        -> Some (f (M.unloc_mident id))
-            | Vdefinition      -> None
             | Vlocal           -> Some (f (M.unloc_mident id))
             | Vparam           -> Some (f (M.unloc_mident id))
             | Vfield           -> None
@@ -740,7 +735,7 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Avar id, v)                 -> T.Iassign (M.unloc_mident id, f v)
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (M.unloc_mident id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
-    | Massign (_op, _, Arecord ({node = Mvar (id, _, _, _); type_ = t}, _rn, fn), v) -> begin
+    | Massign (_op, _, Arecord ({node = Mvar (id, _); type_ = t}, _rn, fn), v) -> begin
         let id = M.unloc_mident id in
         let rn =
           match M.get_ntype t with
@@ -752,7 +747,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
-    | Massign (_op, _, Atuple ({node = Mvar (id, _, _, _)}, n, l), v)    -> let id = M.unloc_mident id in T.Iassigntuple (id, n, l, f v)
+    | Massign (_op, _, Atuple ({node = Mvar (id, _)}, n, l), v)    -> let id = M.unloc_mident id in T.Iassigntuple (id, n, l, f v)
     | Massign (_op, _, Atuple _, _v)               -> emit_error (UnsupportedTerm ("Tuple is not a var"))
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
@@ -791,8 +786,6 @@ let to_ir (model : M.model) : T.ir =
     | Mseq is                    -> T.Iseq (List.map f is)
     (* | Mreturn x when view        -> f x *)
     | Mreturn x                  -> T.Iassign (fun_result, f x)
-    | Mlabel _                   -> T.iskip
-    | Mmark  _                   -> T.iskip
 
 
     (* effect *)
@@ -1221,7 +1214,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* variable *)
 
-    | Mvar (v, kind, _, _) -> begin
+    | Mvar (v, kind) -> begin
         let f =
           if is_ticket_type model mtt.type_
           then fun x -> T.Ivar_access {
@@ -1237,7 +1230,6 @@ let to_ir (model : M.model) : T.ir =
         | Vassetstate _k   -> assert false
         | Vstorevar        -> f (M.unloc_mident v)
         | Vstorecol        -> f (M.unloc_mident v)
-        | Vdefinition      -> assert false
         | Vlocal           -> f (M.unloc_mident v)
         | Vparam           -> f (M.unloc_mident v)
         | Vfield           -> assert false
@@ -1285,34 +1277,6 @@ let to_ir (model : M.model) : T.ir =
     | Minttodate _         -> emit_error (UnsupportedTerm ("Minttodate"))
     | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
 
-
-    (* quantifiers *)
-
-    | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
-    | Mexists _ -> emit_error (UnsupportedTerm ("Mexists"))
-
-
-    (* formula operators *)
-
-    | Mimply _ -> emit_error (UnsupportedTerm ("Mimply"))
-    | Mequiv _ -> emit_error (UnsupportedTerm ("Mequiv"))
-
-
-    (* formula asset collection *)
-
-    | Msetiterated  _ -> emit_error (UnsupportedTerm ("Msetiterated"))
-    | Msettoiterate _ -> emit_error (UnsupportedTerm ("Msettoiterate"))
-
-
-    (* formula asset collection methods *)
-
-    | Mempty     _ -> emit_error (UnsupportedTerm ("Mempty"))
-    | Msingleton _ -> emit_error (UnsupportedTerm ("Msingleton"))
-    | Msubsetof  _ -> emit_error (UnsupportedTerm ("Msubsetof"))
-    | Misempty   _ -> emit_error (UnsupportedTerm ("Misempty"))
-    | Munion     _ -> emit_error (UnsupportedTerm ("Munion"))
-    | Minter     _ -> emit_error (UnsupportedTerm ("Minter"))
-    | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
   in
 
   let storage_list = List.map (

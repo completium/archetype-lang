@@ -16,10 +16,5 @@ asset my_asset identified by id {
 variable res : bool = true
 
 entry exec () {
-  specification {
-    s0: not res;
-  }
-  effect {
-    res := my_asset["id0"].col.contains(0);
-  }
+  res := my_asset["id0"].col.contains(0);
 }

@@ -11,10 +11,5 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 3;
-  }
-  effect {
-    res := my_asset.count()
-  }
+  res := my_asset.count()
 }

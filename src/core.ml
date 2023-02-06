@@ -36,7 +36,20 @@ let big_int_of_yojson (s : Yojson.Safe.t) : (big_int, string) Result.result =
 let big_int_to_yojson (n : big_int) : Yojson.Safe.t = Yojson.Safe.from_string (Big_int.string_of_big_int n)
 
 (* -------------------------------------------------------------------- *)
+let try_finally ~(finally : unit -> unit) (f : 'a -> 'b) (x : 'a) =
+  let aout =
+    try
+      f x
+    with e ->
+      (finally (); raise e)
+  in finally (); aout
 
+(* -------------------------------------------------------------------- *)
+let with_open_in (f : in_channel -> 'a) (filename : string) =
+  let channel = open_in filename in
+  try_finally ~finally:(fun () -> close_in channel) f channel
+
+(* -------------------------------------------------------------------- *)
 let compute_irr_fract (n, d) =
   let rec gcd a b =
     if Big_int.eq_big_int b Big_int.zero_big_int

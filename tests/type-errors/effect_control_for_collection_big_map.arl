@@ -12,12 +12,7 @@ asset myasset identified by str to big_map {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 6;
-  }
-  effect {
-    for i in myasset do
-      res += myasset[i].v;
-    done;
-  }
+  for i in myasset do
+    res += myasset[i].v;
+  done
 }

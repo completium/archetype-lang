@@ -3,10 +3,5 @@ archetype expr_arith_minus_rat_int
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = -2.5;
-  }
-  effect {
-    res := 0.5 - 3i
-  }
+  res := 0.5 - 3i
 }

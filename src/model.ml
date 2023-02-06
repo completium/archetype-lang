@@ -56,22 +56,6 @@ type btyp =
   | Btx_rollup_l2_address
 [@@deriving show {with_path = false}]
 
-type vset =
-  | VSremoved
-  | VSadded
-  | VSstable
-  | VSbefore
-  | VSafter
-  | VSfixed
-[@@deriving show {with_path = false}]
-
-type trtyp =
-  | TRentry
-  | TRaction (* add; remove; update *)
-  | TRasset
-  | TRfield
-[@@deriving show {with_path = false}]
-
 type ntype =
   | Tasset of mident
   | Tenum of mident
@@ -90,12 +74,8 @@ type ntype =
   | Tevent of mident
   | Tlambda of type_ * type_
   | Tunit
-  | Tstorage
   | Toperation
   | Tcontract of type_
-  | Tprog of type_
-  | Tvset of vset * type_
-  | Ttrace of trtyp
   | Tticket of type_
   | Tsapling_state of int
   | Tsapling_transaction of int
@@ -164,7 +144,6 @@ type 'term var_kind_gen =
   | Vassetstate of 'term
   | Vstorevar
   | Vstorecol
-  | Vdefinition
   | Vlocal
   | Vparam
   | Vfield
@@ -173,24 +152,10 @@ type 'term var_kind_gen =
   | Vparameter
 [@@deriving show {with_path = false}]
 
-type temp =
-  | Tbefore
-  | Tat of ident
-  | Tnone
-[@@deriving show {with_path = false}]
-
-type delta =
-  | Dadded
-  | Dremoved
-  | Dunmoved
-  | Dnone
-[@@deriving show {with_path = false}]
-
 type 'term container_kind_gen =
-  | CKcoll  of temp * delta
+  | CKcoll
   | CKview  of 'term
-  | CKfield of (ident * ident * 'term * temp * delta)
-  | CKdef   of ident
+  | CKfield of (ident * ident * 'term)
 [@@deriving show {with_path = false}]
 
 type 'term iter_container_kind_gen =
@@ -252,8 +217,6 @@ type 'term mterm_node  =
   | Mwhile            of ('term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
-  | Mlabel            of mident
-  | Mmark             of mident * 'term
   (* effect *)
   | Mfail             of fail_type
   | Mfailsome         of 'term
@@ -487,7 +450,7 @@ type 'term mterm_node  =
   | Mlevel
   | Mminblocktime
   (* variable *)
-  | Mvar              of mident * 'term var_kind_gen * temp * delta
+  | Mvar              of mident * 'term var_kind_gen
   | Menumval          of mident * 'term list * ident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
@@ -502,23 +465,6 @@ type 'term mterm_node  =
   (* others *)
   | Minttodate        of 'term
   | Mmuteztonat       of 'term
-  (* quantifiers *)
-  | Mforall           of mident * type_ * 'term option * 'term
-  | Mexists           of mident * type_ * 'term option * 'term
-  (* formula operators *)
-  | Mimply            of 'term * 'term
-  | Mequiv            of 'term * 'term
-  (* formula asset collection *)
-  | Msetiterated      of 'term iter_container_kind_gen
-  | Msettoiterate     of 'term iter_container_kind_gen
-  (* formula asset collection methods *)
-  | Mempty            of ident
-  | Msingleton        of ident * 'term
-  | Msubsetof         of ident * 'term container_kind_gen * 'term
-  | Misempty          of ident * 'term
-  | Munion            of ident * 'term * 'term
-  | Minter            of ident * 'term * 'term
-  | Mdiff             of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
 and assign_kind = mterm assign_kind_gen
@@ -625,37 +571,9 @@ and api_storage_node =
   | APIInternal   of api_internal
 [@@deriving show {with_path = false}]
 
-and api_loc =
-  | OnlyFormula
-  | OnlyExec
-  | ExecFormula
-
 and api_storage = {
   node_item: api_storage_node;
-  api_loc: api_loc;
 }
-[@@deriving show {with_path = false}]
-
-and api_verif =
-  | StorageInvariant of (ident * ident * mterm)
-
-and entry_description =
-  | ADany
-  | ADadd      of ident
-  | ADremove   of ident
-  | ADupdate   of ident
-  | ADtransfer of ident
-  | ADget      of ident
-  | ADiterate  of ident
-  | ADcall     of ident
-[@@deriving show {with_path = false}]
-
-and security_role   = lident
-[@@deriving show {with_path = false}]
-
-and security_entry =
-  | Sany
-  | Sentry of lident list
 [@@deriving show {with_path = false}]
 
 and letin_value = mterm letin_value_gen
@@ -663,23 +581,6 @@ and letin_value = mterm letin_value_gen
 
 and detach_kind = mterm detach_kind_gen
 [@@deriving show {with_path = false}]
-
-type label_term = {
-  label : mident;
-  term : mterm;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-(* type 'id item_field_type =
-   | FBasic            of btyp
-   | FAssetKeys        of btyp * 'id
-   | FAssetRecord      of btyp * 'id
-   | FRecordCollection of 'id
-   | FRecord           of 'id
-   | FEnum             of 'id
-   | FContainer        of container * 'id item_field_type
-   [@@deriving show {with_path = false}] *)
 
 type model_type =
   | MTvar
@@ -706,7 +607,6 @@ type storage = storage_item list
 type enum_item = {
   name: mident;
   args: type_ list;
-  invariants : label_term list;
 }
 [@@deriving show {with_path = false}]
 
@@ -721,7 +621,6 @@ type var = {
   original_type: type_;
   kind: variable_kind;
   default: mterm option;
-  invariants: label_term list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -750,7 +649,6 @@ type asset = {
   sort: mident list;
   map_kind: map_kind;
   state: lident option;
-  invariants  : label_term list;
   init: mterm list;
   loc: Location.t [@opaque];
 }
@@ -819,117 +717,8 @@ type signature = {
 }
 [@@deriving show {with_path = false}]
 
-type variable = {
-  decl : argument;
-  kind : variable_kind;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type predicate = {
-  name : mident;
-  args : (mident * type_) list;
-  body : mterm;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type definition = {
-  name : mident;
-  typ  : type_;
-  var  : mident;
-  body : mterm;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type invariant = {
-  label: mident;
-  formulas: mterm list;
-}
-[@@deriving show {with_path = false}]
-
-type fail = {
-  label: mident;
-  fid: mident option;
-  arg: mident;
-  atype: type_;
-  formula: mterm;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type spec_mode =
-  | Post
-  | Assert
-[@@deriving show {with_path = false}]
-
-type postcondition = {
-  name: mident;
-  mode: spec_mode;
-  formula: mterm;
-  invariants: invariant list;
-  uses: mident list;
-}
-[@@deriving show {with_path = false}]
-
-type assert_ = {
-  name: mident;
-  label: mident;
-  formula: mterm;
-  invariants: invariant list;
-  uses: mident list;
-}
-[@@deriving show {with_path = false}]
-
-type specification = {
-  predicates     : predicate list;
-  definitions    : definition list;
-  lemmas         : label_term list;
-  theorems       : label_term list;
-  fails          : fail list;
-  variables      : variable list;
-  invariants     : (mident * label_term list) list;
-  effects        : mterm list;
-  postconditions : postcondition list;
-  loc            : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type security_node =
-  | SonlyByRole         of entry_description * security_role list
-  | SonlyInEntry        of entry_description * security_entry
-  | SonlyByRoleInEntry  of entry_description * security_role list * security_entry
-  | SnotByRole          of entry_description * security_role list
-  | SnotInEntry         of entry_description * security_entry
-  | SnotByRoleInEntry   of entry_description * security_role list * security_entry
-  | StransferredBy      of entry_description
-  | StransferredTo      of entry_description
-  | SnoStorageFail      of security_entry
-[@@deriving show {with_path = false}]
-
-type security_predicate = {
-  s_node: security_node;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type security_item = {
-  label       : lident;
-  predicate   : security_predicate;
-  loc         : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type security = {
-  items : security_item list;
-  loc   : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
 type function__ = {
   node:  function_node;
-  spec: specification option;
 }
 [@@deriving show {with_path = false}]
 
@@ -1007,21 +796,12 @@ type model = {
   imports       : import list;
   metadata      : metadata_kind option;
   api_items     : api_storage list;
-  api_verif     : api_verif list;
   decls         : decl_node list;
   storage       : storage;
   functions     : function__ list;
-  specification : specification;
-  security      : security;
   extra         : extra;
   loc           : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type property =
-  | Ppostcondition of postcondition * ident option
-  | PstorageInvariant of label_term * ident (* must be called asset invariant *)
-  | PsecurityPredicate of security_item
 [@@deriving show {with_path = false}]
 
 let mk_mident ?(namespace = []) id : mident =
@@ -1042,53 +822,17 @@ let mk_pattern ?(loc = Location.dummy) node : pattern =
 let mk_mterm ?(loc = Location.dummy) node type_ : mterm =
   { node; type_; loc}
 
-let mk_label_term ?(loc = Location.dummy) term label : label_term =
-  { label; term; loc }
-
-let mk_variable ?(loc = Location.dummy) decl kind =
-  { decl; kind; loc }
-
-let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
-  { name; args; body; loc }
-
-let mk_definition ?(loc = Location.dummy) name typ var body =
-  { name; typ; var; body; loc }
-
-let mk_invariant ?(formulas = []) label =
-  { label; formulas }
-
-let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
-  { label; fid; arg; atype; formula; loc }
-
-let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
-  { name; mode; formula; invariants; uses }
-
-let mk_assert ?(invariants = []) ?(uses = []) name label formula =
-  { name; label; formula; invariants; uses }
-
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(fails = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () : specification =
-  { predicates; definitions; lemmas; theorems; fails; variables; invariants; effects; postconditions; loc}
-
-let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
-  { s_node; loc }
-
-let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
-  { label; predicate; loc }
-
-let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
-  { items; loc }
-
-let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type kind : var =
-  { name; type_; default; kind; invariants; original_type; loc }
+let mk_var ?default ?(loc = Location.dummy) name type_ original_type kind : var =
+  { name; type_; default; kind; original_type; loc }
 
 let mk_enum ?(values = []) name initial : enum =
   { name; values; initial }
 
-let mk_enum_item ?(args = []) ?(invariants = []) name : enum_item =
-  { name; args; invariants }
+let mk_enum_item ?(args = []) name : enum_item =
+  { name; args }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : asset =
-  { name; values; sort; map_kind; state; keys; invariants; init; loc }
+let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(init = []) ?(loc = Location.dummy) name : asset =
+  { name; values; sort; map_kind; state; keys; init; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : asset_item =
   { name; type_; original_type; default; shadow; loc }
@@ -1105,14 +849,14 @@ let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id m
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; loc }
 
-let mk_function ?spec node : function__ =
-  { node; spec }
+let mk_function node : function__ =
+  { node }
 
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret }
 
-let mk_api_item node_item api_loc =
-  { node_item; api_loc }
+let mk_api_item node_item =
+  { node_item }
 
 let mk_odel_asset name container_type key_type value_type : odel_asset =
   { name; container_type; key_type; value_type }
@@ -1126,8 +870,8 @@ let mk_odel_enum name current_type : odel_enum =
 let mk_extra ?(original_decls = []) () : extra =
   { original_decls }
 
-let mk_model ?(parameters = []) ?(imports = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
-  { name; imports; parameters; metadata; api_items; api_verif; storage; decls; functions; specification; security; extra; loc }
+let mk_model ?(parameters = []) ?(imports = []) ?metadata ?(api_items = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
+  { name; imports; parameters; metadata; api_items; storage; decls; functions; extra; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -1153,7 +897,6 @@ let ttimestamp             = mktype (Tbuiltin Btimestamp)
 let taddress               = mktype (Tbuiltin Baddress)
 let tenum v                = mktype (Tenum v)
 let tstate                 = mktype (Tstate)
-let tstorage               = mktype (Tstorage)
 let trecord rn             = mktype (Trecord rn)
 let tevent e               = mktype (Tevent e)
 let toption t              = mktype (Toption t)
@@ -1232,10 +975,10 @@ let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
 let mlevel        = mk_mterm Mlevel       tnat
 let mminblocktime = mk_mterm Mminblocktime tnat
 
-let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
-let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
-let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate, Tnone, Dnone )) ((Tenum (mk_mident (dumloc "state"))), None)
+let mk_mvar id t = mk_mterm (Mvar(id, Vlocal)) t
+let mk_pvar id t = mk_mterm (Mvar(id, Vparam)) t
+let mk_svar id t = mk_mterm (Mvar(id, Vstorevar)) t
+let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate)) ((Tenum (mk_mident (dumloc "state"))), None)
 
 let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum (mk_mident e)))
 let mk_state_value id = mk_enum_value id (dumloc "state")
@@ -1338,17 +1081,8 @@ let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool
 let cmp_currency (c1 : currency) (c2 : currency) : bool = c1 = c2
 let cmp_container (c1 : container) (c2 : container) = c1 = c2
 let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
-let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
-let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
 let cmp_rat_arith_op (op1 : rat_arith_op) (op2 : rat_arith_op) : bool = op1 = op2
-let cmp_entry_description (ad1 : entry_description) (ad2 : entry_description) : bool = ad1 = ad2
-let cmp_security_role = cmp_lident
-let cmp_security_entry s1 s2 =
-  match s1, s2 with
-  | Sany, Sany -> true
-  | Sentry e1, Sentry e2 -> List.for_all2 cmp_lident e1 e2
-  | _ -> false
 
 let cmp_fail_type
     (cmp : 'term -> 'term -> bool)
@@ -1391,12 +1125,8 @@ let rec cmp_ntype
   | Tevent e1, Tevent e2                                   -> cmp_mident e1 e2
   | Tlambda (a1, r1), Tlambda (a2, r2)                     -> cmp_type a1 a2 && cmp_type r1 r2
   | Tunit, Tunit                                           -> true
-  | Tstorage, Tstorage                                     -> true
   | Toperation, Toperation                                 -> true
   | Tcontract t1, Tcontract t2                             -> cmp_type t1 t2
-  | Tprog t1, Tprog t2                                     -> cmp_type t1 t2
-  | Tvset (v1, t1), Tvset (v2, t2)                         -> cmp_vset v1 v2 && cmp_type t1 t2
-  | Ttrace t1, Ttrace t2                                   -> cmp_trtyp t1 t2
   | Tticket t1, Tticket t2                                 -> cmp_type t1 t2
   | Tsapling_state n1, Tsapling_state n2                   -> cmp_int n1 n2
   | Tsapling_transaction n1, Tsapling_transaction n2       -> cmp_int n1 n2
@@ -1463,7 +1193,6 @@ let cmp_mterm_node
     | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
     | Vstorevar, Vstorevar
     | Vstorecol, Vstorecol
-    | Vdefinition, Vdefinition
     | Vlocal, Vlocal
     | Vparam, Vparam
     | Vfield, Vfield
@@ -1471,27 +1200,11 @@ let cmp_mterm_node
     | Vthe, Vthe -> true
     | _ -> false
   in
-  let cmp_temp (lhs : temp) (rhs : temp) : bool =
-    match lhs, rhs with
-    | Tbefore, Tbefore -> true
-    | Tat i1, Tat i2   -> cmp_ident i1 i2
-    | Tnone, Tnone     -> true
-    | _ -> false
-  in
-  let cmp_delta (lhs : delta) (rhs : delta) : bool =
-    match lhs, rhs with
-    | Dadded, Dadded     -> true
-    | Dremoved, Dremoved -> true
-    | Dunmoved, Dunmoved -> true
-    | Dnone, Dnone       -> true
-    | _ -> false
-  in
   let cmp_container_kind (lhs : container_kind) (rhs : container_kind) : bool =
     match lhs, rhs with
-    | CKcoll (t1, d1), CKcoll (t2, d2) -> cmp_temp t1 t2 && cmp_delta d1 d2
+    | CKcoll, CKcoll -> true
     | CKview l, CKview r -> cmp l r
-    | CKfield (an1, fn1, mt1, t1, d1), CKfield (an2, fn2, mt2, t2, d2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2 && cmp_temp t1 t2 && cmp_delta d1 d2
-    | CKdef v1, CKdef v2 -> cmp_ident v1 v2
+    | CKfield (an1, fn1, mt1), CKfield (an2, fn2, mt2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2
     | _ -> false
   in
   let cmp_iter_container_kind (lhs : iter_container_kind) (rhs : iter_container_kind) : bool =
@@ -1554,8 +1267,6 @@ let cmp_mterm_node
     | Mwhile (c1, b1, lbl1), Mwhile (c2, b2, lbl2)                                     -> cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
-    | Mlabel i1, Mlabel i2                                                             -> cmpi i1 i2
-    | Mmark (i1, x1), Mmark (i2, x2)                                                   -> cmpi i1 i2 && cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
@@ -1789,7 +1500,7 @@ let cmp_mterm_node
     | Mlevel, Mlevel                                                                   -> true
     | Mminblocktime, Mminblocktime                                                     -> true
     (* variable *)
-    | Mvar (id1, k1, t1, d1), Mvar (id2, k2, t2, d2)                                   -> cmpi id1 id2 && cmp_var_kind k1 k2 && cmp_temp t1 t2 && cmp_delta d1 d2
+    | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
     (* rational *)
     | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
@@ -1803,24 +1514,6 @@ let cmp_mterm_node
     (* others *)
     | Minttodate v1, Minttodate v2                                                     -> cmp v1 v2
     | Mmuteztonat v1, Mmuteztonat v2                                                   -> cmp v1 v2
-    (* quantifiers *)
-    | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
-    | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
-    (* formula operators *)
-    | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
-    | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
-    (* formula asset collection *)
-    | Msetiterated e1, Msetiterated  e2                                                -> cmp_iter_container_kind e1 e2
-    | Msettoiterate e1, Msettoiterate e2                                               -> cmp_iter_container_kind e1 e2
-    (* formula asset collection methods *)
-    | Mempty an1, Mempty an2                                                           -> cmp_ident an1 an2
-    | Msingleton (an1, k1), Msingleton (an2, k2)                                       -> cmp_ident an1 an2 && cmp k1 k2
-    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
-    | Misempty (an1, r1), Misempty (an2, r2)                                           -> cmp_ident an1 an2 && cmp r1 r2
-    | Munion (an1, l1, r1), Munion (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
-    | Minter (an1, l1, r1), Minter (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
-    | Mdiff (an1, l1, r1), Mdiff (an2, l2, r2)                                         -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
-    (* *)
     | _ -> false
   with
     _ -> false
@@ -1902,24 +1595,11 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
   | APIInternal i1, APIInternal i2 -> cmp_api_internal i1 i2
   | _ -> false
 
-let cmp_api_loc x1 x2 =
-  match x1, x2 with
-  | OnlyFormula, OnlyFormula
-  | OnlyExec, OnlyExec
-  | ExecFormula, ExecFormula -> true
-  | _, _ -> false
-
 let cmp_api_storage (c1 : api_storage) (c2 : api_storage) =
-  cmp_api_item_node c1.node_item c2.node_item && cmp_api_loc c1.api_loc c2.api_loc
+  cmp_api_item_node c1.node_item c2.node_item
 
 (* -------------------------------------------------------------------- *)
 
-let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
-  match v1, v2 with
-  | StorageInvariant (l1, an1, mt1), StorageInvariant (l2, an2, mt2) -> cmp_ident l1 l2 && cmp_ident an1 an2 && cmp_mterm mt1 mt2
-(* | _ -> false *)
-
-(* -------------------------------------------------------------------- *)
 let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   match nt with
   | Tasset id                -> Tasset id
@@ -1939,15 +1619,11 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Tevent id                -> Tevent id
   | Tlambda (a, r)           -> Tlambda (f a, f r)
   | Tunit                    -> Tunit
-  | Tstorage                 -> Tstorage
   | Toperation               -> Toperation
   | Tcontract t              -> Tcontract (f t)
   | Tticket t                -> Tticket (f t)
   | Tsapling_state n         -> Tsapling_state n
   | Tsapling_transaction n   -> Tsapling_transaction n
-  | Tprog t                  -> Tprog (f t)
-  | Tvset (v, t)             -> Tvset (v, f t)
-  | Ttrace t                 -> Ttrace t
 
 let map_type (f : type_ -> type_) (t : type_) : type_ =
   mktype ?annot:(get_atype t) (map_ptyp f (get_ntype t))
@@ -1972,15 +1648,11 @@ let fold_typ (f : 'a -> type_ -> 'a) (accu : 'a) (ty : type_) : 'a =
   | Tevent _                   -> accu
   | Tlambda (at, rt)           -> f (f accu at) rt
   | Tunit                      -> accu
-  | Tstorage                   -> accu
   | Toperation                 -> accu
   | Tcontract t                -> f accu t
   | Tticket t                  -> f accu t
   | Tsapling_state _           -> accu
   | Tsapling_transaction _     -> accu
-  | Tprog t                    -> f accu t
-  | Tvset (_, t)               -> f accu t
-  | Ttrace _                   -> accu
 
 (* -------------------------------------------------------------------- *)
 
@@ -2002,7 +1674,6 @@ let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
   | Vstorevar -> Vstorevar
   | Vstorecol -> Vstorecol
-  | Vdefinition -> Vdefinition
   | Vlocal -> Vlocal
   | Vparam -> Vparam
   | Vfield -> Vfield
@@ -2010,22 +1681,10 @@ let map_var_kind f = function
   | Vthe -> Vthe
   | Vparameter -> Vparameter
 
-let map_temp (fi : ident -> ident) = function
-  | Tbefore -> Tbefore
-  | Tat i   -> Tat (fi i)
-  | Tnone   -> Tnone
-
-let map_delta = function
-  | Dadded   -> Dadded
-  | Dremoved -> Dremoved
-  | Dunmoved -> Dunmoved
-  | Dnone    -> Dnone
-
 let map_container_kind (fi : ident -> ident) f = function
-  | CKcoll (t, d)              -> CKcoll (map_temp fi t, map_delta d)
-  | CKview  mt                 -> CKview  (f mt)
-  | CKfield (an, fn, mt, t, d) -> CKfield (fi an, fi fn, f mt, map_temp fi t, map_delta d)
-  | CKdef v                    -> CKdef (fi v)
+  | CKcoll               -> CKcoll
+  | CKview  mt           -> CKview  (f mt)
+  | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
 
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll  an           -> ICKcoll  (fi an)
@@ -2067,8 +1726,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mwhile (c, b, lbl)             -> Mwhile (f c, f b, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
-  | Mlabel i                       -> Mlabel (g i)
-  | Mmark (i, x)                   -> Mmark (g i, f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mfailsome v                    -> Mfailsome (f v)
@@ -2302,7 +1959,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlevel                         -> Mlevel
   | Mminblocktime                  -> Mminblocktime
   (* variable *)
-  | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
+  | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
   | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
@@ -2317,23 +1974,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* others *)
   | Minttodate v                   -> Minttodate (f v)
   | Mmuteztonat v                  -> Mmuteztonat (f v)
-  (* quantifiers *)
-  | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
-  | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
-  (* formula operators *)
-  | Mimply (l, r)                  -> Mimply (f l, f r)
-  | Mequiv  (l, r)                 -> Mequiv (f l, f r)
-  (* formula asset collection *)
-  | Msetiterated  e                -> Msetiterated  (map_iter_container_kind fi f e)
-  | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
-  (* formula asset collection methods *)
-  | Mempty an                      -> Mempty     (fi an)
-  | Msingleton (an, k)             -> Msingleton (fi an, f k)
-  | Msubsetof (an, c, i)           -> Msubsetof  (fi an, map_container_kind fi f c, f i)
-  | Misempty (an, r)               -> Misempty   (fi an, f r)
-  | Munion (an, l, r)              -> Munion     (fi an, f l, f r)
-  | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
-  | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
 
 let map_mterm
     (f : mterm -> mterm)
@@ -2361,7 +2001,7 @@ type ctx_model = unit ctx_model_gen
 let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id custom : 't ctx_model_gen =
   { formula; fs; label; spec_id; invariant_id; custom}
 
-let map_mterm_model_exec custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let map_storage_item (ctx : 't ctx_model_gen) (si : storage_item) : storage_item = (
     { si with
       default = f ctx si.default;
@@ -2390,90 +2030,6 @@ let map_mterm_model_exec custom (f : 't ctx_model_gen -> mterm -> mterm) (model 
     storage = storage;
   }
 
-let map_specification (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
-  let map_label_term (f : 't ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
-    let ctx = { ctx with label = Some lt.label } in
-    { lt with
-      term = f ctx lt.term }
-  in
-
-  let map_predicate (f : 't ctx_model_gen -> mterm -> mterm) (p : predicate) : predicate =
-    { p with
-      args = List.map (fun (x, y) -> (x, y)) p.args;
-      body = f ctx p.body;
-    }
-  in
-
-  let map_definition (f : 't ctx_model_gen -> mterm -> mterm) (d : definition) : definition =
-    { d with
-      body = f ctx d.body
-    }
-  in
-
-  let map_invariantt (f : 't ctx_model_gen -> mterm -> mterm) ((it_id, it_lt) : 'id * label_term list) : 'id * label_term list =
-    (it_id, List.map (map_label_term f) it_lt)
-  in
-
-  let map_invariant (f : 't ctx_model_gen -> mterm -> mterm) (spec : invariant) : invariant =
-    let ctx = {ctx with invariant_id = Some spec.label } in
-    { spec with
-      formulas = List.map (f ctx) spec.formulas;
-    }
-  in
-
-  let map_postcondition (f : 't ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
-    let ctx = { ctx with spec_id = Some spec.name} in
-    { spec with
-      formula = f ctx spec.formula;
-      invariants = List.map (map_invariant f) spec.invariants;
-    }
-  in
-
-  let map_variable (_f : 't ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
-    spec
-  in
-
-  let ctx = { ctx with formula = true} in
-  { v with
-    predicates = List.map (map_predicate f) v.predicates;
-    definitions = List.map (map_definition f) v.definitions;
-    lemmas = List.map (map_label_term f) v.lemmas;
-    theorems = List.map (map_label_term f) v.theorems;
-    variables = List.map (map_variable f) v.variables;
-    invariants = List.map (map_invariantt f) v.invariants;
-    effects = List.map (f ctx) v.effects;
-    postconditions = List.map (map_postcondition f) v.postconditions;
-  }
-)
-
-let map_mterm_model_formula custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  let ctx : 't ctx_model_gen = mk_ctx_model custom in
-
-  let map_function (f : 't ctx_model_gen -> mterm -> mterm) (fun_ : function__) : function__ =
-    let fs : function_struct =
-      match fun_.node with
-      | Function (fs, _) -> fs
-      | Getter (fs, _) -> fs
-      | View (fs, _, _) -> fs
-      | Entry fs -> fs
-    in
-    let ctx = { ctx with fs = Some fs } in
-    { fun_ with
-      spec = Option.map (map_specification ctx f) fun_.spec;
-    }
-  in
-
-  { model with
-    functions = List.map (map_function f) model.functions;
-    specification = map_specification ctx f model.specification
-  }
-
-
-let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  model
-  |> map_mterm_model_exec custom f
-  |> map_mterm_model_formula custom f
-
 let map_mterm_model (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
@@ -2491,7 +2047,6 @@ let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
   | Vstorevar
   | Vstorecol
-  | Vdefinition
   | Vlocal
   | Vparam
   | Vfield
@@ -2500,10 +2055,9 @@ let fold_var_kind f accu = function
   | Vparameter -> accu
 
 let fold_container_kind f accu = function
-  | CKcoll _                 -> accu
-  | CKview mt                -> f accu mt
-  | CKfield (_, _, mt, _, _) -> f accu mt
-  | CKdef _                  -> accu
+  | CKcoll             -> accu
+  | CKview mt          -> f accu mt
+  | CKfield (_, _, mt) -> f accu mt
 
 let fold_iter_container_kind f accu = function
   | ICKcoll  _          -> accu
@@ -2547,8 +2101,6 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mwhile (c, b, _)                      -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
-  | Mlabel _                              -> accu
-  | Mmark (_, x)                          -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mfailsome v                           -> f accu v
@@ -2782,7 +2334,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mlevel                                -> accu
   | Mminblocktime                         -> accu
   (* variable *)
-  | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
+  | Mvar (_, k)                           -> fold_var_kind f accu k
   | Menumval (_, args, _)                 -> List.fold_left f accu args
   (* rational *)
   | Mrateq (l, r)                         -> f (f accu l) r
@@ -2797,23 +2349,6 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   (* others *)
   | Minttodate v                          -> f accu v
   | Mmuteztonat v                         -> f accu v
-  (* quantifiers *)
-  | Mforall (_, _, s, e)                  -> f (opt f accu s) e
-  | Mexists (_, _, s, e)                  -> f (opt f accu s) e
-  (* formula operators *)
-  | Mimply (l, r)                         -> f (f accu l) r
-  | Mequiv  (l, r)                        -> f (f accu l) r
-  (* formula asset collection *)
-  | Msetiterated  e                       -> fold_iter_container_kind f accu e
-  | Msettoiterate e                       -> fold_iter_container_kind f accu e
-  (* formula asset collection methods *)
-  | Mempty _                              -> accu
-  | Msingleton (_, k)                     -> f accu k
-  | Msubsetof (_, c, i)                   -> f (fold_container_kind f accu c) i
-  | Misempty  (_, r)                      -> f accu r
-  | Munion (_, l, r)                      -> f (f accu l) r
-  | Minter (_, l, r)                      -> f (f accu l) r
-  | Mdiff  (_, l, r)                      -> f (f accu l) r
 
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -2838,7 +2373,6 @@ let fold_map_var_kind f accu = function
     Vassetstate mte, mta
   | Vstorevar -> Vstorevar, accu
   | Vstorecol -> Vstorecol, accu
-  | Vdefinition -> Vdefinition, accu
   | Vlocal    -> Vlocal,    accu
   | Vparam    -> Vparam,    accu
   | Vfield    -> Vfield,    accu
@@ -2847,14 +2381,13 @@ let fold_map_var_kind f accu = function
   | Vparameter -> Vparameter, accu
 
 let fold_map_container_kind f accu = function
-  | CKcoll (t, d) -> CKcoll (t, d), accu
+  | CKcoll -> CKcoll, accu
   | CKview mt ->
     let mte, mta = f accu mt in
     CKview mte, mta
-  | CKfield (an, fn, mt, t, d) ->
+  | CKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
-    CKfield (an, fn, mte, t, d), mta
-  | CKdef v -> CKdef v, accu
+    CKfield (an, fn, mte), mta
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu
@@ -3031,14 +2564,6 @@ let fold_map_term
   | Mreturn x ->
     let xe, xa = f accu x in
     g (Mreturn xe), xa
-
-  | Mlabel i ->
-    g (Mlabel i), accu
-
-  | Mmark (i, x) ->
-    let xe, xa = f accu x in
-    g (Mmark (i, xe)), xa
-
 
   (* effect *)
 
@@ -4085,9 +3610,9 @@ let fold_map_term
 
   (* variable *)
 
-  | Mvar (id, k, t, d) ->
+  | Mvar (id, k) ->
     let ke, ka = fold_map_var_kind f accu k in
-    g (Mvar (id, ke, t, d)), ka
+    g (Mvar (id, ke)), ka
 
   | Menumval (id, args, e) ->
     let ((argss, argsa) : 'c list * 'a) =
@@ -4154,131 +3679,7 @@ let fold_map_term
     g (Mmuteztonat ve), va
 
 
-  (* quantifiers *)
-
-  | Mforall (id, t, Some s, e) ->
-    let ee, ea = f accu e in
-    let se, sa = f ea s in
-    g (Mforall (id, t, Some se, ee)), sa
-
-  | Mforall (id, t, None, e) ->
-    let ee, ea = f accu e in
-    g (Mforall (id, t, None, ee)), ea
-
-  | Mexists (id, t, Some s, e) ->
-    let ee, ea = f accu e in
-    let se, sa = f ea s in
-    g (Mexists (id, t, Some se, ee)), sa
-
-  | Mexists (id, t, None, e) ->
-    let ee, ea = f accu e in
-    g (Mexists (id, t, None, ee)), ea
-
-
-  (* formula operators *)
-
-  | Mimply (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mimply (le, re)), ra
-
-  | Mequiv  (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mequiv (le, re)), ra
-
-
-  (* formula asset collection *)
-
-  | Msetiterated e ->
-    let ee, ea = fold_map_iter_container_kind f accu e in
-    g (Msetiterated ee), ea
-
-  | Msettoiterate e ->
-    let ee, ea = fold_map_iter_container_kind f accu e in
-    g (Msettoiterate ee), ea
-
-
-  (* formula asset collection methods *)
-
-  | Mempty an ->
-    g (Mempty an), accu
-
-  | Msingleton (an, k) ->
-    let ke, ka = f accu k in
-    g (Msingleton (an, ke)), ka
-
-  | Msubsetof (an, c, i) ->
-    let ce, ca = fold_map_container_kind f accu c in
-    let ie, ia = f ca i in
-    g (Msubsetof (an, ce, ie)), ia
-
-  | Misempty  (l, r) ->
-    let re, ra = f accu r in
-    g (Misempty (l, re)), ra
-
-  | Munion (an, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Munion (an, le, re)), ra
-
-  | Minter (an, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Minter (an, le, re)), ra
-
-  | Mdiff  (an, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mdiff (an, le, re)), ra
-
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
-
-let fold_label_term (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (lt : label_term) (accu : 'a) : 'a =
-  let ctx = { ctx with label = Some lt.label } in
-  f ctx accu lt.term
-
-let fold_specification (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (v : specification) (accu : 'a) : 'a =
-
-  let fold_predicate (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (p : predicate) (accu : 'a) : 'a =
-    accu
-    |> fun x -> f ctx x p.body
-  in
-  let fold_definition (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (d : definition) (accu : 'a) : 'a =
-    f ctx accu d.body
-  in
-
-  let fold_invariantt (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (it : 'id * label_term list) (accu : 'a) : 'a =
-    List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
-  in
-
-  let fold_invariant (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (spec : invariant) (accu : 'a) : 'a =
-    let ctx = {ctx with invariant_id = Some spec.label } in
-    List.fold_left (f ctx) accu spec.formulas
-  in
-
-  let fold_postcondition (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (spec : postcondition) (accu : 'a) : 'a =
-    let ctx = { ctx with spec_id = Some spec.name} in
-    accu
-    |> (fun x -> f ctx x spec.formula)
-    |> (fun x -> List.fold_left (fun accu (x : invariant) -> fold_invariant ctx f x accu) x spec.invariants)
-  in
-
-  let fold_variable (_ctx : 't ctx_model_gen) (_f : 't ctx_model_gen -> 'a -> mterm -> 'a) (_spec : variable) (accu : 'a) : 'a =
-    accu
-  in
-
-  let ctx = { ctx with formula = true } in
-  accu
-  |> fold_left (fold_predicate ctx f) v.predicates
-  |> fold_left (fold_definition ctx f) v.definitions
-  |> fold_left (fold_label_term ctx f) v.lemmas
-  |> fold_left (fold_label_term ctx f) v.theorems
-  |> fold_left (fold_variable ctx f) v.variables
-  |> fold_left (fold_invariantt ctx f) v.invariants
-  |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
-  |> fold_left (fold_postcondition ctx f) v.postconditions
-
 let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : 'a) : 'a =
   let fold_mterm_option f x accu = match x with | Some v -> f accu v | _ -> accu in
   let fold_decl (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (d : decl_node) (accu : 'a) : 'a = (
@@ -4286,26 +3687,20 @@ let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : '
     | Dvar s ->
       accu
       |> fold_mterm_option (f ctx) s.default
-      |> fold_left (fold_label_term { ctx with formula = true } f) s.invariants
-    | Denum e ->
+    | Denum _e ->
       accu
-      |> (fun accu -> List.fold_left (fun accu (x : enum_item) -> fold_left (fold_label_term { ctx with formula = true } f) x.invariants accu) accu e.values)
     | Dasset a ->
       accu
       |> (fun accu -> List.fold_left (fun accu (x : asset_item) -> (fold_mterm_option (f ctx) x.default accu)) accu a.values)
-      |> fold_left (fold_label_term { ctx with formula = true } f) a.invariants
     | _ -> accu
   ) in
 
   let fold_entry (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (a : function__) (accu : 'a) : 'a = (
-    let accu : 'a = (
-      match a.node with
-      | Function (fs, _)
-      | Getter (fs, _)
-      | View (fs, _, _)
-      | Entry fs -> f {ctx with fs = Some fs} accu fs.body
-    ) in
-    Option.map_dfl (fun (x : specification) -> fold_specification ctx f x accu) accu a.spec
+    match a.node with
+    | Function (fs, _)
+    | Getter (fs, _)
+    | View (fs, _, _)
+    | Entry fs -> f {ctx with fs = Some fs} accu fs.body
   ) in
 
   let ctx : ctx_model = mk_ctx_model () in
@@ -4313,7 +3708,6 @@ let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : '
   accu
   |> fold_left (fold_decl ctx f) m.decls
   |> fold_left (fold_entry ctx f) m.functions
-  |> fold_specification ctx f m.specification
 
 type kind_ident =
   | KIarchetype
@@ -4438,18 +3832,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     in
     {
       node_item    = for_node_item ai.node_item;
-      api_loc      = ai.api_loc;
-    }
-  in
-  let for_api_verif (apiv : api_verif) : api_verif =
-    match apiv with
-    | StorageInvariant (a, b, c) -> StorageInvariant (f KIassetname a, f KIassetfield b, for_mterm c)
-  in
-  let for_label_term (lt : label_term) : label_term =
-    {
-      label = g KIlabel lt.label;
-      term  = for_mterm lt.term;
-      loc   = lt.loc;
     }
   in
   let for_decl_node (d : decl_node) : decl_node =
@@ -4460,7 +3842,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         original_type = for_type v.original_type;
         kind          = v.kind;
         default       = Option.map for_mterm v.default;
-        invariants    = List.map for_label_term v.invariants;
         loc           = v.loc;
       }
     in
@@ -4469,7 +3850,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         {
           name        = g KIenumvalue ei.name;
           args        = List.map for_type ei.args;
-          invariants  = List.map for_label_term ei.invariants;
         }
       in
       {
@@ -4496,7 +3876,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         sort          = List.map (g KIassetfield) a.sort;
         map_kind      = a.map_kind;
         state         = Option.map (h KIassetstate) a.state;
-        invariants    = List.map for_label_term a.invariants;
         init          = List.map for_mterm a.init;
         loc           = a.loc;
       }
@@ -4542,73 +3921,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       loc         = si.loc;
     }
   in
-  let for_specification (spec : specification) : specification =
-    let for_predicate (p : predicate) : predicate =
-      {
-        name = g KIpredicate p.name;
-        args = List.map (fun (x, y) -> g KIargument x, for_type y) p.args;
-        body = for_mterm p.body;
-        loc  = p.loc;
-      }
-    in
-    let for_definition (d : definition) : definition =
-      {
-        name = g KIdefinition d.name;
-        typ  = for_type d.typ;
-        var  = g KIdefinitionvar d.var;
-        body = for_mterm d.body;
-        loc  = d.loc;
-      }
-    in
-    let for_fail (f : fail) : fail =
-      {
-        label        = g KIfaillabel f.label;
-        fid          = Option.map (g KIfailfid) f.fid;
-        arg          = g KIfailarg   f.arg;
-        atype        = for_type      f.atype;
-        formula      = for_mterm     f.formula;
-        loc          = f.loc;
-      }
-    in
-    let for_variable (v : variable) : variable =
-      let for_argument (arg : argument) : argument =
-        let a, b, c = arg in
-        g KIargument a, for_type b, Option.map for_mterm c
-      in
-      {
-        decl = for_argument v.decl;
-        kind = v.kind;
-        loc  = v.loc;
-      }
-    in
-    let for_invariant (i : invariant) : invariant =
-      {
-        label    = g KIlabel i.label;
-        formulas = List.map for_mterm i.formulas;
-      }
-    in
-    let for_postcondition (p : postcondition) : postcondition =
-      {
-        name       = g KIpostcondition p.name;
-        mode       = p.mode;
-        formula    = for_mterm p.formula;
-        invariants = List.map for_invariant p.invariants;
-        uses       = List.map (g KIpostconditionuse) p.uses;
-      }
-    in
-    {
-      predicates     = List.map for_predicate     spec.predicates;
-      definitions    = List.map for_definition    spec.definitions;
-      lemmas         = List.map for_label_term    spec.lemmas;
-      theorems       = List.map for_label_term    spec.theorems;
-      fails          = List.map for_fail          spec.fails;
-      variables      = List.map for_variable      spec.variables;
-      invariants     = List.map (fun (x, y) -> g KIinvariant x, List.map for_label_term y) spec.invariants;
-      effects        = List.map for_mterm         spec.effects;
-      postconditions = List.map for_postcondition spec.postconditions;
-      loc            = spec.loc;
-    }
-  in
   let for_function__ (f__ : function__) : function__ =
     let for_function_node (fn : function_node) : function_node =
       let for_function_struct (fs : function_struct) : function_struct =
@@ -4632,56 +3944,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       | Entry     fs         -> Entry    (for_function_struct fs)
     in
     {
-      node = for_function_node f__.node;
-      spec = Option.map for_specification f__.spec;
-    }
-  in
-  let for_security (s : security) : security =
-    let for_security_item (si : security_item) : security_item =
-      let for_security_predicate (sp : security_predicate) : security_predicate =
-        let for_security_node (sn : security_node) : security_node =
-          let for_entry_description (ad : entry_description) =
-            match ad with
-            | ADany         -> ADany
-            | ADadd      id -> ADadd      (f KIsecurityad id)
-            | ADremove   id -> ADremove   (f KIsecurityad id)
-            | ADupdate   id -> ADupdate   (f KIsecurityad id)
-            | ADtransfer id -> ADtransfer (f KIsecurityad id)
-            | ADget      id -> ADget      (f KIsecurityad id)
-            | ADiterate  id -> ADiterate  (f KIsecurityad id)
-            | ADcall     id -> ADcall     (f KIsecurityad id)
-          in
-          let for_security_role (sr : security_role) : security_role = h KIsecurityrole sr in
-          let for_security_entry (sa : security_entry) =
-            match sa with
-            | Sany     -> Sany
-            | Sentry l -> Sentry (List.map (h KIsecurityentry) l)
-          in
-          match sn with
-          | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
-          | SonlyInEntry       (ad, sa)       -> SonlyInEntry        (for_entry_description ad, for_security_entry sa)
-          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
-          | SnotByRole          (ad, srl)     -> SnotByRole          (for_entry_description ad, List.map for_security_role srl)
-          | SnotInEntry        (ad, sa)       -> SnotInEntry         (for_entry_description ad, for_security_entry sa)
-          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry   (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
-          | StransferredBy      (ad)          -> StransferredBy      (for_entry_description ad)
-          | StransferredTo      (ad)          -> StransferredTo      (for_entry_description ad)
-          | SnoStorageFail      sa            -> SnoStorageFail      (for_security_entry sa)
-        in
-        {
-          s_node = for_security_node sp.s_node;
-          loc    = sp.loc;
-        }
-      in
-      {
-        label     = h KIlabel si.label;
-        predicate = for_security_predicate si.predicate;
-        loc       = si.loc;
-      }
-    in
-    {
-      items = List.map for_security_item s.items;
-      loc   = s.loc;
+      node = for_function_node f__.node
     }
   in
   {
@@ -4690,12 +3953,9 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     imports       = List.map id model.imports;
     metadata      = Option.map for_metadata model.metadata;
     api_items     = List.map for_api_item  model.api_items;
-    api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;
     storage       = List.map for_storage_item model.storage;
     functions     = List.map for_function__ model.functions;
-    specification = for_specification model.specification;
-    security      = for_security model.security;
     extra         = model.extra;
     loc           = model.loc;
   }
@@ -4723,15 +3983,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Tevent id                -> Tevent (h KIrecordname id)
       | Tlambda (a, r)           -> Tlambda (for_type a, for_type r)
       | Tunit                    -> nt
-      | Tstorage                 -> nt
       | Toperation               -> nt
       | Tcontract t              -> Tcontract (for_type t)
       | Tticket t                -> Tticket (for_type t)
       | Tsapling_state _         -> nt
       | Tsapling_transaction _   -> nt
-      | Tprog a                  -> Tprog (for_type a)
-      | Tvset (v, a)             -> Tvset (v, for_type a)
-      | Ttrace _                 -> nt
     in
     mktype ?annot:(get_atype t) (for_ntype (get_ntype t))
   in
@@ -4786,8 +4042,8 @@ module Utils : sig
   val dest_container                     : type_ -> ident
   val get_container_asset_key            : model -> ident -> ident -> (ident * ident * type_)
   val get_container_assets               : model -> ident -> ident list
-  val get_entries                        : model -> (specification option * function_struct) list
-  val get_functions                      : model -> (specification option * function_struct* type_) list
+  val get_entries                        : model -> (function_struct) list
+  val get_functions                      : model -> (function_struct * type_) list
   val has_container                      : model -> ident -> bool
   val get_asset_containers               : model -> ident -> (ident * type_ * mterm option) list
   val get_field_list                     : model -> ident -> ident list
@@ -4805,17 +4061,12 @@ module Utils : sig
   val get_key_pos                        : model -> ident -> int
   val get_loop_invariants                : model -> (ident * mterm) list -> ident -> (ident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
-  val is_post                            : postcondition -> bool
   val get_sum_idxs                       : model -> ident -> int list
-  val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
-  val no_fail                            : model -> ident -> ident option
   val type_to_asset                      : type_ -> ident
   val get_map_function                   : model -> (ident * ident list) list
-  val retrieve_all_properties            : model -> (ident * property) list
-  val retrieve_property                  : model -> ident -> property
   val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
@@ -4844,8 +4095,6 @@ module Utils : sig
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
-  val get_specifications                 : model -> specification list
-  val get_specification                  : model -> ident -> specification option
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
   val extract_assign_kind                : mterm -> assign_kind list
@@ -4894,30 +4143,30 @@ end = struct
 
   let set_function_args (f : function__) (args : argument list) : function__ =
     match f.node with
-    | Function (s, t) -> { node = Function ({ s with args = args }, t);     spec = f.spec }
-    | Getter (s, t)   -> { node = Getter   ({ s with args = args }, t);     spec = f.spec }
-    | View (s, t, vv) -> { node = View     ({ s with args = args }, t, vv); spec = f.spec }
-    | Entry s         -> { node = Entry     { s with args = args };         spec = f.spec }
+    | Function (s, t) -> { node = Function ({ s with args = args }, t)      }
+    | Getter (s, t)   -> { node = Getter   ({ s with args = args }, t)      }
+    | View (s, t, vv) -> { node = View     ({ s with args = args }, t, vv)  }
+    | Entry s         -> { node = Entry     { s with args = args }          }
 
   let is_entry (f : function__) : bool =
     match f with
-    | { node = Entry _; spec = _ } -> true
+    | { node = Entry _ } -> true
     | _                            -> false
 
   let is_function (f : function__) : bool =
     match f with
-    | { node = Function _; spec = _ } -> true
+    | { node = Function _ } -> true
     | _                                -> false
 
-  let get_entry (f : function__) : specification option * function_struct =
+  let get_entry (f : function__) : function_struct =
     match f with
-    | { node = Entry s; spec = v } -> (v,s)
-    | _                             -> assert false
+    | { node = Entry s } -> s
+    | _                  -> assert false
 
-  let get_function (f : function__) : specification option * function_struct * type_ =
+  let get_function (f : function__) : function_struct * type_ =
     match f with
-    | { node = Function (s,t); spec = v } -> (v,s,t)
-    | _                             -> assert false
+    | { node = Function (s,t) } -> (s,t)
+    | _                         -> assert false
 
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
@@ -5149,8 +4398,8 @@ end = struct
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
       | Massign (_, _, Avar i,_) when String.equal (unloc_mident i) id -> raise FoundAssign
-      | Massign (_, _, Arecord ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
-      | Massign (_, _, Atuple ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
+      | Massign (_, _, Arecord ({ node = (Mvar (i, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
+      | Massign (_, _, Atuple ({ node = (Mvar (i, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -5178,23 +4427,6 @@ end = struct
     try fold_model with_operations_for_mterm_intern model false
     with FoundOperations -> true
 
-  let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
-    i with
-    formulas = List.map m i.formulas
-  }
-
-  let map_postcondition_terms (m : mterm -> mterm) (s : postcondition) : postcondition = {
-    s with
-    formula = m s.formula;
-    invariants = List.map (map_invariant_terms m) s.invariants
-  }
-
-  let map_specification_terms (m : mterm -> mterm) (v : specification) : specification = {
-    v with
-    postconditions = List.map (map_postcondition_terms m) v.postconditions
-  }
-
-
   let map_function_terms (m : mterm -> mterm) (f : function__) : function__ = {
     node = begin
       match f.node with
@@ -5210,8 +4442,7 @@ end = struct
       | Entry s        -> Entry {
           s with body = m s.body;
         }
-    end;
-    spec = Option.map (map_specification_terms m) f.spec;
+    end
   }
 
   let is_asset (t : mterm) =
@@ -5221,12 +4452,12 @@ end = struct
 
   let is_varlocal (t : mterm) =
     match t.node with
-    | Mvar (_, Vlocal, _, _) -> true
+    | Mvar (_, Vlocal) -> true
     | _ -> false
 
   let dest_varlocal (t : mterm) =
     match t.node with
-    |  Mvar (i, Vlocal, _, _) -> unloc_mident i
+    |  Mvar (i, Vlocal) -> unloc_mident i
     | _ -> assert false
 
   let is_container t =
@@ -5269,36 +4500,6 @@ end = struct
       | _ -> acc in
     fold_model internal_get m acc
 
-  let is_post (s : postcondition) =
-    match s.mode with
-    | Post -> true
-    | _ -> false
-
-  (* returns asset name * invariant name * invariant term *)
-  let get_storage_invariants (m : model) (asset_name : ident option) : (ident * ident * mterm) list =
-    try
-      let assets : asset list = get_assets m in
-      let assets : asset list =
-        begin
-          match asset_name with
-          | Some asset_name -> List.filter (fun (x : asset) -> cmp_ident (unloc_mident x.name) asset_name) assets
-          | _ -> assets
-        end
-      in
-      assets
-      |>
-      List.map (fun (asset : asset) ->
-          List.map (fun (lt : label_term) ->
-              let inv_name = Tools.Option.fold (fun _ l -> unloc_mident l) "" (Some lt.label) in
-              let inv_term = lt.term in
-              [unloc_mident asset.name, inv_name, inv_term]
-            ) asset.invariants
-        )
-      |> List.flatten
-      |> List.flatten
-    with
-    | Not_found -> []
-
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list = List.map (fun (x : storage_item) -> unloc_mident x.id) m.storage in
     List.mem id l
@@ -5307,24 +4508,6 @@ end = struct
 
   (* returns the list of entries calling the function named 'name' *)
   let get_callers (_m : model) (_name : ident) : ident list = [] (* TODO *)
-
-  (* is there a no_fail predicate on an entry called fn ? *)
-  let no_fail (m : model) (fn : ident) : ident option =
-    List.fold_left (fun acc (p : security_item) ->
-        match acc with
-        | None ->
-          begin
-            match p.predicate.s_node with
-            | SnoStorageFail Sany -> Some (unloc p.label)
-            | SnoStorageFail (Sentry l) ->
-              if l |> List.map unloc |> List.mem fn then
-                Some (unloc p.label)
-              else
-                None
-            | _ -> None
-          end
-        | _ -> acc
-      ) None (m.security.items)
 
   let get_map_function (m : model) : (ident * ident list) list =
     let fun_ids : (ident * function_struct) list =
@@ -5347,44 +4530,13 @@ end = struct
     in
     List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
 
-  let retrieve_all_properties (m : model) : (ident * property) list =
-    let fold_decl = function
-      | Dasset r -> List.map (fun (x : label_term) -> (unloc_mident x.label, PstorageInvariant (x, unloc_mident r.name))) r.invariants
-      | _ -> []
-    in
-    let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =
-      []
-      |> (@) (List.map (fun (pc : postcondition) -> (unloc_mident pc.name, Ppostcondition (pc, fun_id))) sp.postconditions)
-    in
-    let fold_function (f : function__) : (ident * property) list =
-      let name =
-        match f.node with
-        | Entry     fs        -> unloc_mident fs.name
-        | Getter   (fs, _)    -> unloc_mident fs.name
-        | View     (fs, _, _) -> unloc_mident fs.name
-        | Function (fs, _)    -> unloc_mident fs.name
-      in
-      []
-      |> (@) (Option.map_dfl (fold_specification (Some name)) [] f.spec)
-    in
-    []
-    |> (@) (List.map fold_decl m.decls)
-    |> (@) (List.map fold_function m.functions) |> List.flatten
-    |> (@) (fold_specification None m.specification)
-    |> (@) (List.map (fun (x : security_item) -> (unloc x.label, PsecurityPredicate x)) m.security.items)
-
-
-  let retrieve_property (m : model) (id : ident) : property =
-    let properties = retrieve_all_properties m in
-    List.assoc id properties
-
   let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
     match c.node with
-    | Mvar(an, Vparam, t, d) ->
+    | Mvar(an, Vparam) ->
       begin
         let l, an = deloc (snd an) in
         let idparam = mk_mident (mkloc l (an ^ "_values")) in
-        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (mk_mident (dumloc "myasset"))))))
+        Some (mk_mterm (Mvar(idparam, Vparam) ) (mktype (Tmap(tint, tasset (mk_mident (dumloc "myasset"))))))
       end
     | _ -> None
 
@@ -5438,8 +4590,8 @@ end = struct
     let remove_const (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
-        | Mvar(v, Vstorevar, _, _)
-        | Mvar(v, Vlocal, _, _) when is_const (unloc_mident v) ->
+        | Mvar(v, Vstorevar)
+        | Mvar(v, Vlocal) when is_const (unloc_mident v) ->
           let dv = get_value (unloc_mident v) in
           aux dv
         | _ -> map_mterm aux mt
@@ -5914,7 +5066,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (mk_mident (dumloc an))), Collection)))
+    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol)) (mktype (Tcontainer (mktype (Tasset (mk_mident (dumloc an))), Collection)))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
@@ -5930,14 +5082,7 @@ end = struct
     let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
         if cmp_api_item_node x.node_item i.node_item
         then (true,
-              { i with api_loc =
-                         match x.api_loc, i.api_loc with
-                         | _, ExecFormula
-                         | ExecFormula, _
-                         | OnlyExec, OnlyFormula
-                         | OnlyFormula, OnlyExec -> ExecFormula
-                         | _ -> i.api_loc
-              }::accu)
+              i::accu)
         else (res, x::accu)) (false, []) l in
     if res then
       l
@@ -6042,19 +5187,14 @@ end = struct
       )
 
   let get_all_gen_mterm_type for_mterm for_type for_decl (model : model) =
-    let for_label_term accu (lt : label_term) = for_mterm accu lt.term in
     let for_decl_node accu (d : decl_node) =
       let for_var accu (v : var) =
         accu
         |> (fun accu -> for_type accu v.type_)
         |> (fun accu -> Option.map_dfl (for_mterm accu) accu v.default)
-        |> (fun accu -> List.fold_left for_label_term accu v.invariants)
       in
-      let for_enum accu (e : enum) =
-        let for_enum_item accu (ei : enum_item) =
-          List.fold_left for_label_term accu ei.invariants
-        in
-        List.fold_left for_enum_item accu e.values
+      let for_enum accu (_e : enum) =
+        accu
       in
       let for_asset accu (a : asset) =
         let for_asset_item accu (ai : asset_item) =
@@ -6064,7 +5204,6 @@ end = struct
         in
         accu
         |> (fun accu -> List.fold_left for_asset_item accu a.values)
-        |> (fun accu -> List.fold_left for_label_term accu a.invariants)
         |> (fun accu -> List.fold_left for_mterm accu a.init)
       in
       let for_record accu (r : record) =
@@ -6084,45 +5223,6 @@ end = struct
       accu
       |> (fun accu -> for_type accu si.typ;)
       |> (fun accu -> for_mterm accu si.default;)
-    in
-    let for_specification accu (spec : specification) =
-      let for_predicate accu (p : predicate) =
-        accu
-        |> (fun accu -> List.fold_left (fun accu (_, t) -> for_type accu t) accu p.args)
-        |> (fun accu -> for_mterm accu p.body)
-      in
-      let for_definition accu (d : definition) =
-        accu
-        |> (fun accu -> for_type accu d.typ)
-        |> (fun accu -> for_mterm accu d.body)
-      in
-      let for_variable accu (v : variable) =
-        let for_argument accu (arg : argument) =
-          let _, b, c = arg in
-          accu
-          |> (fun accu -> for_type accu b)
-          |> (fun accu -> Option.map_dfl (for_mterm accu) accu c)
-        in
-        accu
-        |> (fun accu -> for_argument accu v.decl)
-      in
-      let for_invariant accu (i : invariant) =
-        List.fold_left for_mterm accu i.formulas
-      in
-      let for_postcondition accu (p : postcondition) =
-        accu
-        |> (fun accu -> for_mterm accu p.formula)
-        |> (fun accu -> List.fold_left for_invariant accu p.invariants)
-      in
-      accu
-      |> (fun accu -> List.fold_left for_predicate  accu spec.predicates)
-      |> (fun accu -> List.fold_left for_definition accu spec.definitions)
-      |> (fun accu -> List.fold_left for_label_term accu spec.lemmas)
-      |> (fun accu -> List.fold_left for_label_term accu spec.theorems)
-      |> (fun accu -> List.fold_left for_variable   accu spec.variables)
-      |> (fun accu -> List.fold_left (fun accu (_, xs) -> List.fold_left for_label_term accu xs) accu spec.invariants)
-      |> (fun accu -> List.fold_left for_mterm           accu spec.effects)
-      |> (fun accu -> List.fold_left for_postcondition   accu spec.postconditions)
     in
     let for_function__ accu (f__ : function__) =
       let for_function_node accu (fn : function_node) =
@@ -6151,13 +5251,11 @@ end = struct
       in
       accu
       |> (fun accu -> for_function_node                       accu f__.node)
-      |> (fun accu -> Option.map_dfl (for_specification accu) accu f__.spec)
     in
     []
     |> (fun accu -> List.fold_left for_decl_node    accu model.decls)
     |> (fun accu -> List.fold_left for_storage_item accu model.storage)
     |> (fun accu -> List.fold_left for_function__   accu model.functions)
-    |> (fun accu -> for_specification               accu model.specification)
 
   let get_all_gen_mterm_type_internal for_mterm for_type (model : model) =
     get_all_gen_mterm_type for_mterm for_type (fun _ a -> a) model
@@ -6202,8 +5300,6 @@ end = struct
       | Titerable_big_map (_, t) -> for_type accu t
       | Tcontract t              -> for_type accu t
       | Tticket t                -> for_type accu t
-      | Tprog t                  -> for_type accu t
-      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -6219,8 +5315,6 @@ end = struct
       | Titerable_big_map (_, t) -> for_type accu t
       | Tcontract t              -> for_type accu t
       | Tticket t                -> for_type accu t
-      | Tprog t                  -> for_type accu t
-      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -6236,8 +5330,6 @@ end = struct
       | Titerable_big_map (_, tv) -> add_type (for_type accu tv) t
       | Tcontract t               -> for_type accu t
       | Tticket t                 -> for_type accu t
-      | Tprog     t               -> for_type accu t
-      | Tvset     (_, t)          -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -6280,24 +5372,6 @@ end = struct
         | Tcontainer ((Tasset an, _), Partition) -> (unloc_mident x.name, unloc_mident an)::accu
         | _ -> accu
       ) [] asset.values
-
-  let get_specifications (model : model) =
-    [ model.specification ] @
-    (List.fold_left (fun acc (s,_) -> match s with Some v -> acc@[v] | None -> acc) [] (get_entries model)) @
-    ((List.fold_left (fun acc (s,_,_) -> match s with Some v -> acc@[v] | None -> acc)) [] (get_functions model))
-
-  let get_specification (model : model) (name : ident) =
-    let rec get_entry_spec = function
-      | (s, (f:function_struct))::_ when String.compare (unloc_mident f.name) name = 0 -> s
-      | _::tl -> get_entry_spec tl
-      | [] -> None in
-    let rec get_function_spec = function
-      | (s, (f:function_struct),_)::_ when String.compare (unloc_mident f.name) name = 0 -> s
-      | _::tl -> get_function_spec tl
-      | [] -> None in
-    match get_entry_spec (get_entries model) with
-    | Some s -> Some s
-    | None -> get_function_spec (get_functions model)
 
   let get_fss (model : model) : function_struct list =
     List.map (fun (x) -> match x.node with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> fs) model.functions
@@ -6345,10 +5419,10 @@ end = struct
       | Maddfield (an, fn, _, _)                          -> with_partition accu an fn `Updated `Added
       | Mremoveasset (an, _)                              -> (Eremoved an)::accu
       | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn `Updated `Removed
-      | Mremoveall (an, CKcoll _)                         -> all_partition accu an `Removed `Removed
-      | Mremoveall (an, CKfield (_, fn, _, _, _))         -> with_partition accu an fn `Updated `Removed
-      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an `Removed `Removed
-      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> with_partition accu an fn `Updated `Removed
+      | Mremoveall (an, CKcoll)                         -> all_partition accu an `Removed `Removed
+      | Mremoveall (an, CKfield (_, fn, _))               -> with_partition accu an fn `Updated `Removed
+      | Mremoveif (an, CKcoll, _, _, _)                 -> all_partition accu an `Removed `Removed
+      | Mremoveif (an, CKfield (_, fn, _), _, _, _)       -> with_partition accu an fn `Updated `Removed
       | Mclear (an, CKview _)                             -> all_partition accu an `Removed `Removed
       | Mset (an, _, _, _)                                -> (Eupdated an)::accu
       | _ -> fold_term aux accu t in
@@ -6358,10 +5432,9 @@ end = struct
     let add_expr_asset an ck accu =
       let aan =
         match ck with
-        | CKcoll _
-        | CKview _
-        | CKdef _ -> an
-        | CKfield (an, fn, _, _, _) -> get_field_container model an fn |> fst
+        | CKcoll
+        | CKview _-> an
+        | CKfield (an, fn, _) -> get_field_container model an fn |> fst
       in
       aan::accu
     in
@@ -6372,13 +5445,10 @@ end = struct
         let f = aux (env @ (List.map unloc_mident ids)) in
         let tmp = f (match a with | LVsimple x -> f accu x |  LVreplace (_, _, x) -> f accu x) b in
         Option.map_dfl (f tmp) tmp o
-      | Mforall (id, _, c, b) ->
-        let f = aux (env @ [unloc_mident id]) in
-        f (Option.fold f accu c) b
-      | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc_mident id)) env) -> (unloc_mident id)::accu
-      | Mvar (id, Vstorevar, _, _) -> (unloc_mident id)::accu
-      | Mvar (id, Vstorecol, _, _) -> (unloc_mident id)::accu
-      | Mvar (_,  Vstate, _, _)    -> "state"::accu
+      | Mvar (id, Vlocal)  when not (List.exists (String.equal (unloc_mident id)) env) -> (unloc_mident id)::accu
+      | Mvar (id, Vstorevar)       -> (unloc_mident id)::accu
+      | Mvar (id, Vstorecol)       -> (unloc_mident id)::accu
+      | Mvar (_,  Vstate)          -> "state"::accu
       | Mnow                       -> "now"::accu
       | Mtransferred               -> "transferred"::accu
       | Mcaller                    -> "caller"::accu

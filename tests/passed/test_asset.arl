@@ -3,8 +3,6 @@ archetype test_asset
 asset my_asset_simple identified by str {
   str : string;
   i : int;
-} with {
-   a1 : i >= 1;
 }
 
 asset my_asset identified by j {
@@ -23,11 +21,6 @@ asset my_asset_all identified by id {
   id : address;
   k : int;
   b : bool;
-}
-// with states my_enums
-with {
-  a2 : k >= 1;
-  a3 : k <= 10;
 } initialized by {
   { @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 4; true };
   { @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk; 8; false }

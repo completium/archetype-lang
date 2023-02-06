@@ -1,11 +1,6 @@
 archetype setdelegate
 
 entry exec (kh : key_hash) {
-  specification {
-    s0: length(operations) = 1
-  }
-  effect {
-    var op : operation = set_delegate(some(kh));
-    operations := prepend(operations, op)
-  }
+  var op : operation = set_delegate(some(kh));
+  operations := prepend(operations, op)
 }

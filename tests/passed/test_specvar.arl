@@ -1,9 +1,0 @@
-archetype test_specvar
-
-variable a : nat = 1
-
-entry exec () {
-  ()
-}
-
-specification variable a { a1 : a >= 1 }

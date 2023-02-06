@@ -47,8 +47,6 @@ and logical_operator =
   | And
   | Or
   | Xor
-  | Imply
-  | Equiv
 
 and comparison_operator =
   | Equal
@@ -83,10 +81,6 @@ and assignment_operator =
   | AndAssign
   | OrAssign
 
-and quantifier =
-  | Forall
-  | Exists
-
 and operator =
   | Logical of logical_operator
   | Cmp     of comparison_operator
@@ -108,10 +102,6 @@ and pname =
 
 and pattern = pattern_unloc loced
 
-and var_label = VLBefore | VLIdent of lident
-
-and var_vset  = VSAdded | VSUnmoved | VSRemoved
-
 and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
 and for_ident = for_ident_unloc loced
 
@@ -124,7 +114,7 @@ and transfer_t =
   | TToperation of expr
 
 and expr_unloc =
-  | Eterm          of (var_vset option * var_label option) * (id_scope * lident)
+  | Eterm          of (id_scope * lident)
   | Eliteral       of literal
   | Earray         of id_scope * expr list
   | Erecord        of id_scope * record_item list
@@ -145,9 +135,9 @@ and expr_unloc =
   | Eassign        of assignment_operator * expr * expr
   | Eassignopt     of expr * expr * expr
   | Eif            of expr * expr * expr option
-  | Efor           of lident option * for_ident * expr * expr
-  | Eiter          of lident option * lident * expr option * expr * expr
-  | Ewhile         of lident option * expr * expr
+  | Efor           of for_ident * expr * expr
+  | Eiter          of lident * expr option * expr * expr
+  | Ewhile         of expr * expr
   | Eseq           of expr * expr
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident * type_t option * expr * bool (* const or not *)
@@ -156,9 +146,6 @@ and expr_unloc =
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
-  | Equantifier    of quantifier * lident * quantifier_kind * expr
-  | Eassert        of lident
-  | Elabel         of lident
   | Ereturn        of expr
   | Eoption        of option_
   | Eor            of or_
@@ -184,10 +171,6 @@ and scope =
   | Fixed
   | Removed
   | Stable
-
-and quantifier_kind =
-  | Qcollection of expr
-  | Qtype of type_t
 
 and option_ =
   | OSome of expr
@@ -221,64 +204,15 @@ and record_item = (assignment_operator * lident) option * expr
 
 and expr = expr_unloc loced
 
-and lident_typ = lident * type_t * extension list option
-
-and label_expr = (lident * expr) loced
-
-and label_exprs = label_expr list
-
-(* -------------------------------------------------------------------- *)
-and extension_unloc =
-  | Eextension of lident * expr list (** extension *)
-
-and extension = extension_unloc loced
-
-and exts = extension list option
+and lident_typ = lident * type_t
 
 (* -------------------------------------------------------------------- *)
 and field_unloc =
-  | Ffield of lident * type_t * expr option * exts   (** field *)
+  | Ffield of lident * type_t * expr option (** field *)
 
 and field = field_unloc loced
 
 and args = lident_typ list
-
-and invariants = (lident * expr list) list
-
-and specification_item_unloc =
-  | Vpredicate     of lident * args * expr
-  | Vdefinition    of lident * type_t * lident * expr
-  | Vvariable      of lident * type_t * expr option
-  | Veffect        of expr
-  | Vassert        of (lident * expr * invariants * lident list)
-  | Vfails         of (lident * lident option * lident * type_t * expr) list
-  | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
-
-and postkind = PKPost | PKInv
-
-and specification_item = specification_item_unloc loced
-
-and specification_unloc = specification_item list * exts
-
-and specification = specification_unloc loced
-
-and security_arg_unloc =
-  | Sident of lident
-  | Sdot   of lident * lident
-  | Slist  of security_arg list
-  | Sapp   of lident * security_arg list
-  | Sbut   of lident * security_arg
-  | Sto    of lident * security_arg
-
-and security_arg = security_arg_unloc loced
-
-and security_item_unloc = lident * lident * security_arg list
-
-and security_item = security_item_unloc loced
-
-and security_unloc = security_item list * exts
-
-and security = security_unloc loced
 
 and view_visibility =
   | VVonchain
@@ -290,7 +224,6 @@ and s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
-  spec  : specification option;
   body  : expr;
   getter: bool;
   view  : bool;
@@ -299,17 +232,16 @@ and s_function = {
 
 and entry_properties = {
   accept_transfer : bool * expr option;
-  sourcedby       : (expr * expr option * exts) option;
-  calledby        : (expr * expr option * exts) option;
+  sourcedby       : (expr * expr option) option;
+  calledby        : (expr * expr option) option;
   state_is        : (lident * expr option) option;
-  constants       : ((lident * expr * expr option) list * exts) option;
-  require         : ((lident * expr * expr option) list * exts) option;
-  failif          : ((lident * expr * expr option) list * exts) option;
-  spec_fun        : specification option;
+  constants       : ((lident * expr * expr option) list) option;
+  require         : ((lident * expr * expr option) list) option;
+  failif          : ((lident * expr * expr option) list) option;
   functions       : (s_function loced) list;
 }
 
-and transition = (lident * (expr * exts) option * (expr * exts) option) list
+and transition = (lident * expr option * expr option) list
 
 and parameter = (lident * type_t * expr option * bool) loced
 
@@ -330,7 +262,7 @@ and enum_kind =
 
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
-  | Darchetype     of lident * parameters * metadata option * exts
+  | Darchetype     of lident * parameters * metadata option
   | Dimport        of lident * lident
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
@@ -338,58 +270,38 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
-  | Dspecification of specification
-  | Dspecasset     of (lident * label_exprs)
-  | Dspecfun       of specfun
-  | Dspecvariable  of (lident * label_exprs)
-  | Dsecurity      of security
   | Dtype          of lident * type_t
   | Devent         of record_decl
   | Dinvalid
-
-and specfun_kind =
-  | SKentry
-  | SKfunction
-  | SKgetter
-  | SKview
-
-and specfun = specfun_kind * lident * args * specification
 
 and variable_decl =
   lident
   * type_t
   * expr option
   * variable_kind
-  * label_exprs
-  * exts
 
 and enum_decl =
-  (lident * type_t list * enum_option list) list * exts
+  (lident * type_t list * enum_option list) list
 
 and asset_decl =
   lident
   * field list
-  * field list (* shadow fields *)
   * asset_option list
   * asset_post_option list
   * asset_operation option
-  * exts
 
 and record_decl =
   lident
   * field list
   * expr option
-  * exts
 
 and entry_decl =
   lident
   * args
   * entry_properties
-  * (expr * exts) option
-  * exts
+  * expr option
 
 and transition_decl =
   lident
@@ -398,10 +310,6 @@ and transition_decl =
   * expr
   * entry_properties
   * transition
-  * exts
-
-and extension_decl =
-  lident * expr list
 
 and namespace_decl =
   lident * declaration list
@@ -418,12 +326,10 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of label_exprs
   | APOinit of expr list
 
 and enum_option =
   | EOinitial
-  | EOspecification of label_exprs
 
 and declaration = declaration_unloc loced
 
@@ -438,7 +344,6 @@ and asset_operation =
 (* -------------------------------------------------------------------- *)
 and archetype_unloc =
   | Marchetype of declaration list
-  | Mextension of lident * declaration list * declaration list
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false},
@@ -550,9 +455,9 @@ let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)
 let ebytes    v = mk_eliteral (Lbytes v)
 
-let eterm         ?(loc=dummy) ?(s=SINone) ?temp ?delta id = mkloc loc (Eterm ((delta, temp), (s, id)))
-let earray        ?(loc=dummy) ?(s=SINone) l               = mkloc loc (Earray (s, l))
-let erecord       ?(loc=dummy) ?(s=SINone) rl              = mkloc loc (Erecord (s, rl))
+let eterm         ?(loc=dummy) ?(s=SINone) id     = mkloc loc (Eterm (s, id))
+let earray        ?(loc=dummy) ?(s=SINone) l      = mkloc loc (Earray (s, l))
+let erecord       ?(loc=dummy) ?(s=SINone) rl     = mkloc loc (Erecord (s, rl))
 let etuple        ?(loc=dummy) l                  = mkloc loc (Etuple l)
 let edot          ?(loc=dummy) e id               = mkloc loc (Edot (e, id))
 let esqapp        ?(loc=dummy) e i                = mkloc loc (Esqapp (e, i))
@@ -566,18 +471,15 @@ let efail         ?(loc=dummy) e                  = mkloc loc (Efail e)
 let eassign       ?(loc=dummy) op e v             = mkloc loc (Eassign(op, e, v))
 let eassignopt    ?(loc=dummy) e v f              = mkloc loc (Eassignopt(e, v, f))
 let eif           ?(loc=dummy) ?e c t             = mkloc loc (Eif(c, t, e))
-let efor          ?(loc=dummy) ?lbl id c b        = mkloc loc (Efor(lbl, id, c, b))
-let eiter         ?(loc=dummy) ?lbl ?min id max e = mkloc loc (Eiter(lbl, id, min, max, e))
-let ewhile        ?(loc=dummy) ?lbl c b           = mkloc loc (Ewhile(lbl, c, b))
+let efor          ?(loc=dummy) id c b             = mkloc loc (Efor(id, c, b))
+let eiter         ?(loc=dummy) ?min id max e      = mkloc loc (Eiter(id, min, max, e))
+let ewhile        ?(loc=dummy) c b                = mkloc loc (Ewhile(c, b))
 let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
 let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
 let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c))
 let evaropt       ?(loc=dummy) ?t id e c f        = mkloc loc (Evaropt(id, t, e, f, c))
 let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
-let equantifier   ?(loc=dummy) q id qk e          = mkloc loc (Equantifier(q, id, qk, e))
-let eassert       ?(loc=dummy) id                 = mkloc loc (Eassert id)
-let elabel        ?(loc=dummy) id                 = mkloc loc (Elabel id)
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
 let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)
 let eleft         ?(loc=dummy) t e                = mkloc loc (Eor (Oleft (None, t, e)))
@@ -591,27 +493,25 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t spec body getter view view_visibility : s_function =
-  {name; args; ret_t; spec; body; getter; view; view_visibility}
+let mk_s_function name args ret_t body getter view view_visibility : s_function =
+  {name; args; ret_t; body; getter; view; view_visibility}
 
-let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
-  { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; spec_fun; functions }
+let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?(functions = []) _ : entry_properties =
+  { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; functions }
 
-let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
+let mk_transition_item id eexto eexfrom : lident * expr option * expr option = id, eexto, eexfrom
 
-let mk_variable_decl ?dv ?(le=[]) ?exts id t vk : variable_decl = id, t, dv, vk, le, exts
+let mk_variable_decl ?dv id t vk : variable_decl = id, t, dv, vk
 
-let mk_enum_decl ?exts l : enum_decl = l, exts
+let mk_enum_decl l : enum_decl = l
 
-let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao ?exts id : asset_decl = id, fs, sfs, aos, apos, ao, exts
+let mk_asset_decl ?(fs=[]) ?(aos=[]) ?(apos=[]) ?ao id : asset_decl = id, fs, aos, apos, ao
 
-let mk_record_decl ?(fs=[]) ?pos ?exts id : record_decl = id, fs, pos, exts
+let mk_record_decl ?(fs=[]) ?pos id : record_decl = id, fs, pos
 
-let mk_entry_decl ?(args=[]) ?body ?exts id ep : entry_decl = id, args, ep, body, exts
+let mk_entry_decl ?(args=[]) ?body id ep : entry_decl = id, args, ep, body
 
-let mk_transition_decl ?(args=[]) ?te ?(trs=[]) ?exts id body ep : transition_decl = id, args, te, body, ep, trs, exts
-
-let mk_extension_decl ?(es=[]) id : extension_decl = id, es
+let mk_transition_decl ?(args=[]) ?te ?(trs=[]) id body ep : transition_decl = id, args, te, body, ep, trs
 
 let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
 
@@ -620,11 +520,9 @@ let mk_asset_option_sortedby id      = AOsortedby id
 let mk_asset_option_to_map_kind x    = AOtoMapKind x
 
 let mk_asset_post_option_states id      = APOstates id
-let mk_asset_post_option_constraints ls = APOconstraints ls
 let mk_asset_post_option_init l         = APOinit l
 
 let mk_enum_option_initial _        = EOinitial
-let mk_enum_option_specification ls = EOspecification ls
 
 let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
@@ -632,8 +530,8 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_darchetype ?parameters ?metadata ?exts ?(loc=dummy) id =
-  mkloc loc (Darchetype (id, parameters, metadata, exts))
+let mk_darchetype ?parameters ?metadata ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, parameters, metadata))
 
 let mk_variable ?(loc=dummy) vd =
   mkloc loc (Dvariable vd)
@@ -653,29 +551,11 @@ let mk_entry ?(loc=dummy) ed =
 let mk_transition ?(loc=dummy) td =
   mkloc loc (Dtransition td)
 
-let mk_extension ?(loc=dummy) ed =
-  mkloc loc (Dextension ed)
-
 let mk_namespace ?(loc=dummy) nd =
   mkloc loc (Dnamespace nd)
 
 let mk_function ?(loc=dummy) sf =
   mkloc loc (Dfunction sf)
-
-let mk_specification ?(loc=dummy) s =
-  mkloc loc (Dspecification s)
-
-let mk_specasset ?(loc=dummy) id ls =
-  mkloc loc (Dspecasset (id, ls))
-
-let mk_specfun ?(loc=dummy) sf id args s =
-  mkloc loc (Dspecfun (sf, id, args, s))
-
-let mk_specvariable ?(loc=dummy) id ls =
-  mkloc loc (Dspecvariable (id, ls))
-
-let mk_security ?(loc=dummy) s =
-  mkloc loc (Dsecurity s)
 
 let mk_dtype ?(loc=dummy) id t =
   mkloc loc (Dtype (id, t))
@@ -703,23 +583,17 @@ let cst_min_block_time = "min_block_time"
 (* utils *)
 
 let get_name = function
-  | Darchetype  _                      -> "archetype"
-  | Dimport (id, _)                    -> unloc id
-  | Dvariable (id, _, _, _, _, _)      -> unloc id
-  | Denum (EKenum id, _)               -> unloc id
-  | Denum (EKstate, _)                 -> "_state"
-  | Dasset (id, _, _, _, _, _, _)      -> unloc id
-  | Drecord (id, _, _, _)              -> unloc id
-  | Devent  (id, _, _, _)              -> unloc id
-  | Dentry (id, _, _, _, _)            -> unloc id
-  | Dtransition (id, _, _, _, _, _, _) -> unloc id
-  | Dextension (id, _)                 -> unloc id
-  | Dnamespace (id, _)                 -> unloc id
-  | Dfunction fs                       -> unloc fs.name
-  | Dspecification _                   -> ""
-  | Dspecasset _                       -> ""
-  | Dspecfun _                         -> ""
-  | Dspecvariable _                    -> ""
-  | Dsecurity _                        -> ""
-  | Dtype  (id, _)                     -> unloc id
-  | Dinvalid                           -> ""
+  | Darchetype  _                   -> "archetype"
+  | Dimport (id, _)                 -> unloc id
+  | Dvariable (id, _, _, _)         -> unloc id
+  | Denum (EKenum id, _)            -> unloc id
+  | Denum (EKstate, _)              -> "_state"
+  | Dasset (id, _, _, _, _)         -> unloc id
+  | Drecord (id, _, _)              -> unloc id
+  | Devent  (id, _, _)              -> unloc id
+  | Dentry (id, _, _, _)            -> unloc id
+  | Dtransition (id, _, _, _, _, _) -> unloc id
+  | Dnamespace (id, _)              -> unloc id
+  | Dfunction fs                    -> unloc fs.name
+  | Dtype  (id, _)                  -> unloc id
+  | Dinvalid                        -> ""

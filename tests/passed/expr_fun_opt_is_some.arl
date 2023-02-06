@@ -3,11 +3,6 @@ archetype expr_fun_opt_is_some
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    var i_opt : option<nat> = some(1);
-    res := is_some(i_opt);
-  }
+  var i_opt : option<nat> = some(1);
+  res := is_some(i_opt);
 }

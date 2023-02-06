@@ -12,10 +12,5 @@ asset my_asset identified by id {
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := my_asset.select(value = 0).contains("id0")
-  }
+  res := my_asset.select(value = 0).contains("id0")
 }

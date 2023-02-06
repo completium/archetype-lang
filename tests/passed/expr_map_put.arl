@@ -3,10 +3,5 @@ archetype expr_map_put
 variable res : map<nat, string> = []
 
 entry exec () {
-  specification {
-    s0: length(res) = 1;
-  }
-  effect {
-    res := put(res, 0, "0");
-  }
+  res := put(res, 0, "0");
 }

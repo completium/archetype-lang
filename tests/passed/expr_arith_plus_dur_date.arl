@@ -3,10 +3,5 @@ archetype expr_arith_plus_dur_date
 variable res : date = 2020-01-01
 
 entry exec () {
-  specification {
-    s0: res = 2020-01-01T04:00;
-  }
-  effect {
-    res := 4h + 2020-01-01T00:00
-  }
+  res := 4h + 2020-01-01T00:00
 }

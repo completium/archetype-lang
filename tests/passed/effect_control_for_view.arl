@@ -11,14 +11,9 @@ asset myasset identified by id {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 5;
-  }
-  effect {
-    var views = myasset.select(id > 1);
-    res := 0;
-    for i in views do
-      res += i;
-    done
-  }
+  var views = myasset.select(id > 1);
+  res := 0;
+  for i in views do
+    res += i;
+  done
 }

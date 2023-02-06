@@ -3,11 +3,5 @@ archetype expr_multicmp
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-    s1: res = 1 < 2 <= 3;
-  }
-  effect {
-    res := 1 < 2 <= 3
-  }
+  res := 1 < 2 <= 3
 }

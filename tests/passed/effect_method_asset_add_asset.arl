@@ -10,11 +10,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  specification {
-    s0: my_asset.count() = before.my_asset.count() + 1;
-    s1: my_asset.contains("id3");
-  }
-  effect {
-    my_asset.add({id = "id3"; value = 3})
-  }
+  my_asset.add({id = "id3"; value = 3})
 }

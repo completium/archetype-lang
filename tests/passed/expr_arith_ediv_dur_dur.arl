@@ -3,10 +3,5 @@ archetype expr_arith_ediv_dur_dur
 variable res : int = 0i
 
 entry exec () {
-  specification {
-    s0: res = 8i;
-  }
-  effect {
-    res := 4h div 30m
-  }
+  res := 4h div 30m
 }

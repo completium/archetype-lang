@@ -3,10 +3,5 @@ archetype expr_arith_uminus_rat
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = - 1 / 3
-  }
-  effect {
-    res := - 1 / 3
-  }
+  res := - 1 / 3
 }

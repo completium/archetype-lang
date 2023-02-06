@@ -3,10 +3,5 @@ archetype expr_map_update
 variable res : map<nat, string> = []
 
 entry exec () {
-  specification {
-    s0: length(res) = 1;
-  }
-  effect {
-    res := update(res, 0, some("0"));
-  }
+  res := update(res, 0, some("0"));
 }

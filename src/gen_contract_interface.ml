@@ -255,10 +255,6 @@ let rec for_type (t : M.type_) : type_ =
   | Tticket t                                   -> mk_type "ticket"               None                      None    [for_type t]
   | Tsapling_state n                            -> mk_type "sapling_state"        None                     (Some n) []
   | Tsapling_transaction n                      -> mk_type "sapling_transaction"  None                     (Some n) []
-  | Tstorage                                    -> assert false
-  | Tprog _                                     -> assert false
-  | Tvset _                                     -> assert false
-  | Ttrace _                                    -> assert false
 
 type preprocess_obj = {
   params: M.parameter list;
@@ -455,7 +451,7 @@ let for_errors (model : M.model) : error_struct list =
     in
 
     match mt.node with
-    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (M.unloc_mident id) with | Some v -> f v | None -> None)
+    | Mvar (id, Vstorevar) -> (match seek_mterm_from_storevar (M.unloc_mident id) with | Some v -> f v | None -> None)
     | _ -> f mt
   in
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in

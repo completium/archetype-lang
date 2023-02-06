@@ -4,12 +4,7 @@ variable rt : bool = false
 variable rf : bool = false
 
 entry exec () {
-  specification {
-    s0: rt = true and rf = false;
-  }
-  effect {
-    var l : list<string> = ["1"; "2"; "3"];
-    rt := contains(l, "2");
-    rf := contains(l, "0")
-  }
+  var l : list<string> = ["1"; "2"; "3"];
+  rt := contains(l, "2");
+  rf := contains(l, "0")
 }

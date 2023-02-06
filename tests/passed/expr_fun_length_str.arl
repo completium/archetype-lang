@@ -3,10 +3,5 @@ archetype expr_fun_length_str
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 5;
-  }
-  effect {
-    res := length("abcdef")
-  }
+  res := length("abcdef")
 }

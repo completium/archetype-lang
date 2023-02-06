@@ -12,10 +12,5 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    res := my_asset["id1"].value;
-  }
+  res := my_asset["id1"].value;
 }

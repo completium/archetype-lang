@@ -3,10 +3,5 @@ archetype expr_cmp_le_nat_int
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 1 <= 2i
-  }
+  res := 1 <= 2i
 }

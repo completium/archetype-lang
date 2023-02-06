@@ -3,10 +3,5 @@ archetype expr_arith_div_rat_rat
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 2.0;
-  }
-  effect {
-    res := 0.5 / 0.25
-  }
+  res := 0.5 / 0.25
 }

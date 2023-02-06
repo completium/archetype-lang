@@ -3,10 +3,5 @@ archetype expr_control_if_else_rat_rat
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 0.5;
-  }
-  effect {
-    res := (if true then 0.5 else 0.3)
-  }
+  res := (if true then 0.5 else 0.3)
 }

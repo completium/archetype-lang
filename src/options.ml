@@ -2,7 +2,6 @@ type target_lang =
   | Michelson
   | MichelsonStorage
   | OffchainViews
-  | Whyml
   | Javascript
   | Markdown
   | BindingsJs
@@ -17,7 +16,6 @@ let string_to_target_lang = function
   | "michelson-storage" -> MichelsonStorage
   | "offchain-views"    -> OffchainViews
   | "contract-metadata" -> ContractMetadata
-  | "whyml"             -> Whyml
   | "javascript"        -> Javascript
   | "markdown"          -> Markdown
   | "bindings-js"       -> BindingsJs
@@ -49,7 +47,6 @@ let opt_mici    = ref false
 let opt_all_parenthesis = ref false
 let opt_m     = ref false
 let opt_raw   = ref false
-let opt_raw_whytree = ref false
 let opt_raw_ir = ref false
 let opt_raw_michelson = ref false
 let opt_caller = ref "$CALLER_ADDRESS"
@@ -97,19 +94,6 @@ let string_to_kind k =
   | v -> raise (UnknownLspKind v)
 
 let opt_lsp_kind = ref (None : lsp_kind option)
-
-type service_kind =
-  | GetProperties
-[@@deriving yojson, show {with_path = false}]
-
-exception UnknownServiceKind of string
-
-let string_to_service_kind k =
-  match k with
-  | "get_properties" -> GetProperties
-  | v -> raise (UnknownServiceKind v)
-
-let opt_service_kind = ref (None : service_kind option)
 
 type language =
   | Typescript

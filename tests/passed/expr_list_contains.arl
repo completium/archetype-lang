@@ -3,11 +3,6 @@ archetype expr_list_contains
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    var l : list<string> = ["1"; "2"; "3"];
-    res := contains(l, "2")
-  }
+  var l : list<string> = ["1"; "2"; "3"];
+  res := contains(l, "2")
 }

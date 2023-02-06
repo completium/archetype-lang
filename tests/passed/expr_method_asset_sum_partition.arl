@@ -16,11 +16,6 @@ asset my_asset identified by id {
 variable res : int = -1
 
 entry exec () {
-  specification {
-    s0: res = 0;
-  }
-  effect {
-    res := my_asset["id0"].col.sum(oid);
-    do_require (res = 0, "ko")
-  }
+  res := my_asset["id0"].col.sum(oid);
+  do_require (res = 0, "ko")
 }

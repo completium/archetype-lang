@@ -16,12 +16,7 @@ function f () : int {
 }
 
 entry exec (str : string) {
-  specification {
-    s0: res = 2;
-  }
-  effect {
-    var l = my_asset.select(the.value = f());
-    var k ?= l.nth(0) : "OUT_OF_BOUND";
-    res := my_asset[k].value
-  }
+  var l = my_asset.select(the.value = f());
+  var k ?= l.nth(0) : "OUT_OF_BOUND";
+  res := my_asset[k].value
 }

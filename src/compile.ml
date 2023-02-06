@@ -196,12 +196,6 @@ let output (model : Model.model) : string =
                 end
               end
           end
-        | Whyml        ->
-          fun fmt model ->
-            let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
-            if !Options.opt_raw_whytree
-            then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
-            else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
         | _            -> fun _fmt _ -> ()
       in
       let res = Format.asprintf "%a@." printer model in
@@ -222,15 +216,7 @@ let type_ (pt : ParseTree.archetype) : Ast.ast =
     | "" -> None
     | x  -> Some (Io.parse_expr (FIString x))
   in
-  Typing.typing Typing.empty pt ?init
-
-let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
-  match !Options.target with
-  | Markdown  -> (
-      Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
-      raise Stop
-    )
-  | _ -> pt
+  snd (Typing.typing Typing.empty0 pt ?init)
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
@@ -245,7 +231,6 @@ let toolchain ?(debug=false) model =
   let f = print_debug debug in
   model
   |> f "process_fail" process_fail
-  |> f "prune_formula" prune_formula
   |> f "remove_import_mterm" remove_import_mterm
   |> f "getter_to_entry" (getter_to_entry ~extra:true)
   |> f "process_parameter" process_parameter
@@ -272,7 +257,6 @@ let toolchain ?(debug=false) model =
   |> f "expr_to_instr" expr_to_instr
   |> f "generate_storage" generate_storage
   |> f "replace_declvar_by_letin" replace_declvar_by_letin
-  |> f "remove_label" remove_label
   |> f "flat_sequence" flat_sequence
   |> f "lazy_eval_condition" lazy_eval_condition
   |> f "remove_cmp_bool" remove_cmp_bool
@@ -312,46 +296,6 @@ let generate_target model =
     |> toolchain ~debug
     |> output
 
-  | Whyml ->
-    model
-    |> replace_whyml_ident
-    |> getter_to_entry
-    |> process_parameter
-    |> process_multi_keys
-    |> replace_assignfield_by_update
-    |> remove_enum
-    |> remove_add_update ~isformula:true
-    |> remove_container_op_in_update
-    |> merge_update
-    |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
-    |> process_internal_string
-    |> remove_rational
-    |> remove_rational_update
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> replace_label_by_mark
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> prune_properties
-    |> Gen_transform.assign_loop_label
-    |> create_var_before_for
-    |> extend_loop_iter
-    |> replace_for_to_iter
-    |> replace_assignfield_by_update
-    |> replace_update_by_set
-    |> remove_cmp_bool
-    |> replace_dotassetfield_by_dot
-    |> transfer_shadow_variable_to_storage
-    |> eval_storage
-    |> optimize
-    |> generate_api_storage ~verif:true
-    |> filter_api_storage
-    |> fix_container
-    |> output
-
   | BindingsJs ->
     Binding.process Options.Javascript model
 
@@ -366,7 +310,6 @@ let compile_model pt =
   let cont c a x = if c then (a x; raise Stop) else x in
   pt
   |> cont !Options.opt_extpt output_pt
-  |> raise_if_error parse_error generate_target_pt
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
@@ -600,11 +543,6 @@ let print_version () =
   exit 0
 
 (* -------------------------------------------------------------------- *)
-(* let extract_why3session a path_xml =
-   let pt = parse_from_channel a in
-   let model = compile_model pt in
-   Extract_w.process model path_xml *)
-
 
 let compile_gen input =
   match !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with

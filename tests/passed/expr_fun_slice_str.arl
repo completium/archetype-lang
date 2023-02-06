@@ -3,10 +3,5 @@ archetype expr_fun_slice_str
 variable res : option<string> = none
 
 entry exec () {
-  specification {
-    s0: res = some("bc");
-  }
-  effect {
-    res := slice("abcde", 1, 2)
-  }
+  res := slice("abcde", 1, 2)
 }

@@ -3,11 +3,6 @@ archetype duration_to_int
 variable res : int = 0
 
 entry exec() {
-  specification {
-    s0: res = 2i
-  }
-  effect {
-    const d : duration = 2s;
-    res := d
-  }
+  const d : duration = 2s;
+  res := d
 }

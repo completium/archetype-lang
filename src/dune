@@ -13,7 +13,6 @@
 
   (modules tools uF core ident options location parseTree parser lexer symbol
   error position pureLexer parseError pt_helper io printer_tools printer_pt
-  printer_pt_markdown
   ast typing printer_ast
   model gen_model gen_transform mtools
   printer_model gen_storage gen_api_storage
@@ -21,10 +20,9 @@
   micheline micheline_printer
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
-  gen_why3 mlwtree printer_mlwtree
-  gen_extra mtyping extract_w
+  gen_extra mtyping
   binding gen_contract_interface compile
-  lsp services
+  lsp
   )
   (libraries menhirLib num str yojson ppx_deriving_yojson.runtime hex unix xmlm)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.

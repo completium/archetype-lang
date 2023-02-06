@@ -11,12 +11,7 @@ asset my_asset identified by id {
 variable res : string = ""
 
 entry exec () {
-  specification {
-    s0: res = "id2";
-  }
-  effect {
-    var l = my_asset.select(the.id = "id2");
-    var k ?= l.nth(0) : "OUT_OF_BOUND";
-    res := k
-  }
+  var l = my_asset.select(the.id = "id2");
+  var k ?= l.nth(0) : "OUT_OF_BOUND";
+  res := k
 }

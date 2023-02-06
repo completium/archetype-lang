@@ -3,11 +3,6 @@ archetype effect_control_if
 variable res : int = 0
 
 entry exec () {
-  specification {
-    s0: res = 1;
-  }
-  effect {
-    if true then
-    res := 1
-  }
+  if true then
+  res := 1
 }

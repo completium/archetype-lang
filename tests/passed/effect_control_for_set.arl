@@ -3,14 +3,9 @@ archetype effect_control_for_set
 variable res : nat = 0
 
 entry exec () {
-  specification {
-    s0: res = 6;
-  }
-  effect {
-    var l : set<nat> = [1; 2; 3];
-    res := 0;
-    for i in l do
-      res += i;
-    done;
-  }
+  var l : set<nat> = [1; 2; 3];
+  res := 0;
+  for i in l do
+    res += i;
+  done
 }

@@ -3,10 +3,5 @@ archetype expr_arith_divmod_nat_nat
 variable res : option<nat * nat> = none
 
 entry exec () {
-  specification {
-    s0: res = some(((4, 1)));
-  }
-  effect {
-    res := 9 /% 2
-  }
+  res := 9 /% 2
 }

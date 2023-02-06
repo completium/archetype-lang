@@ -21,7 +21,6 @@ let main () : unit =
     | "michelson-storage" -> Options.target := MichelsonStorage
     | "offchain-views"    -> Options.target := OffchainViews
     | "contract-metadata" -> Options.target := ContractMetadata
-    | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
     | "markdown"          -> Options.target := Markdown
     | "bindings-js"       -> Options.target := BindingsJs
@@ -40,7 +39,7 @@ let main () : unit =
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  offchain-views@\n  whyml@\n  javascript@\n  bindings-js@\n  bindings-ts@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  offchain-views@\n  javascript@\n  bindings-js@\n  bindings-ts@\n"; exit 0), " List available target languages";
       "-o", Arg.String (fun s -> Options.opt_out := s), " Place the output into <file>";
       "--output", Arg.String (fun s -> Options.opt_out := s), " Same as -o";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
@@ -51,8 +50,6 @@ let main () : unit =
       "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
       "-omdl", Arg.Set Options.opt_omdl, " Generate optimized model";
       "--optimized-model", Arg.Set Options.opt_omdl, " Same as -omdl";
-      "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
-      "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
       "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
       "-mu", Arg.String (fun s -> Options.opt_metadata_uri := s), " Set metadata uri";
@@ -70,21 +67,11 @@ let main () : unit =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
-      "--service", Arg.String (fun s ->
-          try
-            Options.opt_service_kind := Some (Options.string_to_service_kind s)
-          with
-          | _ ->
-            Format.eprintf
-              "Unknown service %s (--list-services to view all services)@." s;
-            exit 2), "<service> Generate service response to <service>";
       "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
       "-m", Arg.Set Options.opt_m, " Pretty print model tree";
       "--model", Arg.Set Options.opt_m, " Same as -m";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
-      "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
-      "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
       "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
       "-dir", Arg.Set Options.opt_dir, " Generate intermediate decompilation";
@@ -164,17 +151,16 @@ let main () : unit =
         let input = FIChannel (filename, channel) in
         begin
           let res =
-            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with
-            | _, _, _, _, true, _  , _, _, _ -> get_storage_values input
-            | _, _, _, _, _, true  , _, _, _ -> with_parameters input
-            | Some k, _, _, _, _, _, _, _, _ -> Lsp.process k input
-            | _, Some s, _, _, _, _, _, _, _ -> Services.process s input
-            | _, _, true, _  , _, _, _, _, _ -> decompile input
-            | _, _, _, Some v, _, _, _, _, _ -> process_expr ~tinput:input v
-            | _, _, _, _, _, _, true  , _, _ -> show_entries_from_input input
-            | _, _, _, _, _, _, _, true  , _ -> show_contract_interface input
-            | _, _, _, _, _, _, _, _  , true -> show_contract_interface_michelson input
-            | _               -> compile input
+            match !Options.opt_lsp_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries, !Options.opt_contract_interface, !Options.opt_contract_interface_michelson with
+            | _, _, _, true, _  , _, _, _ -> get_storage_values input
+            | _, _, _, _, true  , _, _, _ -> with_parameters input
+            | Some k, _, _, _, _, _, _, _ -> Lsp.process k input
+            | _, true, _  , _, _, _, _, _ -> decompile input
+            | _, _, Some v, _, _, _, _, _ -> process_expr ~tinput:input v
+            | _, _, _, _, _, true  , _, _ -> show_entries_from_input input
+            | _, _, _, _, _, _, true  , _ -> show_contract_interface input
+            | _, _, _, _, _, _, _  , true -> show_contract_interface_michelson input
+            | _                           -> compile input
           in
           output res
         end;

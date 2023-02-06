@@ -37,8 +37,8 @@ let cmp_update l1 l2 = List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> Model.c
 let compute_env model =
   let update_preds =
     List.fold_right (fun x accu ->
-        match x.api_loc, x.node_item with
-        | (OnlyExec | ExecFormula), APIAsset (Update (_, l)) ->
+        match x.node_item with
+        | APIAsset (Update (_, l)) ->
           if not (List.exists (cmp_update l) accu)
           then l::accu
           else accu
@@ -47,8 +47,8 @@ let compute_env model =
   in
   let select_preds =
     List.fold_right (fun x accu ->
-        match x.api_loc, x.node_item with
-        | (OnlyExec | ExecFormula), APIAsset (Select (_, _, _, pred)) ->
+        match x.node_item with
+        | APIAsset (Select (_, _, _, pred)) ->
           if not (List.exists (Model.cmp_mterm pred) accu)
           then pred::accu
           else accu
@@ -57,8 +57,8 @@ let compute_env model =
   in
   let sum_preds =
     List.fold_right (fun x accu ->
-        match x.api_loc, x.node_item with
-        | (OnlyExec | ExecFormula), APIAsset (Sum (_, _, _, pred)) ->
+        match x.node_item with
+        | APIAsset (Sum (_, _, _, pred)) ->
           if not (List.exists (Model.cmp_mterm pred) accu)
           then pred::accu
           else accu
@@ -67,8 +67,8 @@ let compute_env model =
   in
   let removeif_preds =
     List.fold_right (fun x accu ->
-        match x.api_loc, x.node_item with
-        | (OnlyExec | ExecFormula), APIAsset (RemoveIf (_, _, _, pred)) ->
+        match x.node_item with
+        | APIAsset (RemoveIf (_, _, _, pred)) ->
           if not (List.exists (Model.cmp_mterm pred) accu)
           then pred::accu
           else accu

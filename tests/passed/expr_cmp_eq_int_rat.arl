@@ -3,10 +3,5 @@ archetype expr_cmp_eq_int_rat
 variable res : bool = false
 
 entry exec () {
-  specification {
-    s0: res = true;
-  }
-  effect {
-    res := 2i = 2.0
-  }
+  res := 2i = 2.0
 }

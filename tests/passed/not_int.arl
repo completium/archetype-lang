@@ -3,10 +3,5 @@ archetype not_int
 variable res : int = 0
 
 entry exec() {
-  specification {
-    s0: res = -8
-  }
-  effect {
-    res := not 7i;
-  }
+  res := not 7i;
 }

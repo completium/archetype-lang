@@ -3,10 +3,5 @@ archetype expr_arith_div_tez_tez
 variable res : rational = 0.0
 
 entry exec () {
-  specification {
-    s0: res = 4_000_000 / 3_000_000;
-  }
-  effect {
-    res := 4tz / 3tz
-  }
+  res := 4tz / 3tz
 }
