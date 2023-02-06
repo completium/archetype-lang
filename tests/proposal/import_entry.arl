@@ -6,7 +6,7 @@ variable res : nat = 0
 
 variable myc : nat = 0
 
-entry exec () {
+entry exec (a : address) {
   const r : my_contract::my_record = my_contract::{ n= 0; s = ::myc };
-  transfer 0tz to entry my_contract(a).e(n);
+  transfer 0tz to entry my_contract(a).e2(r);
 }

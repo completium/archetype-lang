@@ -23,6 +23,10 @@ entry e(i : nat) {
 
 }
 
+entry e2(r : my_record) {
+
+}
+
 view get() : nat {
   return 2
 }
