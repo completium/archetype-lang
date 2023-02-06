@@ -739,12 +739,15 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
   | Ovar    x -> begin
-      match x with
-      | OMVfree   x -> Format.fprintf fmt "%s" x
-      | OMVint    (x, b) -> Format.fprintf fmt "{\"int\": %s%s}" x (if b then "" else ".toString()")
-      | OMVstring x -> pp pp_b ("string", x)
-      | OMVbytes  x -> pp pp_b ("bytes", x)
-      | OMVif (x, a, b) -> Format.fprintf fmt "(%s ? %a : %a)" x pp_obj_micheline a pp_obj_micheline b
+      let id =
+        match x with
+        | OMVfree   x -> x
+        | OMVint    (x, _) -> x
+        | OMVstring x -> x
+        | OMVbytes  x -> x
+        | OMVif (x, _a, _b) -> x
+      in
+      pp pp_a ("var", id)
     end
 
 (* let rec pp_raw_prim fmt (p : prim) =
@@ -771,8 +774,8 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
 let pp_micheline fmt (m : micheline) =
   Format.fprintf fmt
     "{@\n  \
-     \"code\":@\n    [  @[%a@]  ]@\n  \
-     \"storage\":@\n    @[%a@];@\n\
+     \"code\":@\n    [  @[%a@]  ],@\n  \
+     \"storage\":@\n    @[%a@]@\n\
      }"
     (pp_list ",@\n" pp_obj_micheline) m.code
     pp_obj_micheline m.storage
