@@ -4,7 +4,7 @@ variable res : bool = false
 
 entry exec () {
   res := true;
-  while:loop res do
+  while res do
     res := false
   done;
 }

@@ -16,6 +16,5 @@ entry exec (ow : address) {
   var valid_miles = owner[ow].miles.select(the.expiration > now);
   for m in owner[ow].miles do
     do_require (mile[m].quantity > 0, "ko")
-  done;
-  assert a0
+  done
 }

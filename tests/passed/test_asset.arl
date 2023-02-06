@@ -3,8 +3,6 @@ archetype test_asset
 asset my_asset_simple identified by str {
   str : string;
   i : int;
-} with {
-   a1 : i >= 1;
 }
 
 asset my_asset identified by j {

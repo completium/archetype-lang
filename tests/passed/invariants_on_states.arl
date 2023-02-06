@@ -7,8 +7,8 @@ asset my_asset {
 variable v : int = 0
 
 states =
- | One initial with { s1: my_asset.isempty(); }
- | Two         with { s2: v > 0}
+ | One initial
+ | Two
 
 transition exec () {
   from One

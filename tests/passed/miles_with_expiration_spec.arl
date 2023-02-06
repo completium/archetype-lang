@@ -54,8 +54,7 @@ entry consume (a : address, quantity : int) {
           owner[a].miles.remove(m)
         )
       )
-    done;
-    assert p1
+    done
   }
 }
 

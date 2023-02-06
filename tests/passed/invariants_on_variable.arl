@@ -4,7 +4,7 @@ asset my_asset {
   id : int
 }
 
-variable v : int = 0 with {s1: forall a in my_asset, a.id > v }
+variable v : int = 0
 
 entry exec () {
   effect {

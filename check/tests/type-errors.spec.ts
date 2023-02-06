@@ -61,10 +61,6 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/asset_value_key_opt.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('bad_at_unknown_label', async () => {
-    const stat = compile("../tests/type-errors/bad_at_unknown_label.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('bad_type_return', async () => {
     const stat = compile("../tests/type-errors/bad_type_return.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -221,10 +217,6 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/expr_control_match_or_subptn_tyerror.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('expr_formula_asset_method_sort', async () => {
-    const stat = compile("../tests/type-errors/expr_formula_asset_method_sort.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('expr_lambda_error1', async () => {
     const stat = compile("../tests/type-errors/expr_lambda_error1.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -349,20 +341,8 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/no_assignment_for_argument.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('no_assignment_of_prog_var_in_shadow_effect', async () => {
-    const stat = compile("../tests/type-errors/no_assignment_of_prog_var_in_shadow_effect.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_assignment_of_shadow_var_in_prog_effect', async () => {
-    const stat = compile("../tests/type-errors/no_assignment_of_shadow_var_in_prog_effect.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('no_assignment_var_iter', async () => {
     const stat = compile("../tests/type-errors/no_assignment_var_iter.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_at_in_postcondition', async () => {
-    const stat = compile("../tests/type-errors/no_at_in_postcondition.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_big_map_value_type', async () => {
@@ -397,24 +377,12 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/no_container_partition_variable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('no_contract_invariant_in_fun_spec', async () => {
-    const stat = compile("../tests/type-errors/no_contract_invariant_in_fun_spec.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_effect_local_var_in_formula', async () => {
-    const stat = compile("../tests/type-errors/no_effect_local_var_in_formula.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('no_letin_instr_in_execution', async () => {
     const stat = compile("../tests/type-errors/no_letin_instr_in_execution.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_method_in_select', async () => {
     const stat = compile("../tests/type-errors/no_method_in_select.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_otherwise', async () => {
-    const stat = compile("../tests/type-errors/no_otherwise.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_packable_pack', async () => {
@@ -431,14 +399,6 @@ describe('type-errors', async () => {
   })
   it('no_pkey_assignment_in_update', async () => {
     const stat = compile("../tests/type-errors/no_pkey_assignment_in_update.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_postcondition_in_global_spec', async () => {
-    const stat = compile("../tests/type-errors/no_postcondition_in_global_spec.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_read_global_shadow_var', async () => {
-    const stat = compile("../tests/type-errors/no_read_global_shadow_var.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_result_in_prog', async () => {
@@ -471,54 +431,6 @@ describe('type-errors', async () => {
   })
   it('sapling_type_error', async () => {
     const stat = compile("../tests/type-errors/sapling_type_error.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('shadow_field_errors_1', async () => {
-    const stat = compile("../tests/type-errors/shadow_field_errors_1.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('shadow_field_errors_2', async () => {
-    const stat = compile("../tests/type-errors/shadow_field_errors_2.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('shadow_field_errors_3', async () => {
-    const stat = compile("../tests/type-errors/shadow_field_errors_3.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('sort_in_formula', async () => {
-    const stat = compile("../tests/type-errors/sort_in_formula.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('spec_fail_fid_invalid_type', async () => {
-    const stat = compile("../tests/type-errors/spec_fail_fid_invalid_type.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('spec_fail_fid_unknown', async () => {
-    const stat = compile("../tests/type-errors/spec_fail_fid_unknown.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specasset_unknown_field', async () => {
-    const stat = compile("../tests/type-errors/specasset_unknown_field.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specasset_unknown_id', async () => {
-    const stat = compile("../tests/type-errors/specasset_unknown_id.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specfun_bad_kind', async () => {
-    const stat = compile("../tests/type-errors/specfun_bad_kind.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specfun_bad_sig', async () => {
-    const stat = compile("../tests/type-errors/specfun_bad_sig.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specfun_unknown_id', async () => {
-    const stat = compile("../tests/type-errors/specfun_unknown_id.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('specvar_unknown_id', async () => {
-    const stat = compile("../tests/type-errors/specvar_unknown_id.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('state_assignment', async () => {

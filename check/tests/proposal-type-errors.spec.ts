@@ -25,10 +25,6 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/bad_type_for_pack.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('duplicated_label', async () => {
-    const stat = compile("../tests/proposal-type-errors/duplicated_label.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('id_redefinition', async () => {
     const stat = compile("../tests/proposal-type-errors/id_redefinition.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

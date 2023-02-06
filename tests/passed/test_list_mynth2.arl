@@ -6,7 +6,7 @@ function mynth(l : list<string>, idx : nat) : option<string> {
   var ll = l;
   var r : option<string> = none;
   var i : nat = 0;
-  while : while_label i <= idx do
+  while i <= idx do
     match ll with
     | hd::tl -> begin
         r := some(hd);
