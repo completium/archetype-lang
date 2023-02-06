@@ -19,8 +19,8 @@
     "generate:json": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_json.ts"
   },
   "dependencies": {
-    "@completium/archetype-binder-ts": "0.1.10",
-    "@completium/archetype-ts-types": "0.1.3",
+    "@completium/archetype-binder-ts": "0.1.12",
+    "@completium/archetype-ts-types": "0.1.5",
     "@completium/event-listener": "^0.0.4",
     "@completium/experiment-ts": "0.1.10",
     "bignumber.js": "^9.1.1",
