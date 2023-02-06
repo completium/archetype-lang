@@ -4,7 +4,7 @@ variable res : int = 0
 
 entry exec () {
   res := 0;
-  while:loop res < 3 do
+  while res < 3 do
     res += 1
   done;
   do_require (res = 3, "ko")
