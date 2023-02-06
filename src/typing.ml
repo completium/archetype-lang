@@ -2101,11 +2101,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let push (env : t) ((name, ty) : A.lident * A.ptyp) =
       push env ~loc:(loc name) (unloc name) (`Type ty)
@@ -2123,11 +2123,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let byctor (env : t) (name : longident) =
       match lookup_entry env name with
@@ -2196,11 +2196,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let push (env : t) (decl : vardecl) =
       (* FIXME: namespace = current namespace *)
@@ -2217,11 +2217,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let push (env : t) (decl : fundecl) =
       push env ~loc:(loc decl.fs_name) (unloc decl.fs_name) (`Function decl)
@@ -2236,11 +2236,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
@@ -2275,11 +2275,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
@@ -2314,11 +2314,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let byfield (env : t) (fname : longident) =
       Option.bind
@@ -2353,11 +2353,11 @@ end = struct
     let exists (env : t) (name : longident) =
       Option.is_some (lookup env name)
 
-    let get (env : t) ((nm, name) : fullname) =
-      Option.get (lookup env (Named (unloc nm), unloc name))
+    let get (env : t) (name : fullname) =
+      Option.get (lookup env (relative env name))
 
-    let mem (env : t) ((nm, name) : fullname) =
-      exists env (Named (unloc nm), unloc name)
+    let mem (env : t) (name : fullname) =
+      exists env (relative env name)
 
     let push (env : t) (act : tentrydecl) =
       push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Entry act)
@@ -5238,8 +5238,8 @@ let rec for_instruction_r
               let aout =
                 if se then begin
                   match the.node with
-                  | Pvar (nm, x) -> begin (* FIXME *)
-                      (match Option.snd (Env.lookup_entry env (Named (unloc nm), unloc x)) with
+                  | Pvar ((_, x) as name) -> begin (* FIXME *)
+                      (match Option.snd (Env.lookup_entry env (Env.relative env name)) with
                        | Some (`Global _) -> check_side_effect();
                        | Some (`Local (_, kind)) -> begin
                            match kind with
@@ -5247,7 +5247,7 @@ let rec for_instruction_r
                            | _ -> ()
                          end
                        | _ -> ());
-                      assign (`Var x)
+                      assign (`Var x) (* FIXME *)
                     end
                   | Pconst Cmetadata -> check_side_effect(); assign (`Var (mkloc the.loc "metadata"))
                   | Pconst Coperations -> check_side_effect(); assign (`Var (mkloc the.loc "operations"))
