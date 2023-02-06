@@ -136,7 +136,6 @@ type 'term assign_kind_gen =
   | Arecord      of 'term * mident * mident (* record * record name * field name *)
   | Atuple       of 'term * int * int (* tuple * index * length *)
   | Astate
-  | Aassetstate of ident * 'term     (* asset name * key *)
   | Aoperations
 [@@deriving show {with_path = false}]
 
@@ -1184,7 +1183,6 @@ let cmp_mterm_node
     | Arecord (lv1, rn1, fn1), Arecord (lv2, rn2, fn2) -> cmp lv1 lv2 && cmpi rn1 rn2 && cmpi fn1 fn2
     | Atuple (lv1, n1, l1), Atuple (lv2, n2, l2)       -> cmp lv1 lv2 && cmp_int n1 n2 && cmp_int l1 l2
     | Astate, Astate                                   -> true
-    | Aassetstate (id1, v1), Aassetstate (id2, v2)     -> cmp_ident id1 id2 && cmp v1 v2
     | Aoperations, Aoperations                         -> true
     | _ -> false
   in
@@ -1660,14 +1658,13 @@ let map_for_ident (g : 'id -> 'id) = function
   | FIsimple i             -> FIsimple (g i)
   | FIdouble (x, y)        -> FIdouble (g x, g y)
 
-let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
+let map_assign_kind (g : 'id -> 'id) f = function
   | Avar id              -> Avar (g id)
   | Avarstore id         -> Avarstore (g id)
   | Aasset (an, fn, k)   -> Aasset (g an, g fn, f k)
   | Arecord (lv, rn, fn) -> Arecord (f lv, g rn, g fn)
   | Atuple (lv, n, l)    -> Atuple (f lv, n, l)
   | Astate               -> Astate
-  | Aassetstate (id, v)  -> Aassetstate (fi id, f v)
   | Aoperations          -> Aoperations
 
 let map_var_kind f = function
@@ -1713,8 +1710,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdeclvaropt (i, t, v, fa, c)   -> Mdeclvaropt (List.map g i, Option.map ft t, f v, Option.map f fa, c)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
   (* assign *)
-  | Massign (op, t, k, v)          -> Massign (op, ft t, map_assign_kind fi g f k, f v)
-  | Massignopt (op, t, k, v, fa)   -> Massignopt (op, ft t, map_assign_kind fi g f k, f v, f fa)
+  | Massign (op, t, k, v)          -> Massign (op, ft t, map_assign_kind g f k, f v)
+  | Massignopt (op, t, k, v, fa)   -> Massignopt (op, ft t, map_assign_kind g f k, f v, f fa)
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
@@ -1868,8 +1865,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
   (* set api instruction *)
-  | Msetinstradd (t, ak, a)        -> Msetinstradd (ft t, map_assign_kind fi g f ak, f a)
-  | Msetinstrremove (t, ak, a)     -> Msetinstrremove (ft t, map_assign_kind fi g f ak, f a)
+  | Msetinstradd (t, ak, a)        -> Msetinstradd (ft t, map_assign_kind g f ak, f a)
+  | Msetinstrremove (t, ak, a)     -> Msetinstrremove (ft t, map_assign_kind g f ak, f a)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistlength(t, c)              -> Mlistlength(ft t, f c)
@@ -1881,8 +1878,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistconcat(t, l, m)           -> Mlistconcat(ft t, f l, f m)
   | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
   (* list api instruction *)
-  | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind fi g f ak, f a)
-  | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind fi g f ak, f a)
+  | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind g f ak, f a)
+  | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind g f ak, f a)
   (* map api expression *)
   | Mmapput (mk, tk, tv, c, k, v)      -> Mmapput (mk, ft tk, ft tv, f c, f k, f v)
   | Mmapremove (mk, tk, tv, c, k)      -> Mmapremove (mk, ft tk, ft tv, f c, f k)
@@ -1893,9 +1890,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmaplength (mk, tk, tv, c)         -> Mmaplength (mk, ft tk, ft tv, f c)
   | Mmapfold (mk, t, ik, iv, ia, c, a, b) -> Mmapfold (mk, ft t, g ik, g iv, g ia, f c, f a, f b)
   (* map api instruction *)
-  | Mmapinstrput (mk, tk, tv, ak, k, v)    -> Mmapinstrput (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
-  | Mmapinstrremove (mk, tk, tv, ak, k)    -> Mmapinstrremove (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k)
-  | Mmapinstrupdate (mk, tk, tv, ak, k, v) -> Mmapinstrupdate (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrput (mk, tk, tv, ak, k, v)    -> Mmapinstrput (mk, ft tk, ft tv, map_assign_kind g f ak, f k, f v)
+  | Mmapinstrremove (mk, tk, tv, ak, k)    -> Mmapinstrremove (mk, ft tk, ft tv, map_assign_kind g f ak, f k)
+  | Mmapinstrupdate (mk, tk, tv, ak, k, v) -> Mmapinstrupdate (mk, ft tk, ft tv, map_assign_kind g f ak, f k, f v)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -2040,7 +2037,6 @@ let fold_assign_kind f accu = function
   | Arecord (lv, _, _)  -> f accu lv
   | Atuple  (lv, _, _)  -> f accu lv
   | Astate              -> accu
-  | Aassetstate (_, mt) -> f accu mt
   | Aoperations         -> accu
 
 let fold_var_kind f accu = function
@@ -2364,7 +2360,6 @@ let fold_map_assign_kind f accu = function
   | Arecord (lv, rn, fn) -> let lve, lva = f accu lv in Arecord (lve, rn, fn), lva
   | Atuple (lv, n, l)    -> let lve, lva = f accu lv in Atuple (lve, n, l), lva
   | Astate               -> Astate, accu
-  | Aassetstate (id, v)  -> let ve, va = f accu v in Aassetstate (id, ve), va
   | Aoperations          -> Aoperations, accu
 
 let fold_map_var_kind f accu = function

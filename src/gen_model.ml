@@ -241,16 +241,6 @@ let to_model (ast : A.ast) : M.model =
     | _ -> false
   in
 
-  let get_kind_var env (id : M.mident) =
-    if is_param env id
-    then M.Vparam
-    else M.Vlocal
-  in
-
-  let build_mvar ?(loc = Location.dummy) env (id : M.mident) t =
-    M.mk_mterm (Mvar (id, get_kind_var env id)) t ~loc:loc
-  in
-
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
     let is_record t = match M.get_ntype t with | M.Trecord _ | M.Tevent _ -> true | _ -> false in
     let type_ = type_to_type (Option.get pterm.type_) in
@@ -1447,26 +1437,12 @@ let to_model (ast : A.ast) : M.model =
         let body = to_instruction env e in
         args, body, env
       | Some t, None ->
-        let p_on = None in
-        let args =
-          match p_on with
-          | Some (ki, kt, _an, _) -> args @ [(M.mk_mident ki, kt, None)]
-          | None -> args
-        in
         let env = {env with function_p = Some (M.mk_mident transaction.name, args); } in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
-                 match p_on with
-                 | Some (key_ident, key_type, an, enum_type) ->
-                   let k : M.mterm = build_mvar env (M.mk_mident key_ident) key_type ~loc:(Location.loc key_ident) in
-                   let et = match M.get_ntype enum_type with | M.Tenum id -> M.unloc_mident id | _ -> assert false in
-                   let v : M.mterm = M.mk_mterm (M.Menumval (M.mk_mident id, [], et)) enum_type ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
-                 | _ ->
-                   (* let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in *)
-                   let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], "state")) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
+                 let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], "state")) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
+                 M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
                  match effect with
@@ -1496,13 +1472,7 @@ let to_model (ast : A.ast) : M.model =
               let pattern : M.pattern = M.mk_pattern M.Pwild in
               let fail_instr : M.mterm = fail InvalidState in
 
-              let w =
-                match p_on with
-                | Some (ki, kt, an, et) ->
-                  let k : M.mterm = build_mvar env (M.mk_mident ki) kt ~loc:(Location.loc ki) in
-                  M.mk_mterm (M.Mvar (M.mk_mident (dumloc an), Vassetstate k)) et
-                | _ -> M.mk_mterm (M.Mvar(M.mk_mident (dumloc ""), Vstate)) M.tstate
-              in
+              let w = M.mk_mterm (M.Mvar(M.mk_mident (dumloc ""), Vstate)) M.tstate in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) M.tunit
             end
         in

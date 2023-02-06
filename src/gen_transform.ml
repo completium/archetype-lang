@@ -1242,9 +1242,6 @@ let remove_enum (model : model) : model =
           let i = get_state_mident an in
           mk_mterm (Mdotassetfield (mk_mident (dumloc an), k, i)) mt.type_
         end
-      | Massign (op, _, Aassetstate (an, k), v), _ ->
-        let i = get_state_mident an in
-        mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
 
       | Masset l, (Tasset an, _) when MapString.mem (unloc_mident an) !map ->
         let default : mterm = MapString.find (unloc_mident an) !map in
@@ -2238,11 +2235,6 @@ let extract_term_from_instruction f (model : model) : model =
       let xe, xa = f x in
       process (mk_mterm (Massign (op, t, Astate, xe)) mt.type_) xa
 
-    | Massign (op, t, Aassetstate (an, k), v) ->
-      let ke, ka = f k in
-      let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Aassetstate (an, ke), ve)) mt.type_) (ka @ va)
-
 
     (* control *)
 
@@ -2544,11 +2536,6 @@ let add_contain_on_get (model : model) : model =
 
       | Massign (_op, _, Astate, x) ->
         let accu = f accu x in
-        gg accu mt
-
-      | Massign (_op, _, Aassetstate (_an, k), v) ->
-        let accu = f accu k in
-        let accu = f accu v in
         gg accu mt
 
 

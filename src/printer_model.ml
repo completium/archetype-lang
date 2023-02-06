@@ -156,7 +156,6 @@ let pp_assign_kind f fmt = function
   | Arecord (lv, _rn, fn) -> Format.fprintf fmt "%a.%a" f lv pp_mid fn
   | Atuple (lv, n, l)     -> Format.fprintf fmt "%a[%d/%d]" f lv n l
   | Astate                -> Format.fprintf fmt "state"
-  | Aassetstate (an, k)   -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
   | Aoperations           -> Format.fprintf fmt "operations"
 
 let pp_mterm fmt (mt : mterm) =
@@ -236,12 +235,6 @@ let pp_mterm fmt (mt : mterm) =
     | Massign (_op, _, Astate, x) ->
       Format.fprintf fmt "state = %a"
         f x
-
-    | Massign (_op, _, Aassetstate (an, k), v) ->
-      Format.fprintf fmt "state_%a(%a) = %a"
-        pp_ident an
-        f k
-        f v
 
     | Massign (_op, _, Aoperations, v) ->
       Format.fprintf fmt "operations = %a"

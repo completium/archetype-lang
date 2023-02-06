@@ -469,7 +469,6 @@ let to_ir (model : M.model) : T.ir =
     | Atuple ({node = Mvar(id, _)}, n, l) -> T.Iupdate (Urec (M.unloc_mident id, [n, l]), op)
     | Atuple _     -> emit_error (UnsupportedTerm "Atuple")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
-    | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
     | Aoperations   -> T.Iupdate (Uvar operations, op)
   in
 
@@ -750,7 +749,6 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Atuple ({node = Mvar (id, _)}, n, l), v)    -> let id = M.unloc_mident id in T.Iassigntuple (id, n, l, f v)
     | Massign (_op, _, Atuple _, _v)               -> emit_error (UnsupportedTerm ("Tuple is not a var"))
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
-    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
     | Massignopt _ -> emit_error (UnsupportedTerm ("Massignopt"))
 
