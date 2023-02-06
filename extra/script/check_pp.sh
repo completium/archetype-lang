@@ -48,10 +48,6 @@ process () {
 
 printf '%-68s%s\n' '' '  PARSE   REPARSE   SAME'
 
-for i in contracts/*.arl; do
-  process $i
-done
-
 echo ""
 for i in tests/passed/*.arl; do
   process $i
@@ -60,11 +56,6 @@ for i in tests/type-errors/*.arl; do
   process $i
 done
 for i in tests/model-errors/*.arl; do
-  process $i
-done
-
-echo ""
-for i in extensions/*.arlx; do
   process $i
 done
 

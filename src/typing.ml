@@ -6008,8 +6008,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let pks     = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
   let sortks  = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
-  let state   = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
-  let inits   = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
+  let inits   = List.pmap (function PT.APOinit        it -> Some it) postopts in
 
   let to_a_map_kind = function
     | PT.MKMap -> A.MKMap
@@ -6075,19 +6074,6 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
     List.pmap dokey sortks in
 
-  let state =
-    let for1 x =
-      let state = Option.map as_full (Env.State.lookup env (Current, unloc x)) in
-      if Option.is_none state then
-        Env.emit_error env (loc x, UnknownEnum (unloc x));
-      state in
-
-    if List.length state > 1 then
-      Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
-
-    let state = List.map for1 state in
-    Option.bind (fun x -> x) (List.ohead state) in
-
   let env, adecl =
     let for_ctor { pldesc = (fd, fdty, fdinit); plloc = fdloc; } =
       let fddfl =
@@ -6120,7 +6106,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
           pas_pk     = pks;
           pas_sortk  = sortks;
           pas_bm     = bigmaps;
-          pas_state  = state;
+          pas_state  = None;
           pas_init   = List.flatten inits; }
 
       in env, Some aout
@@ -6434,7 +6420,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       else (env, None)
     end
 
-  | `Transition (x, args, tgt, from_, entrys, tx) ->
+  | `Transition (x, args, from_, entrys, tx) ->
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -6450,7 +6436,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                       let tgt = (vtg, asset) in
                       (env, Option.map (fun x -> (unloc (snd x), tgt)) asset.as_state)) (* FIXME: namespace *)
                     env (for_asset_keyof_type env ttg))
-                env tgt in
+                env None in
             env, Option.map fst aout, Option.map snd aout in
 
           let from_ = for_state_formula ?enum env from_ in
@@ -6592,7 +6578,7 @@ let assets_of_adecls adecls =
         fields   = List.map for_field decl.as_fields;        keys     = decl.as_pk;
         sort     = decl.as_sortk;
         map_kind = decl.as_bm;
-        state    = Option.map snd decl.as_state;
+        state    = None;
         init     = decl.as_init;
         specs    = List.map spec decl.as_invs;
         loc      = loc (snd decl.as_name); } (* FIXME: namespace *)

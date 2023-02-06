@@ -942,9 +942,6 @@ let pp_ident_state fmt item =
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
-  | APOstates i ->
-    Format.fprintf fmt " with states %a@\n"
-      pp_id i
   | APOinit l ->
     Format.fprintf fmt " initialized by {@\n  @[%a@]@\n}"
       (pp_list ";@\n"
@@ -1148,15 +1145,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                      (pp_expr e_default PNone) code
                  )) cod)) (props, code)
 
-  | Dtransition (id, args, on, from, props, trs) ->
-    Format.fprintf fmt "transition %a%a%a%a"
+  | Dtransition (id, args, from, props, trs) ->
+    Format.fprintf fmt "transition %a%a%a"
       pp_id id
       pp_fun_args args
-      (pp_option (fun fmt (a, b) ->
-           Format.fprintf fmt " on (%a : %a)"
-             pp_id a
-             pp_type b
-         )) on
       (fun fmt (pr, ts) ->
          Format.fprintf fmt " {@\n  @[%a%a%a@]@\n}"
            (pp_do_if (not (is_empty_entry_properties_opt props None)) pp_entry_properties) pr

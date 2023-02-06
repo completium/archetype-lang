@@ -63,7 +63,6 @@ let string_of_token = function
   | OR                   -> "OR"
   | OPTION               -> "OPTION"
   | ONCHAIN              -> "ONCHAIN"
-  | ON                   -> "ON"
   | OFFCHAIN             -> "OFFCHAIN"
   | NUMBERNAT n          -> Printf.sprintf "NUMBERNAT(%s)" (Big_int.string_of_big_int n)
   | NUMBERINT n          -> Printf.sprintf "NUMBERINT(%s)" (Big_int.string_of_big_int n)
@@ -235,7 +234,6 @@ let string_of_symbol = function
   | X (T T_OR) -> "or"
   | X (T T_OPTION) -> "option"
   | X (T T_ONCHAIN) -> "onchain"
-  | X (T T_ON) -> "on"
   | X (T T_OFFCHAIN)-> "offchain"
   | X (T T_NUMBERNAT) -> "a nat number"
   | X (T T_NUMBERINT) -> "a int number"
@@ -394,7 +392,6 @@ let string_of_symbol = function
   | X (N N_option_paren_separated_nonempty_list_COMMA_ident___) -> "a list of constructor arguments"
   | X (N N_option_parameter_init_) -> "parameter initialization"
   | X (N N_option_otherwise_section_) -> "an otherwise section"
-  | X (N N_option_on_value_) -> "a on value option"
   | X (N N_option_function_return_) -> "a function return option"
   | X (N N_option_failif_) -> "a failif option"
   | X (N N_option_effect_) -> "an effect option"
@@ -403,7 +400,6 @@ let string_of_symbol = function
   | X (N N_option_calledby_) -> "a call by option"
   | X (N N_option_asset_options_) -> "assets option"
   | X (N N_option_asset_fields_) -> "asset fields option"
-  | X (N N_on_value) -> "on value"
   | X (N N_nonempty_list_type_tuple_) -> "a non empty list of type tuple"
   | X (N N_nonempty_list_transition_to_item_) -> "a non empty list of transition to item"
   | X (N N_nonempty_list_loc_pattern__) -> "a non empty list of pattern"

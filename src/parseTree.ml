@@ -306,7 +306,6 @@ and entry_decl =
 and transition_decl =
   lident
   * args
-  * (lident * type_t) option
   * expr
   * entry_properties
   * transition
@@ -325,7 +324,6 @@ and asset_option =
   | AOtoMapKind of map_kind
 
 and asset_post_option =
-  | APOstates of lident
   | APOinit of expr list
 
 and enum_option =
@@ -511,7 +509,7 @@ let mk_record_decl ?(fs=[]) ?pos id : record_decl = id, fs, pos
 
 let mk_entry_decl ?(args=[]) ?body id ep : entry_decl = id, args, ep, body
 
-let mk_transition_decl ?(args=[]) ?te ?(trs=[]) id body ep : transition_decl = id, args, te, body, ep, trs
+let mk_transition_decl ?(args=[]) ?(trs=[]) id body ep : transition_decl = id, args, body, ep, trs
 
 let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
 
@@ -519,7 +517,6 @@ let mk_asset_option_identifiedby ids = AOidentifiedby ids
 let mk_asset_option_sortedby id      = AOsortedby id
 let mk_asset_option_to_map_kind x    = AOtoMapKind x
 
-let mk_asset_post_option_states id      = APOstates id
 let mk_asset_post_option_init l         = APOinit l
 
 let mk_enum_option_initial _        = EOinitial
@@ -592,7 +589,7 @@ let get_name = function
   | Drecord (id, _, _)              -> unloc id
   | Devent  (id, _, _)              -> unloc id
   | Dentry (id, _, _, _)            -> unloc id
-  | Dtransition (id, _, _, _, _, _) -> unloc id
+  | Dtransition (id, _, _, _, _) -> unloc id
   | Dnamespace (id, _)              -> unloc id
   | Dfunction fs                    -> unloc fs.name
   | Dtype  (id, _)                  -> unloc id

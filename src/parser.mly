@@ -117,7 +117,6 @@
 %token NONE
 %token NOT
 %token OFFCHAIN
-%token ON
 %token ONCHAIN
 %token OPTION
 %token OR
@@ -501,7 +500,6 @@ asset:
 | WITH {}
 
 asset_post_option:
-| WITH STATES x=ident                                               { APOstates x }
 | INITIALIZED by_or_with LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
 
 %inline record_expr:
@@ -563,14 +561,11 @@ transition_to_item:
 %inline transitions:
  | xs=transition_to_item+ { xs }
 
-on_value:
- | ON LPAREN x=ident COLON y=type_t RPAREN { x, y }
-
 transition:
-  TRANSITION x=ident args=function_args on=on_value? LBRACE
+  TRANSITION x=ident args=function_args LBRACE
     xs=entry_properties FROM f=simple_expr trs=transitions
   RBRACE
-      { Dtransition (x, args, on, f, xs, trs) }
+      { Dtransition (x, args, f, xs, trs) }
 
 %inline transitems_eq:
 | { (dummy_entry_properties, None) }

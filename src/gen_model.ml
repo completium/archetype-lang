@@ -1013,7 +1013,7 @@ let to_model (ast : A.ast) : M.model =
     in
     let mk_asset an l : M.mterm = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
     let mp = match a.map_kind with | A.MKMap -> M.MKMap | A.MKBigMap -> M.MKBigMap | A.MKIterableBigMap -> M.MKIterableBigMap in
-    let r : M.asset = M.mk_asset (longident_to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ?state:a.state ~init:(List.map (fun x -> (mk_asset (longident_to_mident a.name)) x) a.init) ~loc:a.loc in
+    let r : M.asset = M.mk_asset (longident_to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (longident_to_mident a.name)) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 

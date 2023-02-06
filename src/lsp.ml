@@ -169,7 +169,7 @@ let make_outline_from_decl (d : PT.declaration) gl =
   | Denum (ek, li) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
   | Dentry (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
-  | Dtransition (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Dtransition (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
   | _ -> []

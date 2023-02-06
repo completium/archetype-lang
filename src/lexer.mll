@@ -86,7 +86,6 @@
       "none"                , NONE                ;
       "not"                 , NOT                 ;
       "offchain"            , OFFCHAIN            ;
-      "on"                  , ON                  ;
       "onchain"             , ONCHAIN             ;
       "option"              , OPTION              ;
       "or"                  , OR                  ;
