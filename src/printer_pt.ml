@@ -1173,10 +1173,8 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "(* invalid declaration *)"
 
 (* -------------------------------------------------------------------------- *)
-let pp_archetype fmt { pldesc = m; _ } =
-  match m with
-  | Marchetype es ->
-    Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
+let pp_archetype fmt { pldesc = es; _ } =
+  Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

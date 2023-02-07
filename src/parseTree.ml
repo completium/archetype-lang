@@ -340,8 +340,7 @@ and asset_operation =
   | AssetOperation of asset_operation_enum list * expr option
 
 (* -------------------------------------------------------------------- *)
-and archetype_unloc =
-  | Marchetype of declaration list
+and archetype_unloc = declaration list
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false},
@@ -560,8 +559,8 @@ let mk_dtype ?(loc=dummy) id t =
 let mk_invalid ?(loc=dummy) () =
   mkloc loc Dinvalid
 
-let mk_archetype ?(decls=[]) ?(loc=dummy) () =
-  mkloc loc (Marchetype decls)
+let mk_archetype ?(decls=[]) ?(loc=dummy) () = mkloc loc decls
+
 
 (* -------------------------------------------------------------------- *)
 

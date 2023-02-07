@@ -202,18 +202,17 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
   | Outline -> (
       let pt = Io.parse_archetype input in
       let gl, v =  Location.deloc pt in
-      match v with
-      | Marchetype m -> (
-          let lis = List.fold_left (fun accu d  ->
-              let t = make_outline_from_decl d gl in
-              if List.length t = 0
-              then accu
-              else t@accu) [] m in
-          let res = {
-            status = Passed;
-            outlines = lis;
-          } in
-          Format.asprintf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
+      (
+        let lis = List.fold_left (fun accu d  ->
+            let t = make_outline_from_decl d gl in
+            if List.length t = 0
+            then accu
+            else t@accu) [] v in
+        let res = {
+          status = Passed;
+          outlines = lis;
+        } in
+        Format.asprintf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
     )
   | Errors ->
     try

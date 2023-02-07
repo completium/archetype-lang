@@ -6428,7 +6428,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                         if check_and_emit_name_free env vtg then
                           Env.Local.push env (vtg, asset.as_pkty)
                         else env
-                        in
+                      in
                       (env, None)) (* FIXME: namespace *)
                     env (for_asset_keyof_type env ttg))
                 env None in
@@ -7028,7 +7028,6 @@ and pretype (env : env) (cmd : PT.declaration list) =
 
 (* -------------------------------------------------------------------- *)
 and typing ?init (env : env) (cmd : PT.archetype) =
-  match unloc cmd with
-  | Marchetype decls ->
-    let env = pretype env decls in
-    for_declarations env (mkloc (loc cmd) decls) ?init
+  let decls = unloc cmd in
+  let env = pretype env decls in
+  for_declarations env (mkloc (loc cmd) decls) ?init

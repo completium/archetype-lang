@@ -268,7 +268,7 @@ archetype_r:
  | x=implementation_archetype EOF { x }
 
 implementation_archetype:
- | x=declarations { Marchetype x }
+ | x=declarations { x }
 
 %inline declarations:
 | xs=declaration+ { xs }
