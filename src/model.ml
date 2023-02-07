@@ -4025,83 +4025,36 @@ module Utils : sig
   val get_record                         : model -> ident -> record
   val get_event                          : model -> ident -> record
   val get_events                         : model -> record list
-  val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * type_)
   val get_asset_value                    : model -> ident -> type_
   val get_field_container                : model -> ident -> ident -> (ident * container)
-  val is_storage_attribute               : model -> ident -> bool
-  val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
-  val get_containers                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
-  val dest_container                     : type_ -> ident
   val get_container_asset_key            : model -> ident -> ident -> (ident * ident * type_)
-  val get_container_assets               : model -> ident -> ident list
-  val get_entries                        : model -> (function_struct) list
-  val get_functions                      : model -> (function_struct * type_) list
-  val has_container                      : model -> ident -> bool
-  val get_asset_containers               : model -> ident -> (ident * type_ * mterm option) list
-  val get_field_list                     : model -> ident -> ident list
-  val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
-  val get_nth_asset_val                  : int -> mterm -> mterm
-  val get_asset_type                     : mterm -> ident
-  val is_local_assigned                  : ident -> mterm -> bool
-  val get_function_args                  : function__ -> argument list
-  val set_function_args                  : function__ -> argument list -> function__
-  val map_function_terms                 : (mterm -> mterm) -> function__ -> function__
   val is_asset                           : mterm -> bool
-  val is_varlocal                        : mterm -> bool
-  val dest_varlocal                      : mterm -> ident
-  val is_container                       : type_ -> bool
   val get_key_pos                        : model -> ident -> int
-  val get_loop_invariants                : model -> (ident * mterm) list -> ident -> (ident * mterm) list
-  val get_formula                        : model -> mterm option -> ident -> mterm option
-  val get_sum_idxs                       : model -> ident -> int list
   val is_field_storage                   : model -> ident -> bool
-  val with_trace                         : model -> bool
-  val get_callers                        : model -> ident -> ident list
   val type_to_asset                      : type_ -> ident
-  val get_map_function                   : model -> (ident * ident list) list
-  val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
-  val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val cmp                                : mterm -> mterm -> int
   val eval                               : (ident * mterm) list -> mterm -> mterm
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
-  val get_select_idx                     : model -> ident -> mterm -> int
-  val get_sum_idx                        : model -> ident -> mterm -> int
-  val get_removeif_idx                   : model -> ident -> mterm -> int
-  val with_division                      : model -> bool
-  val with_min_max                       : model -> bool
-  val with_count                         : model -> ident -> bool
-  val get_asset_collection               : ident -> mterm
   val is_asset_single_field              : model -> ident -> bool
   val is_asset_map                       : model -> ident -> bool
   val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
   val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
   val sort_api_storage                   : model -> bool -> api_storage list -> api_storage list
-  val get_all_set_types                  : model -> type_ list
-  val get_all_list_types                 : model -> type_ list
-  val get_all_map_types                  : model -> type_ list
-  val get_all_fail_types                 : model -> type_ list
-  val get_all_gen_mterm_type             : ('a list -> mterm -> 'a list) -> ('a list -> type_ -> 'a list) -> (decl_node -> 'a list -> 'a list) -> model -> 'a list
-  val get_all_type_for_mterm             : ('a -> type_ -> 'a ) -> 'a -> mterm  -> 'a
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
-  val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
-  val extract_assign_kind                : mterm -> assign_kind list
-  val extract_asset_effect               : model -> mterm -> effect list
-  val extract_var_idents                 : model -> mterm -> ident list
   val get_record_pos                     : model -> ident -> ident -> (int * int) list
   val is_partition                       : model -> ident -> ident -> bool
 
 end = struct
 
   open Tools
-  open Location
 
   exception Anomaly of string
 
@@ -4110,7 +4063,6 @@ end = struct
     | AssetKeyTypeNotFound of string
     | AssetValueTypeNotFound of string
     | ContainerNotFound
-    | NotaRecord of mterm
     | NotanAssetType
     | NotFound
     | CurrencyValueCannotBeNegative
@@ -4129,20 +4081,6 @@ end = struct
 
   let lident_to_string lident = Location.unloc lident
 
-  let get_function_args (f : function__) : argument list =
-    match f.node with
-    | Function (s,_) -> s.args
-    | Getter (s,_)   -> s.args
-    | View (s,_, _)  -> s.args
-    | Entry s        -> s.args
-
-  let set_function_args (f : function__) (args : argument list) : function__ =
-    match f.node with
-    | Function (s, t) -> { node = Function ({ s with args = args }, t)      }
-    | Getter (s, t)   -> { node = Getter   ({ s with args = args }, t)      }
-    | View (s, t, vv) -> { node = View     ({ s with args = args }, t, vv)  }
-    | Entry s         -> { node = Entry     { s with args = args }          }
-
   let is_entry (f : function__) : bool =
     match f with
     | { node = Entry _ } -> true
@@ -4158,27 +4096,11 @@ end = struct
     | { node = Entry s } -> s
     | _                  -> assert false
 
-  let get_function (f : function__) : function_struct * type_ =
-    match f with
-    | { node = Function (s,t) } -> (s,t)
-    | _                         -> assert false
-
-  let get_entries m = List.filter is_entry m.functions |> List.map get_entry
-
-  let get_functions m = List.filter is_function m.functions |> List.map get_function
-
-  let get_nth_asset_val pos (t : mterm) =
-    match t.node with
-    | Masset l -> List.nth l pos
-    | _ -> emit_error (NotaRecord t)
-
   let type_to_asset t =
     match get_ntype t with
     | Tasset n -> n |> unloc_mident
     | Tcontainer ((Tasset n, _), _) -> n |> unloc_mident
     | _ -> emit_error NotanAssetType
-
-  let get_asset_type (t : mterm) : ident = type_to_asset t.type_
 
   let is_record (d : decl_node) : bool =
     match d with
@@ -4260,28 +4182,6 @@ end = struct
   let get_partitions m : (ident * ident * type_) list =
     get_containers_internal (fun x -> match get_ntype x with |  Tcontainer ((Tasset _, _), Partition) -> true | _ -> false ) m
 
-  let has_container (m : model) (asset : ident) : bool =
-    try
-      let asset = get_asset m asset in
-      List.fold_left (fun acc (v : asset_item) ->
-          match get_ntype v.type_ with
-          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> true
-          | _ -> acc
-        ) false asset.values
-    with
-    | Not_found -> false
-
-  let get_asset_containers (m : model) (asset : ident) : (ident * type_ * (mterm option)) list =
-    try
-      let asset = get_asset m asset in
-      List.fold_left (fun acc (v : asset_item) ->
-          match get_ntype v.type_ with
-          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> acc @ [unloc_mident v.name, v.type_, v.default]
-          | _ -> acc
-        ) [] asset.values
-    with
-    | Not_found -> []
-
   let dest_container t =
     match get_ntype t with
     | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> unloc_mident p
@@ -4340,11 +4240,6 @@ end = struct
     | Tcontainer ((Tasset an, _), c) -> (unloc_mident an, c)
     | _ -> assert false
 
-  let get_container_assets model asset : ident list =
-    get_containers model
-    |> List.filter (fun (a,_,_) -> String.equal asset a)
-    |> List.map (fun (_,_,t) -> type_to_asset t)
-
   (* returns : asset name, key name, key type *)
   let get_container_asset_key model asset field : (ident * ident * type_) =
     let containers = get_containers model in
@@ -4357,48 +4252,6 @@ end = struct
       | _ :: tl -> rec_get tl
       | _ -> emit_error (ContainerNotFound) in
     rec_get containers
-
-  let get_storage model =
-    model.storage
-
-  let is_storage_attribute model id =
-    let s = get_storage model in
-    let items = s in
-    (List.fold_left (fun accu (x : storage_item) ->
-         accu || String.equal id (unloc_mident x.id)
-       ) false items)
-
-  let get_field_list (model : model) (asset_name : ident) : ident list =
-    try
-      let asset = get_asset model asset_name in
-      List.map (fun (x : asset_item) -> unloc_mident x.name) asset.values
-    with
-    | Not_found -> []
-
-  let get_field_pos model asset field =
-    let l = get_field_list model asset in
-    let rec rec_get_pos i = function
-      | e :: _tl when String.equal field e -> i
-      | _ :: tl -> rec_get_pos (succ i) tl
-      | [] -> assert false in
-    rec_get_pos 0 l
-
-  let get_named_field_list ast asset_name list =
-    let field_list = get_field_list ast asset_name in
-    List.map2 (fun x y -> x, y) field_list list
-
-  exception FoundAssign
-
-  let is_local_assigned (id : ident) (b : mterm) =
-    let rec rec_search_assign _ (t : mterm) =
-      match t.node with
-      | Massign (_, _, Avar i,_) when String.equal (unloc_mident i) id -> raise FoundAssign
-      | Massign (_, _, Arecord ({ node = (Mvar (i, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
-      | Massign (_, _, Atuple ({ node = (Mvar (i, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
-      | _ -> fold_term rec_search_assign false t in
-    try rec_search_assign false b
-    with FoundAssign -> true
-
 
   exception FoundOperations
 
@@ -4414,52 +4267,14 @@ end = struct
       | _ -> fold_term aux accu t in
     aux accu mt
 
-  let with_operations_for_mterm (mt : mterm) : bool =
-    try with_operations_for_mterm_intern () false mt
-    with FoundOperations -> true
-
   let with_operations (model : model) : bool =
     try fold_model with_operations_for_mterm_intern model false
     with FoundOperations -> true
-
-  let map_function_terms (m : mterm -> mterm) (f : function__) : function__ = {
-    node = begin
-      match f.node with
-      | Function (s,r) -> Function ({
-          s with body = m s.body;
-        },r)
-      | Getter (s,r) -> Getter ({
-          s with body = m s.body;
-        },r)
-      | View (s,r,vv) -> View ({
-          s with body = m s.body;
-        },r,vv)
-      | Entry s        -> Entry {
-          s with body = m s.body;
-        }
-    end
-  }
 
   let is_asset (t : mterm) =
     match t.node with
     | Masset _ -> true
     | _ -> false
-
-  let is_varlocal (t : mterm) =
-    match t.node with
-    | Mvar (_, Vlocal) -> true
-    | _ -> false
-
-  let dest_varlocal (t : mterm) =
-    match t.node with
-    |  Mvar (i, Vlocal) -> unloc_mident i
-    | _ -> assert false
-
-  let is_container t =
-    match get_ntype t with
-    | Tcontainer ((Tasset _, _),_) -> true
-    | _ -> false
-
 
   let get_key_pos (m : model) (n : ident) : int =
     get_assets m |> List.fold_left (fun acc (info : asset) ->
@@ -4475,65 +4290,9 @@ end = struct
           acc
       ) (-1)
 
-  (* i is the loop label *)
-  let get_loop_invariants m (acc : (ident * mterm) list) (i : ident) : (ident * mterm) list =
-    let internal_get (ctx : ctx_model) (acc : (ident * mterm) list) t =
-      match ctx.invariant_id with
-      | Some v when cmp_ident i (unloc_mident v) ->
-        begin
-          match ctx.spec_id with
-          | Some l -> acc @ [unloc_mident l,t]
-          | _ -> acc
-        end
-      | _ -> acc in
-    fold_model internal_get m acc
-
-  let get_formula m acc (i : ident) : mterm option =
-    let internal_get (ctx : ctx_model) (acc : mterm option) t =
-      match acc, ctx.spec_id with
-      | None, Some v when cmp_ident i (unloc_mident v) -> Some t
-      | _ -> acc in
-    fold_model internal_get m acc
-
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list = List.map (fun (x : storage_item) -> unloc_mident x.id) m.storage in
     List.mem id l
-
-  let with_trace (_m : model) : bool = true
-
-  (* returns the list of entries calling the function named 'name' *)
-  let get_callers (_m : model) (_name : ident) : ident list = [] (* TODO *)
-
-  let get_map_function (m : model) : (ident * ident list) list =
-    let fun_ids : (ident * function_struct) list =
-      List.map
-        (fun (f : function__) ->
-           match f.node with
-           | Function (fs, _)    -> unloc_mident fs.name, fs
-           | Getter   (fs, _)    -> unloc_mident fs.name, fs
-           | View     (fs, _, _) -> unloc_mident fs.name, fs
-           | Entry     fs        -> unloc_mident fs.name, fs)
-        m.functions
-    in
-    let fun_id_list = List.map fst fun_ids in
-    let rec extract_fun_id accu (mt : mterm) : ident list =
-      let l = fold_term extract_fun_id accu mt in
-      match mt.node with
-      | Mapp (id, _args) when (List.exists (fun x -> (String.equal (unloc_mident id) x)) fun_id_list) ->
-        l @ [unloc_mident id]
-      | _ -> l
-    in
-    List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
-
-  let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
-    match c.node with
-    | Mvar(an, Vparam) ->
-      begin
-        let l, an = deloc (snd an) in
-        let idparam = mk_mident (mkloc l (an ^ "_values")) in
-        Some (mk_mterm (Mvar(idparam, Vparam) ) (mktype (Tmap(tint, tasset (mk_mident (dumloc "myasset"))))))
-      end
-    | _ -> None
 
   let mk_rat (n : Core.big_int) (d : Core.big_int) : mterm =
     let pos x = Big_int.sign_big_int x >= 0 in
@@ -4975,69 +4734,6 @@ end = struct
     |> remove_const
     |> eval_expr
 
-  type searchfun =
-    | SearchSelect
-    | SearchSum
-    | SearchRemoveif
-
-  let get_fun_idx typ (m : model) asset expr =
-    let rec internal_get_fun_idx acc = function
-      | (sc : api_storage) :: tl ->
-        begin
-          match typ, sc.node_item with
-          | SearchSelect, APIAsset (Select (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
-          | SearchSum, APIAsset (Sum (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
-          | SearchRemoveif, APIAsset (RemoveIf (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
-          | _ -> internal_get_fun_idx acc tl
-        end
-      | [] -> acc
-    and continue_internal_get_fun_idx tl acc a t =
-      if compare a asset = 0 then
-        if cmp_mterm t expr then
-          acc + 1
-        else
-          internal_get_fun_idx (acc + 1) tl
-      else
-        internal_get_fun_idx acc tl
-    in
-    internal_get_fun_idx 0 m.api_items
-
-  let get_select_idx = get_fun_idx SearchSelect
-
-  let get_sum_idx = get_fun_idx SearchSum
-
-  let get_removeif_idx = get_fun_idx SearchRemoveif
-
-  let get_sum_idxs m a = (* TODO *)
-    List.fold_left (fun acc (ai : api_storage) ->
-        match ai.node_item with
-        | APIAsset (Sum (asset, _, _type, formula)) when String.equal a asset ->
-          acc @ [get_sum_idx m a formula]
-        | _ -> acc
-      ) [] m.api_items
-
-  exception FoundDiv
-
-  let with_div_for_mterm_intern _ctx accu (mt : mterm) : bool =
-    let rec aux accu (t : mterm) =
-      match t.node with
-      | Mdivrat _ | Mdiveuc _ -> raise FoundDiv
-      | Mmodulo _ -> raise FoundDiv
-      | Massign (DivAssign,_,_,_) -> raise FoundDiv
-      | _ -> fold_term aux accu t in
-    aux accu mt
-
-  let with_division (model : model) : bool =
-    (try fold_model with_div_for_mterm_intern model false
-     with FoundDiv -> true) || (
-      List.fold_left (fun acc (ai : api_storage) ->
-          match ai.node_item with
-          | APIInternal RatTez ->
-            acc || true
-          | _ -> acc
-        ) false model.api_items
-    )
-
   exception FoundMinMax
 
   let with_minmax_for_mterm_intern _ctx accu (mt : mterm) : bool =
@@ -5047,21 +4743,6 @@ end = struct
       | Mmin (_,_) -> raise FoundMinMax
       | _ -> fold_term aux accu t in
     aux accu mt
-
-  let with_min_max (model : model) : bool =
-    (try fold_model with_minmax_for_mterm_intern model false
-     with FoundMinMax -> true)
-
-  let with_count m a =
-    List.fold_left (fun acc (ai : api_storage) ->
-        match ai.node_item with
-        | APIAsset (Count (asset, _)) when String.equal a asset ->
-          acc || true
-        | _ -> acc
-      ) false m.api_items
-
-  let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol)) (mktype (Tcontainer (mktype (Tasset (mk_mident (dumloc an))), Collection)))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
@@ -5181,167 +4862,10 @@ end = struct
          else c1
       )
 
-  let get_all_gen_mterm_type for_mterm for_type for_decl (model : model) =
-    let for_decl_node accu (d : decl_node) =
-      let for_var accu (v : var) =
-        accu
-        |> (fun accu -> for_type accu v.type_)
-        |> (fun accu -> Option.map_dfl (for_mterm accu) accu v.default)
-      in
-      let for_enum accu (_e : enum) =
-        accu
-      in
-      let for_asset accu (a : asset) =
-        let for_asset_item accu (ai : asset_item) =
-          accu
-          |> (fun accu -> for_type accu ai.type_)
-          |> (fun accu -> Option.map_dfl (for_mterm accu) accu ai.default)
-        in
-        accu
-        |> (fun accu -> List.fold_left for_asset_item accu a.values)
-        |> (fun accu -> List.fold_left for_mterm accu a.init)
-      in
-      let for_record accu (r : record) =
-        let for_record_field accu (rf : record_field) =
-          for_type accu rf.type_
-        in
-        List.fold_left for_record_field accu r.fields;
-      in
-      match d with
-      | Dvar v      -> for_var    accu v |> for_decl d
-      | Denum e     -> for_enum   accu e |> for_decl d
-      | Dasset a    -> for_asset  accu a |> for_decl d
-      | Drecord r   -> for_record accu r |> for_decl d
-      | Devent e    -> for_record accu e |> for_decl d
-    in
-    let for_storage_item accu (si : storage_item) =
-      accu
-      |> (fun accu -> for_type accu si.typ;)
-      |> (fun accu -> for_mterm accu si.default;)
-    in
-    let for_function__ accu (f__ : function__) =
-      let for_function_node accu (fn : function_node) =
-        let for_function_struct accu (fs : function_struct) =
-          let for_argument accu (arg : argument) =
-            let _, b, c = arg in
-            accu
-            |> (fun accu -> for_type accu b)
-            |> (fun accu -> Option.map_dfl (for_mterm accu) accu c)
-          in
-          accu
-          |> (fun accu -> List.fold_left for_argument accu fs.args)
-          |> (fun accu -> for_mterm accu fs.body)
-        in
-        let fs, t =
-          match fn with
-          | Function (fs, t)    -> fs, Some t
-          | Getter   (fs, t)    -> fs, Some t
-          | View     (fs, t, _) -> fs, Some t
-          | Entry     fs        -> fs, None
-        in
-        accu
-        |> (fun accu -> for_function_struct accu fs)
-        |> (fun accu -> Option.map_dfl (for_type accu) accu t)
-
-      in
-      accu
-      |> (fun accu -> for_function_node                       accu f__.node)
-    in
-    []
-    |> (fun accu -> List.fold_left for_decl_node    accu model.decls)
-    |> (fun accu -> List.fold_left for_storage_item accu model.storage)
-    |> (fun accu -> List.fold_left for_function__   accu model.functions)
-
-  let get_all_gen_mterm_type_internal for_mterm for_type (model : model) =
-    get_all_gen_mterm_type for_mterm for_type (fun _ a -> a) model
-
-  let get_all_type_for_mterm for_type (accu : 'a) (mt : mterm) : 'a =
-    let rec aux accu (mt : mterm) =
-      let accu = for_type accu mt.type_ in
-      match mt.node with
-      | Mletin (_, x, ot, b, o) -> begin
-          accu
-          |> (fun accu -> (match x with | LVsimple v -> aux accu v | LVreplace (_, _, fa) -> aux accu fa))
-          |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
-          |> (fun accu -> aux accu b)
-          |> (fun accu -> Option.map_dfl (aux accu) accu o)
-        end
-      | Mdeclvar (_, Some t, v, _) -> begin
-          accu
-          |> (fun accu -> for_type accu t)
-          |> (fun accu -> aux accu v)
-        end
-      | _ -> fold_term aux accu mt
-    in
-    aux accu mt
-
-  let get_all_gen_type for_type (model : model) =
-    get_all_gen_mterm_type_internal (get_all_type_for_mterm for_type) for_type model
-
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l
     then l
     else l @ [x]
-
-  let get_all_set_types (model : model) : type_ list =
-    let rec for_type accu t =
-      match get_ntype t with
-      | Tset _                   -> add_type accu t
-      | Tlist   t                -> for_type accu t
-      | Toption t                -> for_type accu t
-      | Ttuple  ts               -> List.fold_left (for_type) accu ts
-      | Tmap (_, t)              -> for_type accu t
-      | Tbig_map (_, t)          -> for_type accu t
-      | Titerable_big_map (_, t) -> for_type accu t
-      | Tcontract t              -> for_type accu t
-      | Tticket t                -> for_type accu t
-      | _ -> accu
-    in
-    get_all_gen_type for_type model
-
-  let get_all_list_types (model : model) : type_ list =
-    let rec for_type accu t =
-      match get_ntype t with
-      | Tlist   tv               -> add_type (for_type accu tv) t
-      | Toption t                -> for_type accu t
-      | Ttuple  ts               -> List.fold_left (for_type) accu ts
-      | Tmap (_, t)              -> for_type accu t
-      | Tbig_map (_, t)          -> for_type accu t
-      | Titerable_big_map (_, t) -> for_type accu t
-      | Tcontract t              -> for_type accu t
-      | Tticket t                -> for_type accu t
-      | _ -> accu
-    in
-    get_all_gen_type for_type model
-
-  let get_all_map_types (model : model) : type_ list =
-    let rec for_type accu t =
-      match get_ntype t with
-      | Tlist     t               -> for_type accu t
-      | Toption   t               -> for_type accu t
-      | Ttuple    ts              -> List.fold_left (for_type) accu ts
-      | Tmap      (_, tv)         -> add_type (for_type accu tv) t
-      | Tbig_map  (_, tv)         -> add_type (for_type accu tv) t
-      | Titerable_big_map (_, tv) -> add_type (for_type accu tv) t
-      | Tcontract t               -> for_type accu t
-      | Tticket t                 -> for_type accu t
-      | _ -> accu
-    in
-    get_all_gen_type for_type model
-
-  let get_all_fail_types (model : model) : type_ list =
-    let for_type accu _ = accu in
-
-    let for_mterm (accu : 'a) (mt : mterm) : 'a =
-      let rec aux accu (mt : mterm) =
-        let accu = for_type accu mt.type_ in
-        match mt.node with
-        | Mfail (Invalid e) -> let t = e.type_ in add_type accu t
-        | _ -> fold_term aux accu mt
-      in
-      aux accu mt
-    in
-    get_all_gen_mterm_type_internal for_mterm for_type model
 
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with
@@ -5373,101 +4897,6 @@ end = struct
 
   let get_fs (model : model) (id : ident) : function_struct =
     List.find (fun (x : function_struct) -> String.equal id (unloc_mident x.name)) (get_fss model)
-
-  let extract_assign_kind (mt : mterm) : assign_kind list =
-    let rec aux accu (t : mterm) =
-      match t.node with
-      | Massign (_, _, ak, _) -> ak::accu
-      | _ -> fold_term aux accu t in
-    aux [] mt
-
-  let extract_asset_effect (model : model) (mt : mterm) : effect list =
-    let only_partition accu an fn p =
-      let aan, c = get_field_container model an fn in
-      match c with
-      | Partition -> begin match p with
-          | `Added -> (Eadded aan)::accu
-          | `Removed -> (Eremoved aan)::accu
-        end
-      | _ -> accu
-    in
-    let with_partition accu an fn m p =
-      let accu = begin match m with
-        | `Updated -> (Eupdated an)::accu
-      end in
-      only_partition accu an fn p
-    in
-    let all_partition accu an m p =
-      let accu = begin match m with
-        | `Updated -> (Eupdated an)::accu
-        | `Removed -> (Eremoved an)::accu
-        | `Added   -> (Eadded an)::accu
-      end in
-      let parts = get_asset_partitions model an in
-      List.fold_left (fun accu (aan, afn) -> only_partition accu aan afn p) accu parts
-    in
-    let rec aux accu (t : mterm) =
-      match t.node with
-      | Maddasset (an, _)                                 -> (Eadded an)::accu
-      | Mputsingleasset (an, _)                           -> (Eadded an)::accu
-      | Mputasset (an, _, _)                              -> (Eadded an)::accu
-      | Maddfield (an, fn, _, _)                          -> with_partition accu an fn `Updated `Added
-      | Mremoveasset (an, _)                              -> (Eremoved an)::accu
-      | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn `Updated `Removed
-      | Mremoveall (an, CKcoll)                         -> all_partition accu an `Removed `Removed
-      | Mremoveall (an, CKfield (_, fn, _))               -> with_partition accu an fn `Updated `Removed
-      | Mremoveif (an, CKcoll, _, _, _)                 -> all_partition accu an `Removed `Removed
-      | Mremoveif (an, CKfield (_, fn, _), _, _, _)       -> with_partition accu an fn `Updated `Removed
-      | Mclear (an, CKview _)                             -> all_partition accu an `Removed `Removed
-      | Mset (an, _, _, _)                                -> (Eupdated an)::accu
-      | _ -> fold_term aux accu t in
-    aux [] mt
-
-  let extract_var_idents (model : model) (mt : mterm) : ident list =
-    let add_expr_asset an ck accu =
-      let aan =
-        match ck with
-        | CKcoll
-        | CKview _-> an
-        | CKfield (an, fn, _) -> get_field_container model an fn |> fst
-      in
-      aan::accu
-    in
-
-    let rec aux env accu (t : mterm) =
-      match t.node with
-      | Mletin (ids, a, _, b, o) ->
-        let f = aux (env @ (List.map unloc_mident ids)) in
-        let tmp = f (match a with | LVsimple x -> f accu x |  LVreplace (_, _, x) -> f accu x) b in
-        Option.map_dfl (f tmp) tmp o
-      | Mvar (id, Vlocal)  when not (List.exists (String.equal (unloc_mident id)) env) -> (unloc_mident id)::accu
-      | Mvar (id, Vstorevar)       -> (unloc_mident id)::accu
-      | Mvar (id, Vstorecol)       -> (unloc_mident id)::accu
-      | Mvar (_,  Vstate)          -> "state"::accu
-      | Mnow                       -> "now"::accu
-      | Mtransferred               -> "transferred"::accu
-      | Mcaller                    -> "caller"::accu
-      | Mbalance                   -> "balance"::accu
-      | Msource                    -> "source"::accu
-      | Mselfaddress               -> "self_address"::accu
-      | Mselfchainid               -> "self_chain_id"::accu
-      | Mmetadata                  -> "metadata"::accu
-      | Mlevel                     -> "level"::accu
-      | Mminblocktime              -> "min_block_time"::accu
-
-      | Mget (an, ck, _)
-      | Mselect (an, ck, _, _, _)
-      | Msort (an, ck,_)
-      | Mcontains (an, ck, _)
-      | Mnth (an, ck, _)
-      | Mcount (an, ck)
-      | Msum (an, ck, _)
-      | Mhead (an, ck, _)
-      | Mtail (an, ck, _)          -> add_expr_asset an ck accu
-
-      | _ -> fold_term (aux env) accu t in
-    aux [] [] mt
-    |> Tools.List.dedup
 
   exception Found of (int * int) list
 
