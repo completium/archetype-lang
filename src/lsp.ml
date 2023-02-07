@@ -228,10 +228,10 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
           Pt_helper.check_json pt;
           if (List.is_empty !Error.errors)
           then
-            let _, ast = Typing.typing Typing.empty0 pt in
+            let res_ast = Typing.typing Typing.empty0 pt in
             if List.is_empty !Error.errors
             then
-              let _ = ast
+              let _ = res_ast
                       |> Gen_model.to_model
                       |> Gen_transform.check_partition_access
                       |> Gen_transform.check_containers_asset

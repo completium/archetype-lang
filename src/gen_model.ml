@@ -49,7 +49,7 @@ type env = {
 let mk_env ?(formula=false) ?asset_name ?function_p () =
   { formula; asset_name; function_p }
 
-let to_model (ast : A.ast) : M.model =
+let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let to_currency = function
     | A.Utz  -> M.Utz

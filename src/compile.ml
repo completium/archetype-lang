@@ -211,12 +211,12 @@ let parse input =
     Format.eprintf "%s" str;
     raise (Error.ParseError !Error.errors)
 
-let type_ (pt : ParseTree.archetype) : Ast.ast =
+let type_ (pt : ParseTree.archetype) : Typing.env * Ast.ast =
   let init = match !Options.opt_init with
     | "" -> None
     | x  -> Some (Io.parse_expr (FIString x))
   in
-  snd (Typing.typing Typing.empty0 pt ?init)
+  Typing.typing Typing.empty0 pt ?init
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
@@ -309,7 +309,7 @@ let compile_model pt =
   pt
   |> cont !Options.opt_extpt output_pt
   |> raise_if_error type_error type_
-  |> cont !Options.opt_ast output_tast
+  |> (fun c a x -> if c then (a (snd x); raise Stop) else x ) !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
   |> raise_if_error post_model_error check_partition_access
   |> raise_if_error post_model_error check_containers_asset
