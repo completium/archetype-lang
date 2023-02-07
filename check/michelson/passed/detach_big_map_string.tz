@@ -1,0 +1,16 @@
+{ storage (pair (big_map %mt nat string) (string %res)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         NONE string ;
+         PUSH nat 0 ;
+         GET_AND_UPDATE ;
+         IF_NONE { PUSH string "KEY_NOT_FOUND" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

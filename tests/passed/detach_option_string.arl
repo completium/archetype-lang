@@ -1,0 +1,10 @@
+archetype detach_option_string
+
+variable ot : option<string> = some("my_string")
+
+variable res : string = ""
+
+entry exec() {
+  detach ot as t : "ERROR";
+  res := t
+}

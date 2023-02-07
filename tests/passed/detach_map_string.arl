@@ -1,0 +1,10 @@
+archetype detach_map_string
+
+variable mt : map<nat, string> = [(0, "my_string")]
+
+variable res : string = ""
+
+entry exec() {
+  detach mt[0] as d : "ERROR";
+  res := d
+}

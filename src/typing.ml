@@ -5428,7 +5428,7 @@ let rec for_instruction_r
           match v.node with
           | A.Pvar lid -> begin
               let ty = match v.type_ with
-                | Some (A.Toption ((A.Tticket _) as tty)) -> tty
+                | Some (A.Toption (tty)) -> tty
                 | _ -> (Env.emit_error env (v.loc, DetachInvalidType (unloc_longident lid)); bailout())
               in
               A.DK_option (ty, unloc_longident lid), ty

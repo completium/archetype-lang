@@ -166,6 +166,9 @@ import * as decomp_test2 from '../bindings/passed/decomp_test2'
 import * as decomp_while from '../bindings/passed/decomp_while'
 import * as decomp_while1 from '../bindings/passed/decomp_while1'
 import * as decomp_while2 from '../bindings/passed/decomp_while2'
+import * as detach_big_map_string from '../bindings/passed/detach_big_map_string'
+import * as detach_map_string from '../bindings/passed/detach_map_string'
+import * as detach_option_string from '../bindings/passed/detach_option_string'
 import * as duration_to_int from '../bindings/passed/duration_to_int'
 import * as effect_add_asset_with_complex_partition from '../bindings/passed/effect_add_asset_with_complex_partition'
 import * as effect_control_for_aggregate from '../bindings/passed/effect_control_for_aggregate'
@@ -3886,6 +3889,47 @@ describe('passed', async () => {
   it('decomp_while2', async () => {
     await decomp_while2.decomp_while2.deploy({ as: alice })
     // TODO
+  })
+
+  it('detach_big_map_string', async () => {
+    await detach_big_map_string.detach_big_map_string.deploy({ as: alice })
+    const res_before = await detach_big_map_string.detach_big_map_string.get_res()
+    assert(res_before == "")
+    const mt_before = await detach_big_map_string.detach_big_map_string.get_mt_value(new Nat(0));
+    assert(mt_before === "my_string")
+    await detach_big_map_string.detach_big_map_string.exec({ as: alice })
+    const res_after = await detach_big_map_string.detach_big_map_string.get_res()
+    assert(res_after == "my_string")
+    const mt_after = await detach_big_map_string.detach_big_map_string.get_mt_value(new Nat(0));
+    assert(mt_after === undefined)
+  })
+
+  it('detach_map_string', async () => {
+    await detach_map_string.detach_map_string.deploy({ as: alice })
+    const res_before = await detach_map_string.detach_map_string.get_res()
+    assert(res_before == "")
+    const mt_before = await detach_map_string.detach_map_string.get_mt();
+    assert(mt_before.length == 1)
+    assert(mt_before[0][0].equals(new Nat(0)))
+    assert(mt_before[0][1] === "my_string")
+    await detach_map_string.detach_map_string.exec({ as: alice })
+    const res_after = await detach_map_string.detach_map_string.get_res()
+    assert(res_after == "my_string")
+    const mt_after = await detach_map_string.detach_map_string.get_mt();
+    assert(mt_after.length == 0)
+  })
+
+  it('detach_option_string', async () => {
+    await detach_option_string.detach_option_string.deploy({ as: alice })
+    const res_before = await detach_option_string.detach_option_string.get_res()
+    assert(res_before == "")
+    const ot_before = await detach_option_string.detach_option_string.get_ot();
+    assert(ot_before.equals(Option.Some<string>("my_string")))
+    await detach_option_string.detach_option_string.exec({ as: alice })
+    const res_after = await detach_option_string.detach_option_string.get_res()
+    assert(res_after == "my_string")
+    const ot_after = await detach_option_string.detach_option_string.get_ot();
+    assert(ot_after.equals(Option.None()))
   })
 
   it('duration_to_int', async () => {
