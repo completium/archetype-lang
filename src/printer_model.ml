@@ -298,25 +298,22 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, hid, tid, hte, ee)
 
-    | Mfor (i, c, b, l) ->
-      Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+    | Mfor (i, c, b) ->
+      Format.fprintf fmt "for %a in %a do@\n  @[%a@]@\ndone"
         (fun fmt i -> match i with FIsimple x -> pp_mid fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_mid x pp_mid y) i
         (pp_iter_container_kind f) c
         f b
 
-    | Miter (i, a, b, c, l, s) ->
-      Format.fprintf fmt "iter %a%a from %a to %a%s do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+    | Miter (i, a, b, c, s) ->
+      Format.fprintf fmt "iter %a from %a to %a%s do@\n  @[%a@]@\ndone"
         pp_mid i
         f a
         f b
         (if s then " (excluded)" else "")
         f c
 
-    | Mwhile (c, b, l) ->
-      Format.fprintf fmt "while %a%a do@\n  @[%a@]@\ndone"
-        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+    | Mwhile (c, b) ->
+      Format.fprintf fmt "while %a do@\n  @[%a@]@\ndone"
         f c
         f b
 

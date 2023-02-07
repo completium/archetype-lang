@@ -1566,9 +1566,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       ]
 
     | Minstrmatchlist   _        -> assert false
-    | Mfor (_i, _c, _b, _l)      -> assert false
-    | Miter (_i, _a, _b, _c, _l, _n) -> assert false
-    | Mwhile (_c, _b, _l)        -> assert false
+    | Mfor (_i, _c, _b)          -> assert false
+    | Miter (_i, _a, _b, _c, _n) -> assert false
+    | Mwhile (_c, _b)            -> assert false
     | Mseq l                     -> begin
         match List.rev l with
         | []   -> assert false

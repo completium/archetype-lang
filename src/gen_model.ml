@@ -1079,10 +1079,10 @@ let to_model (ast : A.ast) : M.model =
             | A.FIsimple x      -> M.FIsimple (M.mk_mident x)
             | A.FIdouble (x, y) -> M.FIdouble (M.mk_mident x, M.mk_mident y)
           in
-          M.Mfor (i, ncol, g body, instr.label)
+          M.Mfor (i, ncol, g body)
         end
-      | A.Iiter (i, a, b, body)   -> M.Miter (M.mk_mident i, f a, f b, g body, instr.label, false)
-      | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
+      | A.Iiter (i, a, b, body)   -> M.Miter (M.mk_mident i, f a, f b, g body, false)
+      | A.Iwhile (c, body)        -> M.Mwhile (f c, g body)
       | A.Iletin (i, init, cont)  -> M.Mletin ([M.mk_mident i], LVsimple (f init), Option.map type_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([M.mk_mident i], Option.map type_to_type v.type_, f v, c) (* TODO *)
       | A.Ideclvaropt (i, v, fa, c)-> M.Mdeclvaropt ([M.mk_mident i], Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)

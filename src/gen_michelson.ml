@@ -760,7 +760,7 @@ let to_ir (model : M.model) : T.ir =
     | Minstrmatchoption (x, i, ve, ne)       -> T.Iifnone (f x, f ne, M.unloc_mident i, f ve, T.tunit)
     | Minstrmatchor (x, lid, le, rid, re)    -> T.Iifleft (f x, M.unloc_mident lid, f le, M.unloc_mident rid, f re, T.tunit)
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.Iifcons (f x, M.unloc_mident hid, M.unloc_mident tid, f hte, f ee, T.tunit)
-    | Mfor (id, c, b, _)         -> begin
+    | Mfor (id, c, b)         -> begin
         let ids =
           match id with
           | M.FIsimple x      -> [x]
@@ -779,11 +779,10 @@ let to_ir (model : M.model) : T.ir =
         let b = f b in
         T.Iiter (ids, c, b)
       end
-    | Miter (_i, _a, _b, _c, _, _) -> emit_error (UnsupportedTerm ("Miter"))
-    | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
-    | Mseq is                    -> T.Iseq (List.map f is)
-    (* | Mreturn x when view        -> f x *)
-    | Mreturn x                  -> T.Iassign (fun_result, f x)
+    | Miter (_i, _a, _b, _c, _) -> emit_error (UnsupportedTerm ("Miter"))
+    | Mwhile (c, b)             -> T.Iloop (f c, f b)
+    | Mseq is                   -> T.Iseq (List.map f is)
+    | Mreturn x                 -> T.Iassign (fun_result, f x)
 
 
     (* effect *)

@@ -2302,7 +2302,7 @@ let remove_asset (model : model) : model =
               let viter    : mterm = mk_mterm (Mvar (viter_id, Vstorecol)) pk in
               let set      : mterm = mk_mterm (Mdot((mk_mterm (Mget(an, CKcoll, k)) (tasset (mk_mident (dumloc an)))), mk_mident (dumloc fn))) pk |> f in
               let passign2 : mterm = mk_mterm (Mremoveasset (aan, viter)) tunit |> f in
-              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign2, None)) tunit
+              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign2)) tunit
             ) partitions in
           mk_mterm (Mseq (l @ [assign])) tunit
         end
@@ -2555,30 +2555,30 @@ let remove_asset (model : model) : model =
 
       (* control *)
 
-      | Mfor (FIsimple id, ICKcoll an, b, lbl) -> begin
+      | Mfor (FIsimple id, ICKcoll an, b) -> begin
           let b = fm ctx b in
           let va = get_asset_global an in
           let node =
             match get_ntype va.type_ with
-            | Tset _ -> Mfor (FIsimple id, ICKset va, b, lbl)
-            | Tmap _ -> Mfor (FIdouble (id, mk_mident (dumloc "_v")), ICKmap va, b, lbl)
-            | Titerable_big_map _ -> Mfor (FIdouble (id, mk_mident (dumloc "_v")), ICKmap va, b, lbl)
+            | Tset _ -> Mfor (FIsimple id, ICKset va, b)
+            | Tmap _ -> Mfor (FIdouble (id, mk_mident (dumloc "_v")), ICKmap va, b)
+            | Titerable_big_map _ -> Mfor (FIdouble (id, mk_mident (dumloc "_v")), ICKmap va, b)
             | _ -> assert false
           in
           { mt with node = node }
         end
 
-      | Mfor (FIsimple id, ICKfield (_, _, c), b, lbl) -> begin
+      | Mfor (FIsimple id, ICKfield (_, _, c), b) -> begin
           let b = fm ctx b in
           let c = fm ctx c in
-          let node = Mfor (FIsimple id, ICKset c, b, lbl) in
+          let node = Mfor (FIsimple id, ICKset c, b) in
           { mt with node = node }
         end
 
-      | Mfor (FIsimple id, ICKview v, b, lbl) -> begin
+      | Mfor (FIsimple id, ICKview v, b) -> begin
           let b = fm ctx b in
           let v = fm ctx v in
-          let node = Mfor (FIsimple id, ICKlist v, b, lbl) in
+          let node = Mfor (FIsimple id, ICKlist v, b) in
           { mt with node = node }
         end
 
@@ -2679,9 +2679,9 @@ let remove_asset (model : model) : model =
                   let var_id = mk_mident (dumloc "_ak") in
                   let var_value = mk_mvar var_id atk in
                   let b : mterm = remove_asset (fm ctx) aan var_value in
-                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit
+                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b)) tunit
                 in
-                mk_mterm (Mfor (FIdouble (mk_mident (dumloc "_k"), var_id), ICKmap va, loop, None)) tunit
+                mk_mterm (Mfor (FIdouble (mk_mident (dumloc "_k"), var_id), ICKmap va, loop)) tunit
               in
 
               let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), empty)) tunit in
@@ -2726,7 +2726,7 @@ let remove_asset (model : model) : model =
                   end
                 in
 
-                mk_mterm (Mfor (FIsimple iter_var, ICKset set, body, None)) tunit
+                mk_mterm (Mfor (FIsimple iter_var, ICKset set, body)) tunit
               in
 
               let mk_assign _ =
@@ -2786,7 +2786,7 @@ let remove_asset (model : model) : model =
                   let cond = fm ctx (mk_cond an vkey None b) in
                   let remove = remove_asset (fm ctx) an vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
-                  let loop = mk_mterm (Mfor(FIsimple ikey, ICKset va, body, None) ) tunit in
+                  let loop = mk_mterm (Mfor(FIsimple ikey, ICKset va, body) ) tunit in
                   loop
                 end
               | Tmap (kt, vt)
@@ -2801,7 +2801,7 @@ let remove_asset (model : model) : model =
                   let cond = fm ctx (mk_cond an vkey (Some vval) b) in
                   let remove = remove_asset (fm ctx) an vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
-                  let loop = mk_mterm (Mfor(FIdouble (ikey, ival), ICKmap va, body, None) ) tunit in
+                  let loop = mk_mterm (Mfor(FIdouble (ikey, ival), ICKmap va, body) ) tunit in
                   loop
                 end
               | _ -> assert false
@@ -2858,7 +2858,7 @@ let remove_asset (model : model) : model =
                   end
               in
 
-              let loop = mk_mterm (Mfor(FIsimple ikey, ICKset set, body, None) ) tunit in
+              let loop = mk_mterm (Mfor(FIsimple ikey, ICKset set, body) ) tunit in
               loop
             end
           | _ -> assert false
@@ -2901,9 +2901,9 @@ let remove_asset (model : model) : model =
                   let var_id = mk_mident (dumloc "_ak") in
                   let var_value = mk_mvar var_id atk in
                   let b : mterm = remove_asset (fm ctx) aan var_value in
-                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit
+                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b)) tunit
                 in
-                mk_mterm (Mfor (FIdouble (mk_mident (dumloc "_k"), var_id), ICKmap va, loop, None)) tunit
+                mk_mterm (Mfor (FIdouble (mk_mident (dumloc "_k"), var_id), ICKmap va, loop)) tunit
               in
 
               let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), empty)) tunit in
@@ -2939,7 +2939,7 @@ let remove_asset (model : model) : model =
               let var_id = mk_mident (dumloc "_ak") in
               let var_value = mk_mterm (Mvar (var_id, Vlocal)) atk in
               let b : mterm = remove_asset (fm ctx) aan var_value in
-              let loop = mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit in
+              let loop = mk_mterm (Mfor (FIsimple var_id, ICKset set, b)) tunit in
               let assign = fm ctx (mk_mterm (Mremoveall (an, CKfield(aan, fn, k))) tunit) in
               mk_mterm (Mseq [loop; assign]) tunit
             end
@@ -2953,7 +2953,7 @@ let remove_asset (model : model) : model =
 
               let b : mterm = remove_asset (fm ctx) an var_value in
 
-              mk_mterm (Mfor (FIsimple var_id, ICKlist l, b, None)) tunit
+              mk_mterm (Mfor (FIsimple var_id, ICKlist l, b)) tunit
             end
         end
 
@@ -3823,7 +3823,7 @@ let remove_high_level_model (model : model)  =
         let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
         mk_mterm (Mlistfold(t, iid, iaccu, iter, f m, b)) tl
       end
-    | Miter (i, a, b, c, lbl, nat) -> begin
+    | Miter (i, a, b, c, nat) -> begin
         let a = f a in
         let b = f b in
         let c = f c in
@@ -3837,7 +3837,7 @@ let remove_high_level_model (model : model)  =
         let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
         let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
         let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
-        let loop : mterm = mk_mterm (Mwhile (cond, body, lbl)) tunit in
+        let loop : mterm = mk_mterm (Mwhile (cond, body)) tunit in
 
         loop
         |> mk_letin i  a
@@ -4445,13 +4445,13 @@ let remove_iterable_big_map (model : model) : model =
 
     (* map_kind * type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term*)
     | { node = Mmapfold (MKIterableBigMap, kt, ikid, ivid, iaccu, map, init, act); type_ = vt } -> begin
-        let body = mk_mterm (Mfor (FIdouble(ikid, ivid), ICKmap map, mk_mterm (Massign (ValueAssign, kt, Avar iaccu, act)) tunit, None)) tunit in
+        let body = mk_mterm (Mfor (FIdouble(ikid, ivid), ICKmap map, mk_mterm (Massign (ValueAssign, kt, Avar iaccu, act)) tunit)) tunit in
         seq [aux ctx body; mk_mvar iaccu kt]
         |> (fun x -> mk_mterm (Mletin ([iaccu], LVsimple init, Some vt, x, None)) tunit)
       end
 
     (* control *)
-    | { node = Mfor (FIdouble(id_k, id_v), (ICKmap ({ type_ = (Titerable_big_map (kt, vt), _) } as map)), body, lbl)} -> begin
+    | { node = Mfor (FIdouble(id_k, id_v), (ICKmap ({ type_ = (Titerable_big_map (kt, vt), _) } as map)), body)} -> begin
         let ibm_id = mk_mident (dumloc "_ibm") in
         let ibm_type : type_ = process_type map.type_ in
         let ibm_value = mk_mvar ibm_id ibm_type in
@@ -4474,7 +4474,7 @@ let remove_iterable_big_map (model : model) : model =
           |> (fun x -> mk_mterm (Mletin ([id_k], LVsimple value_k, Some kt, x, None)) tunit)
         in
 
-        mk_mterm (Miter (idx_id, bound_min, bound_max, letin, lbl, true)) tunit
+        mk_mterm (Miter (idx_id, bound_min, bound_max, letin, true)) tunit
         |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
@@ -4568,7 +4568,7 @@ let remove_update_all (model : model) =
         let (_, kt) = Utils.get_asset_key model an in
         let k = mk_mvar k_id kt in
         let update = mk_mterm (Mupdate(an, k, l)) tunit in
-        { mt with node = Mfor(FIsimple k_id, ick, update, None)}
+        { mt with node = Mfor(FIsimple k_id, ick, update)}
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4611,7 +4611,7 @@ let process_arith_container (model : model) =
     let mapput : mterm = fv container x in
     let assign : mterm = mk_mterm (Massign (ValueAssign, ctyp, Avar lcid, mapput)) tunit in
     let ick = match get_ntype c.type_ with | Tset _ -> ICKset c | Tlist _ -> ICKlist c | _ -> assert false in
-    let loop : mterm = mk_mterm (Mfor (FIsimple xid, ick, assign, None)) tunit in
+    let loop : mterm = mk_mterm (Mfor (FIsimple xid, ick, assign)) tunit in
     let seq = mk_mterm (Mseq [loop; container]) container.type_  in
     mk_letin lcid a seq
   in
