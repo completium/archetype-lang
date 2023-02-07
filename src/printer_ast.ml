@@ -929,9 +929,9 @@ let rec pp_instruction fmt (i : instruction) =
         | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
       in
       let pp fmt (id, dk, _ty, f) =
-        Format.fprintf fmt "detach %a from %a : %a"
-          pp_id id
+        Format.fprintf fmt "detach %a as %a : %a"
           pp_dk dk
+          pp_id id
           pp_pterm f
       in
       (pp_no_paren pp) fmt (id, dk, ty, f)

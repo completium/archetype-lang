@@ -12,6 +12,6 @@ record import_ticket_param {
 } as ((%to_, %tickets_to_import))
 
 entry transfer_ticket(fa2_1: address, to_ : address) {
-  detach t from my_ticket : "NO_TICKET";
+  detach my_ticket as t : "NO_TICKET";
   transfer 0tz to fa2_1 call import_ticket<list<import_ticket_param>>([{itp_to = to_; itp_tickets = t}]);
 }

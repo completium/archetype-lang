@@ -492,7 +492,7 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt tr
 
   | Edetach (id, x, f) ->
-      Format.fprintf fmt "detach %a from %a : %a" pp_id id pp_simple_expr x pp_simple_expr f
+      Format.fprintf fmt "detach %a as %a : %a" pp_simple_expr x pp_id id pp_simple_expr f
 
   | Edorequire (x, y) ->
 

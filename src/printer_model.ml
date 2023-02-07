@@ -368,9 +368,9 @@ let pp_mterm fmt (mt : mterm) =
         | DK_option (_, id) -> Format.pp_print_string fmt id
         | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
       in
-      Format.fprintf fmt "detach %a from %a : %a"
-        pp_mid id
+      Format.fprintf fmt "detach %a as %a : %a"
         pp_dk dk
+        pp_mid id
         f fa
 
     (* entrypoint *)

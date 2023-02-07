@@ -9,6 +9,6 @@ entry init() {
 }
 
 entry exec() {
-  detach t from input : "ERROR";
+  detach input as t : "ERROR";
   output := some(t)
 }

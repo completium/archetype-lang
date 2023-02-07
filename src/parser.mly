@@ -812,7 +812,7 @@ expr_r:
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (TTself (x, id, args)) }
 
- | DETACH id=ident FROM x=simple_expr COLON f=simple_expr
+ | DETACH x=simple_expr AS id=ident COLON f=simple_expr
      { Edetach (id, x, f) }
 
  | DO_REQUIRE LPAREN x=expr COMMA y=expr RPAREN
