@@ -234,7 +234,6 @@ let toolchain ?(debug=false) model =
   |> f "remove_import_mterm" remove_import_mterm
   |> f "getter_to_entry" (getter_to_entry ~extra:true)
   |> f "process_parameter" process_parameter
-  |> f "test_mode" test_mode
   |> f "remove_decl_var_opt" remove_decl_var_opt
   |> f "remove_ternary_operator" remove_ternary_operator
   |> f "process_multi_keys" process_multi_keys

@@ -4199,47 +4199,6 @@ let instr_to_expr_exec (model : model) =
   in
   map_mterm_model aux model
 
-let test_mode (model : model) =
-  if !Options.opt_test_mode then begin
-    let nid = mk_mident (dumloc "_now") in
-
-    let svariable =
-      let var : var =
-        mk_var nid tdate tdate VKvariable ~default:(mk_mterm Mnow tdate) in
-      Dvar var
-    in
-
-    let entry =
-      let name = mk_mident (dumloc "_set_now") in
-      let v = mk_mident (dumloc "v") in
-      let arg : argument =
-        v, tdate, None
-      in
-      let body = mk_mterm (Massign (ValueAssign, tdate, Avar nid, mk_pvar v tdate)) tunit in
-      let node = mk_function_struct name body ~args:[arg] in
-      Entry node
-      |> mk_function
-    in
-
-    let now : mterm = mk_svar nid tdate in
-
-    let model =
-      { model with
-        decls = model.decls @ [svariable];
-        functions = model.functions @ [entry]
-      }
-    in
-
-    let rec aux ctx (mt : mterm) =
-      match mt.node with
-      | Mnow -> now
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
-  end
-  else
-    model
-
 let fill_stovars (model : model) : model =
   let for_function_struct (fs : function_struct) : function_struct =
     let rec aux acc (mt : mterm) : ident list =
