@@ -236,7 +236,7 @@ let toolchain ?(debug=false) model =
   |> f "process_parameter" process_parameter
   |> f "test_mode" test_mode
   |> f "remove_decl_var_opt" remove_decl_var_opt
-  |> f "remove_ternary_opeartor" remove_ternary_opeartor
+  |> f "remove_ternary_operator" remove_ternary_operator
   |> f "process_multi_keys" process_multi_keys
   |> f "replace_col_by_key_for_ckfield" replace_col_by_key_for_ckfield
   |> f "move_partition_init_asset" move_partition_init_asset
@@ -262,7 +262,6 @@ let toolchain ?(debug=false) model =
   |> f "remove_cmp_bool" remove_cmp_bool
   |> f "split_key_values" split_key_values
   |> f "remove_duplicate_key" remove_duplicate_key
-  |> f "assign_loop_label" assign_loop_label
   |> f "remove_asset" remove_asset
   |> f "remove_iterable_big_map" remove_iterable_big_map
   |> f "remove_storage_field_in_function" remove_storage_field_in_function
