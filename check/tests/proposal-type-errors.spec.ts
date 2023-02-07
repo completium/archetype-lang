@@ -37,6 +37,10 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/init_constant_with_variable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('instruction_const', async () => {
+    const stat = compile("../tests/proposal-type-errors/instruction_const.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_cond_type_ternary', async () => {
     const stat = compile("../tests/proposal-type-errors/invalid_cond_type_ternary.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
