@@ -53,7 +53,6 @@ type vtyp =
   | VTnever
   | VTchest
   | VTchest_key
-  | VTtx_rollup_l2_address
 [@@deriving show {with_path = false}]
 
 type ptyp =
@@ -303,7 +302,6 @@ and bval_node =
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
-  | BVtx_rollup_l2_address of string
   | BVduration     of Core.duration
   | BVbytes        of string
   | BVunit
@@ -669,7 +667,6 @@ let vtunit         = Tbuiltin (VTunit         )
 let vtnever        = Tbuiltin (VTnever        )
 let vtchest        = Tbuiltin (VTchest        )
 let vtchest_key    = Tbuiltin (VTchest_key    )
-let vttx_rollup_l2_address = Tbuiltin (VTtx_rollup_l2_address)
 
 let vts = [
   vtaddress      ;

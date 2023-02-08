@@ -187,7 +187,6 @@
 %token <string> MTZ
 %token <string> UTZ
 %token <string> ADDRESS
-%token <string> TX_ROLLUP_L2_ADDRESS
 %token <string> TZ_EXPR
 %token <string> DURATION
 %token <string> DATE
@@ -997,7 +996,6 @@ literal:
  | x=UTZ                  { Lutz            x }
  | x=STRING               { Lstring         x }
  | x=ADDRESS              { Laddress        x }
- | x=TX_ROLLUP_L2_ADDRESS { Ltx_rollup_l2_address x }
  | x=bool_value           { Lbool           x }
  | x=DURATION             { Lduration       x }
  | x=DATE                 { Ldate           x }

@@ -1235,7 +1235,6 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tnever                 -> M.tnever
   | Tchest                 -> M.tchest
   | Tchest_key             -> M.tchest_key
-  | Ttx_rollup_l2_address  -> M.ttx_rollup_l2_address
 
 module Decomp_model : sig
   val decompile : T.dprogram * env -> M.model * env
@@ -1492,7 +1491,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bnever            -> A.tnever
     | Tbuiltin Bchest            -> A.tchest
     | Tbuiltin Bchest_key        -> A.tchest_key
-    | Tbuiltin Btx_rollup_l2_address -> A.ttx_rollup_l2_address
     | Tcontainer (t, c)          -> A.mk_tcontainer (f t)
                                       (match c with
                                        | Collection      -> assert false
@@ -1620,7 +1618,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mstring v          -> A.estring v
     | Mcurrency (_v, _c) -> assert false
     | Maddress v         -> A.eaddress v
-    | Mtx_rollup_l2_address v -> A.etx_rollup_l2_address v
     | Mdate _v           -> assert false
     | Mduration _v       -> assert false
     | Mtimestamp _v      -> assert false

@@ -192,7 +192,6 @@ and literal =
   | Lmtz            of string
   | Lutz            of string
   | Laddress        of string
-  | Ltx_rollup_l2_address of string
   | Lstring         of string
   | Lbool           of bool
   | Lduration       of string
@@ -380,7 +379,6 @@ let tbls12_381_g2 = tref "bls12_381_g2"
 let tnever        = tref "never"
 let tchest        = tref "chest"
 let tchest_key    = tref "chest_key"
-let ttx_rollup_l2_address = tref "tx_rollup_l2_address"
 
 let mk_tcontainer ?(loc=dummy) ?a t c : type_t =
   mkloc loc (Tcontainer (t, c)), a
@@ -446,7 +444,6 @@ let efalse = mk_eliteral (Lbool false)
 
 let edecimal  v = mk_eliteral (Ldecimal v)
 let eaddress  v = mk_eliteral (Laddress v)
-let etx_rollup_l2_address  v = mk_eliteral (Ltx_rollup_l2_address v)
 let estring   v = mk_eliteral (Lstring v)
 let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)

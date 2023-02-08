@@ -32,7 +32,6 @@ let pp_btyp fmt = function
   | Bnever        -> Format.fprintf fmt "never"
   | Bchest        -> Format.fprintf fmt "chest"
   | Bchest_key    -> Format.fprintf fmt "chest_key"
-  | Btx_rollup_l2_address -> Format.fprintf fmt "tx_rollup_l2_address"
 
 let pp_container fmt = function
   | Collection     -> Format.fprintf fmt "collection"
@@ -440,7 +439,6 @@ let pp_mterm fmt (mt : mterm) =
         pp_big_int v
         pp_currency c
     | Maddress v -> pp_str fmt v
-    | Mtx_rollup_l2_address v -> pp_str fmt v
     | Mdate v -> Core.pp_date fmt v
     | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mtimestamp v -> pp_big_int fmt v

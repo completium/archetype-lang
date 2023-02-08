@@ -1,3 +1,0 @@
-archetype type_tx_rollup_l2_address
-
-variable a : tx_rollup_l2_address = tz4HVR6aty9KwsQFHh81C1G7gBdhxT8kuytm

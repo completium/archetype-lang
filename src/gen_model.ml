@@ -77,7 +77,6 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     | A.VTnever        -> M.Bnever
     | A.VTchest        -> M.Bchest
     | A.VTchest_key    -> M.Bchest_key
-    | A.VTtx_rollup_l2_address -> M.Btx_rollup_l2_address
   in
 
   let rec type_to_type (t : A.type_) : M.type_ =
@@ -331,7 +330,6 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Plit ({node = BVstring s; _})               -> M.Mstring s
       | A.Plit ({node = BVcurrency (c, i); _})        -> M.Mcurrency (i, to_currency c)
       | A.Plit ({node = BVaddress s; _})              -> M.Maddress s
-      | A.Plit ({node = BVtx_rollup_l2_address s; _}) -> M.Mtx_rollup_l2_address s
       | A.Plit ({node = BVduration d; _})             -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})                -> M.Mbytes v
       | A.Plit ({node = BVunit; _})                   -> M.Munit

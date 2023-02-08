@@ -814,7 +814,6 @@ and pp_literal fmt lit =
   | Lmtz                  n -> Format.fprintf fmt "%smtz" n
   | Lutz                  n -> Format.fprintf fmt "%sutz" n
   | Laddress              a -> Format.fprintf fmt "@%s" a
-  | Ltx_rollup_l2_address a -> Format.fprintf fmt "%s" a
   | Lstring               s -> Format.fprintf fmt "\"%s\"" s
   | Lbool                 b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration             d -> Format.fprintf fmt "%s" d

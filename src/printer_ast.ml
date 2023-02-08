@@ -46,7 +46,6 @@ let pp_vtyp fmt = function
   | VTnever        -> Format.fprintf fmt "never"
   | VTchest        -> Format.fprintf fmt "chest"
   | VTchest_key    -> Format.fprintf fmt "chest_key"
-  | VTtx_rollup_l2_address -> Format.fprintf fmt "tx_rollup_l2_address"
 
 let pp_container fmt = function
   | Collection     -> Format.fprintf fmt "collection"
@@ -140,7 +139,6 @@ let pp_bval fmt (bval : bval) =
     | BVstring s               -> Format.fprintf fmt "\"%s\"" s
     | BVcurrency (c, v)        -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v              -> Format.fprintf fmt "@@%a" pp_str v
-    | BVtx_rollup_l2_address v -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v             -> Core.pp_duration_for_printer fmt v
     | BVbytes s                -> Format.fprintf fmt "0x%a" pp_str s
     | BVunit                   -> Format.fprintf fmt "Unit"

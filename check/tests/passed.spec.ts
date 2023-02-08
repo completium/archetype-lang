@@ -1137,7 +1137,6 @@ import * as type_never from '../bindings/passed/type_never'
 import * as type_or from '../bindings/passed/type_or'
 import * as type_set_enum_param from '../bindings/passed/type_set_enum_param'
 import * as type_storage_or from '../bindings/passed/type_storage_or'
-import * as type_tx_rollup_l2_address from '../bindings/passed/type_tx_rollup_l2_address'
 import * as typetuple from '../bindings/passed/typetuple'
 import * as unused_argument from '../bindings/passed/unused_argument'
 import * as unused_variable from '../bindings/passed/unused_variable'
@@ -9366,11 +9365,6 @@ describe('passed', async () => {
 
   it('type_storage_or', async () => {
     await type_storage_or.type_storage_or.deploy({ as: alice })
-    // TODO
-  })
-
-  it('type_tx_rollup_l2_address', async () => {
-    await type_tx_rollup_l2_address.type_tx_rollup_l2_address.deploy({ as: alice })
     // TODO
   })
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Global constants
 ### Removed
   - BREAKING: Formal verification
+  - add `tx_rollup_l2_address` type
 
 ## [1.4.1] - 2023-02-01
 ### Added

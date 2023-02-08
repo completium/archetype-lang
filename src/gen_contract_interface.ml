@@ -223,7 +223,6 @@ let rec for_type (t : M.type_) : type_ =
   | Tbuiltin Bnever                             -> mk_type "never"                None                      None    []
   | Tbuiltin Bchest                             -> mk_type "chest"                None                      None    []
   | Tbuiltin Bchest_key                         -> mk_type "chest_key"            None                      None    []
-  | Tbuiltin Btx_rollup_l2_address              -> mk_type "tx_rollup_l2_address" None                      None    []
   | Tcontainer ((Tasset an, _), Collection)     -> mk_type "collection"          (Some (M.unloc_mident an)) None    []
   | Tcontainer ((Tasset an, _), Aggregate)      -> mk_type "aggregate"           (Some (M.unloc_mident an)) None    []
   | Tcontainer ((Tasset an, _), Partition)      -> mk_type "partition"           (Some (M.unloc_mident an)) None    []
@@ -528,7 +527,6 @@ let rec tz_type_to_type_ (ty : T.type_) : type_=
   | Tnever                 -> mk_type "never"                ty.annotation None []
   | Tchest                 -> mk_type "chest"                ty.annotation None []
   | Tchest_key             -> mk_type "chest_key"            ty.annotation None []
-  | Ttx_rollup_l2_address  -> mk_type "tx_rollup_l2_address" ty.annotation None []
 
 let tz_type_to_args (ty : T.type_) : argument list=
   match ty with

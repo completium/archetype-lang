@@ -17,7 +17,6 @@ let string_of_token = function
   | TZ_EXPR s            -> Printf.sprintf "TZ_EXPR(%s)" s
   | TZ n                 -> Printf.sprintf "TZ(%s)" n
   | TYPE                 -> "TYPE"
-  | TX_ROLLUP_L2_ADDRESS s -> Printf.sprintf "TX_ROLLUP_L2_ADDRESS(%s)" s
   | TRUE                 -> "TRUE"
   | TRANSITION           -> "TRANSITION"
   | TRANSFER             -> "TRANSFER"
@@ -188,7 +187,6 @@ let string_of_symbol = function
   | X (T T_TZ) -> "a tz"
   | X (T T_TZ_EXPR) -> "a tz_expr"
   | X (T T_TYPE) -> "a type"
-  | X (T T_TX_ROLLUP_L2_ADDRESS) -> "tx_rollup_l2_address"
   | X (T T_TRUE) -> "true"
   | X (T T_TRANSITION) -> "transition"
   | X (T T_TRANSFER) -> "transfer"

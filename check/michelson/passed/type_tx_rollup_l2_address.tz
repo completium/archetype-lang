@@ -1,3 +1,0 @@
-{ storage tx_rollup_l2_address ;
-  parameter unit ;
-  code { CDR ; NIL operation ; PAIR } }

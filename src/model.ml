@@ -53,7 +53,6 @@ type btyp =
   | Bnever
   | Bchest
   | Bchest_key
-  | Btx_rollup_l2_address
 [@@deriving show {with_path = false}]
 
 type ntype =
@@ -240,7 +239,6 @@ type 'term mterm_node  =
   | Mstring           of string
   | Mcurrency         of Core.big_int * currency
   | Maddress          of string
-  | Mtx_rollup_l2_address of string
   | Mdate             of Core.date
   | Mduration         of Core.duration
   | Mtimestamp        of Core.big_int
@@ -921,7 +919,6 @@ let tbls12_381_g2          = mktype (Tbuiltin Bbls12_381_g2)
 let tnever                 = mktype (Tbuiltin Bnever)
 let tchest                 = mktype (Tbuiltin Bchest)
 let tchest_key             = mktype (Tbuiltin Bchest_key)
-let ttx_rollup_l2_address  = mktype (Tbuiltin Btx_rollup_l2_address)
 let tasset an              = mktype (Tasset an)
 let tcollection an         = mktype (Tcontainer (tasset an, Collection))
 let taggregate an          = mktype (Tcontainer (tasset an, Aggregate))
@@ -949,7 +946,6 @@ let mk_nat          x = mk_bnat  (Big_int.big_int_of_int x)
 let mk_bint         x = mk_mterm (Mint x) tint
 let mk_int          x = mk_bint  (Big_int.big_int_of_int x)
 let mk_address      x = mk_mterm (Maddress x) taddress
-let mk_tx_rollup_l2_address x = mk_mterm (Mtx_rollup_l2_address x) ttx_rollup_l2_address
 let unit              = mk_mterm (Munit) tunit
 let mk_sapling_state_empty n = mk_mterm (MsaplingStateEmpty n) (tsapling_state n)
 let mk_sapling_transaction n x = mk_mterm (MsaplingTransaction (n, x)) (tsapling_transaction n)
@@ -1289,7 +1285,6 @@ let cmp_mterm_node
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
     | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
-    | Mtx_rollup_l2_address v1, Mtx_rollup_l2_address v2                               -> cmp_ident v1 v2
     | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
     | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
@@ -1747,7 +1742,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mstring v                      -> Mstring v
   | Mcurrency (v, c)               -> Mcurrency (v, c)
   | Maddress v                     -> Maddress v
-  | Mtx_rollup_l2_address v        -> Mtx_rollup_l2_address v
   | Mdate v                        -> Mdate v
   | Mduration v                    -> Mduration v
   | Mtimestamp v                   -> Mtimestamp v
@@ -2121,7 +2115,6 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mstring _                             -> accu
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
-  | Mtx_rollup_l2_address _               -> accu
   | Mdate _                               -> accu
   | Mduration _                           -> accu
   | Mtimestamp _                          -> accu
@@ -2653,9 +2646,6 @@ let fold_map_term
 
   | Maddress v ->
     g (Maddress v), accu
-
-  | Mtx_rollup_l2_address v ->
-    g (Mtx_rollup_l2_address v), accu
 
   | Mdate v ->
     g (Mdate v), accu
@@ -4315,7 +4305,6 @@ end = struct
     | Mstring    v1, Mstring v2    -> String.compare v1 v2
     | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
     | Maddress   v1, Maddress   v2 -> String.compare v1 v2
-    | Mtx_rollup_l2_address v1, Mtx_rollup_l2_address v2 -> String.compare v1 v2
     | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
     | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
     | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
@@ -4474,7 +4463,6 @@ end = struct
             | Mbls12_381_fr_n n1, Mbls12_381_fr_n n2
             | Mtimestamp n1, Mtimestamp n2 -> Big_int.compare_big_int n1 n2
             | Maddress s1,   Maddress s2
-            | Mtx_rollup_l2_address s1, Mtx_rollup_l2_address s2
             | Mbytes s1,     Mbytes s2
             | Mchain_id s1,  Mchain_id s2
             | Mkey s1,       Mkey s2
