@@ -30,26 +30,27 @@ let emit_error (lc, error : Location.t * error_desc) =
 
 let bailout = fun () -> raise (Error.Stop 5)
 
-let to_mident ((nm, id) : A.longident) : M.mident =
-  M.mk_mident ~namespace:[nm] id
+let to_mident ((_, id) : A.longident) : M.mident =
+  M.mk_mident id
 
 let unloc_longident (lid : A.longident) : ident = unloc (snd lid)
 
 let longident_to_lident (lid : A.longident) : M.lident = snd lid
 
-let longident_to_mident (lid : A.longident) : M.mident = ([fst lid], snd lid)
+let longident_to_mident (lid : A.longident) : M.mident = (None, snd lid)
 
 type env = {
   formula: bool;
   asset_name: ident option;
-  function_p: (M.mident * (M.mident * M.type_ * M.mterm option) list) option
+  function_p: (M.mident * (M.mident * M.type_ * M.mterm option) list) option;
+  m_ident_key: (int * int) option;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(formula=false) ?asset_name ?function_p () =
-  { formula; asset_name; function_p }
+let mk_env ?(formula=false) ?asset_name ?function_p ?m_ident_key () =
+  { formula; asset_name; function_p; m_ident_key }
 
-let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
+let to_model ((tenv, ast) : Typing.env * A.ast) : M.model =
 
   let to_currency = function
     | A.Utz  -> M.Utz
@@ -1535,5 +1536,18 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
+
+  let tenv : Typing.env = tenv in
+
+  let cache = Typing.Env.Import.get_cache_deref (tenv) in
+  (* let c :  = !cache in *)
+
+  (* let c = !cache in *)
+
+  (* let tast = Mlib.cardinal cache in *)
+
+  (* let  *)
+  Typing.Mlib.iter ( fun k _v -> Format.eprintf "%d %d" (fst k) (snd k)) cache;
+  (* Mlib.iter (fun x -> ()) cache; *)
 
   M.mk_model ~parameters ~imports ?metadata ~decls ~functions ~loc:ast.loc name

@@ -666,6 +666,15 @@ let loc_nmid (nm, x) =
   in Location.mergeall (loc x :: nm)
 
 (* -------------------------------------------------------------------- *)
+
+module Mlib = Map.Make(struct
+    type t = int * int
+
+    let equal = Stdlib.(=)
+    let compare = Stdlib.compare
+  end)
+
+(* -------------------------------------------------------------------- *)
 type error_desc =
   | TODO
   | AEntryExpected                     of A.ptyp
@@ -1906,6 +1915,7 @@ module Env : sig
     val get_in_cache  : t -> key -> (t importdecl) option
     val push_in_cache : t -> key -> t importdecl -> unit
     val get_cache     : t -> cache
+    val get_cache_deref : t -> (t importdecl) Mlib.t
   end
 end = struct
   type ecallback = error -> unit
@@ -1915,13 +1925,6 @@ end = struct
   type record = [`Pre of A.lident | `Full of recorddecl]
   type state  = [`Pre of A.lident | `Full of statedecl ]
   type asset  = [`Pre of A.lident | `Full of assetdecl ]
-
-  module Mlib = Map.Make(struct
-      type t = int * int
-
-      let equal = Stdlib.(=)
-      let compare = Stdlib.compare
-    end)
 
   type entry = [
     | `Label       of t * label_kind
@@ -2394,6 +2397,9 @@ end = struct
 
     let get_cache (env : t) =
       env.env_loaded
+
+    let get_cache_deref (env : t) =
+      !(env.env_loaded)
   end
 
 end
@@ -6825,6 +6831,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
         let stats =
           try
             let stats = Unix.stat (unloc path) in
+            Format.eprintf "(%d, %d)" stats.st_dev stats.st_ino;
             (Some (stats.st_dev, stats.st_ino))
           with Unix.Unix_error _ -> None in
 

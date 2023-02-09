@@ -9,6 +9,8 @@ type type_kind =
   | Type
   | Init of string
 
+let pp_mid fmt x = pp_id fmt (snd x)
+
 let rec to_type (tk : type_kind) fmt (t : type_) =
   let pp = Format.fprintf fmt in
   let unsupported _ = pp "Unsupported" in

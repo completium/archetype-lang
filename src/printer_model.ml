@@ -6,6 +6,14 @@ open Printer_tools
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
+let pp_mident_key fmt (k : mident_key) =
+  (pp_option (fun fmt (i1, i2) -> Format.fprintf fmt "(%d,%d)::" i1 i2)) fmt k
+
+let pp_mid fmt (id : mident) =
+  Format.fprintf fmt "%a%a"
+    pp_mident_key (fst id)
+    pp_id (snd id)
+
 let pp_currency fmt = function
   | Utz -> Format.fprintf fmt "utz"
 

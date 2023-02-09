@@ -448,7 +448,7 @@ let with_parameters input : string =
       (
         Printer_tools.pp_list ", " (fun fmt (p : Model.parameter) ->
             Format.fprintf fmt "%a : %a"
-              Printer_tools.pp_mid p.name
+              Printer_tools.pp_id (snd p.name)
               Printer_model.pp_type p.typ
           )) parameters
 

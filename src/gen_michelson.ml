@@ -151,7 +151,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       end
   in
 
-  let process_enum ?annotation (id : mident) =
+  let process_enum ?annotation (id : M.mident) =
     let e_opt : M.enum option = M.Utils.get_enum_opt model (M.unloc_mident id) in
     match e_opt with
     | Some e when not (List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values) -> begin

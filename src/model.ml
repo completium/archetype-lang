@@ -5,13 +5,10 @@ open Location
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
-type namespace = lident list
+type mident_key = (int * int) option
 [@@deriving show {with_path = false}]
 
-type path = namespace * lident
-[@@deriving show {with_path = false}]
-
-type mident = path
+type mident = mident_key * lident
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -801,8 +798,8 @@ type model = {
 }
 [@@deriving show {with_path = false}]
 
-let mk_mident ?(namespace = []) id : mident =
-  (namespace, id)
+let mk_mident ?key id : mident =
+  (key, id)
 
 let unloc_mident (id : mident) : ident =
   unloc (snd id)
@@ -1068,9 +1065,8 @@ let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
 let cmp_big_int (n1 : Core.big_int) (n2 : Core.big_int) : bool = Big_int.compare_big_int n1 n2 = 0
 let cmp_int (n1 : int) (n2 : int) : bool = n1 = n2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
-let cmp_namespace (n1 : namespace) (n2 : namespace) : bool = List.for_all2 cmp_lident n1 n2
-let cmp_path (p1 : path) (p2 : path) : bool = cmp_namespace (fst p1) (fst p2) && cmp_lident (snd p1) (snd p2)
-let cmp_mident (i1 : mident) (i2 : mident) : bool = cmp_path i1 i2
+let cmp_mident_key (k1 : mident_key) (k2 : mident_key) : bool = Option.cmp (fun x y -> fst x == fst y && snd x == snd y) k1 k2
+let cmp_mident (i1 : mident) (i2 : mident) : bool = cmp_mident_key (fst i1) (fst i2) && cmp_lident (snd i1) (snd i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
 let cmp_currency (c1 : currency) (c2 : currency) : bool = c1 = c2
