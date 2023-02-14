@@ -1,0 +1,7 @@
+archetype test_is_implicit_address
+
+variable res : bool = false
+
+entry exec(a : address) {
+  res := is_implicit_address(a)
+}
