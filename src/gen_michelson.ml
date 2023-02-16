@@ -250,7 +250,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mint       n               -> Some (T.Dint n)
   | Mnat       n               -> Some (T.Dint n)
   | Mstring    s               -> Some (T.Dstring s)
-  | Mcurrency  (v, _)          -> Some (T.Dint v)
+  | Mmutez  v                  -> Some (T.Dint v)
   | Maddress   v               -> Some (T.Dstring v)
   | Mdate      v               -> Some (T.Dint (Core.date_to_timestamp v))
   | Mduration  n               -> Some (T.Dint (Core.duration_to_timestamp n))
@@ -478,7 +478,7 @@ let to_ir (model : M.model) : T.ir =
     | Mint       n      -> T.Dint n
     | Mnat       n      -> T.Dint n
     | Mstring    s      -> T.Dstring s
-    | Mcurrency  (v, _) -> T.Dint v
+    | Mmutez     v      -> T.Dint v
     | Maddress   v      -> T.Dstring v
     | Mdate      v      -> T.Dint (Core.date_to_timestamp v)
     | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
@@ -858,7 +858,7 @@ let to_ir (model : M.model) : T.ir =
     | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
     | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
-    | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
+    | Mmutez v           -> T.Iconst (T.mk_type Tmutez, Dint v)
     | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
     | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
     | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))

@@ -51,10 +51,6 @@ let mk_env ?(formula=false) ?asset_name ?function_p () =
 
 let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
-  let to_currency = function
-    | A.Utz  -> M.Utz
-  in
-
   let vtyp_to_btyp = function
     | A.VTunit         -> M.Bunit
     | A.VTbool         -> M.Bbool
@@ -328,7 +324,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Plit ({node = BVrational (d, n); _})        -> M.Mrational (d, n)
       | A.Plit ({node = BVdate s; _})                 -> M.Mdate s
       | A.Plit ({node = BVstring s; _})               -> M.Mstring s
-      | A.Plit ({node = BVcurrency (c, i); _})        -> M.Mcurrency (i, to_currency c)
+      | A.Plit ({node = BVcurrency (_c, v); _})       -> M.Mmutez v
       | A.Plit ({node = BVaddress s; _})              -> M.Maddress s
       | A.Plit ({node = BVduration d; _})             -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})                -> M.Mbytes v
@@ -1413,7 +1409,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       if (not (fst transaction.accept_transfer))
       then
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) M.ttez in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Utz)) M.ttez in
+        let rhs : M.mterm = M.mk_mterm (M.Mmutez Big_int.zero_big_int) M.ttez in
         let eq : M.mterm = M.mk_mterm (M.Mequal (M.ttez, lhs, rhs)) M.tbool in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) M.tbool in
         let fail = match snd transaction.accept_transfer with | Some o -> fail (Invalid (to_mterm env o)) | None -> fail NoTransfer in

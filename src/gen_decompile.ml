@@ -1616,7 +1616,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mbool false        -> A.efalse
     | Mrational (_n, _d) -> assert false
     | Mstring v          -> A.estring v
-    | Mcurrency (_v, _c) -> assert false
+    | Mmutez _v          -> assert false
     | Maddress v         -> A.eaddress v
     | Mdate _v           -> assert false
     | Mduration _v       -> assert false

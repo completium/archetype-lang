@@ -14,12 +14,6 @@ type path = namespace * lident
 type mident = path
 [@@deriving show {with_path = false}]
 
-type currency =
-  (* | Tz
-     | Mtz *)
-  | Utz
-[@@deriving show {with_path = false}]
-
 type container =
   | Collection
   | Aggregate
@@ -237,7 +231,7 @@ type 'term mterm_node  =
   | Mbool             of bool
   | Mrational         of Core.big_int * Core.big_int
   | Mstring           of string
-  | Mcurrency         of Core.big_int * currency
+  | Mmutez            of Core.big_int
   | Maddress          of string
   | Mdate             of Core.date
   | Mduration         of Core.duration
@@ -978,7 +972,7 @@ let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate)) ((Tenum (mk_
 let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum (mk_mident e)))
 let mk_state_value id = mk_enum_value id (dumloc "state")
 
-let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
+let mk_btez v = mk_mterm (Mmutez v) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
 
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
@@ -1073,7 +1067,6 @@ let cmp_path (p1 : path) (p2 : path) : bool = cmp_namespace (fst p1) (fst p2) &&
 let cmp_mident (i1 : mident) (i2 : mident) : bool = cmp_path i1 i2
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
-let cmp_currency (c1 : currency) (c2 : currency) : bool = c1 = c2
 let cmp_container (c1 : container) (c2 : container) = c1 = c2
 let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
@@ -1283,7 +1276,7 @@ let cmp_mterm_node
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
-    | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
+    | Mmutez v1, Mmutez v2                                                             -> Big_int.eq_big_int v1 v2
     | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
     | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
@@ -1740,7 +1733,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mbool v                        -> Mbool v
   | Mrational (n, d)               -> Mrational (n, d)
   | Mstring v                      -> Mstring v
-  | Mcurrency (v, c)               -> Mcurrency (v, c)
+  | Mmutez v                       -> Mmutez v
   | Maddress v                     -> Maddress v
   | Mdate v                        -> Mdate v
   | Mduration v                    -> Mduration v
@@ -2113,7 +2106,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mbool _                               -> accu
   | Mrational _                           -> accu
   | Mstring _                             -> accu
-  | Mcurrency _                           -> accu
+  | Mmutez _                              -> accu
   | Maddress _                            -> accu
   | Mdate _                               -> accu
   | Mduration _                           -> accu
@@ -2641,8 +2634,8 @@ let fold_map_term
   | Mstring v ->
     g (Mstring v), accu
 
-  | Mcurrency (v, c) ->
-    g (Mcurrency (v, c)), accu
+  | Mmutez v ->
+    g (Mmutez v), accu
 
   | Maddress v ->
     g (Maddress v), accu
@@ -4299,11 +4292,11 @@ end = struct
 
   let rec cmp (lhs : mterm) (rhs : mterm) : int =
     match lhs.node, rhs.node with
-    | Mbool      v1, Mbool v2      -> Bool.compare v1 v2
-    | Mnat       v1, Mnat v2       -> Big_int.compare_big_int v1 v2
-    | Mint       v1, Mint v2       -> Big_int.compare_big_int v1 v2
-    | Mstring    v1, Mstring v2    -> String.compare v1 v2
-    | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
+    | Mbool      v1, Mbool      v2 -> Bool.compare v1 v2
+    | Mnat       v1, Mnat       v2 -> Big_int.compare_big_int v1 v2
+    | Mint       v1, Mint       v2 -> Big_int.compare_big_int v1 v2
+    | Mstring    v1, Mstring    v2 -> String.compare v1 v2
+    | Mmutez     v1, Mmutez     v2 -> Big_int.compare_big_int v1 v2
     | Maddress   v1, Maddress   v2 -> String.compare v1 v2
     | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
     | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
@@ -4417,7 +4410,7 @@ end = struct
         let extract_tez (b : mterm) : Big_int.big_int =
           let b = aux b in
           match b.node with
-          | Mcurrency (v, Utz) -> v
+          | Mmutez v -> v
           | _ -> assert false
         in
 
@@ -4459,7 +4452,7 @@ end = struct
             | Mnat n1,     Mint n2
             | Mint n1,     Mnat n2
             | Mint n1,     Mint n2
-            | Mcurrency (n1, Utz), Mcurrency (n2, Utz)
+            | Mmutez n1,   Mmutez n2
             | Mbls12_381_fr_n n1, Mbls12_381_fr_n n2
             | Mtimestamp n1, Mtimestamp n2 -> Big_int.compare_big_int n1 n2
             | Maddress s1,   Maddress s2
@@ -4514,7 +4507,7 @@ end = struct
         | Mplus   (a, b), (Tbuiltin Bcurrency, _) when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
-            mk_mterm (Mcurrency (Big_int.add_big_int a b, Utz)) ttez
+            mk_mterm (Mmutez (Big_int.add_big_int a b)) ttez
           end
         | Mplus   (a, b), _ when is_timestamp a && is_int b -> begin
             let a = extract_timestamp a in
@@ -4527,7 +4520,7 @@ end = struct
             let b = extract_tez b in
             let res = Big_int.sub_big_int a b in
             if Big_int.sign_big_int res < 0 then emit_error2(mt.loc, CurrencyValueCannotBeNegative);
-            mk_mterm (Mcurrency (res, Utz)) ttez
+            mk_mterm (Mmutez res) ttez
           end
         | Mminus  (a, b), _ when is_timestamp a && is_timestamp b -> begin
             let a = extract_timestamp a in
@@ -4585,17 +4578,17 @@ end = struct
           begin
             let coef = aux coef in
             let c    = aux c    in
-            let f num denom v cur =
+            let f num denom v =
               let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
-              mk_mterm (Mcurrency (res, cur)) ttez
+              mk_mterm (Mmutez res) ttez
             in
             match coef.node, c.node with
-            | Mrational (num, denom), Mcurrency (v, cur) -> f num denom v cur
-            | Mtuple [num; denom], Mcurrency (v, cur) ->
+            | Mrational (num, denom), Mmutez v -> f num denom v
+            | Mtuple [num; denom], Mmutez v ->
               begin
                 let num = extract_big_int num in
                 let denom = extract_big_int denom in
-                f num denom v cur
+                f num denom v
               end
             | _ -> begin
                 Format.eprintf "%a@." pp_mterm mt;

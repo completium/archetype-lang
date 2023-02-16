@@ -6,9 +6,6 @@ open Printer_tools
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
-let pp_currency fmt = function
-  | Utz -> Format.fprintf fmt "utz"
-
 let pp_btyp fmt = function
   | Bunit         -> Format.fprintf fmt "unit"
   | Bbool         -> Format.fprintf fmt "bool"
@@ -434,10 +431,9 @@ let pp_mterm fmt (mt : mterm) =
     | Mstring v ->
       Format.fprintf fmt "\"%a\""
         pp_str v
-    | Mcurrency (v, c) ->
-      Format.fprintf fmt "%a%a"
+    | Mmutez v ->
+      Format.fprintf fmt "%autz"
         pp_big_int v
-        pp_currency c
     | Maddress v -> pp_str fmt v
     | Mdate v -> Core.pp_date fmt v
     | Mduration v -> Core.pp_duration_for_printer fmt v
