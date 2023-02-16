@@ -34,7 +34,7 @@ type btyp =
   | Btimestamp
   | Bstring
   | Baddress
-  | Bcurrency
+  | Btez
   | Bsignature
   | Bkey
   | Bkeyhash
@@ -879,7 +879,7 @@ let tnat                   = mktype (Tbuiltin Bnat)
 let tint                   = mktype (Tbuiltin Bint)
 let tstring                = mktype (Tbuiltin Bstring)
 let tbytes                 = mktype (Tbuiltin Bbytes)
-let ttez                   = mktype (Tbuiltin Bcurrency)
+let ttez                   = mktype (Tbuiltin Btez)
 let tduration              = mktype (Tbuiltin Bduration)
 let tkey                   = mktype (Tbuiltin Bkey)
 let tkeyhash               = mktype (Tbuiltin Bkeyhash)
@@ -4343,7 +4343,7 @@ end = struct
 
     let is_tez (mt : mterm) =
       match get_ntype mt.type_ with
-      | Tbuiltin Bcurrency -> true
+      | Tbuiltin Btez -> true
       | _ -> false
     in
 
@@ -4504,7 +4504,7 @@ end = struct
             let b = extract_string b in
             mk_mterm (Mstring (a ^ b)) tstring
           end
-        | Mplus   (a, b), (Tbuiltin Bcurrency, _) when is_tez a && is_tez b -> begin
+        | Mplus   (a, b), (Tbuiltin Btez, _) when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
             mk_mterm (Mmutez (Big_int.add_big_int a b)) ttez
@@ -4515,7 +4515,7 @@ end = struct
             mk_mterm (Mtimestamp (Big_int.add_big_int a b)) ttimestamp
           end
         | Mplus   (a, b), t -> arith t `Plus  (aux a, aux b)
-        | Mminus  (a, b), (Tbuiltin Bcurrency, _) when is_tez a && is_tez b -> begin
+        | Mminus  (a, b), (Tbuiltin Btez, _) when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
             let res = Big_int.sub_big_int a b in

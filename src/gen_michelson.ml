@@ -179,7 +179,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Btimestamp    -> T.Ttimestamp
       | Bstring       -> T.Tstring
       | Baddress      -> T.Taddress
-      | Bcurrency     -> T.Tmutez
+      | Btez          -> T.Tmutez
       | Bsignature    -> T.Tsignature
       | Bkey          -> T.Tkey
       | Bkeyhash      -> T.Tkey_hash
@@ -993,7 +993,7 @@ let to_ir (model : M.model) : T.ir =
     | Mplus (l, r)       -> T.iadd (f l) (f r)
     | Mminus (l, r)      -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail M.fail_msg_NAT_NEG_ASSIGN, "_var_ifnone", T.ivar "_var_ifnone", ft mtt.type_)
+        | M.Tbuiltin Btez -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail M.fail_msg_NAT_NEG_ASSIGN, "_var_ifnone", T.ivar "_var_ifnone", ft mtt.type_)
         | _ -> T.isub (f l) (f r)
       end
     | Mmult (l, r)       -> T.imul (f l) (f r)
@@ -1046,7 +1046,7 @@ let to_ir (model : M.model) : T.ir =
     | Mcast (src, dst, v) -> begin
         match M.get_ntype src, M.get_ntype dst, v.node with
         | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type model t) (f v)
-        | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
+        | M.Tbuiltin Btez, M.Tbuiltin Bnat, _                  -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
     | Mtupleaccess (x, n) -> begin

@@ -1211,7 +1211,7 @@ let remove_rational (model : model) : model =
         | Tbuiltin Brational
         | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> begin
             match op, get_ntype a.type_, get_ntype b.type_ with
-            | `Divrat, Tbuiltin Bcurrency, Tbuiltin Bcurrency -> begin
+            | `Divrat, Tbuiltin Btez, Tbuiltin Btez -> begin
                 let lhs = a |> aux |> mk_muteztonat |> mk_nattoint in
                 let rhs = b |> aux |> mk_muteztonat in
                 mk_tuple [lhs; rhs]
@@ -1233,17 +1233,17 @@ let remove_rational (model : model) : model =
                 | None -> map_mterm aux mt
               end
           end
-        | Tbuiltin Bcurrency -> begin
+        | Tbuiltin Btez -> begin
             match op, get_ntype a.type_, get_ntype b.type_ with
-            | `Mult, Tbuiltin Bnat,      Tbuiltin Bcurrency
-            | `Mult, Tbuiltin Bint,      Tbuiltin Bcurrency
-            | `Mult, Tbuiltin Brational, Tbuiltin Bcurrency -> begin
+            | `Mult, Tbuiltin Bnat,      Tbuiltin Btez
+            | `Mult, Tbuiltin Bint,      Tbuiltin Btez
+            | `Mult, Tbuiltin Brational, Tbuiltin Btez -> begin
                 let lhs = a |> aux |> to_rat in
                 let rhs = b |> aux in
                 mk_mterm (Mrattez (lhs, rhs)) ttez
               end
-            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bnat
-            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bint -> begin
+            | `Diveuc, Tbuiltin Btez, Tbuiltin Bnat
+            | `Diveuc, Tbuiltin Btez, Tbuiltin Bint -> begin
                 let inv_rat v = mk_mterm (Mratarith (Rdiv, to_rat one, v)) trat in
                 let lhs = b |> aux |> to_rat |> inv_rat in
                 let rhs = a |> aux in
@@ -1493,7 +1493,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
 let abs_tez model : model =
   let is_cur (mt : mterm) =
     match get_ntype mt.type_ with
-    | Tbuiltin Bcurrency -> true
+    | Tbuiltin Btez -> true
     | _ -> false
   in
   let is_int (mt : mterm) =
@@ -3633,7 +3633,7 @@ let remove_asset (model : model) : model =
             | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
             | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
             | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
-            | Tbuiltin Bcurrency -> mk_mterm (Mmutez (Big_int.zero_big_int)) ttez
+            | Tbuiltin Btez -> mk_mterm (Mmutez (Big_int.zero_big_int)) ttez
             | _ -> assert false
           in
           fold_ck (fm ctx) (an, ck) init mk

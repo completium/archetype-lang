@@ -61,7 +61,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     | A.VTduration     -> M.Bduration
     | A.VTstring       -> M.Bstring
     | A.VTaddress      -> M.Baddress
-    | A.VTcurrency     -> M.Bcurrency
+    | A.VTcurrency     -> M.Btez
     | A.VTsignature    -> M.Bsignature
     | A.VTkey          -> M.Bkey
     | A.VTkeyhash      -> M.Bkeyhash

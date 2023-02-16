@@ -38,7 +38,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tbuiltin Btimestamp             -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
   | Tbuiltin Bstring                -> doit string id_f
   | Tbuiltin Baddress               -> doit string id_f
-  | Tbuiltin Bcurrency              -> doit number id_f
+  | Tbuiltin Btez                   -> doit number id_f
   | Tbuiltin Bsignature             -> doit string id_f
   | Tbuiltin Bkey                   -> doit string id_f
   | Tbuiltin Bkeyhash               -> doit string id_f
