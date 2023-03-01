@@ -7,8 +7,8 @@ asset o_asset identified by oid {
 asset my_asset identified by id {
   id     : string;
   col    : partition<o_asset>;
-} initialized by {
-  {"id0"; []};
+} initialized with {
+  {"id0"; [1; 2]};
   {"id1"; []};
   {"id2"; []}
 }

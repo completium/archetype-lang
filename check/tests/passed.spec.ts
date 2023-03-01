@@ -4314,154 +4314,416 @@ describe('passed', async () => {
 
   it('effect_add_asset_with_complex_partition', async () => {
     await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.get_my_asset();
+    assert(my_asset_before.length == 0);
+    const o_asset_before = await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.get_o_asset()
+    assert(o_asset_before.length == 0);
+
+    await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.add({ as: alice })
+
+    const my_asset_after = await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.get_my_asset();
+    assert(my_asset_after.length == 1);
+    assert(my_asset_after[0][0].equals(new Int(1)));
+    assert(my_asset_after[0][1].length == 3);
+    assert(my_asset_after[0][1][0] == "my_id1");
+    assert(my_asset_after[0][1][1] == "my_id2");
+    assert(my_asset_after[0][1][2] == "my_id3");
+    const o_asset_after = await effect_add_asset_with_complex_partition.effect_add_asset_with_complex_partition.get_o_asset()
+    assert(o_asset_after.length == 3);
+    assert(o_asset_after[0][0] == "my_id1");
+    assert(o_asset_after[0][1].equals(new Int(42)));
+    assert(o_asset_after[1][0] == "my_id2");
+    assert(o_asset_after[1][1].equals(new Int(43)));
+    assert(o_asset_after[2][0] == "my_id3");
+    assert(o_asset_after[2][1].equals(new Int(44)));
   })
 
   it('effect_control_for_aggregate', async () => {
     await effect_control_for_aggregate.effect_control_for_aggregate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_control_for_aggregate.effect_control_for_aggregate.get_my_asset();
+    assert(my_asset_before.length == 3)
+    const o_asset_before = await effect_control_for_aggregate.effect_control_for_aggregate.get_o_asset();
+    assert(o_asset_before.length == 2)
+    const res_before = await effect_control_for_aggregate.effect_control_for_aggregate.get_res();
+    assert(res_before.equals(new Int(0)))
+
+    await effect_control_for_aggregate.effect_control_for_aggregate.exec({ as: alice })
+
+    const my_asset_after = await effect_control_for_aggregate.effect_control_for_aggregate.get_my_asset();
+    assert(my_asset_after.length == 3)
+    const o_asset_after = await effect_control_for_aggregate.effect_control_for_aggregate.get_o_asset();
+    assert(o_asset_after.length == 2)
+    const res_after = await effect_control_for_aggregate.effect_control_for_aggregate.get_res();
+    assert(res_after.equals(new Int(3)))
   })
 
   it('effect_control_for_collection', async () => {
     await effect_control_for_collection.effect_control_for_collection.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_control_for_collection.effect_control_for_collection.get_myasset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(1)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(2)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(3)))
+    const res_before = await effect_control_for_collection.effect_control_for_collection.get_res();
+    assert(res_before.equals(new Int(0)))
+
+    await effect_control_for_collection.effect_control_for_collection.exec({ as: alice })
+
+    const my_asset_after = await effect_control_for_collection.effect_control_for_collection.get_myasset();
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(1)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(2)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(3)))
+    const res_after = await effect_control_for_collection.effect_control_for_collection.get_res();
+    assert(res_after.equals(new Int(6)))
   })
 
   it('effect_control_for_collection_one_field', async () => {
     await effect_control_for_collection_one_field.effect_control_for_collection_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_control_for_collection_one_field.effect_control_for_collection_one_field.get_myasset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0].equals(new Nat(1)))
+    assert(my_asset_before[1].equals(new Nat(2)))
+    assert(my_asset_before[2].equals(new Nat(3)))
+    const res_before = await effect_control_for_collection_one_field.effect_control_for_collection_one_field.get_res();
+    assert(res_before.equals(new Int(0)))
+
+    await effect_control_for_collection_one_field.effect_control_for_collection_one_field.exec({ as: alice })
+
+    const my_asset_after = await effect_control_for_collection_one_field.effect_control_for_collection_one_field.get_myasset();
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0].equals(new Nat(1)))
+    assert(my_asset_after[1].equals(new Nat(2)))
+    assert(my_asset_after[2].equals(new Nat(3)))
+    const res_after = await effect_control_for_collection_one_field.effect_control_for_collection_one_field.get_res();
+    assert(res_after.equals(new Int(6)))
   })
 
   it('effect_control_for_list', async () => {
     await effect_control_for_list.effect_control_for_list.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_for_list.effect_control_for_list.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_for_list.effect_control_for_list.exec({ as: alice })
+    const res_after = await effect_control_for_list.effect_control_for_list.get_res();
+    assert(res_after.equals(new Nat(6)))
   })
 
   it('effect_control_for_map', async () => {
     await effect_control_for_map.effect_control_for_map.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_for_map.effect_control_for_map.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_for_map.effect_control_for_map.exec({ as: alice })
+    const res_after = await effect_control_for_map.effect_control_for_map.get_res();
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('effect_control_for_partition', async () => {
     await effect_control_for_partition.effect_control_for_partition.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_for_partition.effect_control_for_partition.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_for_partition.effect_control_for_partition.exec({ as: alice })
+    const res_after = await effect_control_for_partition.effect_control_for_partition.get_res();
+    assert(res_after.equals(new Int(3)))
   })
 
   it('effect_control_for_set', async () => {
     await effect_control_for_set.effect_control_for_set.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_for_set.effect_control_for_set.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_for_set.effect_control_for_set.exec({ as: alice })
+    const res_after = await effect_control_for_set.effect_control_for_set.get_res();
+    assert(res_after.equals(new Nat(6)))
   })
 
   it('effect_control_for_view', async () => {
     await effect_control_for_view.effect_control_for_view.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_for_view.effect_control_for_view.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_for_view.effect_control_for_view.exec({ as: alice })
+    const res_after = await effect_control_for_view.effect_control_for_view.get_res();
+    assert(res_after.equals(new Int(5)))
   })
 
   it('effect_control_if', async () => {
     await effect_control_if.effect_control_if.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_if.effect_control_if.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_if.effect_control_if.exec({ as: alice })
+    const res_after = await effect_control_if.effect_control_if.get_res();
+    assert(res_after.equals(new Int(1)))
   })
 
   it('effect_control_if_else', async () => {
     await effect_control_if_else.effect_control_if_else.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_if_else.effect_control_if_else.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_if_else.effect_control_if_else.exec({ as: alice })
+    const res_after = await effect_control_if_else.effect_control_if_else.get_res();
+    assert(res_after.equals(new Int(1)))
   })
 
   it('effect_control_iter', async () => {
     await effect_control_iter.effect_control_iter.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_iter.effect_control_iter.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_iter.effect_control_iter.exec({ as: alice })
+    const res_after = await effect_control_iter.effect_control_iter.get_res();
+    assert(res_after.equals(new Int(6)))
   })
 
   it('effect_control_iter_init', async () => {
     await effect_control_iter_init.effect_control_iter_init.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_iter_init.effect_control_iter_init.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_iter_init.effect_control_iter_init.exec({ as: alice })
+    const res_after = await effect_control_iter_init.effect_control_iter_init.get_res();
+    assert(res_after.equals(new Int(5)))
   })
 
   it('effect_control_match_enum', async () => {
     await effect_control_match_enum.effect_control_match_enum.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_match_enum.effect_control_match_enum.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_match_enum.effect_control_match_enum.exec({ as: alice })
+    const res_after = await effect_control_match_enum.effect_control_match_enum.get_res();
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('effect_control_match_list', async () => {
     await effect_control_match_list.effect_control_match_list.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_match_list.effect_control_match_list.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_match_list.effect_control_match_list.exec({ as: alice })
+    const res_after = await effect_control_match_list.effect_control_match_list.get_res();
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('effect_control_match_option', async () => {
     await effect_control_match_option.effect_control_match_option.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_match_option.effect_control_match_option.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_match_option.effect_control_match_option.exec({ as: alice })
+    const res_after = await effect_control_match_option.effect_control_match_option.get_res();
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('effect_control_match_or', async () => {
     await effect_control_match_or.effect_control_match_or.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_match_or.effect_control_match_or.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await effect_control_match_or.effect_control_match_or.exec({ as: alice })
+    const res_after = await effect_control_match_or.effect_control_match_or.get_res();
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('effect_control_matchwith', async () => {
     await effect_control_matchwith.effect_control_matchwith.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_matchwith.effect_control_matchwith.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_matchwith.effect_control_matchwith.exec({ as: alice })
+    const res_after = await effect_control_matchwith.effect_control_matchwith.get_res();
+    assert(res_after.equals(new Int(1)))
   })
 
   it('effect_control_sequence', async () => {
     await effect_control_sequence.effect_control_sequence.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_sequence.effect_control_sequence.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_sequence.effect_control_sequence.exec({ as: alice })
+    const res_after = await effect_control_sequence.effect_control_sequence.get_res();
+    assert(res_after.equals(new Int(3)))
   })
 
   it('effect_control_while', async () => {
     await effect_control_while.effect_control_while.deploy({ as: alice })
-    // TODO
+
+    const res_before = await effect_control_while.effect_control_while.get_res();
+    assert(res_before.equals(new Int(0)))
+    await effect_control_while.effect_control_while.exec({ as: alice })
+    const res_after = await effect_control_while.effect_control_while.get_res();
+    assert(res_after.equals(new Int(3)))
   })
 
   it('effect_dofailif', async () => {
     await effect_dofailif.effect_dofailif.deploy({ as: alice })
-    // TODO
+
+    await effect_dofailif.effect_dofailif.exec({ as: alice })
   })
 
   it('effect_dorequire', async () => {
     await effect_dorequire.effect_dorequire.deploy({ as: alice })
-    // TODO
+
+    await effect_dorequire.effect_dorequire.exec({ as: alice })
   })
 
   it('effect_dorequire_not', async () => {
     await effect_dorequire_not.effect_dorequire_not.deploy({ as: alice })
-    // TODO
+
+    await effect_dorequire_not.effect_dorequire_not.exec({ as: alice })
   })
 
   it('effect_fail', async () => {
     await effect_fail.effect_fail.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await effect_fail.effect_fail.exec({ as: alice })
+    }, { string: "message" })
   })
 
   it('effect_fail_complex', async () => {
     await effect_fail_complex.effect_fail_complex.deploy({ as: alice })
-    expect_to_fail(async () => {
+
+    await expect_to_fail(async () => {
       await effect_fail_complex.effect_fail_complex.exec({ as: alice })
     }, { prim: "Pair", args: [{ string: "error" }, { int: "0" }] })
   })
 
   it('effect_instruction_put_in_asset', async () => {
     await effect_instruction_put_in_asset.effect_instruction_put_in_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_instruction_put_in_asset.effect_instruction_put_in_asset.get_my_asset();
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].length == 0)
+    await effect_instruction_put_in_asset.effect_instruction_put_in_asset.exec({ as: alice })
+    const my_asset_after = await effect_instruction_put_in_asset.effect_instruction_put_in_asset.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].length == 1)
+    assert(my_asset_after[0][1][0][0] == "k")
+    assert(my_asset_after[0][1][0][1].equals(new Bytes("00")))
   })
 
   it('effect_method_asset_add_aggregate', async () => {
     await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].length == 0)
+    const o_asset_before = await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.get_o_asset()
+    assert(o_asset_before.length == 3)
+    assert(o_asset_before[0].equals(new Nat(0)))
+    assert(o_asset_before[1].equals(new Nat(1)))
+    assert(o_asset_before[2].equals(new Nat(2)))
+
+    await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].length == 1)
+    assert(my_asset_after[0][1][0].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].length == 0)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].length == 0)
+    const o_asset_after = await effect_method_asset_add_aggregate.effect_method_asset_add_aggregate.get_o_asset()
+    assert(o_asset_after.length == 3)
+    assert(o_asset_after[0].equals(new Nat(0)))
+    assert(o_asset_after[1].equals(new Nat(1)))
+    assert(o_asset_after[2].equals(new Nat(2)))
   })
 
   it('effect_method_asset_add_asset', async () => {
     await effect_method_asset_add_asset.effect_method_asset_add_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_add_asset.effect_method_asset_add_asset.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    await effect_method_asset_add_asset.effect_method_asset_add_asset.exec({ as: alice })
+    const my_asset_after = await effect_method_asset_add_asset.effect_method_asset_add_asset.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(2)))
+    assert(my_asset_after[3][0] == "id3")
+    assert(my_asset_after[3][1].equals(new Int(3)))
   })
 
   it('effect_method_asset_add_asset2', async () => {
     await effect_method_asset_add_asset2.effect_method_asset_add_asset2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_add_asset2.effect_method_asset_add_asset2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].value.equals(new Int(0)))
+    assert(my_asset_before[0][1].v == true)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].value.equals(new Int(1)))
+    assert(my_asset_before[1][1].v == true)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].value.equals(new Int(2)))
+    assert(my_asset_before[2][1].v == true)
+    await effect_method_asset_add_asset2.effect_method_asset_add_asset2.exec({ as: alice })
+    const my_asset_after = await effect_method_asset_add_asset2.effect_method_asset_add_asset2.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].value.equals(new Int(0)))
+    assert(my_asset_after[0][1].v == true)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].value.equals(new Int(1)))
+    assert(my_asset_after[1][1].v == true)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].value.equals(new Int(2)))
+    assert(my_asset_after[2][1].v == true)
+    assert(my_asset_after[3][0] == "id3")
+    assert(my_asset_after[3][1].value.equals(new Int(3)))
+    assert(my_asset_after[3][1].v == true)
   })
 
   it('effect_method_asset_add_asset_one_field', async () => {
     await effect_method_asset_add_asset_one_field.effect_method_asset_add_asset_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_add_asset_one_field.effect_method_asset_add_asset_one_field.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0] == "id0")
+    assert(my_asset_before[1] == "id1")
+    assert(my_asset_before[2] == "id2")
+    await effect_method_asset_add_asset_one_field.effect_method_asset_add_asset_one_field.exec({ as: alice })
+    const my_asset_after = await effect_method_asset_add_asset_one_field.effect_method_asset_add_asset_one_field.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0] == "id0")
+    assert(my_asset_after[1] == "id1")
+    assert(my_asset_after[2] == "id2")
+    assert(my_asset_after[3] == "id3")
   })
 
   it('effect_method_asset_add_asset_with_aggregate', async () => {

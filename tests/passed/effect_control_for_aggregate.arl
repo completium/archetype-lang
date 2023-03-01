@@ -2,13 +2,16 @@ archetype effect_control_for_aggregate
 
 asset o_asset identified by oid {
   oid : int;
+} initialized with {
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
-} initialized by {
-  {"id0"; []};
+} initialized with {
+  {"id0"; [1; 2]};
   {"id1"; []};
   {"id2"; []}
 }
