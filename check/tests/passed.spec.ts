@@ -3861,6 +3861,7 @@ describe('passed', async () => {
   it('custom_args_with_record', async () => {
     await custom_args_with_record.custom_args_with_record.deploy({ as: alice })
 
+    // TODO: bug binder
     // const res_before = await custom_args_with_record.custom_args_with_record.get_res();
     // assert(res_before.equals(new Nat(0)))
     // await custom_args_with_record.custom_args_with_record.exec(new custom_args_with_record.my_arg(new Int(1), new Nat(2), alice.get_address()), {as : alice})
@@ -3871,6 +3872,7 @@ describe('passed', async () => {
   it('custom_storage', async () => {
     await custom_storage.custom_storage.deploy({ as: alice })
 
+    // TODO: bug binder
     // const r_before = await custom_storage.custom_storage.get_r();
     // assert(r_before.equals(new custom_storage.my_record(new Int(1), new Nat(2), "mystr")))
 
@@ -3922,6 +3924,7 @@ describe('passed', async () => {
 
     const a_before = await custom_storage3.custom_storage3.get_a();
     assert(a_before.equals(new Nat(0)));
+    // TODO: bug binder
     // const b_before = await custom_storage3.custom_storage3.get_b();
     // assert(b_before.equals(new Nat(0)));
     // const c_before = await custom_storage3.custom_storage3.get_c();
@@ -3983,6 +3986,7 @@ describe('passed', async () => {
   it('custom_storage4', async () => {
     await custom_storage4.custom_storage4.deploy({ as: alice })
 
+    // TODO: bug binder
     // const r_before = await custom_storage4.custom_storage4.get_r();
     // assert(r_before.equals(new custom_storage4.my_record(new Int(0), new Nat(0), "", new Nat(0))))
     // await custom_storage4.custom_storage4.exec({ as: alice })
@@ -4003,6 +4007,7 @@ describe('passed', async () => {
   it('custom_storage6', async () => {
     await custom_storage6.custom_storage6.deploy({ as: alice })
 
+    // TODO: bug binder
     // const r_before = await custom_storage6.custom_storage6.get_r();
     // assert(r_before.equals(new custom_storage6.my_record(new Int(1), new Nat(2), alice.get_address())))
     // await custom_storage6.custom_storage6.exec({ as: alice })
@@ -4013,6 +4018,7 @@ describe('passed', async () => {
   it('custom_storage7', async () => {
     await custom_storage7.custom_storage7.deploy({ as: alice })
 
+    // TODO: bug binder
     // const r_before = await custom_storage7.custom_storage7.get_r();
     // assert(r_before.equals(new custom_storage7.my_record(new Int(1), new Nat(2), alice.get_address())))
     // await custom_storage7.custom_storage7.exec({ as: alice })
@@ -4042,47 +4048,140 @@ describe('passed', async () => {
 
   it('dangling_else', async () => {
     await dangling_else.dangling_else.deploy({ as: alice })
-    // TODO
+
+    const res_before = await dangling_else.dangling_else.get_res();
+    assert(res_before.equals(new Nat(0)))
+    await dangling_else.dangling_else.exec({ as: alice })
+    const res_after = await dangling_else.dangling_else.get_res();
+    assert(res_after.equals(new Nat(42)))
   })
 
   it('dec_lit', async () => {
     await dec_lit.dec_lit.deploy({ as: alice })
-    // TODO
+
+    const g = await dec_lit.dec_lit.get_g();
+    assert(g.equals(new Rational(0.042)))
+    const dtz = await dec_lit.dec_lit.get_dtz();
+    assert(dtz.equals(new Tez(1.2)))
+    const dmtz = await dec_lit.dec_lit.get_dmtz();
+    assert(dmtz.equals(new Tez(0.0012)))
+    const dutz = await dec_lit.dec_lit.get_dutz();
+    assert(dutz.equals(new Tez(1, "mutez")))
   })
 
   it('decl_var_opt', async () => {
     await decl_var_opt.decl_var_opt.deploy({ as: alice })
-    // TODO
+
+    await decl_var_opt.decl_var_opt.exec({ as: alice })
   })
 
   it('decl_var_opt_default', async () => {
     await decl_var_opt_default.decl_var_opt_default.deploy({ as: alice })
-    // TODO
+
+    await decl_var_opt_default.decl_var_opt_default.exec({ as: alice })
   })
 
   it('decomp_if', async () => {
     await decomp_if.decomp_if.deploy({ as: alice })
-    // TODO
+
+    const n_init = await decomp_if.decomp_if.get_n();
+    assert(n_init.equals(new Nat(0)))
+
+    await decomp_if.decomp_if.exec(true, { as: alice })
+
+    const n_true = await decomp_if.decomp_if.get_n();
+    assert(n_true.equals(new Nat(2)))
+
+    await decomp_if.decomp_if.exec(false, { as: alice })
+
+    const n_false = await decomp_if.decomp_if.get_n();
+    assert(n_false.equals(new Nat(3)))
   })
 
   it('decomp_if2', async () => {
     await decomp_if2.decomp_if2.deploy({ as: alice })
-    // TODO
+
+    const a_init = await decomp_if2.decomp_if2.get_a();
+    assert(a_init.equals(new Nat(0)))
+    const b_init = await decomp_if2.decomp_if2.get_b();
+    assert(b_init.equals(new Nat(0)))
+
+    await decomp_if2.decomp_if2.exec(new Nat(0), { as: alice });
+
+    const a_0 = await decomp_if2.decomp_if2.get_a();
+    assert(a_0.equals(new Nat(0)))
+    const b_0 = await decomp_if2.decomp_if2.get_b();
+    assert(b_0.equals(new Nat(4)))
+
+    await decomp_if2.decomp_if2.exec(new Nat(3), { as: alice });
+
+    const a_3 = await decomp_if2.decomp_if2.get_a();
+    assert(a_3.equals(new Nat(2)))
+    const b_3 = await decomp_if2.decomp_if2.get_b();
+    assert(b_3.equals(new Nat(5)))
   })
 
   it('decomp_if3', async () => {
     await decomp_if3.decomp_if3.deploy({ as: alice })
-    // TODO
+
+    const a_init = await decomp_if3.decomp_if3.get_a();
+    assert(a_init.equals(new Nat(0)))
+    const b_init = await decomp_if3.decomp_if3.get_b();
+    assert(b_init.equals(new Nat(0)))
+
+    await decomp_if3.decomp_if3.exec(new Nat(0), { as: alice });
+
+    const a_0 = await decomp_if3.decomp_if3.get_a();
+    assert(a_0.equals(new Nat(3)))
+    const b_0 = await decomp_if3.decomp_if3.get_b();
+    assert(b_0.equals(new Nat(4)))
+
+    await decomp_if3.decomp_if3.exec(new Nat(3), { as: alice });
+
+    const a_3 = await decomp_if3.decomp_if3.get_a();
+    assert(a_3.equals(new Nat(2)))
+    const b_3 = await decomp_if3.decomp_if3.get_b();
+    assert(b_3.equals(new Nat(5)))
   })
 
   it('decomp_if4', async () => {
     await decomp_if4.decomp_if4.deploy({ as: alice })
-    // TODO
+
+    const a_init = await decomp_if4.decomp_if4.get_a();
+    assert(a_init.equals(new Nat(0)))
+    const b_init = await decomp_if4.decomp_if4.get_b();
+    assert(b_init.equals(new Nat(0)))
+
+    await decomp_if4.decomp_if4.exec(new Nat(0), { as: alice });
+
+    const a_0 = await decomp_if4.decomp_if4.get_a();
+    assert(a_0.equals(new Nat(0)))
+    const b_0 = await decomp_if4.decomp_if4.get_b();
+    assert(b_0.equals(new Nat(4)))
+
+    await decomp_if4.decomp_if4.exec(new Nat(3), { as: alice });
+
+    const a_3 = await decomp_if4.decomp_if4.get_a();
+    assert(a_3.equals(new Nat(3)))
+    const b_3 = await decomp_if4.decomp_if4.get_b();
+    assert(b_3.equals(new Nat(4)))
   })
 
   it('decomp_ifexpr', async () => {
     await decomp_ifexpr.decomp_ifexpr.deploy({ as: alice })
-    // TODO
+
+    const n_init = await decomp_ifexpr.decomp_ifexpr.get_n();
+    assert(n_init.equals(new Nat(0)))
+
+    await decomp_ifexpr.decomp_ifexpr.exec(true, { as: alice })
+
+    const n_true = await decomp_ifexpr.decomp_ifexpr.get_n();
+    assert(n_true.equals(new Nat(2)))
+
+    await decomp_ifexpr.decomp_ifexpr.exec(false, { as: alice })
+
+    const n_false = await decomp_ifexpr.decomp_ifexpr.get_n();
+    assert(n_false.equals(new Nat(3)))
   })
 
   it('decomp_map', async () => {
