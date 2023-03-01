@@ -4186,32 +4186,80 @@ describe('passed', async () => {
 
   it('decomp_map', async () => {
     await decomp_map.decomp_map.deploy({ as: alice })
-    // TODO
+
+    const s_before = await decomp_map.decomp_map.get_s();
+    assert(s_before.equals(Option.None()))
+    const m_before = await decomp_map.decomp_map.get_m();
+    assert(m_before.length == 0)
+
+    await decomp_map.decomp_map.exec({ as: alice })
+
+    const s_after = await decomp_map.decomp_map.get_s();
+    assert(s_after.equals(Option.Some<string>("mystr0")))
+    const m_after = await decomp_map.decomp_map.get_m();
+    assert(m_after.length == 1)
+    assert(m_after[0][0].equals(new Nat(0)))
+    assert(m_after[0][1] == "mystr0")
   })
 
   it('decomp_test', async () => {
     await decomp_test.decomp_test.deploy({ as: alice })
-    // TODO
+
+    const a_before = await decomp_test.decomp_test.get_a();
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await decomp_test.decomp_test.get_b();
+    assert(b_before.equals(new Nat(0)))
+
+    await decomp_test.decomp_test.exec("mystr", { as: alice });
+
+    const a_after = await decomp_test.decomp_test.get_a();
+    assert(a_after.equals(new Nat(5)))
+    const b_after = await decomp_test.decomp_test.get_b();
+    assert(b_after.equals(new Nat(6)))
   })
 
   it('decomp_test2', async () => {
     await decomp_test2.decomp_test2.deploy({ as: alice })
-    // TODO
+
+    const a_before = await decomp_test2.decomp_test2.get_a();
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await decomp_test2.decomp_test2.get_b();
+    assert(b_before.equals(new Int(0)))
+
+    await decomp_test2.decomp_test2.exec("mystr", { as: alice });
+
+    const a_after = await decomp_test2.decomp_test2.get_a();
+    assert(a_after.equals(new Nat(5)))
+    const b_after = await decomp_test2.decomp_test2.get_b();
+    assert(b_after.equals(new Int(6)))
   })
 
   it('decomp_while', async () => {
     await decomp_while.decomp_while.deploy({ as: alice })
-    // TODO
+
+    const a_before = await decomp_while.decomp_while.get_a();
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await decomp_while.decomp_while.get_b();
+    assert(b_before.equals(new Int(0)))
+
+    await decomp_while.decomp_while.exec({ as: alice })
+
+    const a_after = await decomp_while.decomp_while.get_a();
+    assert(a_after.equals(new Nat(10)))
+    const b_after = await decomp_while.decomp_while.get_b();
+    assert(b_after.equals(new Int(60)))
   })
 
   it('decomp_while1', async () => {
     await decomp_while1.decomp_while1.deploy({ as: alice })
-    // TODO
+
+    await decomp_while1.decomp_while1.exec({ as: alice })
   })
 
   it('decomp_while2', async () => {
     await decomp_while2.decomp_while2.deploy({ as: alice })
-    // TODO
+
+    await decomp_while2.decomp_while2.exec(new Nat(2), { as: alice })
   })
 
   it('detach_big_map_string', async () => {
