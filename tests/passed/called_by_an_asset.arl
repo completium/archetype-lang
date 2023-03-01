@@ -3,6 +3,8 @@ archetype called_by_an_asset
 asset my_asset {
   id: address;
   v: string;
+} initialized with {
+  {tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb; ""}
 }
 
 entry exec () {

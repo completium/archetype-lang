@@ -1,3 +1,12 @@
-{ storage unit ;
+{ storage (pair int nat) ;
   parameter (unit %exec) ;
-  code { CDR ; PUSH nat 1 ; PUSH int 1 ; PAIR ; DROP 1 ; NIL operation ; PAIR } }
+  code { CDR ;
+         PUSH nat 1 ;
+         PUSH int 1 ;
+         PAIR ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

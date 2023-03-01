@@ -3662,47 +3662,72 @@ describe('passed', async () => {
 
   it('before_var', async () => {
     await before_var.before_var.deploy({ as: alice })
-    // TODO
+    const v_before = await before_var.before_var.get_v()
+    assert(v_before.equals(new Int(0)))
+    await before_var.before_var.exec({ as: alice })
+    const v_after = await before_var.before_var.get_v()
+    assert(v_after.equals(new Int(0)))
   })
 
   it('builtin_in_function', async () => {
     await builtin_in_function.builtin_in_function.deploy({ as: alice })
-    // TODO
+    const res_before = await builtin_in_function.builtin_in_function.get_res()
+    assert(res_before.equals(Option.None<Nat>()))
+    await builtin_in_function.builtin_in_function.exec({ as: alice })
+    const res_after = await builtin_in_function.builtin_in_function.get_res()
+    assert(res_after.equals(Option.Some(new Nat(1))))
   })
 
   it('called_by_an_asset', async () => {
     await called_by_an_asset.called_by_an_asset.deploy({ as: alice })
-    // TODO
+    await expect_to_fail(async() => {
+      await called_by_an_asset.called_by_an_asset.exec({as : bob});
+    }, {"string": "INVALID_CALLER"});
+    await called_by_an_asset.called_by_an_asset.exec({as : alice})
   })
 
   it('cast', async () => {
     await cast.cast.deploy({ as: alice })
-    // TODO
+    const res_before = await cast.cast.get_res()
+    assert(res_before.equals(new Rational(0)))
+    await cast.cast.exec({ as: alice })
+    const res_after = await cast.cast.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('cast_dur_int', async () => {
     await cast_dur_int.cast_dur_int.deploy({ as: alice })
-    // TODO
+    await cast_dur_int.cast_dur_int.exec({ as: alice })
   })
 
   it('cast_nat_int', async () => {
     await cast_nat_int.cast_nat_int.deploy({ as: alice })
-    // TODO
+    await cast_nat_int.cast_nat_int.exec({ as: alice })
   })
 
   it('cast_nat_int_lit', async () => {
     await cast_nat_int_lit.cast_nat_int_lit.deploy({ as: alice })
-    // TODO
+    await cast_nat_int_lit.cast_nat_int_lit.exec({ as: alice })
   })
 
   it('cast_return', async () => {
     await cast_return.cast_return.deploy({ as: alice })
-    // TODO
+    const res_before = await cast_return.cast_return.get_res()
+    assert(res_before.equals(new Int(0)))
+    await cast_return.cast_return.exec({ as: alice })
+    const res_after = await cast_return.cast_return.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('cast_view_pklist', async () => {
     await cast_view_pklist.cast_view_pklist.deploy({ as: alice })
-    // TODO
+    const res_before = await cast_view_pklist.cast_view_pklist.get_res()
+    assert(res_before.length == 0)
+    await cast_view_pklist.cast_view_pklist.exec({ as: alice })
+    const res_after = await cast_view_pklist.cast_view_pklist.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] == "id1")
+    assert(res_after[1] == "id2")
   })
 
   it('col_iter_direct_storage', async () => {

@@ -1,9 +1,8 @@
 archetype cast
 
-entry exec () {
-  effect {
-    var r1 : rational = 1;
+variable res : rational = 0.0
 
-    ()
-  }
+entry exec () {
+  var r1 : rational = 1;
+  res := r1
 }
