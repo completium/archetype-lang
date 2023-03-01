@@ -8,7 +8,7 @@ record my_record {
   c: address;
 } as (((x, %_), z))
 
-variable r : my_record = {1i; 2; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}
+variable r : my_record = {1i; 2; @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb}
 
 entry exec () {
   r := {r with a = 11i; b = 22}

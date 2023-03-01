@@ -17,8 +17,8 @@ record my_record {
   l: address;
 } as ((m, n, (p, q, (r, s, t, u), v), (x, y), z))
 
-variable r : my_record = {0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
-; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg ; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}
+variable r : my_record = {0i; 2; @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb; 0i; 0; @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
+; 0i; 0; @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb ; 0i; 0; @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb}
 
 entry exec () {
   res := r.b

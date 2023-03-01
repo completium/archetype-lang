@@ -3838,7 +3838,7 @@ describe('passed', async () => {
     const value_1 = await counter.counter.get_value()
     assert(value_1.equals(new Int(1)));
 
-    await counter.counter.reset({as: alice})
+    await counter.counter.reset({ as: alice })
 
     const value_2 = await counter.counter.get_value()
     assert(value_2.equals(new Int(0)));
@@ -3860,57 +3860,184 @@ describe('passed', async () => {
 
   it('custom_args_with_record', async () => {
     await custom_args_with_record.custom_args_with_record.deploy({ as: alice })
-    // TODO
+
+    // const res_before = await custom_args_with_record.custom_args_with_record.get_res();
+    // assert(res_before.equals(new Nat(0)))
+    // await custom_args_with_record.custom_args_with_record.exec(new custom_args_with_record.my_arg(new Int(1), new Nat(2), alice.get_address()), {as : alice})
+    // const res_after = await custom_args_with_record.custom_args_with_record.get_res();
+    // assert(res_after.equals(new Nat(2)))
   })
 
   it('custom_storage', async () => {
     await custom_storage.custom_storage.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage.custom_storage.get_r();
+    assert(r_before.equals(new custom_storage.my_record(new Int(1), new Nat(2), "mystr")))
+
+    const res_before = await custom_storage.custom_storage.get_res();
+    assert(res_before.equals(new Nat(0)))
+
+    await custom_storage.custom_storage.exec({ as: alice })
+
+    const r_after = await custom_storage.custom_storage.get_r();
+    assert(r_after.equals(new custom_storage.my_record(new Int(1), new Nat(2), "mystr")))
+
+    const res_after = await custom_storage.custom_storage.get_res();
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('custom_storage10', async () => {
     await custom_storage10.custom_storage10.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage10.custom_storage10.get_r();
+    assert(r_before.equals(new custom_storage10.my_record(new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0))))
+    await custom_storage10.custom_storage10.exec({ as: alice })
+    const r_after = await custom_storage10.custom_storage10.get_r();
+    assert(r_after.equals(new custom_storage10.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
   })
 
   it('custom_storage2', async () => {
     await custom_storage2.custom_storage2.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage2.custom_storage2.get_r();
+    assert(r_before.equals(new custom_storage2.my_record(new Int(0), new Nat(2), alice.get_address(), new Int(0), new Nat(0), alice.get_address(), new Int(0), new Nat(0), alice.get_address(), new Int(0), new Nat(0), alice.get_address())))
+
+    const res_before = await custom_storage2.custom_storage2.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await custom_storage2.custom_storage2.exec({ as: alice })
+
+    const r_after = await custom_storage2.custom_storage2.get_r();
+    assert(r_after.equals(new custom_storage2.my_record(new Int(0), new Nat(2), alice.get_address(), new Int(0), new Nat(0), alice.get_address(), new Int(0), new Nat(0), alice.get_address(), new Int(0), new Nat(0), alice.get_address())))
+
+    const res_after = await custom_storage2.custom_storage2.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('custom_storage3', async () => {
     await custom_storage3.custom_storage3.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage3.custom_storage3.get_r();
+    assert(r_before.equals(new custom_storage3.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
+
+    const a_before = await custom_storage3.custom_storage3.get_a();
+    assert(a_before.equals(new Nat(0)));
+    const b_before = await custom_storage3.custom_storage3.get_b();
+    assert(b_before.equals(new Nat(0)));
+    const c_before = await custom_storage3.custom_storage3.get_c();
+    assert(c_before.equals(new Nat(0)));
+    const d_before = await custom_storage3.custom_storage3.get_d();
+    assert(d_before.equals(new Nat(0)));
+    const e_before = await custom_storage3.custom_storage3.get_e();
+    assert(e_before.equals(new Nat(0)));
+    const f_before = await custom_storage3.custom_storage3.get_f();
+    assert(f_before.equals(new Nat(0)));
+    const g_before = await custom_storage3.custom_storage3.get_g();
+    assert(g_before.equals(new Nat(0)));
+    const h_before = await custom_storage3.custom_storage3.get_h();
+    assert(h_before.equals(new Nat(0)));
+    const i_before = await custom_storage3.custom_storage3.get_i();
+    assert(i_before.equals(new Nat(0)));
+    const j_before = await custom_storage3.custom_storage3.get_j();
+    assert(j_before.equals(new Nat(0)));
+    const k_before = await custom_storage3.custom_storage3.get_k();
+    assert(k_before.equals(new Nat(0)));
+    const l_before = await custom_storage3.custom_storage3.get_l();
+    assert(l_before.equals(new Nat(0)));
+    const m_before = await custom_storage3.custom_storage3.get_m();
+    assert(m_before.equals(new Nat(0)));
+
+    await custom_storage3.custom_storage3.exec({ as: alice })
+
+    const r_after = await custom_storage3.custom_storage3.get_r();
+    assert(r_after.equals(new custom_storage3.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
+
+    const a_after = await custom_storage3.custom_storage3.get_a();
+    assert(a_after.equals(new Nat(0)));
+    const b_after = await custom_storage3.custom_storage3.get_b();
+    assert(b_after.equals(new Nat(1)));
+    const c_after = await custom_storage3.custom_storage3.get_c();
+    assert(c_after.equals(new Nat(2)));
+    const d_after = await custom_storage3.custom_storage3.get_d();
+    assert(d_after.equals(new Nat(3)));
+    const e_after = await custom_storage3.custom_storage3.get_e();
+    assert(e_after.equals(new Nat(4)));
+    const f_after = await custom_storage3.custom_storage3.get_f();
+    assert(f_after.equals(new Nat(5)));
+    const g_after = await custom_storage3.custom_storage3.get_g();
+    assert(g_after.equals(new Nat(6)));
+    const h_after = await custom_storage3.custom_storage3.get_h();
+    assert(h_after.equals(new Nat(7)));
+    const i_after = await custom_storage3.custom_storage3.get_i();
+    assert(i_after.equals(new Nat(8)));
+    const j_after = await custom_storage3.custom_storage3.get_j();
+    assert(j_after.equals(new Nat(9)));
+    const k_after = await custom_storage3.custom_storage3.get_k();
+    assert(k_after.equals(new Nat(10)));
+    const l_after = await custom_storage3.custom_storage3.get_l();
+    assert(l_after.equals(new Nat(11)));
+    const m_after = await custom_storage3.custom_storage3.get_m();
+    assert(m_after.equals(new Nat(12)));
   })
 
   it('custom_storage4', async () => {
     await custom_storage4.custom_storage4.deploy({ as: alice })
-    // TODO
+
+    // const res_before = await custom_storage4.custom_storage4.get_r();
+    // assert(res_before.equals(new custom_storage4.my_record(new Int(0), new Nat(0), "", new Nat(0))))
+    // await custom_storage4.custom_storage4.exec({ as: alice })
+    // const res_after = await custom_storage4.custom_storage4.get_r();
+    // assert(res_after.equals(new custom_storage4.my_record(new Int(1), new Nat(2), "mystr", new Nat(3))))
   })
 
   it('custom_storage5', async () => {
     await custom_storage5.custom_storage5.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage5.custom_storage5.get_r();
+    assert(r_before.equals(new custom_storage5.my_record(new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0))))
+    await custom_storage5.custom_storage5.exec({ as: alice })
+    const r_after = await custom_storage5.custom_storage5.get_r();
+    assert(r_after.equals(new custom_storage5.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(15), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
   })
 
   it('custom_storage6', async () => {
     await custom_storage6.custom_storage6.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage6.custom_storage6.get_r();
+    assert(r_before.equals(new custom_storage6.my_record(new Int(1), new Nat(2), alice.get_address())))
+    await custom_storage6.custom_storage6.exec({ as: alice })
+    const r_after = await custom_storage6.custom_storage6.get_r();
+    assert(r_after.equals(new custom_storage6.my_record(new Int(11), new Nat(22), alice.get_address())))
   })
 
   it('custom_storage7', async () => {
     await custom_storage7.custom_storage7.deploy({ as: alice })
-    // TODO
+
+    // const res_before = await custom_storage7.custom_storage7.get_r();
+    // assert(res_before.equals(new custom_storage7.my_record(new Int(1), new Nat(2), alice.get_address())))
+    // await custom_storage7.custom_storage7.exec({ as: alice })
+    // const res_after = await custom_storage7.custom_storage7.get_r();
+    // assert(res_after.equals(new custom_storage7.my_record(new Int(1), new Nat(4), alice.get_address())))
   })
 
   it('custom_storage8', async () => {
     await custom_storage8.custom_storage8.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage8.custom_storage8.get_r();
+    assert(r_before.equals(new custom_storage8.my_record(new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0))))
+    await custom_storage8.custom_storage8.exec({ as: alice })
+    const r_after = await custom_storage8.custom_storage8.get_r();
+    assert(r_after.equals(new custom_storage8.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
   })
 
   it('custom_storage9', async () => {
     await custom_storage9.custom_storage9.deploy({ as: alice })
-    // TODO
+
+    const r_before = await custom_storage9.custom_storage9.get_r();
+    assert(r_before.equals(new custom_storage9.my_record(new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0))))
+    await custom_storage9.custom_storage9.exec({ as: alice })
+    const r_after = await custom_storage9.custom_storage9.get_r();
+    assert(r_after.equals(new custom_storage9.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
   })
 
   it('dangling_else', async () => {
