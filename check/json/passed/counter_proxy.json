@@ -7,21 +7,10 @@
     "records": [],
     "events": []
   },
-  "storage": [
-    {
-      "name": "c",
-      "type": {
-        "node": "address",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "const": false
-    }
-  ],
+  "storage": [],
   "storage_type": {
     "value": {
-      "prim": "address",
+      "prim": "unit",
       "int": null,
       "bytes": null,
       "string": null,
@@ -41,6 +30,15 @@
           "name": "v",
           "type": {
             "node": "int",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "c",
+          "type": {
+            "node": "address",
             "name": null,
             "int_value": null,
             "args": []

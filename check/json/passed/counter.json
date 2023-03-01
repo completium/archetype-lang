@@ -64,17 +64,7 @@
     },
     {
       "name": "reset",
-      "args": [
-        {
-          "name": "v",
-          "type": {
-            "node": "int",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "getters": [],

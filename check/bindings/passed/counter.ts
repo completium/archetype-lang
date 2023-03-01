@@ -6,8 +6,8 @@ const incr_arg_to_mich = (v: att.Int): att.Micheline => {
 const decr_arg_to_mich = (v: att.Int): att.Micheline => {
     return v.to_mich();
 }
-const reset_arg_to_mich = (v: att.Int): att.Micheline => {
-    return v.to_mich();
+const reset_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Counter {
     address: string | undefined;
@@ -42,9 +42,9 @@ export class Counter {
         }
         throw new Error("Contract not initialised");
     }
-    async reset(v: att.Int, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async reset(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "reset", reset_arg_to_mich(v), params);
+            return await ex.call(this.address, "reset", reset_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -60,9 +60,9 @@ export class Counter {
         }
         throw new Error("Contract not initialised");
     }
-    async get_reset_param(v: att.Int, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_reset_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "reset", reset_arg_to_mich(v), params);
+            return await ex.get_call_param(this.address, "reset", reset_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

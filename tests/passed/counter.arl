@@ -6,4 +6,4 @@ entry incr (v : int) { effect {value += v} }
 
 entry decr (v : int) { effect {value -= v} }
 
-entry reset(v : int) { effect {value := 0} }
+entry reset() { effect {value := 0} }

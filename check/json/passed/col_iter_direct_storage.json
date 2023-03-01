@@ -100,33 +100,70 @@
         "args": []
       },
       "const": false
+    },
+    {
+      "name": "res",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
     }
   ],
   "storage_type": {
     "value": {
-      "prim": "map",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
       "args": [
+        {
+          "prim": "map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%myasset"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
         {
           "prim": "int",
           "int": null,
           "bytes": null,
           "string": null,
           "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        {
-          "prim": "string",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
+          "annots": [
+            "%res"
+          ],
           "array": [],
           "var_id": null,
           "var_type": null

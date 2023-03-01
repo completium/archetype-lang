@@ -1,24 +1,26 @@
-{ storage address ;
-  parameter (int %exec) ;
+{ storage unit ;
+  parameter (pair %exec (int %v) (address %c)) ;
   code { NIL operation ;
          SWAP ;
          UNPAIR ;
+         UNPAIR ;
+         SWAP ;
          NIL operation ;
          NIL operation ;
-         DUP 5 ;
+         DUP 6 ;
          ITER { CONS } ;
-         DUP 4 ;
+         DUP 3 ;
          CONTRACT %incr int ;
          IF_NONE
            { PUSH string "incr" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          PUSH mutez 0 ;
-         DUP 5 ;
+         DUP 6 ;
          TRANSFER_TOKENS ;
          CONS ;
          ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         DROP 1 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
          SWAP ;
          PAIR } }

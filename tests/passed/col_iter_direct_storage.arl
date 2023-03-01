@@ -3,12 +3,16 @@ archetype col_iter_direct_storage
 asset myasset {
   id : int;
   v : string;
+} initialized with {
+  {0; "0"};
+  {1; "1"};
+  {2; "2"}
 }
 
+variable res : int = 0
+
 entry exec () {
-  effect {
-    for c in myasset do
-      myasset.update(c, {v = "val"})
-    done
-  }
+  for c in myasset do
+    res += c
+  done
 }

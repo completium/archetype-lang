@@ -1,9 +1,5 @@
 archetype counter_proxy
 
-variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
-
-entry exec(v : int) {
-  effect {
-    transfer 0tz to c call incr<int>(v)
-  }
+entry exec(v : int, c : address) {
+  transfer 0tz to c call incr<int>(v)
 }

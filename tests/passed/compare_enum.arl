@@ -17,5 +17,8 @@ function getLockedDuration(isk : stake_kind) : duration {
 }
 
 entry exec () {
-
+  do_require(getLockedDuration(Tier1) = 0d, "ERROR_Tier1");
+  do_require(getLockedDuration(Tier2) = 7d, "ERROR_Tier2");
+  do_require(getLockedDuration(Tier3) = 30d, "ERROR_Tier3");
+  do_require(getLockedDuration(Tier4) = 90d, "ERROR_Tier4");
 }

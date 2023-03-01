@@ -1,7 +1,10 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (v: att.Int): att.Micheline => {
-    return v.to_mich();
+const exec_arg_to_mich = (v: att.Int, c: att.Address): att.Micheline => {
+    return att.pair_to_mich([
+        v.to_mich(),
+        c.to_mich()
+    ]);
 }
 export class Counter_proxy {
     address: string | undefined;
@@ -24,22 +27,15 @@ export class Counter_proxy {
         const address = (await ex.deploy("../tests/passed/counter_proxy.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(v: att.Int, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(v: att.Int, c: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(v), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(v, c), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(v: att.Int, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(v: att.Int, c: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(v), params);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_c(): Promise<att.Address> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Address.from_mich(storage);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(v, c), params);
         }
         throw new Error("Contract not initialised");
     }

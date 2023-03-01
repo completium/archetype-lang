@@ -94,6 +94,11 @@ export class Compare_enum {
         }
         throw new Error("Contract not initialised");
     }
-    errors = {};
+    errors = {
+        ERROR_TIER4: att.string_to_mich("\"ERROR_Tier4\""),
+        ERROR_TIER3: att.string_to_mich("\"ERROR_Tier3\""),
+        ERROR_TIER2: att.string_to_mich("\"ERROR_Tier2\""),
+        ERROR_TIER1: att.string_to_mich("\"ERROR_Tier1\"")
+    };
 }
 export const compare_enum = new Compare_enum();

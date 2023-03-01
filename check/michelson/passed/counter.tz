@@ -1,5 +1,5 @@
 { storage int ;
-  parameter (or (or (int %incr) (int %decr)) (int %reset)) ;
+  parameter (or (or (int %incr) (int %decr)) (unit %reset)) ;
   code { UNPAIR ;
          IF_LEFT
            { IF_LEFT
@@ -19,9 +19,4 @@
                  DROP 1 ;
                  NIL operation ;
                  PAIR } }
-           { PUSH int 0 ;
-             DIP 1 { SWAP ; DROP 1 } ;
-             SWAP ;
-             DROP 1 ;
-             NIL operation ;
-             PAIR } } }
+           { DROP 1 ; PUSH int 0 ; SWAP ; DROP 1 ; NIL operation ; PAIR } } }

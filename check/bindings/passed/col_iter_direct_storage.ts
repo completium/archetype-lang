@@ -46,7 +46,14 @@ export class Col_iter_direct_storage {
     async get_myasset(): Promise<myasset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map(storage, (x, y) => [att.Int.from_mich(x), att.mich_to_string(y)]);
+            return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Int.from_mich(x), att.mich_to_string(y)]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[1]);
         }
         throw new Error("Contract not initialised");
     }

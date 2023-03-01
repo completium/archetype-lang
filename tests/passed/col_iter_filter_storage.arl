@@ -3,13 +3,19 @@ archetype col_iter_filter_storage
 asset myasset {
   id : int;
   v : string;
+} initialized with {
+  {0; "0"};
+  {1; "1"};
+  {2; "2"}
 }
+
+variable res : int = 0
 
 entry exec () {
   effect {
     var col = myasset.select(id % 2 = 0);
     for c in col do
-      myasset.update(c, {v = "val"})
+      res += c
     done
   }
 }

@@ -8,7 +8,7 @@ entry exec () {
     // var pkh : key_hash = key_to_key_hash(k);
     // var c : contract<unit> = key_hash_to_contract(pkh);
 
-    var input : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+    var input : address = tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb;
     var c : contract<unit> = input;
     var a : address = contract_to_address(c);
     res := some(a);

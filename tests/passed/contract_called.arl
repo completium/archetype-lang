@@ -3,13 +3,9 @@ archetype contract_called
 variable v : int = 0
 
 entry set_value(n : int) {
-  effect {
-    v := n
-  }
+  v := n
 }
 
 entry add_value(a : int, b : int) {
-  effect {
-    v := a + b
-  }
+  v := a + b
 }

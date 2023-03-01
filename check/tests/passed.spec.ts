@@ -3680,10 +3680,10 @@ describe('passed', async () => {
 
   it('called_by_an_asset', async () => {
     await called_by_an_asset.called_by_an_asset.deploy({ as: alice })
-    await expect_to_fail(async() => {
-      await called_by_an_asset.called_by_an_asset.exec({as : bob});
-    }, {"string": "INVALID_CALLER"});
-    await called_by_an_asset.called_by_an_asset.exec({as : alice})
+    await expect_to_fail(async () => {
+      await called_by_an_asset.called_by_an_asset.exec({ as: bob });
+    }, { "string": "INVALID_CALLER" });
+    await called_by_an_asset.called_by_an_asset.exec({ as: alice })
   })
 
   it('cast', async () => {
@@ -3732,17 +3732,25 @@ describe('passed', async () => {
 
   it('col_iter_direct_storage', async () => {
     await col_iter_direct_storage.col_iter_direct_storage.deploy({ as: alice })
-    // TODO
+    const res_before = await col_iter_direct_storage.col_iter_direct_storage.get_res()
+    assert(res_before.equals(new Int(0)))
+    await col_iter_direct_storage.col_iter_direct_storage.exec({ as: alice })
+    const res_after = await col_iter_direct_storage.col_iter_direct_storage.get_res()
+    assert(res_after.equals(new Int(3)))
   })
 
   it('col_iter_filter_storage', async () => {
     await col_iter_filter_storage.col_iter_filter_storage.deploy({ as: alice })
-    // TODO
+    const res_before = await col_iter_filter_storage.col_iter_filter_storage.get_res()
+    assert(res_before.equals(new Int(0)))
+    await col_iter_filter_storage.col_iter_filter_storage.exec({ as: alice })
+    const res_after = await col_iter_filter_storage.col_iter_filter_storage.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('compare_enum', async () => {
-    await compare_enum.compare_enum.deploy({ as: alice })
-    // TODO
+    await compare_enum.compare_enum.deploy({ as: alice });
+    compare_enum.compare_enum.exec({ as: alice })
   })
 
   it('const_decl', async () => {
@@ -3752,37 +3760,102 @@ describe('passed', async () => {
 
   it('contract_called', async () => {
     await contract_called.contract_called.deploy({ as: alice })
-    // TODO
+    const v_before = await contract_called.contract_called.get_v()
+    assert(v_before.equals(new Int(0)))
+    await contract_called.contract_called.set_value(new Int(2), { as: alice });
+    const v_1 = await contract_called.contract_called.get_v()
+    assert(v_1.equals(new Int(2)))
+    await contract_called.contract_called.add_value(new Int(2), new Int(1), { as: alice });
+    const v_2 = await contract_called.contract_called.get_v()
+    assert(v_2.equals(new Int(3)))
   })
 
   it('contract_caller', async () => {
+    await contract_called.contract_called.deploy({ as: alice })
     await contract_caller.contract_caller.deploy({ as: alice })
-    // TODO
+
+    await contract_caller.contract_caller.update_value(new Int(4), contract_called.contract_called.get_address(), { as: alice });
+    const v_1 = await contract_called.contract_called.get_v()
+    assert(v_1.equals(new Int(4)))
+
+    await contract_caller.contract_caller.add_one(new Int(6), contract_called.contract_called.get_address(), { as: alice });
+    const v_2 = await contract_called.contract_called.get_v()
+    assert(v_2.equals(new Int(8)))
   })
 
   it('contract_empty', async () => {
     await contract_empty.contract_empty.deploy({ as: alice })
-    // TODO
+    await contract_empty.contract_empty.exec({ as: alice })
   })
 
   it('contract_to_address', async () => {
     await contract_to_address.contract_to_address.deploy({ as: alice })
-    // TODO
+    const res_before = await contract_to_address.contract_to_address.get_res()
+    assert(res_before.equals(Option.None<Address>()))
+    await contract_to_address.contract_to_address.exec({ as: alice })
+    const res_after = await contract_to_address.contract_to_address.get_res()
+    assert(res_after.equals(Option.Some<Address>(alice.get_address())))
   })
 
   it('contract_transition', async () => {
     await contract_transition.contract_transition.deploy({ as: alice })
-    // TODO
+
+    const state_init = await contract_transition.contract_transition.get_state();
+    assert(state_init == contract_transition.states.First);
+
+    await contract_transition.contract_transition.mytr({ as: alice })
+
+    const state_1 = await contract_transition.contract_transition.get_state();
+    assert(state_1 == contract_transition.states.Second);
+
+    await contract_transition.contract_transition.mytr_a({ as: alice })
+
+    const state_2 = await contract_transition.contract_transition.get_state();
+    assert(state_2 == contract_transition.states.Third);
+
+    await expect_to_fail(async () => {
+      await contract_transition.contract_transition.mytr_b({ as: alice })
+    }, { "string": "INVALID_STATE" })
+
+    await expect_to_fail(async () => {
+      await contract_transition.contract_transition.mytr({ as: alice })
+    }, { "string": "INVALID_STATE" })
   })
 
   it('counter', async () => {
     await counter.counter.deploy({ as: alice })
-    // TODO
+
+    const value_init = await counter.counter.get_value()
+    assert(value_init.equals(new Int(0)));
+
+    await counter.counter.incr(new Int(2), { as: alice })
+
+    const value_0 = await counter.counter.get_value()
+    assert(value_0.equals(new Int(2)));
+
+    await counter.counter.decr(new Int(1), { as: alice })
+
+    const value_1 = await counter.counter.get_value()
+    assert(value_1.equals(new Int(1)));
+
+    await counter.counter.reset({as: alice})
+
+    const value_2 = await counter.counter.get_value()
+    assert(value_2.equals(new Int(0)));
+
   })
 
   it('counter_proxy', async () => {
+    await counter.counter.deploy({ as: alice })
     await counter_proxy.counter_proxy.deploy({ as: alice })
-    // TODO
+
+    const value_before = await counter.counter.get_value()
+    assert(value_before.equals(new Int(0)));
+
+    await counter_proxy.counter_proxy.exec(new Int(2), counter.counter.get_address(), { as: alice })
+
+    const value_after = await counter.counter.get_value()
+    assert(value_after.equals(new Int(2)));
   })
 
   it('custom_args_with_record', async () => {
