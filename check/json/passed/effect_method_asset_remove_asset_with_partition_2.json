@@ -140,7 +140,7 @@
             "is_key": true
           },
           {
-            "name": "apartition",
+            "name": "my_partition_1",
             "type": {
               "node": "partition",
               "name": "o_asset",
@@ -150,7 +150,7 @@
             "is_key": false
           },
           {
-            "name": "apartition2",
+            "name": "my_partition_2",
             "type": {
               "node": "partition",
               "name": "o_asset2",
@@ -202,7 +202,7 @@
                     }
                   ],
                   "annots": [
-                    "%apartition"
+                    "%my_partition_1"
                   ],
                   "array": [],
                   "var_id": null,
@@ -227,7 +227,7 @@
                     }
                   ],
                   "annots": [
-                    "%apartition2"
+                    "%my_partition_2"
                   ],
                   "array": [],
                   "var_id": null,
@@ -281,7 +281,7 @@
                 }
               ],
               "annots": [
-                "%apartition"
+                "%my_partition_1"
               ],
               "array": [],
               "var_id": null,
@@ -306,7 +306,7 @@
                 }
               ],
               "annots": [
-                "%apartition2"
+                "%my_partition_2"
               ],
               "array": [],
               "var_id": null,
@@ -455,7 +455,7 @@
                     }
                   ],
                   "annots": [
-                    "%apartition"
+                    "%my_partition_1"
                   ],
                   "array": [],
                   "var_id": null,
@@ -480,7 +480,7 @@
                     }
                   ],
                   "annots": [
-                    "%apartition2"
+                    "%my_partition_2"
                   ],
                   "array": [],
                   "var_id": null,
@@ -509,6 +509,10 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "init",
+      "args": []
+    },
     {
       "name": "exec",
       "args": []

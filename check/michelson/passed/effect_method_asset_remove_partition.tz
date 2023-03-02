@@ -1,7 +1,7 @@
 { storage
     (pair (set %o_asset string)
           (map %my_asset string (pair (int %value) (set %col string)))) ;
-  parameter (or (unit %pre_exec) (unit %exec)) ;
+  parameter (or (unit %init) (unit %exec)) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
          IF_LEFT

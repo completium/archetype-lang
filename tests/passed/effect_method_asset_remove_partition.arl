@@ -14,7 +14,7 @@ asset my_asset identified by id {
   {"id2"; 2; []}
 }
 
-entry pre_exec () {
+entry init () {
   my_asset["id0"].col.add({"oid"})
 }
 

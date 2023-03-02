@@ -4,14 +4,14 @@ export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_t
 export const o_asset2_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
-    constructor(public apartition: Array<att.Nat>, public apartition2: Array<att.Nat>) { }
+    constructor(public my_partition_1: Array<att.Nat>, public my_partition_2: Array<att.Nat>) { }
     toString(): string {
         return JSON.stringify(this, null, 2);
     }
     to_mich(): att.Micheline {
-        return att.pair_to_mich([att.list_to_mich(this.apartition, x => {
+        return att.pair_to_mich([att.list_to_mich(this.my_partition_1, x => {
                 return x.to_mich();
-            }), att.list_to_mich(this.apartition2, x => {
+            }), att.list_to_mich(this.my_partition_2, x => {
                 return x.to_mich();
             })]);
     }
@@ -23,8 +23,8 @@ export class my_asset_value implements att.ArchetypeType {
     }
 }
 export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%apartition"]),
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%apartition2"])
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_partition_1"]),
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_partition_2"])
 ], []);
 export type o_asset_container = Array<att.Nat>;
 export type o_asset2_container = Array<att.Nat>;
@@ -35,9 +35,12 @@ export type my_asset_container = Array<[
 export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
 export const o_asset2_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%apartition"]),
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%apartition2"])
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_partition_1"]),
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_partition_2"])
 ], []), []);
+const init_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
+}
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -62,9 +65,21 @@ export class Effect_method_asset_remove_asset_with_partition_2 {
         const address = (await ex.deploy("../tests/passed/effect_method_asset_remove_asset_with_partition_2.arl", {}, params)).address;
         this.address = address;
     }
+    async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "init", init_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_init_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "init", init_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

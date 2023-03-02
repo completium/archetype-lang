@@ -11,6 +11,11 @@ asset o_asset {
 asset my_asset identified by id {
   id : string;
   anaggregate : aggregate<o_asset>;
+} initialized with {
+  {"id0"; [1; 2; 3]};
+  {"id1"; [1; 2; 3]};
+  {"id2"; [1; 2; 3]};
+  {"id3"; [1; 2; 3]}
 }
 
 entry exec () {

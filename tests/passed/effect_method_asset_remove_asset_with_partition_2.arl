@@ -10,12 +10,20 @@ asset o_asset2 {
 
 asset my_asset identified by id {
   id : string;
-  apartition  : partition<o_asset>;
-  apartition2 : partition<o_asset2>;
+  my_partition_1 : partition<o_asset>;
+  my_partition_2 : partition<o_asset2>;
+} initialized with {
+  {"id0"; []; []};
+  {"id1"; []; []};
+  {"id2"; []; []};
+  {"id3"; []; []}
+}
+
+entry init () {
+  my_asset["id3"].my_partition_1.add({0});
+  my_asset["id3"].my_partition_2.add({1})
 }
 
 entry exec () {
-  effect {
-    my_asset.remove("id3")
-  }
+  my_asset.remove("id3")
 }

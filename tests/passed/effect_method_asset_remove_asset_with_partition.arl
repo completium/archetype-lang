@@ -6,11 +6,18 @@ asset o_asset {
 
 asset my_asset identified by id {
   id : string;
-  anaggregate : partition<o_asset>;
+  my_partition : partition<o_asset>;
+} initialized with {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []};
+  {"id3"; []}
+}
+
+entry init () {
+  my_asset["id3"].my_partition.add({0})
 }
 
 entry exec () {
-  effect {
-    my_asset.remove("id3")
-  }
+  my_asset.remove("id3")
 }
