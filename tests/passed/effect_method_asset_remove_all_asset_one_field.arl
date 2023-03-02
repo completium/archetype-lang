@@ -2,7 +2,7 @@ archetype effect_method_asset_remove_all_asset_one_field
 
 asset my_asset identified by id {
   id : string;
-} initialized by {
+} initialized with {
   {"id0"};
   {"id1"};
   {"id2"}

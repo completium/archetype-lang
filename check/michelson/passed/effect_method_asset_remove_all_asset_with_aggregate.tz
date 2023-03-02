@@ -1,5 +1,5 @@
 { storage
-    (pair (set %oasset int) (map %my_asset string (pair (int %value) (set %p int)))) ;
+    (pair (set %o_asset int) (map %my_asset string (pair (int %value) (set %p int)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;

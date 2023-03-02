@@ -1,17 +1,21 @@
 archetype effect_method_asset_remove_all_asset_with_partition
 
-asset oasset {
+asset o_asset {
   oid : int;
 }
 
 asset my_asset identified by id {
   id : string;
   value : int = 0;
-  p : partition<oasset>
-} initialized by {
+  p : partition<o_asset>
+} initialized with {
   {"id0"; 0; []};
   {"id1"; 1; []};
   {"id2"; 2; []}
+}
+
+entry init () {
+  my_asset["id0"].p.add({0i})
 }
 
 entry exec () {

@@ -1,15 +1,17 @@
 archetype effect_method_asset_remove_all_asset_with_aggregate
 
-asset oasset {
+asset o_asset {
   oid : int;
+} initialized with {
+  {0}
 }
 
 asset my_asset identified by id {
   id : string;
   value : int = 0;
-  p : aggregate<oasset>
-} initialized by {
-  {"id0"; 0; []};
+  p : aggregate<o_asset>
+} initialized with {
+  {"id0"; 0; [0]};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }

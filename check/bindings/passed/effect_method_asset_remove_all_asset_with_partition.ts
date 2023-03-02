@@ -1,6 +1,6 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const oasset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
     constructor(public value: att.Int, public p: Array<att.Int>) { }
@@ -23,16 +23,19 @@ export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mic
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), ["%p"])
 ], []);
-export type oasset_container = Array<att.Int>;
+export type o_asset_container = Array<att.Int>;
 export type my_asset_container = Array<[
     string,
     my_asset_value
 ]>;
-export const oasset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), []);
+export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), []);
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), ["%p"])
 ], []), []);
+const init_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
+}
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -57,9 +60,21 @@ export class Effect_method_asset_remove_all_asset_with_partition {
         const address = (await ex.deploy("../tests/passed/effect_method_asset_remove_all_asset_with_partition.arl", {}, params)).address;
         this.address = address;
     }
+    async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "init", init_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_init_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "init", init_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -69,7 +84,7 @@ export class Effect_method_asset_remove_all_asset_with_partition {
         }
         throw new Error("Contract not initialised");
     }
-    async get_oasset(): Promise<oasset_container> {
+    async get_o_asset(): Promise<o_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.Int.from_mich(x); });

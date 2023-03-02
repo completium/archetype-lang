@@ -259,16 +259,6 @@
         "args": []
       },
       "const": false
-    },
-    {
-      "name": "res",
-      "type": {
-        "node": "int",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "const": false
     }
   ],
   "storage_type": {
@@ -377,19 +367,6 @@
           "array": [],
           "var_id": null,
           "var_type": null
-        },
-        {
-          "prim": "int",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [
-            "%res"
-          ],
-          "array": [],
-          "var_id": null,
-          "var_type": null
         }
       ],
       "annots": [],
@@ -400,10 +377,6 @@
     "is_storable": true
   },
   "entrypoints": [
-    {
-      "name": "pre_exec",
-      "args": []
-    },
     {
       "name": "exec",
       "args": []

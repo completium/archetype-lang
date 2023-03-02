@@ -3,7 +3,7 @@ archetype effect_method_asset_remove_all_collection
 asset my_asset identified by id {
   id : string;
   value : int;
-} initialized by {
+} initialized with {
   {"id0"; 0};
   {"id1"; 1};
   {"id2"; 2}

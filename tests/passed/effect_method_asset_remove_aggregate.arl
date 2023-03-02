@@ -2,7 +2,7 @@ archetype effect_method_asset_remove_aggregate
 
 asset o_asset identified by oid {
   oid : string;
-} initialized by {
+} initialized with {
   {"oid"}
 }
 
@@ -10,16 +10,10 @@ asset my_asset identified by id {
   id     : string;
   value  : int;
   col    : aggregate<o_asset>;
-} initialized by {
-  {"id0"; 0; []};
+} initialized with {
+  {"id0"; 0; ["oid"]};
   {"id1"; 1; []};
   {"id2"; 2; []}
-}
-
-variable res : int = 0
-
-entry pre_exec () {
-  my_asset["id0"].col.add("oid")
 }
 
 entry exec () {
