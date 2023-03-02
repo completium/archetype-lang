@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, register_global_constant, set_mockup, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket } from '@completium/archetype-ts-types';
+import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -5186,32 +5186,87 @@ describe('passed', async () => {
 
   it('effect_method_asset_big_map_0_put_remove_put', async () => {
     await effect_method_asset_big_map_0_put_remove_put.effect_method_asset_big_map_0_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_big_map_0_put_remove_put.effect_method_asset_big_map_0_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_before == undefined)
+    await effect_method_asset_big_map_0_put_remove_put.effect_method_asset_big_map_0_put_remove_put.exec(new Unit(), { as: alice })
+    const my_asset_after = await effect_method_asset_big_map_0_put_remove_put.effect_method_asset_big_map_0_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_after?.equals(new Unit()))
   })
 
   it('effect_method_asset_big_map_0_put_remove_remove', async () => {
     await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_0_before = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_before?.equals(new Unit()))
+    const my_asset_1_before = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_before?.equals(new Unit()))
+    const my_asset_2_before = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_before?.equals(new Unit()))
+    await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.exec({ as: alice })
+    const my_asset_0_after = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_after == undefined)
+    const my_asset_1_after = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_after?.equals(new Unit()))
+    const my_asset_2_after = await effect_method_asset_big_map_0_put_remove_remove.effect_method_asset_big_map_0_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_after?.equals(new Unit()))
   })
 
   it('effect_method_asset_big_map_1_put_remove_put', async () => {
     await effect_method_asset_big_map_1_put_remove_put.effect_method_asset_big_map_1_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_big_map_1_put_remove_put.effect_method_asset_big_map_1_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_before == undefined)
+    await effect_method_asset_big_map_1_put_remove_put.effect_method_asset_big_map_1_put_remove_put.exec("mystr", { as: alice })
+    const my_asset_after = await effect_method_asset_big_map_1_put_remove_put.effect_method_asset_big_map_1_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_after == "mystr")
   })
 
   it('effect_method_asset_big_map_1_put_remove_remove', async () => {
     await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_0_before = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_before == "id0")
+    const my_asset_1_before = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_before == "id1")
+    const my_asset_2_before = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_before == "id2")
+    await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.exec({ as: alice })
+    const my_asset_0_after = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_after == undefined)
+    const my_asset_1_after = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_after == "id1")
+    const my_asset_2_after = await effect_method_asset_big_map_1_put_remove_remove.effect_method_asset_big_map_1_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_after == "id2")
   })
 
   it('effect_method_asset_big_map_2_put_remove_put', async () => {
     await effect_method_asset_big_map_2_put_remove_put.effect_method_asset_big_map_2_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_big_map_2_put_remove_put.effect_method_asset_big_map_2_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_before == undefined)
+    const v = new effect_method_asset_big_map_2_put_remove_put.my_asset_value("mystr", new Bytes("00"))
+    await effect_method_asset_big_map_2_put_remove_put.effect_method_asset_big_map_2_put_remove_put.exec(v, { as: alice })
+    const my_asset_after = await effect_method_asset_big_map_2_put_remove_put.effect_method_asset_big_map_2_put_remove_put.get_my_asset_value(new Nat(0))
+    assert(my_asset_after?.equals(v))
   })
 
   it('effect_method_asset_big_map_2_put_remove_remove', async () => {
     await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_0_before = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_before?.equals(new effect_method_asset_big_map_2_put_remove_remove.my_asset_value("id0", new Bytes("00"))))
+    const my_asset_1_before = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_before?.equals(new effect_method_asset_big_map_2_put_remove_remove.my_asset_value("id1", new Bytes("01"))))
+    const my_asset_2_before = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_before?.equals(new effect_method_asset_big_map_2_put_remove_remove.my_asset_value("id2", new Bytes("02"))))
+    await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.exec({ as: alice })
+    const my_asset_0_after = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(0))
+    assert(my_asset_0_after == undefined)
+    const my_asset_1_after = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(1))
+    assert(my_asset_1_after?.equals(new effect_method_asset_big_map_2_put_remove_remove.my_asset_value("id1", new Bytes("01"))))
+    const my_asset_2_after = await effect_method_asset_big_map_2_put_remove_remove.effect_method_asset_big_map_2_put_remove_remove.get_my_asset_value(new Nat(2))
+    assert(my_asset_2_after?.equals(new effect_method_asset_big_map_2_put_remove_remove.my_asset_value("id2", new Bytes("02"))))
   })
 
   it('effect_method_asset_clear_view', async () => {
