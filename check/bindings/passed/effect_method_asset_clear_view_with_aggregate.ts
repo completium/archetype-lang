@@ -1,6 +1,6 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const oasset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
     constructor(public value: att.Int, public p: Array<att.Int>) { }
@@ -23,12 +23,12 @@ export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mic
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), ["%p"])
 ], []);
-export type oasset_container = Array<att.Int>;
+export type o_asset_container = Array<att.Int>;
 export type my_asset_container = Array<[
     string,
     my_asset_value
 ]>;
-export const oasset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), []);
+export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), []);
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("int", []), ["%p"])
@@ -69,7 +69,7 @@ export class Effect_method_asset_clear_view_with_aggregate {
         }
         throw new Error("Contract not initialised");
     }
-    async get_oasset(): Promise<oasset_container> {
+    async get_o_asset(): Promise<o_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.Int.from_mich(x); });
@@ -80,13 +80,6 @@ export class Effect_method_asset_clear_view_with_aggregate {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_map((storage as att.Mpair).args[1], (x, y) => [att.mich_to_string(x), my_asset_value.from_mich(y)]);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_res(): Promise<att.Int> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Int.from_mich((storage as att.Mpair).args[2]);
         }
         throw new Error("Contract not initialised");
     }

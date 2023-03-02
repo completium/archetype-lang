@@ -1,20 +1,20 @@
 archetype effect_method_asset_clear_view_with_aggregate
 
-asset oasset {
+asset o_asset {
   oid : int;
+} initialized with {
+  {0}
 }
 
 asset my_asset identified by id {
   id : string;
   value : int = 0;
-  p : aggregate<oasset>
+  p : aggregate<o_asset>
 } initialized by {
-  {"id0"; 0; []};
+  {"id0"; 0; [0]};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }
-
-variable res : int = 0
 
 entry exec () {
   my_asset.select(value % 2 = 0).clear()

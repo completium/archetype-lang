@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "oasset",
+        "name": "o_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -92,7 +92,7 @@
             "name": "p",
             "type": {
               "node": "partition",
-              "name": "oasset",
+              "name": "o_asset",
               "int_value": null,
               "args": []
             },
@@ -241,10 +241,10 @@
   },
   "storage": [
     {
-      "name": "oasset",
+      "name": "o_asset",
       "type": {
         "node": "asset",
-        "name": "oasset",
+        "name": "o_asset",
         "int_value": null,
         "args": []
       },
@@ -255,16 +255,6 @@
       "type": {
         "node": "asset",
         "name": "my_asset",
-        "int_value": null,
-        "args": []
-      },
-      "const": false
-    },
-    {
-      "name": "res",
-      "type": {
-        "node": "int",
-        "name": null,
         "int_value": null,
         "args": []
       },
@@ -297,7 +287,7 @@
             }
           ],
           "annots": [
-            "%oasset"
+            "%o_asset"
           ],
           "array": [],
           "var_id": null,
@@ -377,19 +367,6 @@
           "array": [],
           "var_id": null,
           "var_type": null
-        },
-        {
-          "prim": "int",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [
-            "%res"
-          ],
-          "array": [],
-          "var_id": null,
-          "var_type": null
         }
       ],
       "annots": [],
@@ -400,6 +377,10 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "init",
+      "args": []
+    },
     {
       "name": "exec",
       "args": []
