@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "my_asset_simple",
+        "name": "o_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -89,10 +89,10 @@
             "is_key": false
           },
           {
-            "name": "mypartition",
+            "name": "my_partition",
             "type": {
               "node": "partition",
-              "name": "my_asset_simple",
+              "name": "o_asset",
               "int_value": null,
               "args": []
             },
@@ -154,7 +154,7 @@
                     }
                   ],
                   "annots": [
-                    "%mypartition"
+                    "%my_partition"
                   ],
                   "array": [],
                   "var_id": null,
@@ -221,7 +221,7 @@
                 }
               ],
               "annots": [
-                "%mypartition"
+                "%my_partition"
               ],
               "array": [],
               "var_id": null,
@@ -241,10 +241,10 @@
   },
   "storage": [
     {
-      "name": "my_asset_simple",
+      "name": "o_asset",
       "type": {
         "node": "asset",
-        "name": "my_asset_simple",
+        "name": "o_asset",
         "int_value": null,
         "args": []
       },
@@ -287,7 +287,7 @@
             }
           ],
           "annots": [
-            "%my_asset_simple"
+            "%o_asset"
           ],
           "array": [],
           "var_id": null,
@@ -348,7 +348,7 @@
                     }
                   ],
                   "annots": [
-                    "%mypartition"
+                    "%my_partition"
                   ],
                   "array": [],
                   "var_id": null,

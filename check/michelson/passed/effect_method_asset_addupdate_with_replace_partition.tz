@@ -1,6 +1,6 @@
 { storage
-    (pair (set %my_asset_simple nat)
-          (map %my_asset string (pair (int %value) (set %mypartition nat)))) ;
+    (pair (set %o_asset nat)
+          (map %my_asset string (pair (int %value) (set %my_partition nat)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
@@ -16,7 +16,7 @@
          PUSH nat 3 ;
          MEM ;
          OR ;
-         IF { PUSH string "my_asset_simple" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+         IF { PUSH string "o_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
             { DUP 2 ;
               EMPTY_SET nat ;
               PUSH bool True ;
