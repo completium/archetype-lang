@@ -5373,32 +5373,105 @@ describe('passed', async () => {
 
   it('effect_method_asset_map_0_put_remove_put', async () => {
     await effect_method_asset_map_0_put_remove_put.effect_method_asset_map_0_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_0_put_remove_put.effect_method_asset_map_0_put_remove_put.get_my_asset();
+    assert(my_asset_before.length == 0)
+
+    await effect_method_asset_map_0_put_remove_put.effect_method_asset_map_0_put_remove_put.exec(new Unit(), { as: alice })
+
+    const my_asset_after = await effect_method_asset_map_0_put_remove_put.effect_method_asset_map_0_put_remove_put.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0].equals(new Nat(0)))
   })
 
   it('effect_method_asset_map_0_put_remove_remove', async () => {
     await effect_method_asset_map_0_put_remove_remove.effect_method_asset_map_0_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_0_put_remove_remove.effect_method_asset_map_0_put_remove_remove.get_my_asset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0].equals(new Nat(0)))
+    assert(my_asset_before[1].equals(new Nat(1)))
+    assert(my_asset_before[2].equals(new Nat(2)))
+
+    await effect_method_asset_map_0_put_remove_remove.effect_method_asset_map_0_put_remove_remove.exec(new Unit(), { as: alice })
+
+    const my_asset_after = await effect_method_asset_map_0_put_remove_remove.effect_method_asset_map_0_put_remove_remove.get_my_asset();
+    assert(my_asset_after.length == 2)
+    assert(my_asset_after[0].equals(new Nat(1)))
+    assert(my_asset_after[1].equals(new Nat(2)))
   })
 
   it('effect_method_asset_map_1_put_remove_put', async () => {
     await effect_method_asset_map_1_put_remove_put.effect_method_asset_map_1_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_1_put_remove_put.effect_method_asset_map_1_put_remove_put.get_my_asset();
+    assert(my_asset_before.length == 0)
+
+    await effect_method_asset_map_1_put_remove_put.effect_method_asset_map_1_put_remove_put.exec("mystr", { as: alice })
+
+    const my_asset_after = await effect_method_asset_map_1_put_remove_put.effect_method_asset_map_1_put_remove_put.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "mystr")
   })
 
   it('effect_method_asset_map_1_put_remove_remove', async () => {
     await effect_method_asset_map_1_put_remove_remove.effect_method_asset_map_1_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_1_put_remove_remove.effect_method_asset_map_1_put_remove_remove.get_my_asset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "id0")
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1] == "id1")
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1] == "id2")
+
+    await effect_method_asset_map_1_put_remove_remove.effect_method_asset_map_1_put_remove_remove.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_map_1_put_remove_remove.effect_method_asset_map_1_put_remove_remove.get_my_asset();
+    assert(my_asset_after.length == 2)
+    assert(my_asset_after[0][0].equals(new Nat(1)))
+    assert(my_asset_after[0][1] == "id1")
+    assert(my_asset_after[1][0].equals(new Nat(2)))
+    assert(my_asset_after[1][1] == "id2")
   })
 
   it('effect_method_asset_map_2_put_remove_put', async () => {
     await effect_method_asset_map_2_put_remove_put.effect_method_asset_map_2_put_remove_put.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_2_put_remove_put.effect_method_asset_map_2_put_remove_put.get_my_asset();
+    assert(my_asset_before.length == 0)
+
+    const v = new effect_method_asset_map_2_put_remove_put.my_asset_value("mystr", new Bytes("00"));
+    await effect_method_asset_map_2_put_remove_put.effect_method_asset_map_2_put_remove_put.exec(v, { as: alice })
+
+    const my_asset_after = await effect_method_asset_map_2_put_remove_put.effect_method_asset_map_2_put_remove_put.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].equals(v))
   })
 
   it('effect_method_asset_map_2_put_remove_remove', async () => {
     await effect_method_asset_map_2_put_remove_remove.effect_method_asset_map_2_put_remove_remove.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_map_2_put_remove_remove.effect_method_asset_map_2_put_remove_remove.get_my_asset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].equals(new effect_method_asset_map_2_put_remove_put.my_asset_value("id0", new Bytes("00"))))
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1].equals(new effect_method_asset_map_2_put_remove_put.my_asset_value("id1", new Bytes("01"))))
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1].equals(new effect_method_asset_map_2_put_remove_put.my_asset_value("id2", new Bytes("02"))))
+
+    await effect_method_asset_map_2_put_remove_remove.effect_method_asset_map_2_put_remove_remove.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_map_2_put_remove_remove.effect_method_asset_map_2_put_remove_remove.get_my_asset();
+    assert(my_asset_after.length == 2)
+    assert(my_asset_after[0][0].equals(new Nat(1)))
+    assert(my_asset_after[0][1].equals(new effect_method_asset_map_2_put_remove_put.my_asset_value("id1", new Bytes("01"))))
+    assert(my_asset_after[1][0].equals(new Nat(2)))
+    assert(my_asset_after[1][1].equals(new effect_method_asset_map_2_put_remove_put.my_asset_value("id2", new Bytes("02"))))
   })
 
   it('effect_method_asset_remove_aggregate', async () => {
