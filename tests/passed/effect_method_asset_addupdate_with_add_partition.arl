@@ -1,17 +1,21 @@
 archetype effect_method_asset_addupdate_with_add_partition
 
-asset my_asset_simple identified by oid {
+asset o_asset identified by oid {
   oid : int
 }
 
 asset my_asset identified by id {
   id : string;
   value : int;
-  mypartition : partition<my_asset_simple> = [];
+  my_partition : partition<o_asset> = [];
 } initialized by {
   { "my_id"; 0; [] }
 }
 
+entry init () {
+  my_asset.update ("my_id", {my_partition = [{oid = 0}] })
+}
+
 entry exec () {
-  my_asset.add_update ("my_id", {value = 3; mypartition += [{oid = 1}; {oid = 2}; {oid = 3}] })
+  my_asset.add_update ("my_id", {value = 3; my_partition += [{oid = 1}; {oid = 2}; {oid = 3}] })
 }

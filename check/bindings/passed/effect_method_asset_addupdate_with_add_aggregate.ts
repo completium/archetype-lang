@@ -1,14 +1,14 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const my_asset_simple_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
-    constructor(public value: att.Int, public myaggregate: Array<att.Nat>) { }
+    constructor(public value: att.Int, public my_aggregate: Array<att.Nat>) { }
     toString(): string {
         return JSON.stringify(this, null, 2);
     }
     to_mich(): att.Micheline {
-        return att.pair_to_mich([this.value.to_mich(), att.list_to_mich(this.myaggregate, x => {
+        return att.pair_to_mich([this.value.to_mich(), att.list_to_mich(this.my_aggregate, x => {
                 return x.to_mich();
             })]);
     }
@@ -21,17 +21,17 @@ export class my_asset_value implements att.ArchetypeType {
 }
 export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("int", ["%value"]),
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%myaggregate"])
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_aggregate"])
 ], []);
-export type my_asset_simple_container = Array<att.Nat>;
+export type o_asset_container = Array<att.Nat>;
 export type my_asset_container = Array<[
     string,
     my_asset_value
 ]>;
-export const my_asset_simple_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
+export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("int", ["%value"]),
-    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%myaggregate"])
+    att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%my_aggregate"])
 ], []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
@@ -69,7 +69,7 @@ export class Effect_method_asset_addupdate_with_add_aggregate {
         }
         throw new Error("Contract not initialised");
     }
-    async get_my_asset_simple(): Promise<my_asset_simple_container> {
+    async get_o_asset(): Promise<o_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.Nat.from_mich(x); });

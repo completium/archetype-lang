@@ -4877,37 +4877,205 @@ describe('passed', async () => {
 
   it('effect_method_asset_addupdate', async () => {
     await effect_method_asset_addupdate.effect_method_asset_addupdate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate.effect_method_asset_addupdate.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+
+    await effect_method_asset_addupdate.effect_method_asset_addupdate.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate.effect_method_asset_addupdate.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(5)))
   })
 
   it('effect_method_asset_addupdate_partition', async () => {
     await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].length == 0)
+    const o_asset_before = await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    // TODO: bug
+    // assert(my_asset_after[0][1].length == 1)
+    // assert(my_asset_after[0][1][0].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].length == 0)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].length == 0)
+    const o_asset_after = await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.get_o_asset()
+    assert(o_asset_after.length == 1)
+    assert(o_asset_after[0][0].equals(new Int(0)))
+    assert(o_asset_after[0][1].equals(new Int(2)))
   })
 
   it('effect_method_asset_addupdate_with_add_aggregate', async () => {
     await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "my_id")
+    assert(my_asset_before[0][1].value.equals(new Int(0)))
+    assert(my_asset_before[0][1].my_aggregate.length == 1)
+    assert(my_asset_before[0][1].my_aggregate[0].equals(new Nat(0)))
+    const o_asset_before = await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.get_o_asset()
+    assert(o_asset_before.length == 4)
+    assert(o_asset_before[0].equals(new Nat(0)))
+    assert(o_asset_before[1].equals(new Nat(1)))
+    assert(o_asset_before[2].equals(new Nat(2)))
+    assert(o_asset_before[3].equals(new Nat(3)))
+    await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.exec({ as: alice })
+    const my_asset_after = await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "my_id")
+    assert(my_asset_after[0][1].value.equals(new Int(3)))
+    assert(my_asset_after[0][1].my_aggregate.length == 3)
+    assert(my_asset_after[0][1].my_aggregate[0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].my_aggregate[1].equals(new Nat(1)))
+    assert(my_asset_after[0][1].my_aggregate[2].equals(new Nat(2)))
+    const o_asset_after = await effect_method_asset_addupdate_with_add_aggregate.effect_method_asset_addupdate_with_add_aggregate.get_o_asset()
+    assert(o_asset_after.length == 4)
+    assert(o_asset_after[0].equals(new Nat(0)))
+    assert(o_asset_after[1].equals(new Nat(1)))
+    assert(o_asset_after[2].equals(new Nat(2)))
+    assert(o_asset_after[3].equals(new Nat(3)))
   })
 
   it('effect_method_asset_addupdate_with_add_map', async () => {
     await effect_method_asset_addupdate_with_add_map.effect_method_asset_addupdate_with_add_map.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_with_add_map.effect_method_asset_addupdate_with_add_map.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].length == 1)
+    assert(my_asset_before[0][1][0][0] == "z")
+    assert(my_asset_before[0][1][0][1].equals(new Bytes("ff")))
+
+    await effect_method_asset_addupdate_with_add_map.effect_method_asset_addupdate_with_add_map.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate_with_add_map.effect_method_asset_addupdate_with_add_map.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].length == 4)
+    assert(my_asset_after[0][1][0][0] == "k")
+    assert(my_asset_after[0][1][0][1].equals(new Bytes("00")))
+    assert(my_asset_after[0][1][1][0] == "l")
+    assert(my_asset_after[0][1][1][1].equals(new Bytes("01")))
+    assert(my_asset_after[0][1][2][0] == "m")
+    assert(my_asset_after[0][1][2][1].equals(new Bytes("02")))
+    assert(my_asset_after[0][1][3][0] == "z")
+    assert(my_asset_after[0][1][3][1].equals(new Bytes("ff")))
   })
 
   it('effect_method_asset_addupdate_with_add_map_var', async () => {
     await effect_method_asset_addupdate_with_add_map_var.effect_method_asset_addupdate_with_add_map_var.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_with_add_map_var.effect_method_asset_addupdate_with_add_map_var.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].length == 1)
+    assert(my_asset_before[0][1][0][0] == "z")
+    assert(my_asset_before[0][1][0][1].equals(new Bytes("ff")))
+
+    await effect_method_asset_addupdate_with_add_map_var.effect_method_asset_addupdate_with_add_map_var.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate_with_add_map_var.effect_method_asset_addupdate_with_add_map_var.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].length == 4)
+    assert(my_asset_after[0][1][0][0] == "k")
+    assert(my_asset_after[0][1][0][1].equals(new Bytes("00")))
+    assert(my_asset_after[0][1][1][0] == "l")
+    assert(my_asset_after[0][1][1][1].equals(new Bytes("01")))
+    assert(my_asset_after[0][1][2][0] == "m")
+    assert(my_asset_after[0][1][2][1].equals(new Bytes("02")))
+    assert(my_asset_after[0][1][3][0] == "z")
+    assert(my_asset_after[0][1][3][1].equals(new Bytes("ff")))
   })
 
   it('effect_method_asset_addupdate_with_add_partition', async () => {
     await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "my_id")
+    assert(my_asset_before[0][1].value.equals(new Int(0)))
+    assert(my_asset_before[0][1].my_partition.length == 0)
+    const o_asset_before = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.init({ as: alice })
+
+    const my_asset_init = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_my_asset()
+    assert(my_asset_init.length == 1)
+    assert(my_asset_init[0][0] == "my_id")
+    assert(my_asset_init[0][1].value.equals(new Int(0)))
+    assert(my_asset_init[0][1].my_partition.length == 1)
+    assert(my_asset_init[0][1].my_partition[0].equals(new Int(0)))
+    const o_asset_init = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_o_asset()
+    assert(o_asset_init.length == 1)
+    assert(o_asset_init[0].equals(new Int(0)))
+
+    await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "my_id")
+    assert(my_asset_after[0][1].value.equals(new Int(3)))
+    assert(my_asset_after[0][1].my_partition.length == 4)
+    assert(my_asset_after[0][1].my_partition[0].equals(new Int(0)))
+    assert(my_asset_after[0][1].my_partition[1].equals(new Int(1)))
+    assert(my_asset_after[0][1].my_partition[2].equals(new Int(2)))
+    assert(my_asset_after[0][1].my_partition[3].equals(new Int(3)))
+    const o_asset_after = await effect_method_asset_addupdate_with_add_partition.effect_method_asset_addupdate_with_add_partition.get_o_asset()
+    assert(o_asset_after.length == 4)
+    assert(o_asset_after[0].equals(new Int(0)))
+    assert(o_asset_after[1].equals(new Int(1)))
+    assert(o_asset_after[2].equals(new Int(2)))
+    assert(o_asset_after[3].equals(new Int(3)))
   })
 
   it('effect_method_asset_addupdate_with_add_set', async () => {
     await effect_method_asset_addupdate_with_add_set.effect_method_asset_addupdate_with_add_set.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await effect_method_asset_addupdate_with_add_set.effect_method_asset_addupdate_with_add_set.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].length == 1)
+    assert(my_asset_before[0][1][0] == "z")
+
+    await effect_method_asset_addupdate_with_add_set.effect_method_asset_addupdate_with_add_set.exec({ as: alice })
+
+    const my_asset_after = await effect_method_asset_addupdate_with_add_set.effect_method_asset_addupdate_with_add_set.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].length == 4)
+    assert(my_asset_after[0][1][0] == "k")
+    assert(my_asset_after[0][1][1] == "l")
+    assert(my_asset_after[0][1][2] == "m")
+    assert(my_asset_after[0][1][3] == "z")
   })
 
   it('effect_method_asset_addupdate_with_remove_map', async () => {
