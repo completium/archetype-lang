@@ -1,7 +1,7 @@
 archetype effect_method_asset_removeall_partition
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 }
 
 asset my_asset identified by id {
@@ -13,8 +13,10 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
-entry pre_exec () {
-  my_asset["id0"].col.add({1})
+entry init () {
+  my_asset["id0"].col.add({1});
+  my_asset["id0"].col.add({2});
+  my_asset["id0"].col.add({3})
 }
 
 entry exec () {

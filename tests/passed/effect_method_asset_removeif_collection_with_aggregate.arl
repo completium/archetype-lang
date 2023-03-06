@@ -2,6 +2,10 @@ archetype effect_method_asset_removeif_collection_with_aggregate
 
 asset o_asset {
   oid : nat;
+} initialized with {
+  {0};
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
@@ -9,8 +13,8 @@ asset my_asset identified by id {
   value  : int;
   c      : aggregate<o_asset>
 } initialized by {
-  {"id0"; 0; []};
-  {"id1"; 1; []};
+  {"id0"; 0; [0; 1]};
+  {"id1"; 1; [2]};
   {"id2"; 2; []}
 }
 

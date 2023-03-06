@@ -1,8 +1,12 @@
 archetype effect_method_asset_removeif_aggregate
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
   val : int = 0;
+} initialized with {
+  {1; 1i};
+  {2; 2i};
+  {3; 3i}
 }
 
 asset my_asset identified by id {
@@ -14,6 +18,12 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
+entry init () {
+  my_asset["id0"].col.add(1);
+  my_asset["id0"].col.add(2);
+  my_asset["id0"].col.add(3)
+}
+
 entry exec () {
-  my_asset["id0"].col.remove_if(the.val = 0)
+  my_asset["id0"].col.remove_if(the.val = 2i)
 }

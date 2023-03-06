@@ -10,7 +10,7 @@
           {
             "name": "oid",
             "type": {
-              "node": "int",
+              "node": "nat",
               "name": null,
               "int_value": null,
               "args": []
@@ -35,7 +35,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -63,7 +63,7 @@
           "var_type": null
         },
         "key_type_michelson": {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -134,7 +134,7 @@
               "string": null,
               "args": [
                 {
-                  "prim": "int",
+                  "prim": "nat",
                   "int": null,
                   "bytes": null,
                   "string": null,
@@ -174,7 +174,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -232,7 +232,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -285,7 +285,7 @@
               "string": null,
               "args": [
                 {
-                  "prim": "int",
+                  "prim": "nat",
                   "int": null,
                   "bytes": null,
                   "string": null,
@@ -318,6 +318,10 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "init",
+      "args": []
+    },
     {
       "name": "exec",
       "args": []

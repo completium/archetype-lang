@@ -9,11 +9,18 @@ asset my_asset identified by id {
   value  : int;
   c      : partition<o_asset>
 } initialized by {
-  {"id0"; 0; []};
+  {"id0"; 1; []};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }
 
-entry exec () {
+entry init() {
+  my_asset["id0"].c.add({0});
+  my_asset["id1"].c.add({1});
+  my_asset["id1"].c.add({2});
+  my_asset["id2"].c.add({3})
+}
+
+entry exec() {
   my_asset.remove_if(the.value = 1)
 }

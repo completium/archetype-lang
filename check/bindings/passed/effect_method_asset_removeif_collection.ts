@@ -1,12 +1,12 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export type my_asset_container = Array<[
     string,
-    att.Int
+    att.Nat
 ]>;
-export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("int", []), []);
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("nat", []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -46,7 +46,7 @@ export class Effect_method_asset_removeif_collection {
     async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map(storage, (x, y) => [att.mich_to_string(x), att.Int.from_mich(y)]);
+            return att.mich_to_map(storage, (x, y) => [att.mich_to_string(x), att.Nat.from_mich(y)]);
         }
         throw new Error("Contract not initialised");
     }

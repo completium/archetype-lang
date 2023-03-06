@@ -33,6 +33,9 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%c"])
 ], []), []);
+const init_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
+}
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -57,9 +60,21 @@ export class Effect_method_asset_removeif_collection_with_partition {
         const address = (await ex.deploy("../tests/passed/effect_method_asset_removeif_collection_with_partition.arl", {}, params)).address;
         this.address = address;
     }
+    async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "init", init_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
     async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_init_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "init", init_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

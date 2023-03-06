@@ -1,13 +1,13 @@
-{ storage (map string int) ;
+{ storage (map string nat) ;
   parameter (unit %exec) ;
   code { CDR ;
          DUP ;
          ITER { UNPAIR ;
-                PUSH int 1 ;
+                PUSH nat 1 ;
                 DUP 3 ;
                 COMPARE ;
                 EQ ;
-                IF { DUP 3 ; NONE int ; DUP 3 ; UPDATE ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
+                IF { DUP 3 ; NONE nat ; DUP 3 ; UPDATE ; DIP 1 { DIG 2 ; DROP 1 } ; DUG 2 }
                    {} ;
                 DROP 2 } ;
          NIL operation ;

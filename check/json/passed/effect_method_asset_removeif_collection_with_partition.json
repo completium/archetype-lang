@@ -378,6 +378,10 @@
   },
   "entrypoints": [
     {
+      "name": "init",
+      "args": []
+    },
+    {
       "name": "exec",
       "args": []
     }
