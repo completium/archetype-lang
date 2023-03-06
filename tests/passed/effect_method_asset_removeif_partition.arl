@@ -17,7 +17,8 @@ asset my_asset identified by id {
 entry init() {
   my_asset["id0"].col.add({oid = 0; val = 0});
   my_asset["id0"].col.add({oid = 1; val = 1});
-  my_asset["id0"].col.add({oid = 2; val = 2})
+  my_asset["id0"].col.add({oid = 2; val = 2});
+  my_asset["id1"].col.add({oid = 3; val = 3})
 }
 
 entry exec() {
