@@ -9,9 +9,9 @@
   },
   "storage": [
     {
-      "name": "c",
+      "name": "v",
       "type": {
-        "node": "address",
+        "node": "int",
         "name": null,
         "int_value": null,
         "args": []
@@ -21,7 +21,7 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "address",
+      "prim": "int",
       "int": null,
       "bytes": null,
       "string": null,
@@ -35,8 +35,32 @@
   },
   "entrypoints": [
     {
+      "name": "set_value",
+      "args": [
+        {
+          "name": "i",
+          "type": {
+            "node": "int",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "a",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],

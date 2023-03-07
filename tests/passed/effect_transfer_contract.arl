@@ -1,7 +1,11 @@
 archetype effect_transfer_contract
 
-variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+variable v : int = 0i
 
-entry exec() {
-  transfer 1tz to c call set_value<int>(1i)
+entry set_value(i : int) {
+  v := i
+}
+
+entry exec(a : address) {
+  transfer 1tz to a call set_value<int>(1i)
 }

@@ -6789,12 +6789,25 @@ describe('passed', async () => {
 
   it('effect_transfer_contract', async () => {
     await effect_transfer_contract.effect_transfer_contract.deploy({ as: alice })
-    // TODO
+
+    const v_before = await effect_transfer_contract.effect_transfer_contract.get_v();
+    assert(v_before.equals(new Int(0)))
+
+    await effect_transfer_contract.effect_transfer_contract.exec(effect_transfer_contract.effect_transfer_contract.get_address(), { amount: new Tez(1), as: alice })
+
+    const v_after = await effect_transfer_contract.effect_transfer_contract.get_v();
+    assert(v_after.equals(new Int(1)))
   })
 
   it('effect_transfer_simple', async () => {
     await effect_transfer_simple.effect_transfer_simple.deploy({ as: alice })
-    // TODO
+
+    const balance_before = await alice.get_balance();
+
+    await effect_transfer_simple.effect_transfer_simple.exec(alice.get_address(), { amount: new Tez(1), as: bob })
+
+    const balance_after = await alice.get_balance();
+    assert(balance_after.to_big_number().minus(balance_before.to_big_number()).eq(new Tez(1).to_big_number()))
   })
 
   it('entry_inspector', async () => {
