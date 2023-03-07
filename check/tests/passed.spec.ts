@@ -6904,7 +6904,18 @@ describe('passed', async () => {
 
   it('enum_all', async () => {
     await enum_all.enum_all.deploy({ as: alice })
-    // TODO
+
+    const r_before = await enum_all.enum_all.get_r()
+    assert(r_before.equals(new enum_all.A("mystr")))
+    const res_before = await enum_all.enum_all.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await enum_all.enum_all.exec({ as: alice })
+
+    const r_after = await enum_all.enum_all.get_r()
+    assert(r_after.equals(new enum_all.E(new Int(2))))
+    const res_after = await enum_all.enum_all.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('enum_key', async () => {
@@ -6949,12 +6960,26 @@ describe('passed', async () => {
 
   it('event_single', async () => {
     await event_single.event_single.deploy({ as: alice })
-    // TODO
+
+    const ret = await event_single.event_single.e1(new Nat(2), { as: alice })
+
+    assert(ret.events.length == 1)
+    assert(ret.events[0].from.equals(event_single.event_single.get_address()))
+    assert(JSON.stringify(ret.events[0].type) == '{"prim":"nat"}')
+    assert(ret.events[0].tag == "ev")
+    assert(JSON.stringify(ret.events[0].payload) == '{"int":"2"}')
   })
 
   it('exec_letin', async () => {
     await exec_letin.exec_letin.deploy({ as: alice })
-    // TODO
+
+    const res_before = await exec_letin.exec_letin.get_res();
+    assert(res_before == false)
+
+    await exec_letin.exec_letin.exec({ as: alice })
+
+    const res_after = await exec_letin.exec_letin.get_res();
+    assert(res_after == true)
   })
 
   it('expr_access_asset_field', async () => {

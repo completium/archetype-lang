@@ -5,6 +5,6 @@ event ev {
 }
 
 entry e1(n : nat) {
-  var e : ev = { 2 };
+  var e : ev = { n };
   emit<ev>(e)
 }
