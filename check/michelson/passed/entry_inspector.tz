@@ -1,13 +1,11 @@
-{ storage (pair (nat %total) (address %token)) ;
-  parameter (or (nat %balanceInquiry) (unit %exec)) ;
+{ storage nat ;
+  parameter (or (nat %balanceInquiry) (address %exec)) ;
   code { NIL operation ;
          SWAP ;
          UNPAIR ;
-         DIP 1 { UNPAIR } ;
          IF_LEFT
-           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; PAIR ; SWAP ; PAIR }
-           { DROP 1 ;
-             DUP 2 ;
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
+           { DUP ;
              CONTRACT %getBalance (contract nat) ;
              IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
              NIL operation ;
@@ -29,7 +27,6 @@
              ITER { CONS } ;
              DIP 1 { DIG 3 ; DROP 1 } ;
              DUG 3 ;
-             DROP 1 ;
-             PAIR ;
+             DROP 2 ;
              SWAP ;
              PAIR } } }

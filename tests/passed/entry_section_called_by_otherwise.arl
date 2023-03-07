@@ -1,8 +1,6 @@
 archetype entry_section_called_by_otherwise
 
-variable owner : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
-
-entry exec() {
+entry exec(owner : address) {
   called by owner otherwise "NOT_OWNER"
   effect {
     ()

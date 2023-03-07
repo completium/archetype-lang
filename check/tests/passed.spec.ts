@@ -6812,37 +6812,94 @@ describe('passed', async () => {
 
   it('entry_inspector', async () => {
     await entry_inspector.entry_inspector.deploy({ as: alice })
-    // TODO
+    await entry_token.entry_token.deploy({ as: alice })
+
+    const nbtokens_before = await entry_token.entry_token.get_nbtokens()
+    assert(nbtokens_before.equals(new Nat(0)))
+
+    await entry_token.entry_token.setBalance(new Nat(2), { as: alice })
+
+    const nbtokens_after = await entry_token.entry_token.get_nbtokens()
+    assert(nbtokens_after.equals(new Nat(2)))
+
+
+    const total_before = await entry_inspector.entry_inspector.get_total();
+    assert(total_before.equals(new Nat(0)))
+
+    await entry_inspector.entry_inspector.exec(entry_token.entry_token.get_address(), { as: alice })
+
+    const total_after = await entry_inspector.entry_inspector.get_total();
+    assert(total_after.equals(new Nat(2)))
   })
 
   it('entry_section_called_by_otherwise', async () => {
     await entry_section_called_by_otherwise.entry_section_called_by_otherwise.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await entry_section_called_by_otherwise.entry_section_called_by_otherwise.exec(bob.get_address(), { as: alice })
+    }, { string: "NOT_OWNER" })
+
+    await entry_section_called_by_otherwise.entry_section_called_by_otherwise.exec(alice.get_address(), { as: alice })
   })
 
   it('entry_section_no_transfer_otherwise', async () => {
     await entry_section_no_transfer_otherwise.entry_section_no_transfer_otherwise.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await entry_section_no_transfer_otherwise.entry_section_no_transfer_otherwise.exec({ amount: new Tez(1), as: alice })
+    }, { string: "INVALID_VALUE" })
+
+    await entry_section_no_transfer_otherwise.entry_section_no_transfer_otherwise.exec({ as: alice })
   })
 
   it('entry_section_sourced_by_otherwise', async () => {
     await entry_section_sourced_by_otherwise.entry_section_sourced_by_otherwise.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await entry_section_sourced_by_otherwise.entry_section_sourced_by_otherwise.exec(bob.get_address(), { as: alice })
+    }, { string: "NOT_OWNER" })
+
+    await entry_section_sourced_by_otherwise.entry_section_sourced_by_otherwise.exec(alice.get_address(), { as: alice })
   })
 
   it('entry_section_state_is_otherwise', async () => {
     await entry_section_state_is_otherwise.entry_section_state_is_otherwise.deploy({ as: alice })
-    // TODO
+
+    await entry_section_state_is_otherwise.entry_section_state_is_otherwise.exec({ as: alice })
+
+    await entry_section_state_is_otherwise.entry_section_state_is_otherwise.tr({ as: alice })
+
+    await expect_to_fail(async () => {
+      await entry_section_state_is_otherwise.entry_section_state_is_otherwise.exec({ as: alice })
+    }, { string: "INVALID_STATE" })
   })
 
   it('entry_token', async () => {
+    await entry_inspector.entry_inspector.deploy({ as: alice })
     await entry_token.entry_token.deploy({ as: alice })
-    // TODO
+
+    const nbtokens_before = await entry_token.entry_token.get_nbtokens()
+    assert(nbtokens_before.equals(new Nat(0)))
+
+    await entry_token.entry_token.setBalance(new Nat(8), { as: alice })
+
+    const nbtokens_after = await entry_token.entry_token.get_nbtokens()
+    assert(nbtokens_after.equals(new Nat(8)))
+
+
+    const total_before = await entry_inspector.entry_inspector.get_total();
+    assert(total_before.equals(new Nat(0)))
+
+    await entry_inspector.entry_inspector.exec(entry_token.entry_token.get_address(), { as: alice })
+
+    const total_after = await entry_inspector.entry_inspector.get_total();
+    assert(total_after.equals(new Nat(8)))
   })
 
   it('entry_without_effect', async () => {
     await entry_without_effect.entry_without_effect.deploy({ as: alice })
-    // TODO
+
+    await entry_without_effect.entry_without_effect.exec({ as: alice })
   })
 
   it('enum_all', async () => {

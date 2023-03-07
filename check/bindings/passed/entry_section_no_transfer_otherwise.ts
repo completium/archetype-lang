@@ -36,13 +36,6 @@ export class Entry_section_no_transfer_otherwise {
         }
         throw new Error("Contract not initialised");
     }
-    async get_owner(): Promise<att.Address> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Address.from_mich(storage);
-        }
-        throw new Error("Contract not initialised");
-    }
     errors = {
         INVALID_VALUE: att.string_to_mich("\"INVALID_VALUE\"")
     };

@@ -1,7 +1,7 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (owner: att.Address): att.Micheline => {
+    return owner.to_mich();
 }
 export class Entry_section_sourced_by_otherwise {
     address: string | undefined;
@@ -24,22 +24,15 @@ export class Entry_section_sourced_by_otherwise {
         const address = (await ex.deploy("../tests/passed/entry_section_sourced_by_otherwise.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(owner: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(owner), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(owner: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_owner(): Promise<att.Address> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Address.from_mich(storage);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(owner), params);
         }
         throw new Error("Contract not initialised");
     }

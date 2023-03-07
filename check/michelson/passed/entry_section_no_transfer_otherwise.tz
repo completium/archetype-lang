@@ -1,4 +1,4 @@
-{ storage address ;
+{ storage unit ;
   parameter (unit %exec) ;
   code { CDR ;
          PUSH mutez 0 ;

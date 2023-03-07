@@ -1,11 +1,12 @@
-{ storage address ;
-  parameter (unit %exec) ;
-  code { CDR ;
+{ storage unit ;
+  parameter (address %exec) ;
+  code { UNPAIR ;
          DUP ;
          SENDER ;
          COMPARE ;
          EQ ;
          NOT ;
          IF { PUSH string "NOT_OWNER" ; FAILWITH } {} ;
+         DROP 1 ;
          NIL operation ;
          PAIR } }
