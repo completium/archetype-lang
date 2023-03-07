@@ -1,6 +1,6 @@
 { storage
-    (pair (set %my_asset_simple nat)
-          (map %my_asset string (pair (int %value) (set %myaggregate nat)))) ;
+    (pair (set %o_asset nat)
+          (map %my_asset string (pair (int %value) (set %my_aggregate nat)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;

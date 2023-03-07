@@ -1,65 +1,102 @@
 { storage
-    (pair (set %my_asset_simple nat)
-          (map %my_asset string (pair (int %value) (set %mypartition nat)))) ;
-  parameter (unit %exec) ;
+    (pair (set %o_asset nat)
+          (map %my_asset string (pair (int %value) (set %my_partition nat)))) ;
+  parameter (or (unit %init) (unit %exec)) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
-         DROP 1 ;
-         DUP ;
-         PUSH nat 3 ;
-         MEM ;
-         NOT ;
-         DUP 2 ;
-         PUSH nat 2 ;
-         MEM ;
-         NOT ;
-         DUP 3 ;
-         PUSH nat 1 ;
-         MEM ;
-         NOT ;
-         AND ;
-         AND ;
-         IF { DUP 2 ;
-              DUP 3 ;
-              PUSH string "my_id" ;
-              GET ;
-              IF_NONE
-                { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
-                {} ;
-              CDR ;
-              PUSH int 3 ;
-              SWAP ;
-              DROP 1 ;
-              EMPTY_SET nat ;
-              PUSH bool True ;
-              PUSH nat 3 ;
-              UPDATE ;
-              PUSH bool True ;
-              PUSH nat 2 ;
-              UPDATE ;
-              PUSH bool True ;
-              PUSH nat 1 ;
-              UPDATE ;
-              SWAP ;
-              PAIR ;
-              SOME ;
-              PUSH string "my_id" ;
-              UPDATE ;
-              DIP 1 { SWAP ; DROP 1 } ;
-              SWAP ;
-              DUP ;
-              PUSH bool True ;
-              PUSH nat 1 ;
-              UPDATE ;
-              PUSH bool True ;
-              PUSH nat 2 ;
-              UPDATE ;
-              PUSH bool True ;
-              PUSH nat 3 ;
-              UPDATE ;
-              SWAP ;
-              DROP 1 }
-            { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH } ;
-         PAIR ;
-         NIL operation ;
-         PAIR } }
+         IF_LEFT
+           { DROP 1 ;
+             DUP ;
+             PUSH nat 0 ;
+             MEM ;
+             IF { PUSH string "o_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                { DUP ; PUSH bool True ; PUSH nat 0 ; UPDATE ; SWAP ; DROP 1 } ;
+             DUP 2 ;
+             DUP 3 ;
+             PUSH string "my_id" ;
+             GET ;
+             IF_NONE
+               { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             UNPAIR ;
+             SWAP ;
+             DROP 1 ;
+             DUP 4 ;
+             PUSH string "my_id" ;
+             GET ;
+             IF_NONE
+               { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             CDR ;
+             PUSH bool True ;
+             PUSH nat 0 ;
+             UPDATE ;
+             SWAP ;
+             PAIR ;
+             SOME ;
+             PUSH string "my_id" ;
+             UPDATE ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             PAIR ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             DUP ;
+             PUSH nat 3 ;
+             MEM ;
+             NOT ;
+             DUP 2 ;
+             PUSH nat 2 ;
+             MEM ;
+             NOT ;
+             DUP 3 ;
+             PUSH nat 1 ;
+             MEM ;
+             NOT ;
+             AND ;
+             AND ;
+             IF { DUP 2 ;
+                  DUP 3 ;
+                  PUSH string "my_id" ;
+                  GET ;
+                  IF_NONE
+                    { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                    {} ;
+                  CDR ;
+                  PUSH int 3 ;
+                  SWAP ;
+                  DROP 1 ;
+                  EMPTY_SET nat ;
+                  PUSH bool True ;
+                  PUSH nat 3 ;
+                  UPDATE ;
+                  PUSH bool True ;
+                  PUSH nat 2 ;
+                  UPDATE ;
+                  PUSH bool True ;
+                  PUSH nat 1 ;
+                  UPDATE ;
+                  SWAP ;
+                  PAIR ;
+                  SOME ;
+                  PUSH string "my_id" ;
+                  UPDATE ;
+                  DIP 1 { SWAP ; DROP 1 } ;
+                  SWAP ;
+                  DUP ;
+                  PUSH bool True ;
+                  PUSH nat 1 ;
+                  UPDATE ;
+                  PUSH bool True ;
+                  PUSH nat 2 ;
+                  UPDATE ;
+                  PUSH bool True ;
+                  PUSH nat 3 ;
+                  UPDATE ;
+                  SWAP ;
+                  DROP 1 }
+                { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH } ;
+             PAIR ;
+             NIL operation ;
+             PAIR } } }

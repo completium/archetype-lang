@@ -1,8 +1,9 @@
 archetype effect_method_asset_update_with_replace_aggregate
 
-asset my_asset_simple identified by oid {
+asset o_asset identified by oid {
   oid : nat;
 } initialized by {
+  {oid = 0};
   {oid = 1};
   {oid = 2};
   {oid = 3}
@@ -11,13 +12,13 @@ asset my_asset_simple identified by oid {
 asset my_asset identified by id {
   id : string;
   value : int;
-  myaggregate : aggregate<my_asset_simple>;
+  my_aggregate : aggregate<o_asset>;
 } initialized by {
-  { "my_id"; 0; [] }
+  { "my_id"; 0; [0] }
 }
 
 entry exec () {
-  my_asset.update ("my_id", {value := 3; myaggregate = [1; 2; 3] });
+  my_asset.update ("my_id", {value := 3; my_aggregate = [1; 2; 3] });
   (*
   sugar for
   my_asset.update ("my_id", {value = 3});

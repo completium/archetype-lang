@@ -11,5 +11,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  my_asset.update("id4", {value = 3})
+  my_asset.update("id2", {value = 3})
 }

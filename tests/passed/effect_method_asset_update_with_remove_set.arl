@@ -7,6 +7,6 @@ asset my_asset {
   {0; ["k"; "l"; "m"]}
 }
 
-entry exec () {
-  my_asset.update(0, {s -= ["k"]});
+entry exec() {
+  my_asset.update(0, {s -= ["k"; "m"]});
 }

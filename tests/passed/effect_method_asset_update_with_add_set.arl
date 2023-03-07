@@ -4,9 +4,9 @@ asset my_asset {
   id : nat;
   s : set<string>;
 } initialized by {
-  {0; []}
+  {0; ["a"]}
 }
 
-entry exec () {
+entry exec() {
   my_asset.update(0, {s += ["k"; "l"; "m"]});
 }

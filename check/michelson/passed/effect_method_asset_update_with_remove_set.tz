@@ -9,6 +9,9 @@
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          PUSH bool False ;
+         PUSH string "m" ;
+         UPDATE ;
+         PUSH bool False ;
          PUSH string "k" ;
          UPDATE ;
          SOME ;

@@ -3,7 +3,7 @@
   code { CDR ;
          DUP ;
          DUP 2 ;
-         PUSH string "id4" ;
+         PUSH string "id2" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
@@ -12,7 +12,7 @@
          PUSH int 3 ;
          PAIR ;
          SOME ;
-         PUSH string "id4" ;
+         PUSH string "id2" ;
          UPDATE ;
          SWAP ;
          DROP 1 ;
