@@ -10,7 +10,7 @@ variable res : nat = 0
 variable r : t = C
 
 entry exec() {
-  var o : t = C;
+  var o : t = B;
 
   match o with
   | A | B -> res := 1

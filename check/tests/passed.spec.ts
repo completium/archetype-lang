@@ -1,5 +1,5 @@
 /* DO NOT EDIT, GENERATED FILE */
-import { expect_to_fail, get_account, register_global_constant, set_mockup, set_quiet } from '@completium/experiment-ts';
+import { expect_to_fail, get_account, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
 import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
@@ -6920,42 +6920,144 @@ describe('passed', async () => {
 
   it('enum_key', async () => {
     await enum_key.enum_key.deploy({ as: alice })
-    // TODO
+
+    const tvls_before = await enum_key.enum_key.get_tvls()
+    assert(tvls_before.length == 4)
+    assert(tvls_before[0][0].equals(new enum_key.Tier1()))
+    assert(tvls_before[0][1].equals(new Nat(0)))
+    assert(tvls_before[1][0].equals(new enum_key.Tier2()))
+    assert(tvls_before[1][1].equals(new Nat(0)))
+    assert(tvls_before[2][0].equals(new enum_key.Tier3()))
+    assert(tvls_before[2][1].equals(new Nat(0)))
+    assert(tvls_before[3][0].equals(new enum_key.Tier4()))
+    assert(tvls_before[3][1].equals(new Nat(0)))
+
+    await enum_key.enum_key.update(new enum_key.Tier1(), { as: alice })
+
+    const tvls_after = await enum_key.enum_key.get_tvls()
+    assert(tvls_after.length == 4)
+    assert(tvls_after[0][0].equals(new enum_key.Tier1()))
+    assert(tvls_after[0][1].equals(new Nat(0)))
+    assert(tvls_after[1][0].equals(new enum_key.Tier2()))
+    assert(tvls_after[1][1].equals(new Nat(0)))
+    assert(tvls_after[2][0].equals(new enum_key.Tier3()))
+    assert(tvls_after[2][1].equals(new Nat(0)))
+    assert(tvls_after[3][0].equals(new enum_key.Tier4()))
+    assert(tvls_after[3][1].equals(new Nat(0)))
   })
 
   it('enum_with_args', async () => {
     await enum_with_args.enum_with_args.deploy({ as: alice })
-    // TODO
+
+    const res_before = await enum_with_args.enum_with_args.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await enum_with_args.enum_with_args.exec({ as: alice })
+
+    const res_after = await enum_with_args.enum_with_args.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('enum_with_args_multi', async () => {
     await enum_with_args_multi.enum_with_args_multi.deploy({ as: alice })
-    // TODO
+
+    const res_before = await enum_with_args_multi.enum_with_args_multi.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await enum_with_args_multi.enum_with_args_multi.exec({ as: alice })
+
+    const res_after = await enum_with_args_multi.enum_with_args_multi.get_res()
+    assert(res_after.equals(new Nat(5)))
   })
 
   it('enum_without_args', async () => {
     await enum_without_args.enum_without_args.deploy({ as: alice })
-    // TODO
+
+    const res_before = await enum_without_args.enum_without_args.get_res()
+    assert(res_before.equals(new Nat(0)))
+    const r_before = await enum_without_args.enum_without_args.get_r()
+    assert(r_before.equals(new enum_without_args.C()))
+
+    await enum_without_args.enum_without_args.exec({ as: alice })
+
+    const res_after = await enum_without_args.enum_without_args.get_res()
+    assert(res_after.equals(new Nat(1)))
+    const r_after = await enum_without_args.enum_without_args.get_r()
+    assert(r_after.equals(new enum_without_args.C()))
   })
 
   it('event_all', async () => {
     await event_all.event_all.deploy({ as: alice })
-    // TODO
+
+    const ret = await event_all.event_all.exec({ as: alice })
+
+    assert(ret.events.length == 1)
+    assert(ret.events[0].from.equals(event_all.event_all.get_address()))
+    assert(JSON.stringify(ret.events[0].type) == '{"prim":"pair","args":[{"prim":"unit","annots":["%u"]},{"prim":"bool","annots":["%b"]},{"prim":"int","annots":["%i"]},{"prim":"nat","annots":["%n"]},{"prim":"pair","annots":["%r"],"args":[{"prim":"int"},{"prim":"nat"}]},{"prim":"timestamp","annots":["%date_"]},{"prim":"int","annots":["%du"]},{"prim":"string","annots":["%str"]},{"prim":"address","annots":["%addr"]},{"prim":"mutez","annots":["%cur"]},{"prim":"signature","annots":["%sig"]},{"prim":"key","annots":["%k"]},{"prim":"key_hash","annots":["%kh"]},{"prim":"bytes","annots":["%byt"]},{"prim":"chain_id","annots":["%cid"]},{"prim":"set","annots":["%s"],"args":[{"prim":"nat"}]},{"prim":"list","annots":["%l"],"args":[{"prim":"nat"}]},{"prim":"map","annots":["%m"],"args":[{"prim":"nat"},{"prim":"string"}]},{"prim":"option","annots":["%o"],"args":[{"prim":"nat"}]},{"prim":"pair","annots":["%tu"],"args":[{"prim":"nat"},{"prim":"string"}]},{"prim":"or","annots":["%oal"],"args":[{"prim":"nat"},{"prim":"string"}]},{"prim":"or","annots":["%oar"],"args":[{"prim":"nat"},{"prim":"string"}]},{"prim":"pair","annots":["%rr"],"args":[{"prim":"nat","annots":["%f1"]},{"prim":"string","annots":["%f2"]}]},{"prim":"int","annots":["%ee"]},{"prim":"or","annots":["%eee"],"args":[{"prim":"nat","annots":["%xxx"]},{"prim":"string","annots":["%yyy"]}]}]}')
+    assert(ret.events[0].tag == "ev")
+    assert(JSON.stringify(ret.events[0].payload) == '[{"prim":"Unit"},{"prim":"True"},{"int":"1"},{"int":"2"},{"prim":"Pair","args":[{"int":"4"},{"int":"5"}]},{"int":"1577836800"},{"int":"1"},{"string":"string"},{"bytes":"00000a9768ec413f25958a5a85269a11290493be68d2"},{"int":"1000000"},{"bytes":"b0df895c5a322559c3a3425f29f84999f4037894131b4c72a775e39e630bcc4f0d41756d73f3f10ae91b9c866d54d237c4e4fa12e962a2c958c8953f8b1a3f0b"},{"bytes":"009f38548550132bc0428883d9b6fc89971280f8e4edd81ff190eaafe3b8fe8f0f"},{"bytes":"000a9768ec413f25958a5a85269a11290493be68d2"},{"bytes":"01"},{"bytes":"7a06a770"},[{"int":"1"}],[{"int":"2"}],[{"prim":"Elt","args":[{"int":"3"},{"string":"mystr"}]}],{"prim":"None"},{"prim":"Pair","args":[{"int":"4"},{"string":"mystring"}]},{"prim":"Left","args":[{"int":"5"}]},{"prim":"Right","args":[{"string":"m0"}]},{"prim":"Pair","args":[{"int":"6"},{"string":"m1"}]},{"int":"0"},{"prim":"Left","args":[{"int":"1"}]}]')
   })
 
   it('event_dup', async () => {
     await event_dup.event_dup.deploy({ as: alice })
-    // TODO
+    const now = new Date("2020-01-01");
+
+    set_mockup_now(now)
+
+    const ret_even = await event_dup.event_dup.e1(new Nat(2), { as: alice })
+    assert(ret_even.events.length == 1)
+    assert(ret_even.events[0].from.equals(event_dup.event_dup.get_address()))
+    assert(JSON.stringify(ret_even.events[0].type) == '{"prim":"pair","args":[{"prim":"address","annots":["%from_"]},{"prim":"timestamp","annots":["%time"]}]}')
+    assert(ret_even.events[0].tag == "even")
+    assert(JSON.stringify(ret_even.events[0].payload) == '{"prim":"Pair","args":[{"bytes":"00006b82198cb179e8306c1bedd08f12dc863f328886"},{"int":"1577836800"}]}')
+
+    const ret_odd = await event_dup.event_dup.e1(new Nat(3), { as: alice })
+    assert(ret_odd.events.length == 1)
+    assert(ret_odd.events[0].from.equals(event_dup.event_dup.get_address()))
+    assert(JSON.stringify(ret_odd.events[0].type) == '{"prim":"pair","args":[{"prim":"address","annots":["%from_"]},{"prim":"timestamp","annots":["%time"]}]}')
+    assert(ret_odd.events[0].tag == "odd")
+    assert(JSON.stringify(ret_odd.events[0].payload) == '{"prim":"Pair","args":[{"bytes":"00006b82198cb179e8306c1bedd08f12dc863f328886"},{"int":"1577836800"}]}')
   })
 
   it('event_multi', async () => {
     await event_multi.event_multi.deploy({ as: alice })
-    // TODO
+
+    const ret = await event_multi.event_multi.exec({ as: alice })
+    assert(ret.events.length == 5)
+    assert(ret.events[0].from.equals(event_multi.event_multi.get_address()))
+    assert(JSON.stringify(ret.events[0].type) == '{"prim":"nat"}')
+    assert(ret.events[0].tag == "ev")
+    assert(JSON.stringify(ret.events[0].payload) == '{"int":"1"}')
+    assert(ret.events[1].from.equals(event_multi.event_multi.get_address()))
+    assert(JSON.stringify(ret.events[1].type) == '{"prim":"nat"}')
+    assert(ret.events[1].tag == "ev")
+    assert(JSON.stringify(ret.events[1].payload) == '{"int":"2"}')
+    assert(ret.events[2].from.equals(event_multi.event_multi.get_address()))
+    assert(JSON.stringify(ret.events[2].type) == '{"prim":"nat"}')
+    assert(ret.events[2].tag == "ev")
+    assert(JSON.stringify(ret.events[2].payload) == '{"int":"3"}')
+    assert(ret.events[3].from.equals(event_multi.event_multi.get_address()))
+    assert(JSON.stringify(ret.events[3].type) == '{"prim":"nat"}')
+    assert(ret.events[3].tag == "ev")
+    assert(JSON.stringify(ret.events[3].payload) == '{"int":"4"}')
+    assert(ret.events[4].from.equals(event_multi.event_multi.get_address()))
+    assert(JSON.stringify(ret.events[4].type) == '{"prim":"nat"}')
+    assert(ret.events[4].tag == "ev")
+    assert(JSON.stringify(ret.events[4].payload) == '{"int":"5"}')
   })
 
   it('event_simple', async () => {
     await event_simple.event_simple.deploy({ as: alice })
-    // TODO
+    const now = new Date("2020-01-01");
+
+    set_mockup_now(now)
+    const ret = await event_simple.event_simple.exec({ as: alice })
+
+    assert(ret.events.length == 1)
+    assert(ret.events[0].from.equals(event_simple.event_simple.get_address()))
+    assert(JSON.stringify(ret.events[0].type) == '{"prim":"pair","args":[{"prim":"address","annots":["%from_"]},{"prim":"timestamp","annots":["%time"]}]}')
+    assert(ret.events[0].tag == "even")
+    assert(JSON.stringify(ret.events[0].payload) == '{"prim":"Pair","args":[{"bytes":"00006b82198cb179e8306c1bedd08f12dc863f328886"},{"int":"1577836800"}]}')
   })
 
   it('event_single', async () => {
@@ -6984,27 +7086,86 @@ describe('passed', async () => {
 
   it('expr_access_asset_field', async () => {
     await expr_access_asset_field.expr_access_asset_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_access_asset_field.expr_access_asset_field.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_before = await expr_access_asset_field.expr_access_asset_field.get_res();
+    assert(res_before.equals(new Int(0)))
+
+    await expr_access_asset_field.expr_access_asset_field.exec({ as: alice })
+
+    const my_asset_after = await expr_access_asset_field.expr_access_asset_field.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_after = await expr_access_asset_field.expr_access_asset_field.get_res();
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_3wc_nat_nat', async () => {
     await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const v0_before = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v0()
+    assert(v0_before.equals(new Int(0)))
+    const v1_before = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v1()
+    assert(v1_before.equals(new Int(0)))
+    const v2_before = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v2()
+    assert(v2_before.equals(new Int(0)))
+
+    await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.exec({ as: alice })
+
+    const v0_after = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v0()
+    assert(v0_after.equals(new Int(0)))
+    const v1_after = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v1()
+    assert(v1_after.equals(new Int(-1)))
+    const v2_after = await expr_arith_3wc_nat_nat.expr_arith_3wc_nat_nat.get_v2()
+    assert(v2_after.equals(new Int(1)))
   })
 
   it('expr_arith_and_bool_bool', async () => {
     await expr_arith_and_bool_bool.expr_arith_and_bool_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_and_bool_bool.expr_arith_and_bool_bool.get_res()
+    assert(res_before == false)
+
+    await expr_arith_and_bool_bool.expr_arith_and_bool_bool.exec({ as: alice })
+
+    const res_after = await expr_arith_and_bool_bool.expr_arith_and_bool_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_arith_and_int_nat', async () => {
     await expr_arith_and_int_nat.expr_arith_and_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_and_int_nat.expr_arith_and_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_and_int_nat.expr_arith_and_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_and_int_nat.expr_arith_and_int_nat.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_arith_and_nat_nat', async () => {
     await expr_arith_and_nat_nat.expr_arith_and_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_and_nat_nat.expr_arith_and_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_and_nat_nat.expr_arith_and_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_and_nat_nat.expr_arith_and_nat_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_arith_div_dur_dur', async () => {
