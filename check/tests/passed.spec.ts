@@ -9234,52 +9234,122 @@ describe('passed', async () => {
 
   it('expr_control_fold', async () => {
     await expr_control_fold.expr_control_fold.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_fold.expr_control_fold.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_control_fold.expr_control_fold.exec({ as: alice })
+
+    const res_after = await expr_control_fold.expr_control_fold.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_control_if_else_int_int', async () => {
     await expr_control_if_else_int_int.expr_control_if_else_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_int_int.expr_control_if_else_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_control_if_else_int_int.expr_control_if_else_int_int.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_int_int.expr_control_if_else_int_int.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_control_if_else_int_nat', async () => {
     await expr_control_if_else_int_nat.expr_control_if_else_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_int_nat.expr_control_if_else_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_control_if_else_int_nat.expr_control_if_else_int_nat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_int_nat.expr_control_if_else_int_nat.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_control_if_else_int_rat', async () => {
     await expr_control_if_else_int_rat.expr_control_if_else_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_int_rat.expr_control_if_else_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_if_else_int_rat.expr_control_if_else_int_rat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_int_rat.expr_control_if_else_int_rat.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_control_if_else_nat_int', async () => {
     await expr_control_if_else_nat_int.expr_control_if_else_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_nat_int.expr_control_if_else_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_control_if_else_nat_int.expr_control_if_else_nat_int.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_nat_int.expr_control_if_else_nat_int.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_control_if_else_nat_nat', async () => {
     await expr_control_if_else_nat_nat.expr_control_if_else_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_nat_nat.expr_control_if_else_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_control_if_else_nat_nat.expr_control_if_else_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_nat_nat.expr_control_if_else_nat_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_control_if_else_nat_rat', async () => {
     await expr_control_if_else_nat_rat.expr_control_if_else_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_nat_rat.expr_control_if_else_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_if_else_nat_rat.expr_control_if_else_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_nat_rat.expr_control_if_else_nat_rat.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_control_if_else_rat_int', async () => {
     await expr_control_if_else_rat_int.expr_control_if_else_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_rat_int.expr_control_if_else_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_if_else_rat_int.expr_control_if_else_rat_int.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_rat_int.expr_control_if_else_rat_int.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_control_if_else_rat_nat', async () => {
     await expr_control_if_else_rat_nat.expr_control_if_else_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_rat_nat.expr_control_if_else_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_if_else_rat_nat.expr_control_if_else_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_rat_nat.expr_control_if_else_rat_nat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_control_if_else_rat_rat', async () => {
     await expr_control_if_else_rat_rat.expr_control_if_else_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_if_else_rat_rat.expr_control_if_else_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_if_else_rat_rat.expr_control_if_else_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_control_if_else_rat_rat.expr_control_if_else_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_control_match_list', async () => {
