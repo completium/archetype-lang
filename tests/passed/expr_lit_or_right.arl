@@ -1,7 +1,7 @@
 archetype expr_lit_or_right
 
-variable r : or<nat, int> = right<nat>(0i)
+variable res : or<nat, int> = right<nat>(0i)
 
 entry exec () {
-  r := right<nat>(1i)
+  res := right<nat>(1i)
 }

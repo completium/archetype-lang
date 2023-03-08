@@ -36,7 +36,7 @@ export class Expr_lit_or_left {
         }
         throw new Error("Contract not initialised");
     }
-    async get_r(): Promise<att.Or<att.Nat, att.Int>> {
+    async get_res(): Promise<att.Or<att.Nat, att.Int>> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.Or.from_mich(storage, x => { return att.Nat.from_mich(x); }, x => { return att.Int.from_mich(x); });

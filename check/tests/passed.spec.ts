@@ -10480,22 +10480,59 @@ describe('passed', async () => {
 
   it('expr_list_length', async () => {
     await expr_list_length.expr_list_length.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_length.expr_list_length.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_list_length.expr_list_length.exec({ as: alice })
+
+    const res_after = await expr_list_length.expr_list_length.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_list_lit', async () => {
     await expr_list_lit.expr_list_lit.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_lit.expr_list_lit.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_lit.expr_list_lit.exec({ as: alice })
+
+    const res_after = await expr_list_lit.expr_list_lit.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0] == "1")
+    assert(res_after[1] == "2")
+    assert(res_after[2] == "3")
   })
 
   it('expr_list_map', async () => {
     await expr_list_map.expr_list_map.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_map.expr_list_map.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_map.expr_list_map.exec({ as: alice })
+
+    const res_after = await expr_list_map.expr_list_map.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(2)))
+    assert(res_after[1].equals(new Nat(3)))
+    assert(res_after[2].equals(new Nat(4)))
   })
 
   it('expr_list_map_string_nat', async () => {
     await expr_list_map_string_nat.expr_list_map_string_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_map_string_nat.expr_list_map_string_nat.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_map_string_nat.expr_list_map_string_nat.exec({ as: alice })
+
+    const res_after = await expr_list_map_string_nat.expr_list_map_string_nat.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(2)))
+    assert(res_after[1].equals(new Nat(3)))
+    assert(res_after[2].equals(new Nat(4)))
   })
 
   it('expr_list_nth', async () => {
@@ -10544,127 +10581,304 @@ describe('passed', async () => {
 
   it('expr_lit_addr', async () => {
     await expr_lit_addr.expr_lit_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_addr.expr_lit_addr.get_res()
+    assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
+
+    await expr_lit_addr.expr_lit_addr.exec({ as: alice })
+
+    const res_after = await expr_lit_addr.expr_lit_addr.get_res()
+    assert(res_after.equals(new Address("tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))
   })
 
   it('expr_lit_bytes', async () => {
     await expr_lit_bytes.expr_lit_bytes.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_bytes.expr_lit_bytes.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_lit_bytes.expr_lit_bytes.exec({ as: alice })
+
+    const res_after = await expr_lit_bytes.expr_lit_bytes.get_res()
+    assert(res_after.equals(new Bytes("1f")))
   })
 
   it('expr_lit_cur_mtz', async () => {
     await expr_lit_cur_mtz.expr_lit_cur_mtz.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_cur_mtz.expr_lit_cur_mtz.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_lit_cur_mtz.expr_lit_cur_mtz.exec({ as: alice })
+
+    const res_after = await expr_lit_cur_mtz.expr_lit_cur_mtz.get_res()
+    assert(res_after.equals(new Tez(1000, "mutez")))
   })
 
   it('expr_lit_cur_tz', async () => {
     await expr_lit_cur_tz.expr_lit_cur_tz.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_cur_tz.expr_lit_cur_tz.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_lit_cur_tz.expr_lit_cur_tz.exec({ as: alice })
+
+    const res_after = await expr_lit_cur_tz.expr_lit_cur_tz.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_lit_cur_utz', async () => {
     await expr_lit_cur_utz.expr_lit_cur_utz.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_cur_utz.expr_lit_cur_utz.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_lit_cur_utz.expr_lit_cur_utz.exec({ as: alice })
+
+    const res_after = await expr_lit_cur_utz.expr_lit_cur_utz.get_res()
+    assert(res_after.equals(new Tez(1, "mutez")))
   })
 
   it('expr_lit_date_0', async () => {
     await expr_lit_date_0.expr_lit_date_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_date_0.expr_lit_date_0.get_res()
+    assert(res_before.toISOString() == '1970-01-01T00:00:00.000Z')
+
+    await expr_lit_date_0.expr_lit_date_0.exec({ as: alice })
+
+    const res_after = await expr_lit_date_0.expr_lit_date_0.get_res()
+    assert(res_after.toISOString() == '2019-01-01T00:00:00.000Z')
   })
 
   it('expr_lit_date_1', async () => {
     await expr_lit_date_1.expr_lit_date_1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_date_1.expr_lit_date_1.get_res()
+    assert(res_before.toISOString() == '1970-01-01T00:00:00.000Z')
+
+    await expr_lit_date_1.expr_lit_date_1.exec({ as: alice })
+
+    const res_after = await expr_lit_date_1.expr_lit_date_1.get_res()
+    assert(res_after.toISOString() == '2019-01-01T01:02:03.000Z')
   })
 
   it('expr_lit_date_2', async () => {
     await expr_lit_date_2.expr_lit_date_2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_date_2.expr_lit_date_2.get_res()
+    assert(res_before.toISOString() == '1970-01-01T00:00:00.000Z')
+
+    await expr_lit_date_2.expr_lit_date_2.exec({ as: alice })
+
+    const res_after = await expr_lit_date_2.expr_lit_date_2.get_res()
+    assert(res_after.toISOString() == '2019-01-01T01:02:03.000Z')
   })
 
   it('expr_lit_date_3', async () => {
     await expr_lit_date_3.expr_lit_date_3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_date_3.expr_lit_date_3.get_res()
+    assert(res_before.toISOString() == '1970-01-01T00:00:00.000Z')
+
+    await expr_lit_date_3.expr_lit_date_3.exec({ as: alice })
+
+    const res_after = await expr_lit_date_3.expr_lit_date_3.get_res()
+    assert(res_after.toISOString() == '2018-12-31T23:00:00.000Z')
   })
 
   it('expr_lit_date_4', async () => {
     await expr_lit_date_4.expr_lit_date_4.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_date_4.expr_lit_date_4.get_res()
+    assert(res_before.toISOString() == '1970-01-01T00:00:00.000Z')
+
+    await expr_lit_date_4.expr_lit_date_4.exec({ as: alice })
+
+    const res_after = await expr_lit_date_4.expr_lit_date_4.get_res()
+    assert(res_after.toISOString() == '2019-01-01T05:30:00.000Z')
   })
 
   it('expr_lit_dur', async () => {
     await expr_lit_dur.expr_lit_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_dur.expr_lit_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_lit_dur.expr_lit_dur.exec({ as: alice })
+
+    const res_after = await expr_lit_dur.expr_lit_dur.get_res()
+    assert(res_after.equals(new Duration("3w8d4h34m18s")))
   })
 
   it('expr_lit_int', async () => {
     await expr_lit_int.expr_lit_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_int.expr_lit_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_lit_int.expr_lit_int.exec({ as: alice })
+
+    const res_after = await expr_lit_int.expr_lit_int.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_lit_int_neg', async () => {
     await expr_lit_int_neg.expr_lit_int_neg.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_int_neg.expr_lit_int_neg.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_lit_int_neg.expr_lit_int_neg.exec({ as: alice })
+
+    const res_after = await expr_lit_int_neg.expr_lit_int_neg.get_res()
+    assert(res_after.equals(new Int(-1)))
   })
 
   it('expr_lit_nat', async () => {
     await expr_lit_nat.expr_lit_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_nat.expr_lit_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_lit_nat.expr_lit_nat.exec({ as: alice })
+
+    const res_after = await expr_lit_nat.expr_lit_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_lit_opt_none', async () => {
     await expr_lit_opt_none.expr_lit_opt_none.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_opt_none.expr_lit_opt_none.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_lit_opt_none.expr_lit_opt_none.exec({ as: alice })
+
+    const res_after = await expr_lit_opt_none.expr_lit_opt_none.get_res()
+    assert(res_after.equals(Option.None()))
   })
 
   it('expr_lit_opt_some', async () => {
     await expr_lit_opt_some.expr_lit_opt_some.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_opt_some.expr_lit_opt_some.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_lit_opt_some.expr_lit_opt_some.exec({ as: alice })
+
+    const res_after = await expr_lit_opt_some.expr_lit_opt_some.get_res()
+    assert(res_after.equals(Option.Some<Nat>(new Nat(0))))
   })
 
   it('expr_lit_or_left', async () => {
     await expr_lit_or_left.expr_lit_or_left.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_or_left.expr_lit_or_left.get_res()
+    assert(res_before.equals(Or.Left(new Nat(0))))
+
+    await expr_lit_or_left.expr_lit_or_left.exec({ as: alice })
+
+    const res_after = await expr_lit_or_left.expr_lit_or_left.get_res()
+    assert(res_after.equals(Or.Left(new Nat(1))))
   })
 
   it('expr_lit_or_right', async () => {
     await expr_lit_or_right.expr_lit_or_right.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_or_right.expr_lit_or_right.get_res()
+    assert(res_before.equals(Or.Right(new Int(0))))
+
+    await expr_lit_or_right.expr_lit_or_right.exec({ as: alice })
+
+    const res_after = await expr_lit_or_right.expr_lit_or_right.get_res()
+    assert(res_after.equals(Or.Right(new Int(1))))
   })
 
   it('expr_lit_rat_dec', async () => {
     await expr_lit_rat_dec.expr_lit_rat_dec.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_rat_dec.expr_lit_rat_dec.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_lit_rat_dec.expr_lit_rat_dec.exec({ as: alice })
+
+    const res_after = await expr_lit_rat_dec.expr_lit_rat_dec.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_lit_rat_dec_neg', async () => {
     await expr_lit_rat_dec_neg.expr_lit_rat_dec_neg.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_rat_dec_neg.expr_lit_rat_dec_neg.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_lit_rat_dec_neg.expr_lit_rat_dec_neg.exec({ as: alice })
+
+    const res_after = await expr_lit_rat_dec_neg.expr_lit_rat_dec_neg.get_res()
+    assert(res_after.equals(new Rational(-0.5)))
   })
 
   it('expr_lit_rat_div', async () => {
     await expr_lit_rat_div.expr_lit_rat_div.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_rat_div.expr_lit_rat_div.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_lit_rat_div.expr_lit_rat_div.exec({ as: alice })
+
+    const res_after = await expr_lit_rat_div.expr_lit_rat_div.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_lit_rat_div_neg', async () => {
     await expr_lit_rat_div_neg.expr_lit_rat_div_neg.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_rat_div_neg.expr_lit_rat_div_neg.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_lit_rat_div_neg.expr_lit_rat_div_neg.exec({ as: alice })
+
+    const res_after = await expr_lit_rat_div_neg.expr_lit_rat_div_neg.get_res()
+    assert(res_after.equals(new Rational(-0.5)))
   })
 
   it('expr_lit_str', async () => {
     await expr_lit_str.expr_lit_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_str.expr_lit_str.get_res()
+    assert(res_before == "")
+
+    await expr_lit_str.expr_lit_str.exec({ as: alice })
+
+    const res_after = await expr_lit_str.expr_lit_str.get_res()
+    assert(res_after == "a")
   })
 
   it('expr_lit_tuple', async () => {
     await expr_lit_tuple.expr_lit_tuple.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_tuple.expr_lit_tuple.get_res()
+    assert(res_before[0].equals(new Int(0)))
+    assert(res_before[1].equals(new Int(0)))
+
+    await expr_lit_tuple.expr_lit_tuple.exec({ as: alice })
+
+    const res_after = await expr_lit_tuple.expr_lit_tuple.get_res()
+    assert(res_after[0].equals(new Int(1)))
+    assert(res_after[1].equals(new Int(2)))
   })
 
   it('expr_lit_unit', async () => {
     await expr_lit_unit.expr_lit_unit.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lit_unit.expr_lit_unit.get_res()
+    assert(res_before.equals(new Unit()))
+
+    await expr_lit_unit.expr_lit_unit.exec({ as: alice })
+
+    const res_after = await expr_lit_unit.expr_lit_unit.get_res()
+    assert(res_after.equals(new Unit()))
   })
 
   it('expr_make_big_map', async () => {
