@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
-import { expect_to_fail, get_account, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Duration, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
+import { Address, Bytes, Chain_id, Duration, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -9441,53 +9441,126 @@ describe('passed', async () => {
   })
 
   it('expr_cst_balance', async () => {
-    await expr_cst_balance.expr_cst_balance.deploy({ as: alice })
-    // TODO
+    await expr_cst_balance.expr_cst_balance.deploy({ amount: new Tez(1), as: alice })
+
+    const res_before = await expr_cst_balance.expr_cst_balance.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_cst_balance.expr_cst_balance.exec({ as: alice })
+
+    const res_after = await expr_cst_balance.expr_cst_balance.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_cst_caller', async () => {
     await expr_cst_caller.expr_cst_caller.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_caller.expr_cst_caller.get_res()
+    assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
+
+    await expr_cst_caller.expr_cst_caller.exec({ as: alice })
+
+    const res_after = await expr_cst_caller.expr_cst_caller.get_res()
+    assert(res_after.equals(alice.get_address()))
   })
 
   it('expr_cst_level', async () => {
     await expr_cst_level.expr_cst_level.deploy({ as: alice })
     // TODO
+    const level = await get_mockup_level()
+    const res_before = await expr_cst_level.expr_cst_level.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_cst_level.expr_cst_level.exec({ as: alice })
+
+    const res_after = await expr_cst_level.expr_cst_level.get_res()
+    assert(res_after.equals(new Nat(level).plus(new Nat(1))))
   })
 
   it('expr_cst_min_block_time', async () => {
     await expr_cst_min_block_time.expr_cst_min_block_time.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_min_block_time.expr_cst_min_block_time.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_cst_min_block_time.expr_cst_min_block_time.exec({ as: alice })
+
+    const res_after = await expr_cst_min_block_time.expr_cst_min_block_time.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_cst_now', async () => {
     await expr_cst_now.expr_cst_now.deploy({ as: alice })
     // TODO
+    const now = get_mockup_now();
+    const res_before = await expr_cst_now.expr_cst_now.get_res()
+    assert(res_before.toISOString() == new Date("1970-01-01").toISOString())
+
+    await expr_cst_now.expr_cst_now.exec({ as: alice })
+
+    const res_after = await expr_cst_now.expr_cst_now.get_res()
+    assert(res_after.toISOString() == now.toISOString())
   })
 
   it('expr_cst_self_address', async () => {
     await expr_cst_self_address.expr_cst_self_address.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_self_address.expr_cst_self_address.get_res()
+    assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
+
+    await expr_cst_self_address.expr_cst_self_address.exec({ as: alice })
+
+    const res_after = await expr_cst_self_address.expr_cst_self_address.get_res()
+    assert(res_after.equals(expr_cst_self_address.expr_cst_self_address.get_address()))
   })
 
   it('expr_cst_self_chain_id', async () => {
     await expr_cst_self_chain_id.expr_cst_self_chain_id.deploy({ as: alice })
     // TODO
+    const chain_id = await get_chain_id();
+    const res_before = await expr_cst_self_chain_id.expr_cst_self_chain_id.get_res()
+    assert(res_before.equals(new Chain_id("NetXdQprcVkpaWU")))
+
+    await expr_cst_self_chain_id.expr_cst_self_chain_id.exec({ as: alice })
+
+    const res_after = await expr_cst_self_chain_id.expr_cst_self_chain_id.get_res()
+    assert(res_after.equals(chain_id))
   })
 
   it('expr_cst_source', async () => {
     await expr_cst_source.expr_cst_source.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_source.expr_cst_source.get_res()
+    assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
+
+    await expr_cst_source.expr_cst_source.exec({ as: alice })
+
+    const res_after = await expr_cst_source.expr_cst_source.get_res()
+    assert(res_after.equals(alice.get_address()))
   })
 
   it('expr_cst_total_voting_power', async () => {
     await expr_cst_total_voting_power.expr_cst_total_voting_power.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_total_voting_power.expr_cst_total_voting_power.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_cst_total_voting_power.expr_cst_total_voting_power.exec({ as: alice })
+
+    const res_after = await expr_cst_total_voting_power.expr_cst_total_voting_power.get_res()
+    assert(res_after.equals(new Nat("20000000000000")))
   })
 
   it('expr_cst_transferred', async () => {
     await expr_cst_transferred.expr_cst_transferred.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cst_transferred.expr_cst_transferred.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_cst_transferred.expr_cst_transferred.exec({ amount: new Tez(1), as: alice })
+
+    const res_after = await expr_cst_transferred.expr_cst_transferred.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_fail_some_none', async () => {
