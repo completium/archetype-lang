@@ -29,7 +29,7 @@
          DUP 4 ;
          UNIT ;
          LEFT unit ;
-         RIGHT (or unit unit) ;
+         LEFT (or unit unit) ;
          RIGHT unit ;
          DUP 3 ;
          DUP 5 ;

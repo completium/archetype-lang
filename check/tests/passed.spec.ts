@@ -9825,122 +9825,290 @@ describe('passed', async () => {
 
   it('expr_fun_max_date', async () => {
     await expr_fun_max_date.expr_fun_max_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_date.expr_fun_max_date.get_res()
+    assert(res_before.toISOString() == '2020-01-01T00:00:00.000Z')
+
+    await expr_fun_max_date.expr_fun_max_date.exec({ as: alice })
+
+    const res_after = await expr_fun_max_date.expr_fun_max_date.get_res()
+    assert(res_after.toISOString() == '2020-01-02T00:00:00.000Z')
   })
 
   it('expr_fun_max_dur', async () => {
     await expr_fun_max_dur.expr_fun_max_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_dur.expr_fun_max_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_fun_max_dur.expr_fun_max_dur.exec({ as: alice })
+
+    const res_after = await expr_fun_max_dur.expr_fun_max_dur.get_res()
+    assert(res_after.equals(new Duration("1h")))
   })
 
   it('expr_fun_max_int_int', async () => {
     await expr_fun_max_int_int.expr_fun_max_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_int_int.expr_fun_max_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_max_int_int.expr_fun_max_int_int.exec({ as: alice })
+
+    const res_after = await expr_fun_max_int_int.expr_fun_max_int_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_fun_max_int_nat', async () => {
     await expr_fun_max_int_nat.expr_fun_max_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_int_nat.expr_fun_max_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_max_int_nat.expr_fun_max_int_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_int_nat.expr_fun_max_int_nat.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_fun_max_int_rat', async () => {
     await expr_fun_max_int_rat.expr_fun_max_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_int_rat.expr_fun_max_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_max_int_rat.expr_fun_max_int_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_int_rat.expr_fun_max_int_rat.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_fun_max_nat_int', async () => {
     await expr_fun_max_nat_int.expr_fun_max_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_nat_int.expr_fun_max_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_max_nat_int.expr_fun_max_nat_int.exec({ as: alice })
+
+    const res_after = await expr_fun_max_nat_int.expr_fun_max_nat_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_fun_max_nat_nat', async () => {
     await expr_fun_max_nat_nat.expr_fun_max_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_nat_nat.expr_fun_max_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_max_nat_nat.expr_fun_max_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_nat_nat.expr_fun_max_nat_nat.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('expr_fun_max_nat_rat', async () => {
     await expr_fun_max_nat_rat.expr_fun_max_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_nat_rat.expr_fun_max_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_max_nat_rat.expr_fun_max_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_nat_rat.expr_fun_max_nat_rat.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_fun_max_rat_int', async () => {
     await expr_fun_max_rat_int.expr_fun_max_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_rat_int.expr_fun_max_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_max_rat_int.expr_fun_max_rat_int.exec({ as: alice })
+
+    const res_after = await expr_fun_max_rat_int.expr_fun_max_rat_int.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_fun_max_rat_nat', async () => {
     await expr_fun_max_rat_nat.expr_fun_max_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_rat_nat.expr_fun_max_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_max_rat_nat.expr_fun_max_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_rat_nat.expr_fun_max_rat_nat.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('expr_fun_max_rat_rat', async () => {
     await expr_fun_max_rat_rat.expr_fun_max_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_rat_rat.expr_fun_max_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_max_rat_rat.expr_fun_max_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_max_rat_rat.expr_fun_max_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_max_tez', async () => {
     await expr_fun_max_tez.expr_fun_max_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_max_tez.expr_fun_max_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_fun_max_tez.expr_fun_max_tez.exec({ as: alice })
+
+    const res_after = await expr_fun_max_tez.expr_fun_max_tez.get_res()
+    assert(res_after.equals(new Tez(2)))
   })
 
   it('expr_fun_min_date', async () => {
     await expr_fun_min_date.expr_fun_min_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_date.expr_fun_min_date.get_res()
+    assert(res_before.toISOString() == '2020-01-01T00:00:00.000Z')
+
+    await expr_fun_min_date.expr_fun_min_date.exec({ as: alice })
+
+    const res_after = await expr_fun_min_date.expr_fun_min_date.get_res()
+    assert(res_after.toISOString() == '2019-01-01T00:00:00.000Z')
   })
 
   it('expr_fun_min_dur', async () => {
     await expr_fun_min_dur.expr_fun_min_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_dur.expr_fun_min_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_fun_min_dur.expr_fun_min_dur.exec({ as: alice })
+
+    const res_after = await expr_fun_min_dur.expr_fun_min_dur.get_res()
+    assert(res_after.equals(new Duration("1s")))
   })
 
   it('expr_fun_min_int_int', async () => {
     await expr_fun_min_int_int.expr_fun_min_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_int_int.expr_fun_min_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_min_int_int.expr_fun_min_int_int.exec({ as: alice })
+
+    const res_after = await expr_fun_min_int_int.expr_fun_min_int_int.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_fun_min_int_nat', async () => {
     await expr_fun_min_int_nat.expr_fun_min_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_int_nat.expr_fun_min_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_min_int_nat.expr_fun_min_int_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_int_nat.expr_fun_min_int_nat.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_fun_min_int_rat', async () => {
     await expr_fun_min_int_rat.expr_fun_min_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_int_rat.expr_fun_min_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_min_int_rat.expr_fun_min_int_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_int_rat.expr_fun_min_int_rat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_min_nat_int', async () => {
     await expr_fun_min_nat_int.expr_fun_min_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_nat_int.expr_fun_min_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_min_nat_int.expr_fun_min_nat_int.exec({ as: alice })
+
+    const res_after = await expr_fun_min_nat_int.expr_fun_min_nat_int.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('expr_fun_min_nat_nat', async () => {
     await expr_fun_min_nat_nat.expr_fun_min_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_nat_nat.expr_fun_min_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_min_nat_nat.expr_fun_min_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_nat_nat.expr_fun_min_nat_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_fun_min_nat_rat', async () => {
     await expr_fun_min_nat_rat.expr_fun_min_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_nat_rat.expr_fun_min_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_min_nat_rat.expr_fun_min_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_nat_rat.expr_fun_min_nat_rat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_min_rat_int', async () => {
     await expr_fun_min_rat_int.expr_fun_min_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_rat_int.expr_fun_min_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_min_rat_int.expr_fun_min_rat_int.exec({ as: alice })
+
+    const res_after = await expr_fun_min_rat_int.expr_fun_min_rat_int.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_min_rat_nat', async () => {
     await expr_fun_min_rat_nat.expr_fun_min_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_rat_nat.expr_fun_min_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_min_rat_nat.expr_fun_min_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_rat_nat.expr_fun_min_rat_nat.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_min_rat_rat', async () => {
     await expr_fun_min_rat_rat.expr_fun_min_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_rat_rat.expr_fun_min_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_min_rat_rat.expr_fun_min_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_fun_min_rat_rat.expr_fun_min_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.3)))
   })
 
   it('expr_fun_min_tez', async () => {
     await expr_fun_min_tez.expr_fun_min_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_min_tez.expr_fun_min_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_fun_min_tez.expr_fun_min_tez.exec({ as: alice })
+
+    const res_after = await expr_fun_min_tez.expr_fun_min_tez.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_fun_nat_to_bytes', async () => {
