@@ -1,7 +1,7 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (k: att.Key): att.Micheline => {
+    return k.to_mich();
 }
 export class Expr_fun_setdelegate {
     address: string | undefined;
@@ -24,15 +24,15 @@ export class Expr_fun_setdelegate {
         const address = (await ex.deploy("../tests/passed/expr_fun_setdelegate.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(k: att.Key, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(k), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(k: att.Key, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(k), params);
         }
         throw new Error("Contract not initialised");
     }

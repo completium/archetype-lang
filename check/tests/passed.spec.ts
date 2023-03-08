@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
-import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Duration, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
+import { Address, Bytes, Chain_id, Duration, Int, Micheline, MichelineType, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -10196,22 +10196,57 @@ describe('passed', async () => {
 
   it('expr_fun_pack_complex', async () => {
     await expr_fun_pack_complex.expr_fun_pack_complex.deploy({ as: alice })
-    // TODO
+
+    const chain_id = await get_chain_id();
+    const ty: MichelineType = { "prim": "pair", args: [{ prim: "nat" }, { prim: "string" }, { prim: "chain_id" }] }
+    const data: Micheline = { "prim": "Pair", args: [{ int: "1" }, { string: "test" }, chain_id.to_mich()] }
+    const ref = pack(data, ty)
+
+    const res_before = await expr_fun_pack_complex.expr_fun_pack_complex.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_fun_pack_complex.expr_fun_pack_complex.exec({ as: alice })
+
+    const res_after = await expr_fun_pack_complex.expr_fun_pack_complex.get_res()
+    assert(res_after.equals(ref))
   })
 
   it('expr_fun_pack_lit_tuple', async () => {
     await expr_fun_pack_lit_tuple.expr_fun_pack_lit_tuple.deploy({ as: alice })
-    // TODO
+
+    const ty: MichelineType = { "prim": "pair", args: [{ prim: "nat" }, { prim: "string" }] }
+    const data: Micheline = { "prim": "Pair", args: [{ int: "1" }, { string: "test" }] }
+    const ref = pack(data, ty)
+
+    const res_before = await expr_fun_pack_lit_tuple.expr_fun_pack_lit_tuple.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_fun_pack_lit_tuple.expr_fun_pack_lit_tuple.exec({ as: alice })
+
+    const res_after = await expr_fun_pack_lit_tuple.expr_fun_pack_lit_tuple.get_res()
+    assert(res_after.equals(ref))
   })
 
   it('expr_fun_pack_string', async () => {
     await expr_fun_pack_string.expr_fun_pack_string.deploy({ as: alice })
-    // TODO
+
+    const ty: MichelineType = { prim: "string" }
+    const data: Micheline = { string: "archetype" }
+    const ref = pack(data, ty)
+
+    const res_before = await expr_fun_pack_string.expr_fun_pack_string.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_fun_pack_string.expr_fun_pack_string.exec({ as: alice })
+
+    const res_after = await expr_fun_pack_string.expr_fun_pack_string.get_res()
+    assert(res_after.equals(ref))
   })
 
   it('expr_fun_setdelegate', async () => {
     await expr_fun_setdelegate.expr_fun_setdelegate.deploy({ as: alice })
-    // TODO
+
+    // await expr_fun_setdelegate.expr_fun_setdelegate.exec(alice.get_public_key(), { as: alice })
   })
 
   it('expr_fun_simplify_rational', async () => {
@@ -10240,42 +10275,103 @@ describe('passed', async () => {
 
   it('expr_fun_slice_byt', async () => {
     await expr_fun_slice_byt.expr_fun_slice_byt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_slice_byt.expr_fun_slice_byt.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_slice_byt.expr_fun_slice_byt.exec({ as: alice })
+
+    const res_after = await expr_fun_slice_byt.expr_fun_slice_byt.get_res()
+    assert(res_after.equals(Option.Some(new Bytes("cdef"))))
   })
 
   it('expr_fun_slice_str', async () => {
     await expr_fun_slice_str.expr_fun_slice_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_slice_str.expr_fun_slice_str.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_slice_str.expr_fun_slice_str.exec({ as: alice })
+
+    const res_after = await expr_fun_slice_str.expr_fun_slice_str.get_res()
+    assert(res_after.equals(Option.Some<string>("bc")))
   })
 
   it('expr_fun_sub_mutez', async () => {
     await expr_fun_sub_mutez.expr_fun_sub_mutez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_sub_mutez.expr_fun_sub_mutez.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_sub_mutez.expr_fun_sub_mutez.exec({ as: alice })
+
+    const res_after = await expr_fun_sub_mutez.expr_fun_sub_mutez.get_res()
+    assert(res_after.equals(Option.Some(new Tez(1))))
   })
 
   it('expr_fun_sub_nat', async () => {
     await expr_fun_sub_nat.expr_fun_sub_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_sub_nat.expr_fun_sub_nat.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_sub_nat.expr_fun_sub_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_sub_nat.expr_fun_sub_nat.get_res()
+    assert(res_after.equals(Option.Some(new Nat(1))))
   })
 
   it('expr_fun_sub_nat_zero', async () => {
     await expr_fun_sub_nat_zero.expr_fun_sub_nat_zero.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_sub_nat_zero.expr_fun_sub_nat_zero.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_sub_nat_zero.expr_fun_sub_nat_zero.exec({ as: alice })
+
+    const res_after = await expr_fun_sub_nat_zero.expr_fun_sub_nat_zero.get_res()
+    assert(res_after.equals(Option.Some(new Nat(0))))
   })
 
   it('expr_fun_unpack_bool', async () => {
     await expr_fun_unpack_bool.expr_fun_unpack_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_unpack_bool.expr_fun_unpack_bool.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_unpack_bool.expr_fun_unpack_bool.exec({ as: alice })
+
+    const res_after = await expr_fun_unpack_bool.expr_fun_unpack_bool.get_res()
+    assert(res_after.equals(Option.Some<boolean>(true)))
   })
 
   it('expr_fun_unpack_complex', async () => {
     await expr_fun_unpack_complex.expr_fun_unpack_complex.deploy({ as: alice })
-    // TODO
+
+    const chain_id = await get_chain_id();
+    const ty: MichelineType = { "prim": "pair", args: [{ prim: "nat" }, { prim: "string" }, { prim: "chain_id" }] }
+    const data: Micheline = { "prim": "Pair", args: [{ int: "1" }, { string: "test" }, chain_id.to_mich()] }
+    const ref = pack(data, ty)
+
+    const res_before = await expr_fun_unpack_complex.expr_fun_unpack_complex.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_unpack_complex.expr_fun_unpack_complex.exec(ref, { as: alice })
+
+    const res_after = await expr_fun_unpack_complex.expr_fun_unpack_complex.get_res()
+    assert(res_after.equals(Option.Some([new Nat(1), "test", chain_id])))
   })
 
   it('expr_fun_unpack_string', async () => {
     await expr_fun_unpack_string.expr_fun_unpack_string.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_unpack_string.expr_fun_unpack_string.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_unpack_string.expr_fun_unpack_string.exec({ as: alice })
+
+    const res_after = await expr_fun_unpack_string.expr_fun_unpack_string.get_res()
+    assert(res_after.equals(Option.Some<string>("archetype")))
   })
 
   it('expr_instr_rec_1_0', async () => {

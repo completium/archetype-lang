@@ -1,9 +1,8 @@
 { storage (option string) ;
-  parameter (unit %exec) ;
+  parameter (key %exec) ;
   code { NIL operation ;
          SWAP ;
-         CDR ;
-         PUSH key "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj" ;
+         UNPAIR ;
          DUP ;
          HASH_KEY ;
          DUP ;
