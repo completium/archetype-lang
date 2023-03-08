@@ -9354,37 +9354,90 @@ describe('passed', async () => {
 
   it('expr_control_match_list', async () => {
     await expr_control_match_list.expr_control_match_list.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_match_list.expr_control_match_list.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_control_match_list.expr_control_match_list.exec({ as: alice })
+
+    const res_after = await expr_control_match_list.expr_control_match_list.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_control_match_option', async () => {
     await expr_control_match_option.expr_control_match_option.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_match_option.expr_control_match_option.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_control_match_option.expr_control_match_option.exec({ as: alice })
+
+    const res_after = await expr_control_match_option.expr_control_match_option.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('expr_control_match_or', async () => {
     await expr_control_match_or.expr_control_match_or.deploy({ as: alice })
-    // TODO
+
+    const a_before = await expr_control_match_or.expr_control_match_or.get_a()
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await expr_control_match_or.expr_control_match_or.get_b()
+    assert(b_before.equals(new Int(0)))
+
+    await expr_control_match_or.expr_control_match_or.exec({ as: alice })
+
+    const a_after = await expr_control_match_or.expr_control_match_or.get_a()
+    assert(a_after.equals(new Nat(2)))
+    const b_after = await expr_control_match_or.expr_control_match_or.get_b()
+    assert(b_after.equals(new Int(3)))
   })
 
   it('expr_control_matchwith', async () => {
     await expr_control_matchwith.expr_control_matchwith.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_matchwith.expr_control_matchwith.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_control_matchwith.expr_control_matchwith.exec({ as: alice })
+
+    const res_after = await expr_control_matchwith.expr_control_matchwith.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_control_matchwith_with_int_rat', async () => {
     await expr_control_matchwith_with_int_rat.expr_control_matchwith_with_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_matchwith_with_int_rat.expr_control_matchwith_with_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_matchwith_with_int_rat.expr_control_matchwith_with_int_rat.exec({ as: alice })
+
+    const res_after = await expr_control_matchwith_with_int_rat.expr_control_matchwith_with_int_rat.get_res()
+    assert(res_after.equals(new Rational(3)))
   })
 
   it('expr_control_matchwith_with_nat_int', async () => {
     await expr_control_matchwith_with_nat_int.expr_control_matchwith_with_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_matchwith_with_nat_int.expr_control_matchwith_with_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_control_matchwith_with_nat_int.expr_control_matchwith_with_nat_int.exec({ as: alice })
+
+    const res_after = await expr_control_matchwith_with_nat_int.expr_control_matchwith_with_nat_int.get_res()
+    assert(res_after.equals(new Int(3)))
   })
 
   it('expr_control_matchwith_with_nat_rat', async () => {
     await expr_control_matchwith_with_nat_rat.expr_control_matchwith_with_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_control_matchwith_with_nat_rat.expr_control_matchwith_with_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_control_matchwith_with_nat_rat.expr_control_matchwith_with_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_control_matchwith_with_nat_rat.expr_control_matchwith_with_nat_rat.get_res()
+    assert(res_after.equals(new Rational(3)))
   })
 
   it('expr_cst_balance', async () => {
