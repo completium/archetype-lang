@@ -8214,7 +8214,7 @@ describe('passed', async () => {
 
   it('expr_cmp_eq_bool_bool', async () => {
     await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.get_res()
     assert(res_before == false)
 
@@ -8226,422 +8226,1010 @@ describe('passed', async () => {
 
   it('expr_cmp_eq_date_date', async () => {
     await expr_cmp_eq_date_date.expr_cmp_eq_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_date_date.expr_cmp_eq_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_date_date.expr_cmp_eq_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_date_date.expr_cmp_eq_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_dur_dur', async () => {
     await expr_cmp_eq_dur_dur.expr_cmp_eq_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_dur_dur.expr_cmp_eq_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_dur_dur.expr_cmp_eq_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_dur_dur.expr_cmp_eq_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_int_int', async () => {
     await expr_cmp_eq_int_int.expr_cmp_eq_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_int_int.expr_cmp_eq_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_int_int.expr_cmp_eq_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_int_int.expr_cmp_eq_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_int_nat', async () => {
     await expr_cmp_eq_int_nat.expr_cmp_eq_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_int_nat.expr_cmp_eq_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_int_nat.expr_cmp_eq_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_int_nat.expr_cmp_eq_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_int_rat', async () => {
     await expr_cmp_eq_int_rat.expr_cmp_eq_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_int_rat.expr_cmp_eq_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_int_rat.expr_cmp_eq_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_int_rat.expr_cmp_eq_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_nat_int', async () => {
     await expr_cmp_eq_nat_int.expr_cmp_eq_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_nat_int.expr_cmp_eq_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_nat_int.expr_cmp_eq_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_nat_int.expr_cmp_eq_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_nat_nat', async () => {
     await expr_cmp_eq_nat_nat.expr_cmp_eq_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_nat_nat.expr_cmp_eq_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_nat_nat.expr_cmp_eq_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_nat_nat.expr_cmp_eq_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_nat_rat', async () => {
     await expr_cmp_eq_nat_rat.expr_cmp_eq_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_nat_rat.expr_cmp_eq_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_nat_rat.expr_cmp_eq_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_nat_rat.expr_cmp_eq_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_rat_int', async () => {
     await expr_cmp_eq_rat_int.expr_cmp_eq_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_rat_int.expr_cmp_eq_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_rat_int.expr_cmp_eq_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_rat_int.expr_cmp_eq_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_rat_nat', async () => {
     await expr_cmp_eq_rat_nat.expr_cmp_eq_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_rat_nat.expr_cmp_eq_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_rat_nat.expr_cmp_eq_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_rat_nat.expr_cmp_eq_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_rat_rat', async () => {
     await expr_cmp_eq_rat_rat.expr_cmp_eq_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_rat_rat.expr_cmp_eq_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_rat_rat.expr_cmp_eq_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_rat_rat.expr_cmp_eq_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_str_str', async () => {
     await expr_cmp_eq_str_str.expr_cmp_eq_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_str_str.expr_cmp_eq_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_str_str.expr_cmp_eq_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_str_str.expr_cmp_eq_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_tez_tez', async () => {
     await expr_cmp_eq_tez_tez.expr_cmp_eq_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_eq_tez_tez.expr_cmp_eq_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_tez_tez.expr_cmp_eq_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_tez_tez.expr_cmp_eq_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_addr_addr', async () => {
     await expr_cmp_ge_addr_addr.expr_cmp_ge_addr_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_addr_addr.expr_cmp_ge_addr_addr.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_addr_addr.expr_cmp_ge_addr_addr.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_addr_addr.expr_cmp_ge_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_date_date', async () => {
     await expr_cmp_ge_date_date.expr_cmp_ge_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_date_date.expr_cmp_ge_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_date_date.expr_cmp_ge_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_date_date.expr_cmp_ge_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_dur_dur', async () => {
     await expr_cmp_ge_dur_dur.expr_cmp_ge_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_dur_dur.expr_cmp_ge_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_dur_dur.expr_cmp_ge_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_dur_dur.expr_cmp_ge_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_int_int', async () => {
     await expr_cmp_ge_int_int.expr_cmp_ge_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_int_int.expr_cmp_ge_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_int_int.expr_cmp_ge_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_int_int.expr_cmp_ge_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_int_nat', async () => {
     await expr_cmp_ge_int_nat.expr_cmp_ge_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_int_nat.expr_cmp_ge_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_int_nat.expr_cmp_ge_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_int_nat.expr_cmp_ge_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_int_rat', async () => {
     await expr_cmp_ge_int_rat.expr_cmp_ge_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_int_rat.expr_cmp_ge_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_int_rat.expr_cmp_ge_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_int_rat.expr_cmp_ge_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_nat_int', async () => {
     await expr_cmp_ge_nat_int.expr_cmp_ge_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_nat_int.expr_cmp_ge_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_nat_int.expr_cmp_ge_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_nat_int.expr_cmp_ge_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_nat_nat', async () => {
     await expr_cmp_ge_nat_nat.expr_cmp_ge_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_nat_nat.expr_cmp_ge_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_nat_nat.expr_cmp_ge_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_nat_nat.expr_cmp_ge_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_nat_rat', async () => {
     await expr_cmp_ge_nat_rat.expr_cmp_ge_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_nat_rat.expr_cmp_ge_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_nat_rat.expr_cmp_ge_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_nat_rat.expr_cmp_ge_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_rat_int', async () => {
     await expr_cmp_ge_rat_int.expr_cmp_ge_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_rat_int.expr_cmp_ge_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_rat_int.expr_cmp_ge_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_rat_int.expr_cmp_ge_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_rat_nat', async () => {
     await expr_cmp_ge_rat_nat.expr_cmp_ge_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_rat_nat.expr_cmp_ge_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_rat_nat.expr_cmp_ge_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_rat_nat.expr_cmp_ge_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_rat_rat', async () => {
     await expr_cmp_ge_rat_rat.expr_cmp_ge_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_rat_rat.expr_cmp_ge_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_rat_rat.expr_cmp_ge_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_rat_rat.expr_cmp_ge_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_str_str', async () => {
     await expr_cmp_ge_str_str.expr_cmp_ge_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_str_str.expr_cmp_ge_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_str_str.expr_cmp_ge_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_str_str.expr_cmp_ge_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ge_tez_tez', async () => {
     await expr_cmp_ge_tez_tez.expr_cmp_ge_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ge_tez_tez.expr_cmp_ge_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ge_tez_tez.expr_cmp_ge_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_ge_tez_tez.expr_cmp_ge_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_addr_addr', async () => {
     await expr_cmp_gt_addr_addr.expr_cmp_gt_addr_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_addr_addr.expr_cmp_gt_addr_addr.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_addr_addr.expr_cmp_gt_addr_addr.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_addr_addr.expr_cmp_gt_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_date_date', async () => {
     await expr_cmp_gt_date_date.expr_cmp_gt_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_date_date.expr_cmp_gt_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_date_date.expr_cmp_gt_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_date_date.expr_cmp_gt_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_dur_dur', async () => {
     await expr_cmp_gt_dur_dur.expr_cmp_gt_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_dur_dur.expr_cmp_gt_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_dur_dur.expr_cmp_gt_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_dur_dur.expr_cmp_gt_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_int_int', async () => {
     await expr_cmp_gt_int_int.expr_cmp_gt_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_int_int.expr_cmp_gt_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_int_int.expr_cmp_gt_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_int_int.expr_cmp_gt_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_int_nat', async () => {
     await expr_cmp_gt_int_nat.expr_cmp_gt_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_int_nat.expr_cmp_gt_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_int_nat.expr_cmp_gt_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_int_nat.expr_cmp_gt_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_int_rat', async () => {
     await expr_cmp_gt_int_rat.expr_cmp_gt_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_int_rat.expr_cmp_gt_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_int_rat.expr_cmp_gt_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_int_rat.expr_cmp_gt_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_nat_int', async () => {
     await expr_cmp_gt_nat_int.expr_cmp_gt_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_nat_int.expr_cmp_gt_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_nat_int.expr_cmp_gt_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_nat_int.expr_cmp_gt_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_nat_nat', async () => {
     await expr_cmp_gt_nat_nat.expr_cmp_gt_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_nat_nat.expr_cmp_gt_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_nat_nat.expr_cmp_gt_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_nat_nat.expr_cmp_gt_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_nat_rat', async () => {
     await expr_cmp_gt_nat_rat.expr_cmp_gt_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_nat_rat.expr_cmp_gt_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_nat_rat.expr_cmp_gt_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_nat_rat.expr_cmp_gt_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_rat_int', async () => {
     await expr_cmp_gt_rat_int.expr_cmp_gt_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_rat_int.expr_cmp_gt_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_rat_int.expr_cmp_gt_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_rat_int.expr_cmp_gt_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_rat_nat', async () => {
     await expr_cmp_gt_rat_nat.expr_cmp_gt_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_rat_nat.expr_cmp_gt_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_rat_nat.expr_cmp_gt_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_rat_nat.expr_cmp_gt_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_rat_rat', async () => {
     await expr_cmp_gt_rat_rat.expr_cmp_gt_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_rat_rat.expr_cmp_gt_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_rat_rat.expr_cmp_gt_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_rat_rat.expr_cmp_gt_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_str_str', async () => {
     await expr_cmp_gt_str_str.expr_cmp_gt_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_str_str.expr_cmp_gt_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_str_str.expr_cmp_gt_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_str_str.expr_cmp_gt_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_gt_tez_tez', async () => {
     await expr_cmp_gt_tez_tez.expr_cmp_gt_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_gt_tez_tez.expr_cmp_gt_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_gt_tez_tez.expr_cmp_gt_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_gt_tez_tez.expr_cmp_gt_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_addr_addr', async () => {
     await expr_cmp_le_addr_addr.expr_cmp_le_addr_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_addr_addr.expr_cmp_le_addr_addr.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_addr_addr.expr_cmp_le_addr_addr.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_addr_addr.expr_cmp_le_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_date_date', async () => {
     await expr_cmp_le_date_date.expr_cmp_le_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_date_date.expr_cmp_le_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_date_date.expr_cmp_le_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_date_date.expr_cmp_le_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_dur_dur', async () => {
     await expr_cmp_le_dur_dur.expr_cmp_le_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_dur_dur.expr_cmp_le_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_dur_dur.expr_cmp_le_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_dur_dur.expr_cmp_le_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_int_int', async () => {
     await expr_cmp_le_int_int.expr_cmp_le_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_int_int.expr_cmp_le_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_int_int.expr_cmp_le_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_int_int.expr_cmp_le_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_int_nat', async () => {
     await expr_cmp_le_int_nat.expr_cmp_le_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_int_nat.expr_cmp_le_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_int_nat.expr_cmp_le_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_int_nat.expr_cmp_le_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_int_rat', async () => {
     await expr_cmp_le_int_rat.expr_cmp_le_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_int_rat.expr_cmp_le_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_int_rat.expr_cmp_le_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_int_rat.expr_cmp_le_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_nat_int', async () => {
     await expr_cmp_le_nat_int.expr_cmp_le_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_nat_int.expr_cmp_le_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_nat_int.expr_cmp_le_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_nat_int.expr_cmp_le_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_nat_nat', async () => {
     await expr_cmp_le_nat_nat.expr_cmp_le_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_nat_nat.expr_cmp_le_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_nat_nat.expr_cmp_le_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_nat_nat.expr_cmp_le_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_nat_rat', async () => {
     await expr_cmp_le_nat_rat.expr_cmp_le_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_nat_rat.expr_cmp_le_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_nat_rat.expr_cmp_le_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_nat_rat.expr_cmp_le_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_rat_int', async () => {
     await expr_cmp_le_rat_int.expr_cmp_le_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_rat_int.expr_cmp_le_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_rat_int.expr_cmp_le_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_rat_int.expr_cmp_le_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_rat_nat', async () => {
     await expr_cmp_le_rat_nat.expr_cmp_le_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_rat_nat.expr_cmp_le_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_rat_nat.expr_cmp_le_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_rat_nat.expr_cmp_le_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_rat_rat', async () => {
     await expr_cmp_le_rat_rat.expr_cmp_le_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_rat_rat.expr_cmp_le_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_rat_rat.expr_cmp_le_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_rat_rat.expr_cmp_le_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_str_str', async () => {
     await expr_cmp_le_str_str.expr_cmp_le_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_str_str.expr_cmp_le_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_str_str.expr_cmp_le_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_str_str.expr_cmp_le_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_le_tez_tez', async () => {
     await expr_cmp_le_tez_tez.expr_cmp_le_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_le_tez_tez.expr_cmp_le_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_le_tez_tez.expr_cmp_le_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_le_tez_tez.expr_cmp_le_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_addr_addr', async () => {
     await expr_cmp_lt_addr_addr.expr_cmp_lt_addr_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_addr_addr.expr_cmp_lt_addr_addr.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_addr_addr.expr_cmp_lt_addr_addr.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_addr_addr.expr_cmp_lt_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_date_date', async () => {
     await expr_cmp_lt_date_date.expr_cmp_lt_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_date_date.expr_cmp_lt_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_date_date.expr_cmp_lt_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_date_date.expr_cmp_lt_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_dur_dur', async () => {
     await expr_cmp_lt_dur_dur.expr_cmp_lt_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_dur_dur.expr_cmp_lt_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_dur_dur.expr_cmp_lt_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_dur_dur.expr_cmp_lt_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_int_int', async () => {
     await expr_cmp_lt_int_int.expr_cmp_lt_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_int_int.expr_cmp_lt_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_int_int.expr_cmp_lt_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_int_int.expr_cmp_lt_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_int_nat', async () => {
     await expr_cmp_lt_int_nat.expr_cmp_lt_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_int_nat.expr_cmp_lt_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_int_nat.expr_cmp_lt_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_int_nat.expr_cmp_lt_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_int_rat', async () => {
     await expr_cmp_lt_int_rat.expr_cmp_lt_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_int_rat.expr_cmp_lt_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_int_rat.expr_cmp_lt_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_int_rat.expr_cmp_lt_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_nat_int', async () => {
     await expr_cmp_lt_nat_int.expr_cmp_lt_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_nat_int.expr_cmp_lt_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_nat_int.expr_cmp_lt_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_nat_int.expr_cmp_lt_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_nat_nat', async () => {
     await expr_cmp_lt_nat_nat.expr_cmp_lt_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_nat_nat.expr_cmp_lt_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_nat_nat.expr_cmp_lt_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_nat_nat.expr_cmp_lt_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_nat_rat', async () => {
     await expr_cmp_lt_nat_rat.expr_cmp_lt_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_nat_rat.expr_cmp_lt_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_nat_rat.expr_cmp_lt_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_nat_rat.expr_cmp_lt_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_rat_int', async () => {
     await expr_cmp_lt_rat_int.expr_cmp_lt_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_rat_int.expr_cmp_lt_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_rat_int.expr_cmp_lt_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_rat_int.expr_cmp_lt_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_rat_nat', async () => {
     await expr_cmp_lt_rat_nat.expr_cmp_lt_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_rat_nat.expr_cmp_lt_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_rat_nat.expr_cmp_lt_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_rat_nat.expr_cmp_lt_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_rat_rat', async () => {
     await expr_cmp_lt_rat_rat.expr_cmp_lt_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_rat_rat.expr_cmp_lt_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_rat_rat.expr_cmp_lt_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_rat_rat.expr_cmp_lt_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_str_str', async () => {
     await expr_cmp_lt_str_str.expr_cmp_lt_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_str_str.expr_cmp_lt_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_str_str.expr_cmp_lt_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_str_str.expr_cmp_lt_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_lt_tez_tez', async () => {
     await expr_cmp_lt_tez_tez.expr_cmp_lt_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_lt_tez_tez.expr_cmp_lt_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_lt_tez_tez.expr_cmp_lt_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_lt_tez_tez.expr_cmp_lt_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_addr_addr', async () => {
     await expr_cmp_ne_addr_addr.expr_cmp_ne_addr_addr.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_addr_addr.expr_cmp_ne_addr_addr.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_addr_addr.expr_cmp_ne_addr_addr.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_addr_addr.expr_cmp_ne_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_bool_bool', async () => {
     await expr_cmp_ne_bool_bool.expr_cmp_ne_bool_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_bool_bool.expr_cmp_ne_bool_bool.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_bool_bool.expr_cmp_ne_bool_bool.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_bool_bool.expr_cmp_ne_bool_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_date_date', async () => {
     await expr_cmp_ne_date_date.expr_cmp_ne_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_date_date.expr_cmp_ne_date_date.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_date_date.expr_cmp_ne_date_date.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_date_date.expr_cmp_ne_date_date.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_dur_dur', async () => {
     await expr_cmp_ne_dur_dur.expr_cmp_ne_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_dur_dur.expr_cmp_ne_dur_dur.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_dur_dur.expr_cmp_ne_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_dur_dur.expr_cmp_ne_dur_dur.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_int_int', async () => {
     await expr_cmp_ne_int_int.expr_cmp_ne_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_int_int.expr_cmp_ne_int_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_int_int.expr_cmp_ne_int_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_int_int.expr_cmp_ne_int_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_int_nat', async () => {
     await expr_cmp_ne_int_nat.expr_cmp_ne_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_int_nat.expr_cmp_ne_int_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_int_nat.expr_cmp_ne_int_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_int_nat.expr_cmp_ne_int_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_int_rat', async () => {
     await expr_cmp_ne_int_rat.expr_cmp_ne_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_int_rat.expr_cmp_ne_int_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_int_rat.expr_cmp_ne_int_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_int_rat.expr_cmp_ne_int_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_nat_int', async () => {
     await expr_cmp_ne_nat_int.expr_cmp_ne_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_nat_int.expr_cmp_ne_nat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_nat_int.expr_cmp_ne_nat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_nat_int.expr_cmp_ne_nat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_nat_nat', async () => {
     await expr_cmp_ne_nat_nat.expr_cmp_ne_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_nat_nat.expr_cmp_ne_nat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_nat_nat.expr_cmp_ne_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_nat_nat.expr_cmp_ne_nat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_nat_rat', async () => {
     await expr_cmp_ne_nat_rat.expr_cmp_ne_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_nat_rat.expr_cmp_ne_nat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_nat_rat.expr_cmp_ne_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_nat_rat.expr_cmp_ne_nat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_rat_int', async () => {
     await expr_cmp_ne_rat_int.expr_cmp_ne_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_rat_int.expr_cmp_ne_rat_int.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_rat_int.expr_cmp_ne_rat_int.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_rat_int.expr_cmp_ne_rat_int.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_rat_nat', async () => {
     await expr_cmp_ne_rat_nat.expr_cmp_ne_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_rat_nat.expr_cmp_ne_rat_nat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_rat_nat.expr_cmp_ne_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_rat_nat.expr_cmp_ne_rat_nat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_rat_rat', async () => {
     await expr_cmp_ne_rat_rat.expr_cmp_ne_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_rat_rat.expr_cmp_ne_rat_rat.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_rat_rat.expr_cmp_ne_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_rat_rat.expr_cmp_ne_rat_rat.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_str_str', async () => {
     await expr_cmp_ne_str_str.expr_cmp_ne_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_str_str.expr_cmp_ne_str_str.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_str_str.expr_cmp_ne_str_str.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_str_str.expr_cmp_ne_str_str.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_ne_tez_tez', async () => {
     await expr_cmp_ne_tez_tez.expr_cmp_ne_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_cmp_ne_tez_tez.expr_cmp_ne_tez_tez.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_ne_tez_tez.expr_cmp_ne_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_cmp_ne_tez_tez.expr_cmp_ne_tez_tez.get_res()
+    assert(res_after == true)
   })
 
   it('expr_control_fold', async () => {

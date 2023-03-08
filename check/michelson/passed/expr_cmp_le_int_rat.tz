@@ -26,10 +26,10 @@
          LEFT (or unit unit) ;
          RIGHT unit ;
          PUSH nat 10 ;
-         PUSH int 3 ;
+         PUSH int 13 ;
          PAIR ;
          PUSH nat 1 ;
-         PUSH int 2 ;
+         PUSH int 1 ;
          PAIR ;
          PAIR ;
          PAIR ;
