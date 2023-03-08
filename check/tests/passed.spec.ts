@@ -9621,12 +9621,20 @@ describe('passed', async () => {
 
   it('expr_fun_address_to_contract', async () => {
     await expr_fun_address_to_contract.expr_fun_address_to_contract.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_address_to_contract.expr_fun_address_to_contract.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_address_to_contract.expr_fun_address_to_contract.exec({ as: alice })
+
+    const res_after = await expr_fun_address_to_contract.expr_fun_address_to_contract.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_fun_address_to_contract_unit', async () => {
-    await expr_fun_address_to_contract_unit.expr_fun_address_to_contract_unit.deploy({ as: alice })
-    // TODO
+    await expr_fun_address_to_contract_unit.expr_fun_address_to_contract_unit.deploy({ amount: new Tez(1), as: alice })
+
+    await expr_fun_address_to_contract_unit.expr_fun_address_to_contract_unit.exec(alice.get_address(), { as: alice })
   })
 
   it('expr_fun_bytes_to_nat', async () => {
