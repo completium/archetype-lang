@@ -1,7 +1,7 @@
 archetype expr_fun_make_operation
 
-entry exec() {
-  const e  : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
-  const op : operation = make_operation(0tz, e, Unit);
+entry exec(a : address) {
+  const e  : contract<unit> = a;
+  const op : operation = make_operation(1tz, e, Unit);
   operations := prepend(operations, op);
 }

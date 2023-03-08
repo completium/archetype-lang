@@ -1,9 +1,8 @@
 archetype expr_fun_key_hash_to_contract
 
-entry exec () {
-  var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
+entry exec (k : key) {
   var kh : key_hash = key_to_key_hash(k);
   var c : contract<unit> = key_hash_to_contract(kh);
-  var op  : operation = make_operation(0tz, c, Unit);
+  var op  : operation = make_operation(1tz, c, Unit);
   operations := prepend(operations, op)
 }

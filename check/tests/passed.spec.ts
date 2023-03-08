@@ -9660,32 +9660,82 @@ describe('passed', async () => {
 
   it('expr_fun_ceil', async () => {
     await expr_fun_ceil.expr_fun_ceil.deploy({ as: alice })
-    // TODO
+
+    const r0_before = await expr_fun_ceil.expr_fun_ceil.get_r0()
+    assert(r0_before.equals(new Int(0)))
+    const r1_before = await expr_fun_ceil.expr_fun_ceil.get_r1()
+    assert(r1_before.equals(new Int(0)))
+
+    await expr_fun_ceil.expr_fun_ceil.exec({ as: alice })
+
+    const r0_after = await expr_fun_ceil.expr_fun_ceil.get_r0()
+    assert(r0_after.equals(new Int(2)))
+    const r1_after = await expr_fun_ceil.expr_fun_ceil.get_r1()
+    assert(r1_after.equals(new Int(-1)))
   })
 
   it('expr_fun_concat_byt', async () => {
     await expr_fun_concat_byt.expr_fun_concat_byt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_concat_byt.expr_fun_concat_byt.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_fun_concat_byt.expr_fun_concat_byt.exec({ as: alice })
+
+    const res_after = await expr_fun_concat_byt.expr_fun_concat_byt.get_res()
+    assert(res_after.equals(new Bytes("12ef")))
   })
 
   it('expr_fun_concat_list_byt', async () => {
     await expr_fun_concat_list_byt.expr_fun_concat_list_byt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_concat_list_byt.expr_fun_concat_list_byt.get_res()
+    assert(res_before.equals(new Bytes("00")))
+
+    await expr_fun_concat_list_byt.expr_fun_concat_list_byt.exec({ as: alice })
+
+    const res_after = await expr_fun_concat_list_byt.expr_fun_concat_list_byt.get_res()
+    assert(res_after.equals(new Bytes("12ef")))
   })
 
   it('expr_fun_concat_list_str', async () => {
     await expr_fun_concat_list_str.expr_fun_concat_list_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_concat_list_str.expr_fun_concat_list_str.get_res()
+    assert(res_before == "")
+
+    await expr_fun_concat_list_str.expr_fun_concat_list_str.exec({ as: alice })
+
+    const res_after = await expr_fun_concat_list_str.expr_fun_concat_list_str.get_res()
+    assert(res_after == "abcdef")
   })
 
   it('expr_fun_concat_str', async () => {
     await expr_fun_concat_str.expr_fun_concat_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_concat_str.expr_fun_concat_str.get_res()
+    assert(res_before == "")
+
+    await expr_fun_concat_str.expr_fun_concat_str.exec({ as: alice })
+
+    const res_after = await expr_fun_concat_str.expr_fun_concat_str.get_res()
+    assert(res_after == "abcdef")
   })
 
   it('expr_fun_floor', async () => {
     await expr_fun_floor.expr_fun_floor.deploy({ as: alice })
-    // TODO
+
+    const r0_before = await expr_fun_floor.expr_fun_floor.get_r0()
+    assert(r0_before.equals(new Int(0)))
+    const r1_before = await expr_fun_floor.expr_fun_floor.get_r1()
+    assert(r1_before.equals(new Int(0)))
+
+    await expr_fun_floor.expr_fun_floor.exec({ as: alice })
+
+    const r0_after = await expr_fun_floor.expr_fun_floor.get_r0()
+    assert(r0_after.equals(new Int(1)))
+    const r1_after = await expr_fun_floor.expr_fun_floor.get_r1()
+    assert(r1_after.equals(new Int(-2)))
   })
 
   it('expr_fun_get_denominator', async () => {
@@ -9710,32 +9760,67 @@ describe('passed', async () => {
 
   it('expr_fun_int_to_nat', async () => {
     await expr_fun_int_to_nat.expr_fun_int_to_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_int_to_nat.expr_fun_int_to_nat.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_fun_int_to_nat.expr_fun_int_to_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_int_to_nat.expr_fun_int_to_nat.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
   })
 
   it('expr_fun_key_hash_to_contract', async () => {
-    await expr_fun_key_hash_to_contract.expr_fun_key_hash_to_contract.deploy({ as: alice })
-    // TODO
+    await expr_fun_key_hash_to_contract.expr_fun_key_hash_to_contract.deploy({ amount: new Tez(1), as: alice })
+
+    await expr_fun_key_hash_to_contract.expr_fun_key_hash_to_contract.exec(alice.get_public_key(), { as: alice })
   })
 
   it('expr_fun_length_bytes', async () => {
     await expr_fun_length_bytes.expr_fun_length_bytes.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_length_bytes.expr_fun_length_bytes.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_length_bytes.expr_fun_length_bytes.exec({ as: alice })
+
+    const res_after = await expr_fun_length_bytes.expr_fun_length_bytes.get_res()
+    assert(res_after.equals(new Nat(4)))
   })
 
   it('expr_fun_length_str', async () => {
     await expr_fun_length_str.expr_fun_length_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_length_str.expr_fun_length_str.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_length_str.expr_fun_length_str.exec({ as: alice })
+
+    const res_after = await expr_fun_length_str.expr_fun_length_str.get_res()
+    assert(res_after.equals(new Nat(6)))
   })
 
   it('expr_fun_make_event', async () => {
     await expr_fun_make_event.expr_fun_make_event.deploy({ as: alice })
-    // TODO
+
+    const ret = await expr_fun_make_event.expr_fun_make_event.exec({ as: alice });
+
+    assert(ret.events.length == 1)
+    assert(ret.events[0].from.equals(expr_fun_make_event.expr_fun_make_event.get_address()))
+    assert(JSON.stringify(ret.events[0].type) == '{"prim":"nat"}')
+    assert(ret.events[0].tag == "sample")
+    assert(JSON.stringify(ret.events[0].payload) == '{"int":"2"}')
   })
 
   it('expr_fun_make_operation', async () => {
-    await expr_fun_make_operation.expr_fun_make_operation.deploy({ as: alice })
-    // TODO
+    await expr_fun_make_operation.expr_fun_make_operation.deploy({ amount: new Tez(1), as: alice })
+
+    const balance_before = await alice.get_balance();
+
+    await expr_fun_make_operation.expr_fun_make_operation.exec(alice.get_address(), { as: bob });
+
+    const balance_after = await alice.get_balance();
+    assert(balance_after.to_big_number().minus(balance_before.to_big_number()).eq(new Tez(1).to_big_number()))
   })
 
   it('expr_fun_max_date', async () => {

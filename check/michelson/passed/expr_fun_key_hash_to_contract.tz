@@ -1,15 +1,14 @@
 { storage unit ;
-  parameter (unit %exec) ;
+  parameter (key %exec) ;
   code { NIL operation ;
          SWAP ;
-         CDR ;
-         PUSH key "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj" ;
+         UNPAIR ;
          DUP ;
          HASH_KEY ;
          DUP ;
          IMPLICIT_ACCOUNT ;
          DUP ;
-         PUSH mutez 0 ;
+         PUSH mutez 1000000 ;
          PUSH unit Unit ;
          TRANSFER_TOKENS ;
          DUP 6 ;

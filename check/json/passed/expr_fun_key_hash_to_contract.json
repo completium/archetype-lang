@@ -25,7 +25,17 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "k",
+          "type": {
+            "node": "key",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],
