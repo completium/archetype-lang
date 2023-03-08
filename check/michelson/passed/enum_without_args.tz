@@ -3,7 +3,7 @@
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
          DROP 1 ;
-         PUSH int 2 ;
+         PUSH int 1 ;
          DUP ;
          DUP ;
          PUSH int 0 ;

@@ -1,10 +1,9 @@
-{ storage int ;
+{ storage nat ;
   parameter (unit %exec) ;
   code { CDR ;
          PUSH nat 2 ;
          PUSH nat 4 ;
          ADD ;
-         INT ;
          SWAP ;
          DROP 1 ;
          NIL operation ;

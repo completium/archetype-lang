@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Duration, Int, Micheline, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -7170,448 +7170,1058 @@ describe('passed', async () => {
 
   it('expr_arith_div_dur_dur', async () => {
     await expr_arith_div_dur_dur.expr_arith_div_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_dur_dur.expr_arith_div_dur_dur.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_dur_dur.expr_arith_div_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_div_dur_dur.expr_arith_div_dur_dur.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_int_int', async () => {
     await expr_arith_div_int_int.expr_arith_div_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_int_int.expr_arith_div_int_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_int_int.expr_arith_div_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_div_int_int.expr_arith_div_int_int.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_int_nat', async () => {
     await expr_arith_div_int_nat.expr_arith_div_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_int_nat.expr_arith_div_int_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_int_nat.expr_arith_div_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_int_nat.expr_arith_div_int_nat.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_int_rat', async () => {
     await expr_arith_div_int_rat.expr_arith_div_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_int_rat.expr_arith_div_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_int_rat.expr_arith_div_int_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_int_rat.expr_arith_div_int_rat.get_res()
+    assert(res_after.equals(new Rational(6)))
   })
 
   it('expr_arith_div_nat_int', async () => {
     await expr_arith_div_nat_int.expr_arith_div_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_nat_int.expr_arith_div_nat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_nat_int.expr_arith_div_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_div_nat_int.expr_arith_div_nat_int.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_nat_nat', async () => {
     await expr_arith_div_nat_nat.expr_arith_div_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_nat_nat.expr_arith_div_nat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_nat_nat.expr_arith_div_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_nat_nat.expr_arith_div_nat_nat.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_nat_rat', async () => {
     await expr_arith_div_nat_rat.expr_arith_div_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_nat_rat.expr_arith_div_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_nat_rat.expr_arith_div_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_nat_rat.expr_arith_div_nat_rat.get_res()
+    assert(res_after.equals(new Rational(6)))
   })
 
   it('expr_arith_div_rat_int', async () => {
     await expr_arith_div_rat_int.expr_arith_div_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_rat_int.expr_arith_div_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_rat_int.expr_arith_div_rat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_div_rat_int.expr_arith_div_rat_int.get_res()
+    assert(res_after.equals(new Rational(0.1)))
   })
 
   it('expr_arith_div_rat_nat', async () => {
     await expr_arith_div_rat_nat.expr_arith_div_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_rat_nat.expr_arith_div_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_rat_nat.expr_arith_div_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_rat_nat.expr_arith_div_rat_nat.get_res()
+    assert(res_after.equals(new Rational(0.1)))
   })
 
   it('expr_arith_div_rat_rat', async () => {
     await expr_arith_div_rat_rat.expr_arith_div_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_rat_rat.expr_arith_div_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_rat_rat.expr_arith_div_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_div_rat_rat.expr_arith_div_rat_rat.get_res()
+    assert(res_after.equals(new Rational(2)))
   })
 
   it('expr_arith_div_tez_tez', async () => {
     await expr_arith_div_tez_tez.expr_arith_div_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_div_tez_tez.expr_arith_div_tez_tez.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_div_tez_tez.expr_arith_div_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_div_tez_tez.expr_arith_div_tez_tez.get_res()
+    assert(res_after.equals(new Rational(4, new BigNumber(3))))
   })
 
   it('expr_arith_divmod_int_int', async () => {
     await expr_arith_divmod_int_int.expr_arith_divmod_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_int_int.expr_arith_divmod_int_int.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_int_int.expr_arith_divmod_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_int_int.expr_arith_divmod_int_int.get_res()
+    assert(res_after.equals(Option.Some([new Int(4), new Nat(1)])))
   })
 
   it('expr_arith_divmod_int_nat', async () => {
     await expr_arith_divmod_int_nat.expr_arith_divmod_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_int_nat.expr_arith_divmod_int_nat.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_int_nat.expr_arith_divmod_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_int_nat.expr_arith_divmod_int_nat.get_res()
+    assert(res_after.equals(Option.Some([new Int(4), new Nat(1)])))
   })
 
   it('expr_arith_divmod_nat_int', async () => {
     await expr_arith_divmod_nat_int.expr_arith_divmod_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_nat_int.expr_arith_divmod_nat_int.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_nat_int.expr_arith_divmod_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_nat_int.expr_arith_divmod_nat_int.get_res()
+    assert(res_after.equals(Option.Some([new Int(4), new Nat(1)])))
   })
 
   it('expr_arith_divmod_nat_nat', async () => {
     await expr_arith_divmod_nat_nat.expr_arith_divmod_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_nat_nat.expr_arith_divmod_nat_nat.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_nat_nat.expr_arith_divmod_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_nat_nat.expr_arith_divmod_nat_nat.get_res()
+    assert(res_after.equals(Option.Some([new Nat(4), new Nat(1)])))
   })
 
   it('expr_arith_divmod_tez_nat', async () => {
     await expr_arith_divmod_tez_nat.expr_arith_divmod_tez_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_tez_nat.expr_arith_divmod_tez_nat.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_tez_nat.expr_arith_divmod_tez_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_tez_nat.expr_arith_divmod_tez_nat.get_res()
+    assert(res_after.equals(Option.Some([new Tez(4.5), new Tez(0)])))
   })
 
   it('expr_arith_divmod_tez_tez', async () => {
     await expr_arith_divmod_tez_tez.expr_arith_divmod_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_divmod_tez_tez.expr_arith_divmod_tez_tez.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_arith_divmod_tez_tez.expr_arith_divmod_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_divmod_tez_tez.expr_arith_divmod_tez_tez.get_res()
+    assert(res_after.equals(Option.Some([new Nat(4), new Tez(1)])))
   })
 
   it('expr_arith_ediv_dur_dur', async () => {
     await expr_arith_ediv_dur_dur.expr_arith_ediv_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_dur_dur.expr_arith_ediv_dur_dur.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_ediv_dur_dur.expr_arith_ediv_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_dur_dur.expr_arith_ediv_dur_dur.get_res()
+    assert(res_after.equals(new Int(8)))
   })
 
   it('expr_arith_ediv_dur_int', async () => {
     await expr_arith_ediv_dur_int.expr_arith_ediv_dur_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_dur_int.expr_arith_ediv_dur_int.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_ediv_dur_int.expr_arith_ediv_dur_int.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_dur_int.expr_arith_ediv_dur_int.get_res()
+    assert(res_after.equals(new Duration("1h")))
   })
 
   it('expr_arith_ediv_dur_nat', async () => {
     await expr_arith_ediv_dur_nat.expr_arith_ediv_dur_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_dur_nat.expr_arith_ediv_dur_nat.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_ediv_dur_nat.expr_arith_ediv_dur_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_dur_nat.expr_arith_ediv_dur_nat.get_res()
+    assert(res_after.equals(new Duration("1h")))
   })
 
   it('expr_arith_ediv_int_int', async () => {
     await expr_arith_ediv_int_int.expr_arith_ediv_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_int_int.expr_arith_ediv_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_ediv_int_int.expr_arith_ediv_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_int_int.expr_arith_ediv_int_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_ediv_int_nat', async () => {
     await expr_arith_ediv_int_nat.expr_arith_ediv_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_int_nat.expr_arith_ediv_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_ediv_int_nat.expr_arith_ediv_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_int_nat.expr_arith_ediv_int_nat.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_ediv_nat_int', async () => {
     await expr_arith_ediv_nat_int.expr_arith_ediv_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_nat_int.expr_arith_ediv_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_ediv_nat_int.expr_arith_ediv_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_nat_int.expr_arith_ediv_nat_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_ediv_nat_nat', async () => {
     await expr_arith_ediv_nat_nat.expr_arith_ediv_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_nat_nat.expr_arith_ediv_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_ediv_nat_nat.expr_arith_ediv_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_nat_nat.expr_arith_ediv_nat_nat.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('expr_arith_ediv_tez_nat', async () => {
     await expr_arith_ediv_tez_nat.expr_arith_ediv_tez_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_tez_nat.expr_arith_ediv_tez_nat.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_ediv_tez_nat.expr_arith_ediv_tez_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_tez_nat.expr_arith_ediv_tez_nat.get_res()
+    assert(res_after.equals(new Tez(1000, "mutez")))
   })
 
   it('expr_arith_ediv_tez_tez', async () => {
     await expr_arith_ediv_tez_tez.expr_arith_ediv_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_ediv_tez_tez.expr_arith_ediv_tez_tez.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_ediv_tez_tez.expr_arith_ediv_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_ediv_tez_tez.expr_arith_ediv_tez_tez.get_res()
+    assert(res_after.equals(new Int(1000000)))
   })
 
   it('expr_arith_lsl_nat_nat', async () => {
     await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.get_res()
+    assert(res_after.equals(new Nat(8)))
   })
 
   it('expr_arith_lsr_nat_nat', async () => {
     await expr_arith_lsr_nat_nat.expr_arith_lsr_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_lsr_nat_nat.expr_arith_lsr_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_lsr_nat_nat.expr_arith_lsr_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_lsr_nat_nat.expr_arith_lsr_nat_nat.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('expr_arith_minus_date_date', async () => {
     await expr_arith_minus_date_date.expr_arith_minus_date_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_date_date.expr_arith_minus_date_date.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_minus_date_date.expr_arith_minus_date_date.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_date_date.expr_arith_minus_date_date.get_res()
+    assert(res_after.equals(new Duration("365d")))
   })
 
   it('expr_arith_minus_date_date_neg', async () => {
     await expr_arith_minus_date_date_neg.expr_arith_minus_date_date_neg.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_date_date_neg.expr_arith_minus_date_date_neg.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_minus_date_date_neg.expr_arith_minus_date_date_neg.exec({ as: alice })
+
+    // const res_after = await expr_arith_minus_date_date_neg.expr_arith_minus_date_date_neg.get_res()
+    // assert(res_after.equals(new Duration("-31536000")))
   })
 
   it('expr_arith_minus_date_dur', async () => {
     await expr_arith_minus_date_dur.expr_arith_minus_date_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_date_dur.expr_arith_minus_date_dur.get_res()
+    assert(res_before.toISOString() == "2020-01-01T00:00:00.000Z")
+
+    await expr_arith_minus_date_dur.expr_arith_minus_date_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_date_dur.expr_arith_minus_date_dur.get_res()
+    assert(res_after.toISOString() == "2019-12-31T18:30:00.000Z")
   })
 
   it('expr_arith_minus_dur_dur', async () => {
     await expr_arith_minus_dur_dur.expr_arith_minus_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_dur_dur.expr_arith_minus_dur_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_minus_dur_dur.expr_arith_minus_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_dur_dur.expr_arith_minus_dur_dur.get_res()
+    assert(res_after.equals(new Duration("20h")))
   })
 
   it('expr_arith_minus_int_int', async () => {
     await expr_arith_minus_int_int.expr_arith_minus_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_int_int.expr_arith_minus_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_minus_int_int.expr_arith_minus_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_int_int.expr_arith_minus_int_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_minus_int_nat', async () => {
     await expr_arith_minus_int_nat.expr_arith_minus_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_int_nat.expr_arith_minus_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_minus_int_nat.expr_arith_minus_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_int_nat.expr_arith_minus_int_nat.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_minus_int_rat', async () => {
     await expr_arith_minus_int_rat.expr_arith_minus_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_int_rat.expr_arith_minus_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_minus_int_rat.expr_arith_minus_int_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_int_rat.expr_arith_minus_int_rat.get_res()
+    assert(res_after.equals(new Rational(2.5)))
   })
 
   it('expr_arith_minus_nat_int', async () => {
     await expr_arith_minus_nat_int.expr_arith_minus_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_nat_int.expr_arith_minus_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_minus_nat_int.expr_arith_minus_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_nat_int.expr_arith_minus_nat_int.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_minus_nat_nat', async () => {
     await expr_arith_minus_nat_nat.expr_arith_minus_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_nat_nat.expr_arith_minus_nat_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_minus_nat_nat.expr_arith_minus_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_nat_nat.expr_arith_minus_nat_nat.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('expr_arith_minus_nat_rat', async () => {
     await expr_arith_minus_nat_rat.expr_arith_minus_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_nat_rat.expr_arith_minus_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_minus_nat_rat.expr_arith_minus_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_nat_rat.expr_arith_minus_nat_rat.get_res()
+    assert(res_after.equals(new Rational(2.5)))
   })
 
   it('expr_arith_minus_rat_int', async () => {
     await expr_arith_minus_rat_int.expr_arith_minus_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_rat_int.expr_arith_minus_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_minus_rat_int.expr_arith_minus_rat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_rat_int.expr_arith_minus_rat_int.get_res()
+    assert(res_after.equals(new Rational(-2.5)))
   })
 
   it('expr_arith_minus_rat_nat', async () => {
     await expr_arith_minus_rat_nat.expr_arith_minus_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_rat_nat.expr_arith_minus_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_minus_rat_nat.expr_arith_minus_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_rat_nat.expr_arith_minus_rat_nat.get_res()
+    assert(res_after.equals(new Rational(-2.5)))
   })
 
   it('expr_arith_minus_rat_rat', async () => {
     await expr_arith_minus_rat_rat.expr_arith_minus_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_rat_rat.expr_arith_minus_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_minus_rat_rat.expr_arith_minus_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_rat_rat.expr_arith_minus_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.3)))
   })
 
   it('expr_arith_minus_tez_tez', async () => {
     await expr_arith_minus_tez_tez.expr_arith_minus_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_minus_tez_tez.expr_arith_minus_tez_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_minus_tez_tez.expr_arith_minus_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_minus_tez_tez.expr_arith_minus_tez_tez.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_arith_mod_int_int', async () => {
     await expr_arith_mod_int_int.expr_arith_mod_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mod_int_int.expr_arith_mod_int_int.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_mod_int_int.expr_arith_mod_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_mod_int_int.expr_arith_mod_int_int.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_arith_mod_int_nat', async () => {
     await expr_arith_mod_int_nat.expr_arith_mod_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mod_int_nat.expr_arith_mod_int_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_mod_int_nat.expr_arith_mod_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mod_int_nat.expr_arith_mod_int_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_arith_mod_nat_int', async () => {
     await expr_arith_mod_nat_int.expr_arith_mod_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mod_nat_int.expr_arith_mod_nat_int.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_mod_nat_int.expr_arith_mod_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_mod_nat_int.expr_arith_mod_nat_int.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_arith_mod_nat_nat', async () => {
     await expr_arith_mod_nat_nat.expr_arith_mod_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mod_nat_nat.expr_arith_mod_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_mod_nat_nat.expr_arith_mod_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mod_nat_nat.expr_arith_mod_nat_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_arith_mod_tez_tez', async () => {
     await expr_arith_mod_tez_tez.expr_arith_mod_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mod_tez_tez.expr_arith_mod_tez_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_mod_tez_tez.expr_arith_mod_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_mod_tez_tez.expr_arith_mod_tez_tez.get_res()
+    assert(res_after.equals(new Tez(1)))
   })
 
   it('expr_arith_mult_int_dur', async () => {
     await expr_arith_mult_int_dur.expr_arith_mult_int_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_int_dur.expr_arith_mult_int_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_mult_int_dur.expr_arith_mult_int_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_int_dur.expr_arith_mult_int_dur.get_res()
+    assert(res_after.equals(new Duration("16h")))
   })
 
   it('expr_arith_mult_int_int', async () => {
     await expr_arith_mult_int_int.expr_arith_mult_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_int_int.expr_arith_mult_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_mult_int_int.expr_arith_mult_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_int_int.expr_arith_mult_int_int.get_res()
+    assert(res_after.equals(new Int(8)))
   })
 
   it('expr_arith_mult_int_nat', async () => {
     await expr_arith_mult_int_nat.expr_arith_mult_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_int_nat.expr_arith_mult_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_mult_int_nat.expr_arith_mult_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_int_nat.expr_arith_mult_int_nat.get_res()
+    assert(res_after.equals(new Int(8)))
   })
 
   it('expr_arith_mult_int_rat', async () => {
     await expr_arith_mult_int_rat.expr_arith_mult_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_int_rat.expr_arith_mult_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_mult_int_rat.expr_arith_mult_int_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_int_rat.expr_arith_mult_int_rat.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('expr_arith_mult_int_tez', async () => {
     await expr_arith_mult_int_tez.expr_arith_mult_int_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_int_tez.expr_arith_mult_int_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_mult_int_tez.expr_arith_mult_int_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_int_tez.expr_arith_mult_int_tez.get_res()
+    assert(res_after.equals(new Tez(2)))
   })
 
   it('expr_arith_mult_nat_dur', async () => {
     await expr_arith_mult_nat_dur.expr_arith_mult_nat_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_nat_dur.expr_arith_mult_nat_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_mult_nat_dur.expr_arith_mult_nat_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_nat_dur.expr_arith_mult_nat_dur.get_res()
+    assert(res_after.equals(new Duration("16h")))
   })
 
   it('expr_arith_mult_nat_int', async () => {
     await expr_arith_mult_nat_int.expr_arith_mult_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_nat_int.expr_arith_mult_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_mult_nat_int.expr_arith_mult_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_nat_int.expr_arith_mult_nat_int.get_res()
+    assert(res_after.equals(new Int(8)))
   })
 
   it('expr_arith_mult_nat_nat', async () => {
     await expr_arith_mult_nat_nat.expr_arith_mult_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_nat_nat.expr_arith_mult_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_mult_nat_nat.expr_arith_mult_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_nat_nat.expr_arith_mult_nat_nat.get_res()
+    assert(res_after.equals(new Nat(8)))
   })
 
   it('expr_arith_mult_nat_rat', async () => {
     await expr_arith_mult_nat_rat.expr_arith_mult_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_nat_rat.expr_arith_mult_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_mult_nat_rat.expr_arith_mult_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_nat_rat.expr_arith_mult_nat_rat.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('expr_arith_mult_nat_tez', async () => {
     await expr_arith_mult_nat_tez.expr_arith_mult_nat_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_nat_tez.expr_arith_mult_nat_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_mult_nat_tez.expr_arith_mult_nat_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_nat_tez.expr_arith_mult_nat_tez.get_res()
+    assert(res_after.equals(new Tez(2)))
   })
 
   it('expr_arith_mult_rat_dur', async () => {
     await expr_arith_mult_rat_dur.expr_arith_mult_rat_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_rat_dur.expr_arith_mult_rat_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_mult_rat_dur.expr_arith_mult_rat_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_rat_dur.expr_arith_mult_rat_dur.get_res()
+    assert(res_after.equals(new Duration("30m")))
   })
 
   it('expr_arith_mult_rat_int', async () => {
     await expr_arith_mult_rat_int.expr_arith_mult_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_rat_int.expr_arith_mult_rat_int.get_res()
+    assert(res_before.equals(new Rational(0.0)))
+
+    await expr_arith_mult_rat_int.expr_arith_mult_rat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_rat_int.expr_arith_mult_rat_int.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('expr_arith_mult_rat_nat', async () => {
     await expr_arith_mult_rat_nat.expr_arith_mult_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_rat_nat.expr_arith_mult_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0.0)))
+
+    await expr_arith_mult_rat_nat.expr_arith_mult_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_rat_nat.expr_arith_mult_rat_nat.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('expr_arith_mult_rat_rat', async () => {
     await expr_arith_mult_rat_rat.expr_arith_mult_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_rat_rat.expr_arith_mult_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0.0)))
+
+    await expr_arith_mult_rat_rat.expr_arith_mult_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_rat_rat.expr_arith_mult_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.05)))
   })
 
   it('expr_arith_mult_rat_tez', async () => {
     await expr_arith_mult_rat_tez.expr_arith_mult_rat_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_rat_tez.expr_arith_mult_rat_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_mult_rat_tez.expr_arith_mult_rat_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_rat_tez.expr_arith_mult_rat_tez.get_res()
+    assert(res_after.equals(new Tez(0.5)))
   })
 
   it('expr_arith_mult_tez_nat', async () => {
     await expr_arith_mult_tez_nat.expr_arith_mult_tez_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_mult_tez_nat.expr_arith_mult_tez_nat.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_mult_tez_nat.expr_arith_mult_tez_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_mult_tez_nat.expr_arith_mult_tez_nat.get_res()
+    assert(res_after.equals(new Tez(2)))
   })
 
   it('expr_arith_not_bool', async () => {
     await expr_arith_not_bool.expr_arith_not_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_not_bool.expr_arith_not_bool.get_res()
+    assert(res_before == false)
+
+    await expr_arith_not_bool.expr_arith_not_bool.exec({ as: alice })
+
+    const res_after = await expr_arith_not_bool.expr_arith_not_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_arith_not_int', async () => {
     await expr_arith_not_int.expr_arith_not_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_not_int.expr_arith_not_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_not_int.expr_arith_not_int.exec({ as: alice })
+
+    const res_after = await expr_arith_not_int.expr_arith_not_int.get_res()
+    assert(res_after.equals(new Int(-3)))
   })
 
   it('expr_arith_not_nat', async () => {
     await expr_arith_not_nat.expr_arith_not_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_not_nat.expr_arith_not_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_not_nat.expr_arith_not_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_not_nat.expr_arith_not_nat.get_res()
+    assert(res_after.equals(new Int(-3)))
   })
 
   it('expr_arith_or_bool_bool', async () => {
     await expr_arith_or_bool_bool.expr_arith_or_bool_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_or_bool_bool.expr_arith_or_bool_bool.get_res()
+    assert(res_before == false)
+
+    await expr_arith_or_bool_bool.expr_arith_or_bool_bool.exec({ as: alice })
+
+    const res_after = await expr_arith_or_bool_bool.expr_arith_or_bool_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_arith_or_nat_nat', async () => {
     await expr_arith_or_nat_nat.expr_arith_or_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_or_nat_nat.expr_arith_or_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_or_nat_nat.expr_arith_or_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_or_nat_nat.expr_arith_or_nat_nat.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('expr_arith_plus_date_dur', async () => {
     await expr_arith_plus_date_dur.expr_arith_plus_date_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_date_dur.expr_arith_plus_date_dur.get_res()
+    assert(res_before.toISOString() == "2020-01-01T00:00:00.000Z")
+
+    await expr_arith_plus_date_dur.expr_arith_plus_date_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_date_dur.expr_arith_plus_date_dur.get_res()
+    assert(res_after.toISOString() == "2020-01-01T04:00:00.000Z")
   })
 
   it('expr_arith_plus_dur_date', async () => {
     await expr_arith_plus_dur_date.expr_arith_plus_dur_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_dur_date.expr_arith_plus_dur_date.get_res()
+    assert(res_before.toISOString() == "2020-01-01T00:00:00.000Z")
+
+    await expr_arith_plus_dur_date.expr_arith_plus_dur_date.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_dur_date.expr_arith_plus_dur_date.get_res()
+    assert(res_after.toISOString() == "2020-01-01T04:00:00.000Z")
   })
 
   it('expr_arith_plus_dur_dur', async () => {
     await expr_arith_plus_dur_dur.expr_arith_plus_dur_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_dur_dur.expr_arith_plus_dur_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await expr_arith_plus_dur_dur.expr_arith_plus_dur_dur.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_dur_dur.expr_arith_plus_dur_dur.get_res()
+    assert(res_after.equals(new Duration("28h")))
   })
 
   it('expr_arith_plus_int_int', async () => {
     await expr_arith_plus_int_int.expr_arith_plus_int_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_int_int.expr_arith_plus_int_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_plus_int_int.expr_arith_plus_int_int.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_int_int.expr_arith_plus_int_int.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('expr_arith_plus_int_nat', async () => {
     await expr_arith_plus_int_nat.expr_arith_plus_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_int_nat.expr_arith_plus_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_plus_int_nat.expr_arith_plus_int_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_int_nat.expr_arith_plus_int_nat.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('expr_arith_plus_int_rat', async () => {
     await expr_arith_plus_int_rat.expr_arith_plus_int_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_int_rat.expr_arith_plus_int_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_plus_int_rat.expr_arith_plus_int_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_int_rat.expr_arith_plus_int_rat.get_res()
+    assert(res_after.equals(new Rational(3.5)))
   })
 
   it('expr_arith_plus_nat_int', async () => {
     await expr_arith_plus_nat_int.expr_arith_plus_nat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_nat_int.expr_arith_plus_nat_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_plus_nat_int.expr_arith_plus_nat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_nat_int.expr_arith_plus_nat_int.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('expr_arith_plus_nat_nat', async () => {
     await expr_arith_plus_nat_nat.expr_arith_plus_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_nat_nat.expr_arith_plus_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_plus_nat_nat.expr_arith_plus_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_nat_nat.expr_arith_plus_nat_nat.get_res()
+    assert(res_after.equals(new Nat(6)))
   })
 
   it('expr_arith_plus_nat_rat', async () => {
     await expr_arith_plus_nat_rat.expr_arith_plus_nat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_nat_rat.expr_arith_plus_nat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_plus_nat_rat.expr_arith_plus_nat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_nat_rat.expr_arith_plus_nat_rat.get_res()
+    assert(res_after.equals(new Rational(3.5)))
   })
 
   it('expr_arith_plus_rat_int', async () => {
     await expr_arith_plus_rat_int.expr_arith_plus_rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_rat_int.expr_arith_plus_rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_plus_rat_int.expr_arith_plus_rat_int.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_rat_int.expr_arith_plus_rat_int.get_res()
+    assert(res_after.equals(new Rational(3.5)))
   })
 
   it('expr_arith_plus_rat_nat', async () => {
     await expr_arith_plus_rat_nat.expr_arith_plus_rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_rat_nat.expr_arith_plus_rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_plus_rat_nat.expr_arith_plus_rat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_rat_nat.expr_arith_plus_rat_nat.get_res()
+    assert(res_after.equals(new Rational(3.5)))
   })
 
   it('expr_arith_plus_rat_rat', async () => {
     await expr_arith_plus_rat_rat.expr_arith_plus_rat_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_rat_rat.expr_arith_plus_rat_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_plus_rat_rat.expr_arith_plus_rat_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_rat_rat.expr_arith_plus_rat_rat.get_res()
+    assert(res_after.equals(new Rational(0.7)))
   })
 
   it('expr_arith_plus_str_str', async () => {
     await expr_arith_plus_str_str.expr_arith_plus_str_str.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_str_str.expr_arith_plus_str_str.get_res()
+    assert(res_before == "")
+
+    await expr_arith_plus_str_str.expr_arith_plus_str_str.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_str_str.expr_arith_plus_str_str.get_res()
+    assert(res_after == "ab")
   })
 
   it('expr_arith_plus_tez_tez', async () => {
     await expr_arith_plus_tez_tez.expr_arith_plus_tez_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_plus_tez_tez.expr_arith_plus_tez_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await expr_arith_plus_tez_tez.expr_arith_plus_tez_tez.exec({ as: alice })
+
+    const res_after = await expr_arith_plus_tez_tez.expr_arith_plus_tez_tez.get_res()
+    assert(res_after.equals(new Tez(3)))
   })
 
   it('expr_arith_uminus_int', async () => {
     await expr_arith_uminus_int.expr_arith_uminus_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_uminus_int.expr_arith_uminus_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_arith_uminus_int.expr_arith_uminus_int.exec({ as: alice })
+
+    const res_after = await expr_arith_uminus_int.expr_arith_uminus_int.get_res()
+    assert(res_after.equals(new Int(-1)))
   })
 
   it('expr_arith_uminus_rat', async () => {
     await expr_arith_uminus_rat.expr_arith_uminus_rat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_uminus_rat.expr_arith_uminus_rat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_arith_uminus_rat.expr_arith_uminus_rat.exec({ as: alice })
+
+    const res_after = await expr_arith_uminus_rat.expr_arith_uminus_rat.get_res()
+    assert(res_after.equals(new Rational(-1, new BigNumber(3))))
   })
 
   it('expr_arith_xor_bool_bool', async () => {
     await expr_arith_xor_bool_bool.expr_arith_xor_bool_bool.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_xor_bool_bool.expr_arith_xor_bool_bool.get_res()
+    assert(res_before == false)
+
+    await expr_arith_xor_bool_bool.expr_arith_xor_bool_bool.exec({ as: alice })
+
+    const res_after = await expr_arith_xor_bool_bool.expr_arith_xor_bool_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_arith_xor_nat_nat', async () => {
     await expr_arith_xor_nat_nat.expr_arith_xor_nat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_arith_xor_nat_nat.expr_arith_xor_nat_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_arith_xor_nat_nat.expr_arith_xor_nat_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_xor_nat_nat.expr_arith_xor_nat_nat.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('expr_cmp_eq_addr_addr', async () => {
     await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.deploy({ as: alice })
-    const before_expected = false
-    const after_expected = true
-    const res_before = await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.get_res();
-    assert(res_before == before_expected, "Invalid Value")
+
+    const res_before = await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.get_res()
+    assert(res_before == false)
+
     await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.exec({ as: alice })
-    const res_after = await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.get_res();
-    assert(after_expected == after_expected, "Invalid Value")
+
+    const res_after = await expr_cmp_eq_addr_addr.expr_cmp_eq_addr_addr.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_bool_bool', async () => {
     await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.deploy({ as: alice })
     // TODO
+    const res_before = await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.get_res()
+    assert(res_before == false)
+
+    await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.exec({ as: alice })
+
+    const res_after = await expr_cmp_eq_bool_bool.expr_cmp_eq_bool_bool.get_res()
+    assert(res_after == true)
   })
 
   it('expr_cmp_eq_date_date', async () => {

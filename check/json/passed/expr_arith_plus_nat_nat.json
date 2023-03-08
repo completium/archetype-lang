@@ -11,7 +11,7 @@
     {
       "name": "res",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -21,7 +21,7 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "int",
+      "prim": "nat",
       "int": null,
       "bytes": null,
       "string": null,

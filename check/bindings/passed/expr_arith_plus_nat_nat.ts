@@ -36,10 +36,10 @@ export class Expr_arith_plus_nat_nat {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<att.Int> {
+    async get_res(): Promise<att.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Int.from_mich(storage);
+            return att.Nat.from_mich(storage);
         }
         throw new Error("Contract not initialised");
     }

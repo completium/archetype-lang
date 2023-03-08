@@ -3,7 +3,7 @@
   code { NIL operation ;
          SWAP ;
          UNPAIR ;
-         PUSH nat 2 ;
+         DUP ;
          NIL operation ;
          NIL operation ;
          DUP 6 ;
