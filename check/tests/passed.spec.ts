@@ -10131,27 +10131,67 @@ describe('passed', async () => {
 
   it('expr_fun_nat_to_string', async () => {
     await expr_fun_nat_to_string.expr_fun_nat_to_string.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_nat_to_string.expr_fun_nat_to_string.get_res()
+    assert(res_before == "")
+
+    await expr_fun_nat_to_string.expr_fun_nat_to_string.exec(new Nat(42), { as: alice })
+
+    const res_42 = await expr_fun_nat_to_string.expr_fun_nat_to_string.get_res()
+    assert(res_42 == "42")
+
+    await expr_fun_nat_to_string.expr_fun_nat_to_string.exec(new Nat(0), { as: alice })
+
+    const res_0 = await expr_fun_nat_to_string.expr_fun_nat_to_string.get_res()
+    assert(res_0 == "0")
   })
 
   it('expr_fun_opt_get_some', async () => {
     await expr_fun_opt_get_some.expr_fun_opt_get_some.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_opt_get_some.expr_fun_opt_get_some.get_res()
+    assert(res_before == false)
+
+    await expr_fun_opt_get_some.expr_fun_opt_get_some.exec({ as: alice })
+
+    const res_after = await expr_fun_opt_get_some.expr_fun_opt_get_some.get_res()
+    assert(res_after == true)
   })
 
   it('expr_fun_opt_is_none', async () => {
     await expr_fun_opt_is_none.expr_fun_opt_is_none.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_opt_is_none.expr_fun_opt_is_none.get_res()
+    assert(res_before == false)
+
+    await expr_fun_opt_is_none.expr_fun_opt_is_none.exec({ as: alice })
+
+    const res_after = await expr_fun_opt_is_none.expr_fun_opt_is_none.get_res()
+    assert(res_after == true)
   })
 
   it('expr_fun_opt_is_some', async () => {
     await expr_fun_opt_is_some.expr_fun_opt_is_some.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_opt_is_some.expr_fun_opt_is_some.get_res()
+    assert(res_before == false)
+
+    await expr_fun_opt_is_some.expr_fun_opt_is_some.exec({ as: alice })
+
+    const res_after = await expr_fun_opt_is_some.expr_fun_opt_is_some.get_res()
+    assert(res_after == true)
   })
 
   it('expr_fun_opt_require_some', async () => {
     await expr_fun_opt_require_some.expr_fun_opt_require_some.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_opt_require_some.expr_fun_opt_require_some.get_res()
+    assert(res_before == false)
+
+    await expr_fun_opt_require_some.expr_fun_opt_require_some.exec({ as: alice })
+
+    const res_after = await expr_fun_opt_require_some.expr_fun_opt_require_some.get_res()
+    assert(res_after == true)
   })
 
   it('expr_fun_pack_complex', async () => {

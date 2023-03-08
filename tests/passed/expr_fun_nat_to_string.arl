@@ -2,6 +2,6 @@ archetype expr_fun_nat_to_string
 
 variable res : string = ""
 
-entry exec () {
-  res := nat_to_string(42)
+entry exec (n : nat) {
+  res := nat_to_string(n)
 }

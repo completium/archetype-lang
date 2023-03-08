@@ -36,7 +36,17 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "n",
+          "type": {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],
