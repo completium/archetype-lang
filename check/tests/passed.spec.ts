@@ -495,6 +495,7 @@ import * as expr_cst_transferred from '../bindings/passed/expr_cst_transferred'
 import * as expr_fail_some_none from '../bindings/passed/expr_fail_some_none'
 import * as expr_fail_some_some from '../bindings/passed/expr_fail_some_some'
 import * as expr_fun_abs_int from '../bindings/passed/expr_fun_abs_int'
+import * as expr_fun_abs_nat from '../bindings/passed/expr_fun_abs_nat'
 import * as expr_fun_abs_rat from '../bindings/passed/expr_fun_abs_rat'
 import * as expr_fun_address_to_contract from '../bindings/passed/expr_fun_address_to_contract'
 import * as expr_fun_address_to_contract_unit from '../bindings/passed/expr_fun_address_to_contract_unit'
@@ -9454,7 +9455,7 @@ describe('passed', async () => {
 
   it('expr_cst_caller', async () => {
     await expr_cst_caller.expr_cst_caller.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_caller.expr_cst_caller.get_res()
     assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
 
@@ -9466,7 +9467,7 @@ describe('passed', async () => {
 
   it('expr_cst_level', async () => {
     await expr_cst_level.expr_cst_level.deploy({ as: alice })
-    // TODO
+
     const level = await get_mockup_level()
     const res_before = await expr_cst_level.expr_cst_level.get_res()
     assert(res_before.equals(new Nat(0)))
@@ -9479,7 +9480,7 @@ describe('passed', async () => {
 
   it('expr_cst_min_block_time', async () => {
     await expr_cst_min_block_time.expr_cst_min_block_time.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_min_block_time.expr_cst_min_block_time.get_res()
     assert(res_before.equals(new Nat(0)))
 
@@ -9491,7 +9492,7 @@ describe('passed', async () => {
 
   it('expr_cst_now', async () => {
     await expr_cst_now.expr_cst_now.deploy({ as: alice })
-    // TODO
+
     const now = get_mockup_now();
     const res_before = await expr_cst_now.expr_cst_now.get_res()
     assert(res_before.toISOString() == new Date("1970-01-01").toISOString())
@@ -9504,7 +9505,7 @@ describe('passed', async () => {
 
   it('expr_cst_self_address', async () => {
     await expr_cst_self_address.expr_cst_self_address.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_self_address.expr_cst_self_address.get_res()
     assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
 
@@ -9516,7 +9517,7 @@ describe('passed', async () => {
 
   it('expr_cst_self_chain_id', async () => {
     await expr_cst_self_chain_id.expr_cst_self_chain_id.deploy({ as: alice })
-    // TODO
+
     const chain_id = await get_chain_id();
     const res_before = await expr_cst_self_chain_id.expr_cst_self_chain_id.get_res()
     assert(res_before.equals(new Chain_id("NetXdQprcVkpaWU")))
@@ -9529,7 +9530,7 @@ describe('passed', async () => {
 
   it('expr_cst_source', async () => {
     await expr_cst_source.expr_cst_source.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_source.expr_cst_source.get_res()
     assert(res_before.equals(new Address("tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg")))
 
@@ -9541,7 +9542,7 @@ describe('passed', async () => {
 
   it('expr_cst_total_voting_power', async () => {
     await expr_cst_total_voting_power.expr_cst_total_voting_power.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_total_voting_power.expr_cst_total_voting_power.get_res()
     assert(res_before.equals(new Nat(0)))
 
@@ -9553,7 +9554,7 @@ describe('passed', async () => {
 
   it('expr_cst_transferred', async () => {
     await expr_cst_transferred.expr_cst_transferred.deploy({ as: alice })
-    // TODO
+
     const res_before = await expr_cst_transferred.expr_cst_transferred.get_res()
     assert(res_before.equals(new Tez(0)))
 
@@ -9565,22 +9566,57 @@ describe('passed', async () => {
 
   it('expr_fail_some_none', async () => {
     await expr_fail_some_none.expr_fail_some_none.deploy({ as: alice })
-    // TODO
+
+    await expr_fail_some_none.expr_fail_some_none.exec({ as: alice })
   })
 
   it('expr_fail_some_some', async () => {
     await expr_fail_some_some.expr_fail_some_some.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await expr_fail_some_some.expr_fail_some_some.exec({ as: bob });
+    }, { "string": "ERROR" });
+
   })
 
   it('expr_fun_abs_int', async () => {
     await expr_fun_abs_int.expr_fun_abs_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_fun_abs_int.expr_fun_abs_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_abs_int.expr_fun_abs_int.exec({ as: alice })
+
+    const res_after = await expr_fun_abs_int.expr_fun_abs_int.get_res()
+    assert(res_after.equals(new Int(1)))
+  })
+
+  it('expr_fun_abs_nat', async () => {
+    await expr_fun_abs_nat.expr_fun_abs_nat.deploy({ as: alice })
+
+    const res_before = await expr_fun_abs_nat.expr_fun_abs_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_fun_abs_nat.expr_fun_abs_nat.exec({ as: alice })
+
+    const res_after = await expr_fun_abs_nat.expr_fun_abs_nat.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_fun_abs_rat', async () => {
     await expr_fun_abs_rat.expr_fun_abs_rat.deploy({ as: alice })
-    // TODO
+
+    const rn_before = await expr_fun_abs_rat.expr_fun_abs_rat.get_rn()
+    assert(rn_before.equals(new Rational(0)))
+    const rp_before = await expr_fun_abs_rat.expr_fun_abs_rat.get_rp()
+    assert(rp_before.equals(new Rational(0)))
+
+    await expr_fun_abs_rat.expr_fun_abs_rat.exec({ as: alice })
+
+    const rn_after = await expr_fun_abs_rat.expr_fun_abs_rat.get_rn()
+    assert(rn_after.equals(new Rational(0.5)))
+    const rp_after = await expr_fun_abs_rat.expr_fun_abs_rat.get_rp()
+    assert(rp_after.equals(new Rational(0.5)))
   })
 
   it('expr_fun_address_to_contract', async () => {

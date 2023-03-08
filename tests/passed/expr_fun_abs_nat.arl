@@ -1,0 +1,7 @@
+archetype expr_fun_abs_nat
+
+variable res : nat = 0
+
+entry exec () {
+  res := abs(-1)
+}
