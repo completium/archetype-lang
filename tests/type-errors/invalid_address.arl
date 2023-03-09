@@ -1,0 +1,9 @@
+archetype invalid_address
+
+entry exec() {
+  const tz_addr_tz1 : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+  const tz_addr_tz2 : address = tz2R8Ttg1X887xhwEiraXEKQtBhwNbMayqQc;
+  const tz_addr_tz3 : address = tz3dqrqbhfAcwWMFjj2pvx4bXmxtUEPtHWda;
+  const tz_addr_KT1 : address = KT1DvC4vS8hykGRCmoqGnnk1RV2wfFyp3BDv;
+  const bad_address : address = tz1000000000000000000000000000000000;
+}

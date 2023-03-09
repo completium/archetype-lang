@@ -720,6 +720,7 @@ type error_desc =
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
+  | InvalidAddressValue
   | InvalidArcheTypeDecl
   | InvalidArgForGlobalConstant
   | InvalidAssetCollectionExpr         of A.ptyp
@@ -974,6 +975,7 @@ let pp_error_desc fmt e =
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
+  | InvalidAddressValue                -> pp "Invalid address value"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidArgForGlobalConstant        -> pp "Invalid argument for `global_constant', must be a constant expr"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
@@ -3028,6 +3030,8 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
     mk_sp (A.vtcurrency) (A.BVcurrency (A.Utz, get_tz_value Kutz tz))
 
   | Laddress a ->
+    if (not (Core.is_valid_address a))
+    then  Env.emit_error env (loc topv, InvalidAddressValue);
     mk_sp A.vtaddress (A.BVaddress a)
 
   | Lduration d ->
