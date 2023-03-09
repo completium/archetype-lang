@@ -561,13 +561,8 @@ module Prefix = struct
 end
 
 let check_b58_prefix_checksum (prefix : string) input (n : int) =
-  Format.eprintf "prefix %s@\n" prefix;
-  Format.eprintf "input %s@\n" input;
   match Tezos_base58.decode (Tezos_base58.Base58 (input)) ~prefix  with
   | Some v -> begin
-      Format.eprintf "decode %s@\n" v;
-      Format.eprintf "length %i@\n" (String.length v);
-      Format.eprintf "n %i@\n" n;
       String.length v == n
     end
   | None -> false
