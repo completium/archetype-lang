@@ -11643,7 +11643,30 @@ describe('passed', async () => {
 
   it('expr_method_asset_get', async () => {
     await expr_method_asset_get.expr_method_asset_get.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_method_asset_get.expr_method_asset_get.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Nat(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Nat(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Nat(2)))
+    const res_before = await expr_method_asset_get.expr_method_asset_get.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_method_asset_get.expr_method_asset_get.exec({ as: alice })
+
+    const my_asset_after = await expr_method_asset_get.expr_method_asset_get.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Nat(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Nat(2)))
+    const res_after = await expr_method_asset_get.expr_method_asset_get.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('expr_method_asset_head', async () => {
