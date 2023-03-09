@@ -7,7 +7,7 @@
          NIL string ;
          DUP 3 ;
          ITER { UNPAIR ;
-                PUSH string "id2" ;
+                PUSH string "id0" ;
                 DUP 2 ;
                 COMPARE ;
                 EQ ;

@@ -83,8 +83,8 @@
     {
       "name": "res",
       "type": {
-        "node": "string",
-        "name": null,
+        "node": "asset_view",
+        "name": "my_asset",
         "int_value": null,
         "args": []
       },
@@ -124,11 +124,23 @@
           "var_type": null
         },
         {
-          "prim": "string",
+          "prim": "list",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
           "annots": [
             "%res"
           ],
@@ -152,21 +164,5 @@
   ],
   "getters": [],
   "views": [],
-  "errors": [
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "OUT_OF_BOUND",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    }
-  ]
+  "errors": []
 }
