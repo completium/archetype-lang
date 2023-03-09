@@ -46,15 +46,13 @@ export class Expr_method_asset_select_one_field {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<string> {
+    async get_res(): Promise<Array<string>> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_string((storage as att.Mpair).args[1]);
+            return att.mich_to_list((storage as att.Mpair).args[1], x => { return att.mich_to_string(x); });
         }
         throw new Error("Contract not initialised");
     }
-    errors = {
-        OUT_OF_BOUND: att.string_to_mich("\"OUT_OF_BOUND\"")
-    };
+    errors = {};
 }
 export const expr_method_asset_select_one_field = new Expr_method_asset_select_one_field();

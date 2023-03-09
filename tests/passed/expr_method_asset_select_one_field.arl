@@ -8,10 +8,8 @@ asset my_asset identified by id {
   {"id2"}
 }
 
-variable res : string = ""
+variable res : asset_view<my_asset> = []
 
 entry exec () {
-  var l = my_asset.select(the.id = "id2");
-  var k ?= l.nth(0) : "OUT_OF_BOUND";
-  res := k
+  res := my_asset.select(the.id = "id0" or the.id = "id2")
 }

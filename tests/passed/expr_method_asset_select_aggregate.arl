@@ -1,22 +1,24 @@
 archetype expr_method_asset_select_aggregate
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 } initialized with {
-  {0}
+  {0};
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0; 1; 2]};
   {"id1"; []};
   {"id2"; []}
 }
 
-variable res : bool = true
+variable res : asset_view<o_asset> = []
 
 entry exec () {
-  var l = my_asset["id0"].col.select(the.oid = 0);
+  res := my_asset["id0"].col.select(the.oid % 2 = 0);
 }
