@@ -1,7 +1,7 @@
 archetype expr_method_asset_contains_partition
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 }
 
 asset my_asset identified by id {

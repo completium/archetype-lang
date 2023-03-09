@@ -2,7 +2,7 @@ archetype expr_method_asset_contains
 
 asset my_asset identified by id {
   id : string;
-  value : int;
+  value : nat;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};

@@ -2,6 +2,8 @@ archetype expr_method_asset_tail_aggregate
 
 asset o_asset identified by oid {
   oid : int;
+} initialized with {
+  {0}
 }
 
 asset my_asset identified by id {

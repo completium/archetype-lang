@@ -11351,22 +11351,120 @@ describe('passed', async () => {
 
   it('expr_method_asset_contains', async () => {
     await expr_method_asset_contains.expr_method_asset_contains.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_method_asset_contains.expr_method_asset_contains.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Nat(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Nat(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Nat(2)))
+    const res_before = await expr_method_asset_contains.expr_method_asset_contains.get_res()
+    assert(res_before == false)
+
+    await expr_method_asset_contains.expr_method_asset_contains.exec({ as: alice })
+
+    const my_asset_after = await expr_method_asset_contains.expr_method_asset_contains.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Nat(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Nat(2)))
+    const res_after = await expr_method_asset_contains.expr_method_asset_contains.get_res()
+    assert(res_after == true)
   })
 
   it('expr_method_asset_contains_aggregate', async () => {
     await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].length == 1)
+    assert(my_asset_before[0][1][0].equals(new Nat(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].length == 0)
+    const o_asset_before = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_o_asset()
+    assert(o_asset_before.length == 1)
+    assert(o_asset_before[0].equals(new Nat(0)))
+    const res_before = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_res()
+    assert(res_before == false)
+
+    await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.exec({ as: alice })
+
+    const my_asset_after = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].length == 1)
+    assert(my_asset_after[0][1][0].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].length == 0)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].length == 0)
+    const o_asset_after = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_o_asset()
+    assert(o_asset_after.length == 1)
+    assert(o_asset_after[0].equals(new Nat(0)))
+    const res_after = await expr_method_asset_contains_aggregate.expr_method_asset_contains_aggregate.get_res()
+    assert(res_after == true)
   })
 
   it('expr_method_asset_contains_one_field', async () => {
     await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0] == "id0")
+    assert(my_asset_before[1] == "id1")
+    assert(my_asset_before[2] == "id2")
+    const res_before = await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.get_res()
+    assert(res_before == false)
+
+    await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.exec({ as: alice })
+
+    const my_asset_after = await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0] == "id0")
+    assert(my_asset_after[1] == "id1")
+    assert(my_asset_after[2] == "id2")
+    const res_after = await expr_method_asset_contains_one_field.expr_method_asset_contains_one_field.get_res()
+    assert(res_after == true)
   })
 
   it('expr_method_asset_contains_partition', async () => {
     await expr_method_asset_contains_partition.expr_method_asset_contains_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].length == 0)
+    const o_asset_before = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+    const res_before = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_res()
+    assert(res_before == true)
+
+    await expr_method_asset_contains_partition.expr_method_asset_contains_partition.exec({ as: alice })
+
+    const my_asset_after = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].length == 0)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].length == 0)
+    const o_asset_after = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_o_asset()
+    assert(o_asset_after.length == 0)
+    const res_after = await expr_method_asset_contains_partition.expr_method_asset_contains_partition.get_res()
+    assert(res_after == false)
   })
 
   it('expr_method_asset_contains_view', async () => {

@@ -1,4 +1,4 @@
-{ storage (pair (map %my_asset string int) (bool %res)) ;
+{ storage (pair (map %my_asset string nat) (bool %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;

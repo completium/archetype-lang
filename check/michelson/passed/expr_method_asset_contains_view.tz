@@ -1,4 +1,4 @@
-{ storage (pair (map %my_asset string int) (bool %res)) ;
+{ storage (pair (map %my_asset string nat) (bool %res)) ;
   parameter (unit %exec) ;
   code { LAMBDA
            (pair (list string) string)
@@ -18,7 +18,7 @@
          NIL string ;
          DUP 5 ;
          ITER { UNPAIR ;
-                PUSH int 0 ;
+                PUSH nat 0 ;
                 DUP 3 ;
                 COMPARE ;
                 EQ ;

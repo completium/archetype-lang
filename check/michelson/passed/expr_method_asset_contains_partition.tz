@@ -1,4 +1,4 @@
-{ storage (pair (set %o_asset int) (map %my_asset string (set int)) (bool %res)) ;
+{ storage (pair (set %o_asset nat) (map %my_asset string (set nat)) (bool %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR 3 } ;
@@ -9,7 +9,7 @@
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         PUSH int 0 ;
+         PUSH nat 0 ;
          MEM ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
