@@ -2,15 +2,15 @@ archetype expr_method_asset_sum
 
 asset my_asset identified by id {
   id : string;
-  value : int;
+  value : nat;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
   {"id2"; 2}
 }
 
-variable res : int = 0
+variable res : nat = 0
 
 entry exec () {
-  res := my_asset.sum(value)
+  res := my_asset.sum(value);
 }

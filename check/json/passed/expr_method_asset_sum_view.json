@@ -20,7 +20,7 @@
           {
             "name": "value",
             "type": {
-              "node": "int",
+              "node": "nat",
               "name": null,
               "int_value": null,
               "args": []
@@ -46,7 +46,7 @@
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -74,7 +74,7 @@
           "var_type": null
         },
         "value_type_michelson": {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -104,7 +104,7 @@
     {
       "name": "res",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -137,7 +137,7 @@
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -156,7 +156,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,

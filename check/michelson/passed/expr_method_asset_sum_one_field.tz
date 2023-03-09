@@ -1,4 +1,4 @@
-{ storage (pair (set %my_asset nat) (int %res)) ;
+{ storage (pair (set %my_asset nat) (nat %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
@@ -6,7 +6,6 @@
          PUSH nat 0 ;
          DUP 2 ;
          ITER { DUP ; DUP 3 ; ADD ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
-         INT ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
          PAIR ;

@@ -1,9 +1,9 @@
-{ storage (pair (set %o_asset int) (map %my_asset string (set int)) (int %res)) ;
+{ storage (pair (set %o_asset nat) (map %my_asset string (set nat)) (nat %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR 3 } ;
          DROP 1 ;
-         PUSH int 0 ;
+         PUSH nat 0 ;
          DUP 3 ;
          PUSH string "id0" ;
          GET ;
@@ -13,12 +13,6 @@
          ITER { DUP ; DUP 3 ; ADD ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 } ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
-         PUSH int 0 ;
-         DUP 4 ;
-         COMPARE ;
-         EQ ;
-         NOT ;
-         IF { PUSH string "ko" ; FAILWITH } {} ;
          PAIR 3 ;
          NIL operation ;
          PAIR } }

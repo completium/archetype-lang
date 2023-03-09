@@ -1,7 +1,7 @@
 archetype expr_method_asset_sum_partition
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 }
 
 asset my_asset identified by id {
@@ -13,9 +13,14 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
-variable res : int = -1
+variable res : nat = 0
+
+entry init () {
+  my_asset["id0"].col.add({0});
+  my_asset["id0"].col.add({1});
+  my_asset["id0"].col.add({2});
+}
 
 entry exec () {
-  res := my_asset["id0"].col.sum(oid);
-  do_require (res = 0, "ko")
+  res := my_asset["id0"].col.sum(oid)
 }
