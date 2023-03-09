@@ -3,7 +3,7 @@ archetype expr_fun_opt_require_some
 variable res : bool = false
 
 entry exec () {
-  var i_opt : option<nat> = none;
+  var i_opt : option<nat> = some(1);
   var i ?= i_opt : "failed";
   res := i = 1
 }

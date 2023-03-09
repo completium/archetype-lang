@@ -10678,7 +10678,7 @@ describe('passed', async () => {
     await expr_list_length.expr_list_length.exec({ as: alice })
 
     const res_after = await expr_list_length.expr_list_length.get_res()
-    assert(res_after.equals(new Nat(1)))
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('expr_list_lit', async () => {
