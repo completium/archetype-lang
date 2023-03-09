@@ -10612,12 +10612,32 @@ describe('passed', async () => {
 
   it('expr_list_concat', async () => {
     await expr_list_concat.expr_list_concat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_concat.expr_list_concat.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_concat.expr_list_concat.exec({ as: alice })
+
+    const res_after = await expr_list_concat.expr_list_concat.get_res()
+    assert(res_after.length == 6)
+    assert(res_after[0] == "1")
+    assert(res_after[1] == "2")
+    assert(res_after[2] == "3")
+    assert(res_after[3] == "4")
+    assert(res_after[4] == "5")
+    assert(res_after[5] == "6")
   })
 
   it('expr_list_contains', async () => {
     await expr_list_contains.expr_list_contains.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_contains.expr_list_contains.get_res()
+    assert(res_before == false)
+
+    await expr_list_contains.expr_list_contains.exec({ as: alice })
+
+    const res_after = await expr_list_contains.expr_list_contains.get_res()
+    assert(res_after == true)
   })
 
   it('expr_list_head', async () => {
@@ -10708,17 +10728,45 @@ describe('passed', async () => {
 
   it('expr_list_nth', async () => {
     await expr_list_nth.expr_list_nth.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_nth.expr_list_nth.get_res()
+    assert(res_before == "")
+
+    await expr_list_nth.expr_list_nth.exec({ as: alice })
+
+    const res_after = await expr_list_nth.expr_list_nth.get_res()
+    assert(res_after == "2")
   })
 
   it('expr_list_prepend', async () => {
     await expr_list_prepend.expr_list_prepend.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_prepend.expr_list_prepend.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_prepend.expr_list_prepend.exec({ as: alice })
+
+    const res_after = await expr_list_prepend.expr_list_prepend.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] = "0")
+    assert(res_after[1] = "1")
+    assert(res_after[2] = "2")
+    assert(res_after[3] = "3")
   })
 
   it('expr_list_reverse', async () => {
     await expr_list_reverse.expr_list_reverse.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_list_reverse.expr_list_reverse.get_res()
+    assert(res_before.length == 0)
+
+    await expr_list_reverse.expr_list_reverse.exec({ as: alice })
+
+    const res_after = await expr_list_reverse.expr_list_reverse.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0] = "3")
+    assert(res_after[1] = "2")
+    assert(res_after[2] = "1")
   })
 
   it('expr_list_tail', async () => {
@@ -11054,42 +11102,137 @@ describe('passed', async () => {
 
   it('expr_make_big_map', async () => {
     await expr_make_big_map.expr_make_big_map.deploy({ as: alice })
-    // TODO
+
+    const value_0_before = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(0));
+    assert(value_0_before === undefined)
+    const value_1_before = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(1));
+    assert(value_1_before === undefined)
+    const value_2_before = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(2));
+    assert(value_2_before === undefined)
+
+    await expr_make_big_map.expr_make_big_map.exec({ as: alice })
+
+    const value_0_after = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(0));
+    assert(value_0_after == "0")
+    const value_1_after = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(1));
+    assert(value_1_after == "1")
+    const value_2_after = await expr_make_big_map.expr_make_big_map.get_res_value(new Nat(2));
+    assert(value_2_after == "2")
   })
 
   it('expr_make_big_map_empty', async () => {
     await expr_make_big_map_empty.expr_make_big_map_empty.deploy({ as: alice })
-    // TODO
+
+    const value_0_before = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(0));
+    assert(value_0_before == "0")
+    const value_1_before = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(1));
+    assert(value_1_before == "1")
+    const value_2_before = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(2));
+    assert(value_2_before == "2")
+
+    await expr_make_big_map_empty.expr_make_big_map_empty.exec({ as: alice })
+
+    const value_0_after = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(0));
+    assert(value_0_after === undefined)
+    const value_1_after = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(1));
+    assert(value_1_after === undefined)
+    const value_2_after = await expr_make_big_map_empty.expr_make_big_map_empty.get_res_value(new Nat(2));
+    assert(value_2_after === undefined)
   })
 
   it('expr_make_list', async () => {
     await expr_make_list.expr_make_list.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_list.expr_make_list.get_res();
+    assert(res_before.length == 0)
+
+    await expr_make_list.expr_make_list.exec({ as: alice })
+
+    const res_after = await expr_make_list.expr_make_list.get_res();
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('expr_make_list_empty', async () => {
     await expr_make_list_empty.expr_make_list_empty.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_list_empty.expr_make_list_empty.get_res();
+    assert(res_before.length == 3)
+    assert(res_before[0].equals(new Nat(0)))
+    assert(res_before[1].equals(new Nat(1)))
+    assert(res_before[2].equals(new Nat(2)))
+
+    await expr_make_list_empty.expr_make_list_empty.exec({ as: alice })
+
+    const res_after = await expr_make_list_empty.expr_make_list_empty.get_res();
+    assert(res_after.length == 0)
   })
 
   it('expr_make_map', async () => {
     await expr_make_map.expr_make_map.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_map.expr_make_map.get_res();
+    assert(res_before.length == 0)
+
+    await expr_make_map.expr_make_map.exec({ as: alice })
+
+    const res_after = await expr_make_map.expr_make_map.get_res();
+    assert(res_after.length == 3)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
+    assert(res_after[1][0].equals(new Nat(1)))
+    assert(res_after[1][1] == "1")
+    assert(res_after[2][0].equals(new Nat(2)))
+    assert(res_after[2][1] == "2")
   })
 
   it('expr_make_map_empty', async () => {
     await expr_make_map_empty.expr_make_map_empty.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_map_empty.expr_make_map_empty.get_res();
+    assert(res_before.length == 3)
+    assert(res_before[0][0].equals(new Nat(0)))
+    assert(res_before[0][1] == "0")
+    assert(res_before[1][0].equals(new Nat(1)))
+    assert(res_before[1][1] == "1")
+    assert(res_before[2][0].equals(new Nat(2)))
+    assert(res_before[2][1] == "2")
+    await expr_make_map_empty.expr_make_map_empty.exec({ as: alice })
+
+    const res_after = await expr_make_map_empty.expr_make_map_empty.get_res();
+    assert(res_after.length == 0)
   })
 
   it('expr_make_set', async () => {
     await expr_make_set.expr_make_set.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_set.expr_make_set.get_res();
+    assert(res_before.length == 0)
+
+    await expr_make_set.expr_make_set.exec({ as: alice })
+
+    const res_after = await expr_make_set.expr_make_set.get_res();
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('expr_make_set_empty', async () => {
     await expr_make_set_empty.expr_make_set_empty.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_make_set_empty.expr_make_set_empty.get_res();
+    assert(res_before.length == 3)
+    assert(res_before[0].equals(new Nat(0)))
+    assert(res_before[1].equals(new Nat(1)))
+    assert(res_before[2].equals(new Nat(2)))
+
+    await expr_make_set_empty.expr_make_set_empty.exec({ as: alice })
+
+    const res_after = await expr_make_set_empty.expr_make_set_empty.get_res();
+    assert(res_after.length == 0)
   })
 
   it('expr_map_contains', async () => {
