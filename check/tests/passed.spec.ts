@@ -10376,57 +10376,202 @@ describe('passed', async () => {
 
   it('expr_instr_rec_1_0', async () => {
     await expr_instr_rec_1_0.expr_instr_rec_1_0.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_1_0.expr_instr_rec_1_0.get_r();
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_1_0.expr_instr_rec_1_0.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_1_0.expr_instr_rec_1_0.get_r();
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_2_0', async () => {
     await expr_instr_rec_2_0.expr_instr_rec_2_0.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_2_0.expr_instr_rec_2_0.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_2_0.expr_instr_rec_2_0.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_2_0.expr_instr_rec_2_0.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_2_1', async () => {
     await expr_instr_rec_2_1.expr_instr_rec_2_1.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_2_1.expr_instr_rec_2_1.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_2_1.expr_instr_rec_2_1.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_2_1.expr_instr_rec_2_1.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_3_0', async () => {
     await expr_instr_rec_3_0.expr_instr_rec_3_0.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_3_0.expr_instr_rec_3_0.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_3_0.expr_instr_rec_3_0.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_3_0.expr_instr_rec_3_0.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_3_1', async () => {
     await expr_instr_rec_3_1.expr_instr_rec_3_1.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_3_1.expr_instr_rec_3_1.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_3_1.expr_instr_rec_3_1.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_3_1.expr_instr_rec_3_1.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_3_2', async () => {
     await expr_instr_rec_3_2.expr_instr_rec_3_2.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_3_2.expr_instr_rec_3_2.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_3_2.expr_instr_rec_3_2.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_3_2.expr_instr_rec_3_2.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_4_0', async () => {
     await expr_instr_rec_4_0.expr_instr_rec_4_0.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_4_0.expr_instr_rec_4_0.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.b.equals(new Int(2)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_4_0.expr_instr_rec_4_0.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_4_0.expr_instr_rec_4_0.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.b.equals(new Int(2)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_4_1', async () => {
     await expr_instr_rec_4_1.expr_instr_rec_4_1.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_4_1.expr_instr_rec_4_1.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.b.equals(new Int(2)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_4_1.expr_instr_rec_4_1.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_4_1.expr_instr_rec_4_1.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.b.equals(new Int(2)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_4_2', async () => {
     await expr_instr_rec_4_2.expr_instr_rec_4_2.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_4_2.expr_instr_rec_4_2.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.b.equals(new Int(2)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_4_2.expr_instr_rec_4_2.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_4_2.expr_instr_rec_4_2.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.b.equals(new Int(2)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_4_3', async () => {
     await expr_instr_rec_4_3.expr_instr_rec_4_3.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_4_3.expr_instr_rec_4_3.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "")
+    assert(r_before.b.equals(new Int(2)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_4_3.expr_instr_rec_4_3.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_4_3.expr_instr_rec_4_3.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "")
+    assert(r_after.b.equals(new Int(2)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(1)))
+    assert(r_after.m[0][1] == "str")
   })
 
   it('expr_instr_rec_rollback', async () => {
     await expr_instr_rec_rollback.expr_instr_rec_rollback.deploy({ as: alice })
-    // TODO
+
+    const r_before = await expr_instr_rec_rollback.expr_instr_rec_rollback.get_r();
+    assert(r_before.id.equals(new Nat(0)))
+    assert(r_before.a == "init")
+    assert(r_before.b.equals(new Int(2)))
+    assert(r_before.m.length == 0)
+
+    await expr_instr_rec_rollback.expr_instr_rec_rollback.exec({ as: alice })
+
+    const r_after = await expr_instr_rec_rollback.expr_instr_rec_rollback.get_r();
+    assert(r_after.id.equals(new Nat(0)))
+    assert(r_after.a == "init")
+    assert(r_after.b.equals(new Int(2)))
+    assert(r_after.m.length == 1)
+    assert(r_after.m[0][0].equals(new Nat(0)))
+    assert(r_after.m[0][1] == "init")
   })
 
   it('expr_lambda', async () => {

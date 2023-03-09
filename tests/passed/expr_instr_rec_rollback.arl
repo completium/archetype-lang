@@ -6,7 +6,7 @@ record my_record {
   a: string;
   b: int;
 }
-variable r : my_record = {id = 0; a = ""; m = []; b = 2i}
+variable r : my_record = {id = 0; a = "init"; m = []; b = 2i}
 
 entry exec () {
   r.m := update(r.m, r.id, some(r.a));
