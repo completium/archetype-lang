@@ -11561,62 +11561,153 @@ describe('passed', async () => {
 
   it('expr_multicmp', async () => {
     await expr_multicmp.expr_multicmp.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_multicmp.expr_multicmp.get_res()
+    assert(res_before == false)
+
+    await expr_multicmp.expr_multicmp.exec({ as: alice })
+
+    const res_after = await expr_multicmp.expr_multicmp.get_res()
+    assert(res_after == true)
   })
 
   it('expr_option_map', async () => {
     await expr_option_map.expr_option_map.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_option_map.expr_option_map.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await expr_option_map.expr_option_map.exec({ as: alice })
+
+    const res_after = await expr_option_map.expr_option_map.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
   })
 
   it('expr_record_lit', async () => {
     await expr_record_lit.expr_record_lit.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_record_lit.expr_record_lit.get_res()
+    assert(res_before.equals(new expr_record_lit.my_record("", new Int(0), new Nat(0))))
+
+    await expr_record_lit.expr_record_lit.exec({ as: alice })
+
+    const res_after = await expr_record_lit.expr_record_lit.get_res()
+    assert(res_after.equals(new expr_record_lit.my_record("mystr", new Int(1), new Nat(3))))
   })
 
   it('expr_record_update_record_in_exec', async () => {
     await expr_record_update_record_in_exec.expr_record_update_record_in_exec.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_record_update_record_in_exec.expr_record_update_record_in_exec.get_res()
+    assert(res_before.equals(new expr_record_update_record_in_exec.my_record(new Nat(0), "")))
+
+    await expr_record_update_record_in_exec.expr_record_update_record_in_exec.exec({ as: alice })
+
+    const res_after = await expr_record_update_record_in_exec.expr_record_update_record_in_exec.get_res()
+    assert(res_after.equals(new expr_record_update_record_in_exec.my_record(new Nat(1), "mystr")))
   })
 
   it('expr_set_add', async () => {
     await expr_set_add.expr_set_add.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_add.expr_set_add.get_res()
+    assert(res_before.length == 0)
+
+    await expr_set_add.expr_set_add.exec({ as: alice })
+
+    const res_after = await expr_set_add.expr_set_add.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] = "0")
+    assert(res_after[1] = "1")
+    assert(res_after[2] = "2")
+    assert(res_after[3] = "3")
   })
 
   it('expr_set_contains', async () => {
     await expr_set_contains.expr_set_contains.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_contains.expr_set_contains.get_res()
+    assert(res_before == false)
+
+    await expr_set_contains.expr_set_contains.exec({ as: alice })
+
+    const res_after = await expr_set_contains.expr_set_contains.get_res()
+    assert(res_after == true)
   })
 
   it('expr_set_length', async () => {
     await expr_set_length.expr_set_length.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_length.expr_set_length.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_set_length.expr_set_length.exec({ as: alice })
+
+    const res_after = await expr_set_length.expr_set_length.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('expr_set_lit', async () => {
     await expr_set_lit.expr_set_lit.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_lit.expr_set_lit.get_res()
+    assert(res_before.length == 0)
+
+    await expr_set_lit.expr_set_lit.exec({ as: alice })
+
+    const res_after = await expr_set_lit.expr_set_lit.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0] = "0")
+    assert(res_after[1] = "1")
+    assert(res_after[2] = "2")
   })
 
   it('expr_set_remove', async () => {
     await expr_set_remove.expr_set_remove.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_remove.expr_set_remove.get_res()
+    assert(res_before.length == 0)
+
+    await expr_set_remove.expr_set_remove.exec({ as: alice })
+
+    const res_after = await expr_set_remove.expr_set_remove.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] = "2")
+    assert(res_after[1] = "3")
   })
 
   it('expr_set_update', async () => {
     await expr_set_update.expr_set_update.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_set_update.expr_set_update.get_res()
+    assert(res_before.length == 0)
+
+    await expr_set_update.expr_set_update.exec({ as: alice })
+
+    const res_after = await expr_set_update.expr_set_update.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] = "0")
+    assert(res_after[1] = "1")
+    assert(res_after[2] = "2")
+    assert(res_after[3] = "3")
   })
 
   it('expr_tuple_access', async () => {
     await expr_tuple_access.expr_tuple_access.deploy({ as: alice })
-    // TODO
+
+    await expr_tuple_access.expr_tuple_access.exec({ as: alice })
   })
 
   it('expr_tuple_access_simple', async () => {
     await expr_tuple_access_simple.expr_tuple_access_simple.deploy({ as: alice })
-    // TODO
+
+    const n_before = await expr_tuple_access_simple.expr_tuple_access_simple.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await expr_tuple_access_simple.expr_tuple_access_simple.exec({ as: alice })
+
+    const n_after = await expr_tuple_access_simple.expr_tuple_access_simple.get_n()
+    assert(n_after.equals(new Nat(3)))
   })
 
   it('expr_var_match_list_empty', async () => {
