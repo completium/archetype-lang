@@ -11862,7 +11862,7 @@ describe('passed', async () => {
 
   it('expr_method_asset_nth', async () => {
     await expr_method_asset_nth.expr_method_asset_nth.deploy({ as: alice })
-    // TODO
+
     const my_asset_before = await expr_method_asset_nth.expr_method_asset_nth.get_my_asset()
     assert(my_asset_before.length == 3)
     assert(my_asset_before[0][0] == "id0")
@@ -11890,7 +11890,7 @@ describe('passed', async () => {
 
   it('expr_method_asset_nth_aggregate', async () => {
     await expr_method_asset_nth_aggregate.expr_method_asset_nth_aggregate.deploy({ as: alice })
-    // TODO
+
     const my_asset_before = await expr_method_asset_nth_aggregate.expr_method_asset_nth_aggregate.get_my_asset()
     assert(my_asset_before.length == 3)
     assert(my_asset_before[0][0] == "id0")
@@ -11934,7 +11934,7 @@ describe('passed', async () => {
 
   it('expr_method_asset_nth_one_field', async () => {
     await expr_method_asset_nth_one_field.expr_method_asset_nth_one_field.deploy({ as: alice })
-    // TODO
+
     const my_asset_before = await expr_method_asset_nth_one_field.expr_method_asset_nth_one_field.get_my_asset()
     assert(my_asset_before.length == 3)
     assert(my_asset_before[0] == "id0")
@@ -11956,7 +11956,7 @@ describe('passed', async () => {
 
   it('expr_method_asset_nth_partition', async () => {
     await expr_method_asset_nth_partition.expr_method_asset_nth_partition.deploy({ as: alice })
-    // TODO
+
     const my_asset_before = await expr_method_asset_nth_partition.expr_method_asset_nth_partition.get_my_asset()
     assert(my_asset_before.length == 3)
     assert(my_asset_before[0][0] == "id0")
@@ -12015,7 +12015,7 @@ describe('passed', async () => {
 
   it('expr_method_asset_nth_view', async () => {
     await expr_method_asset_nth_view.expr_method_asset_nth_view.deploy({ as: alice })
-    // TODO
+
     const my_asset_before = await expr_method_asset_nth_view.expr_method_asset_nth_view.get_my_asset()
     assert(my_asset_before.length == 3)
     assert(my_asset_before[0][0] == "id0")
