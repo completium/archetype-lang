@@ -46,10 +46,10 @@ export class Expr_method_asset_count_one_field {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<att.Int> {
+    async get_res(): Promise<att.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Int.from_mich((storage as att.Mpair).args[1]);
+            return att.Nat.from_mich((storage as att.Mpair).args[1]);
         }
         throw new Error("Contract not initialised");
     }

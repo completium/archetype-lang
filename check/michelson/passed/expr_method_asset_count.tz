@@ -1,11 +1,10 @@
-{ storage (pair (map %my_asset string int) (int %res)) ;
+{ storage (pair (map %my_asset string nat) (nat %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
          DROP 1 ;
          DUP ;
          SIZE ;
-         INT ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
          PAIR ;

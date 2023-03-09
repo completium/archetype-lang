@@ -8,7 +8,7 @@ asset my_asset identified by id {
   {"id2"}
 }
 
-variable res : int = 0
+variable res : nat = 0
 
 entry exec () {
   res := my_asset.count()

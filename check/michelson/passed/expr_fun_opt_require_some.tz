@@ -1,7 +1,8 @@
 { storage bool ;
   parameter (unit %exec) ;
   code { CDR ;
-         NONE nat ;
+         PUSH nat 1 ;
+         SOME ;
          DUP ;
          IF_NONE { PUSH string "failed" ; FAILWITH } {} ;
          PUSH nat 1 ;

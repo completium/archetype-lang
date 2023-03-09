@@ -199,7 +199,7 @@
     {
       "name": "res",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -288,7 +288,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,

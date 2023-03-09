@@ -2,18 +2,20 @@ archetype expr_method_asset_count_aggregate
 
 asset o_asset identified by oid {
   oid : nat;
+} initialized with {
+  {0}
 }
 
 asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0]};
   {"id1"; []};
   {"id2"; []}
 }
 
-variable res : int = -1
+variable res : nat = 0
 
 entry exec () {
   res := my_asset["id0"].col.count();
