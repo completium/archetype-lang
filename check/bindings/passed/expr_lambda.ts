@@ -36,10 +36,31 @@ export class Expr_lambda {
         }
         throw new Error("Contract not initialised");
     }
-    async get_res(): Promise<att.Int> {
+    async get_res_0(): Promise<att.Int> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Int.from_mich(storage);
+            return att.Int.from_mich((storage as att.Mpair).args[0]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_1(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[1]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_2(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[2]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res_3(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich((storage as att.Mpair).args[3]);
         }
         throw new Error("Contract not initialised");
     }

@@ -1,11 +1,17 @@
 archetype expr_lambda
 
-variable res : int = 0
+variable res_0 : int = 0
+variable res_1 : int = 0
+variable res_2 : int = 0
+variable res_3 : int = 0
 
 entry exec () {
   var lambda_0 : lambda<nat, int> = lambda<int>((x : nat) -> x - 1);
   var lambda_1 : lambda<nat, int> = lambda<int>(x -> x - 1);
   var lambda_2 : lambda<nat, int> = lambda((x : nat) -> x - 1);
   var lambda_3 : lambda<nat, int> = lambda(x -> x - 1);
-  res := exec_lambda(lambda_0, 2)
+  res_0 := exec_lambda(lambda_0, 2);
+  res_1 := exec_lambda(lambda_1, 2);
+  res_2 := exec_lambda(lambda_2, 2);
+  res_3 := exec_lambda(lambda_3, 2)
 }

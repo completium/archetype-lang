@@ -1,6 +1,8 @@
-{ storage int ;
+{ storage (pair (int %res_0) (int %res_1) (int %res_2) (int %res_3)) ;
   parameter (unit %exec) ;
-  code { CDR ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 4 } ;
+         DROP 1 ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;
          LAMBDA nat int { PUSH int 1 ; DUP 2 ; INT ; SUB ; SWAP ; DROP 1 } ;
@@ -10,6 +12,22 @@
          EXEC ;
          DIP 1 { DIG 4 ; DROP 1 } ;
          DUG 4 ;
+         DUP 3 ;
+         PUSH nat 2 ;
+         EXEC ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DUP 2 ;
+         PUSH nat 2 ;
+         EXEC ;
+         DIP 1 { DIG 6 ; DROP 1 } ;
+         DUG 6 ;
+         DUP ;
+         PUSH nat 2 ;
+         EXEC ;
+         DIP 1 { DIG 7 ; DROP 1 } ;
+         DUG 7 ;
          DROP 4 ;
+         PAIR 4 ;
          NIL operation ;
          PAIR } }

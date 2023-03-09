@@ -10576,12 +10576,38 @@ describe('passed', async () => {
 
   it('expr_lambda', async () => {
     await expr_lambda.expr_lambda.deploy({ as: alice })
-    // TODO
+
+    const res_0_before = await expr_lambda.expr_lambda.get_res_0()
+    assert(res_0_before.equals(new Int(0)))
+    const res_1_before = await expr_lambda.expr_lambda.get_res_1()
+    assert(res_1_before.equals(new Int(0)))
+    const res_2_before = await expr_lambda.expr_lambda.get_res_2()
+    assert(res_2_before.equals(new Int(0)))
+    const res_3_before = await expr_lambda.expr_lambda.get_res_3()
+    assert(res_3_before.equals(new Int(0)))
+
+    await expr_lambda.expr_lambda.exec({ as: alice })
+
+    const res_0_after = await expr_lambda.expr_lambda.get_res_0()
+    assert(res_0_after.equals(new Int(1)))
+    const res_1_after = await expr_lambda.expr_lambda.get_res_1()
+    assert(res_1_after.equals(new Int(1)))
+    const res_2_after = await expr_lambda.expr_lambda.get_res_2()
+    assert(res_2_after.equals(new Int(1)))
+    const res_3_after = await expr_lambda.expr_lambda.get_res_3()
+    assert(res_3_after.equals(new Int(1)))
   })
 
   it('expr_lambda2', async () => {
     await expr_lambda2.expr_lambda2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await expr_lambda2.expr_lambda2.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expr_lambda2.expr_lambda2.exec({ as: alice })
+
+    const res_after = await expr_lambda2.expr_lambda2.get_res()
+    assert(res_after.equals(new Nat(5)))
   })
 
   it('expr_list_concat', async () => {

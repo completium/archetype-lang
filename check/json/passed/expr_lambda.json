@@ -9,7 +9,37 @@
   },
   "storage": [
     {
-      "name": "res",
+      "name": "res_0",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res_1",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res_2",
+      "type": {
+        "node": "int",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res_3",
       "type": {
         "node": "int",
         "name": null,
@@ -21,11 +51,64 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "int",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
-      "args": [],
+      "args": [
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res_0"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res_1"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res_2"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "int",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res_3"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
       "annots": [],
       "array": [],
       "var_id": null,
