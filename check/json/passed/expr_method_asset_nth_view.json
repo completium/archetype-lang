@@ -20,7 +20,7 @@
           {
             "name": "value",
             "type": {
-              "node": "int",
+              "node": "nat",
               "name": null,
               "int_value": null,
               "args": []
@@ -46,7 +46,7 @@
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -74,7 +74,7 @@
           "var_type": null
         },
         "value_type_michelson": {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -104,10 +104,17 @@
     {
       "name": "res",
       "type": {
-        "node": "int",
+        "node": "option",
         "name": null,
         "int_value": null,
-        "args": []
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
       },
       "const": false
     }
@@ -137,7 +144,7 @@
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -156,11 +163,23 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "option",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
           "annots": [
             "%res"
           ],
@@ -184,36 +203,5 @@
   ],
   "getters": [],
   "views": [],
-  "errors": [
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "ko",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "OUT_OF_BOUND",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    }
-  ]
+  "errors": []
 }

@@ -10,7 +10,7 @@
           {
             "name": "oid",
             "type": {
-              "node": "int",
+              "node": "nat",
               "name": null,
               "int_value": null,
               "args": []
@@ -25,7 +25,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -42,7 +42,7 @@
           "var_type": null
         },
         "key_type_michelson": {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -113,7 +113,7 @@
               "string": null,
               "args": [
                 {
-                  "prim": "int",
+                  "prim": "nat",
                   "int": null,
                   "bytes": null,
                   "string": null,
@@ -153,7 +153,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -199,10 +199,17 @@
     {
       "name": "res",
       "type": {
-        "node": "int",
+        "node": "option",
         "name": null,
         "int_value": null,
-        "args": []
+        "args": [
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
       },
       "const": false
     }
@@ -221,7 +228,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -263,7 +270,7 @@
               "string": null,
               "args": [
                 {
-                  "prim": "int",
+                  "prim": "nat",
                   "int": null,
                   "bytes": null,
                   "string": null,
@@ -288,11 +295,23 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "option",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
           "annots": [
             "%res"
           ],
@@ -310,42 +329,15 @@
   },
   "entrypoints": [
     {
+      "name": "init",
+      "args": []
+    },
+    {
       "name": "exec",
       "args": []
     }
   ],
   "getters": [],
   "views": [],
-  "errors": [
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "ko",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "OUT_OF_BOUND",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    }
-  ]
+  "errors": []
 }

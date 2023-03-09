@@ -2,17 +2,15 @@ archetype expr_method_asset_nth
 
 asset my_asset identified by id {
   id : string;
-  value : int;
+  value : nat;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
   {"id2"; 2}
 }
 
-variable res : int = 0
+variable res : option<string> = none
 
 entry exec () {
-  var k ?= my_asset.nth(1) : "OUT_OF_BOUND";
-  res := my_asset[k].value;
-  do_require (res = 1, "ko")
+  res := my_asset.nth(1)
 }

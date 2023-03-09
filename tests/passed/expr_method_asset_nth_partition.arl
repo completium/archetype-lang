@@ -1,7 +1,7 @@
 archetype expr_method_asset_nth_partition
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 }
 
 asset my_asset identified by id {
@@ -13,9 +13,14 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
-variable res : int = 0
+entry init () {
+  my_asset["id0"].col.add({0});
+  my_asset["id0"].col.add({1});
+  my_asset["id0"].col.add({2});
+}
+
+variable res : option<nat> = none
 
 entry exec () {
-  var k ?= my_asset["id0"].col.nth(0) : "OUT_OF_BOUND";
-  do_require (res = 1, "ko")
+  res := my_asset["id0"].col.nth(1)
 }

@@ -8,10 +8,8 @@ asset my_asset identified by id {
   {"id2"}
 }
 
-variable res : string = ""
+variable res : option<string> = none
 
 entry exec () {
-  var k ?= my_asset.nth(1) : "OUT_OF_BOUND";
-  res := k;
-  do_require (res = "id1", "ko")
+  res := my_asset.nth(1)
 }

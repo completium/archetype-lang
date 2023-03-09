@@ -1,23 +1,24 @@
 archetype expr_method_asset_nth_aggregate
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 } initialized with {
-  {0}
+  {0};
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0; 1; 2]};
   {"id1"; []};
   {"id2"; []}
 }
 
-variable res : int = 0
+variable res : option<nat> = none
 
 entry exec () {
-  var k ?= my_asset["id0"].col.nth(0) : "OUT_OF_BOUND";
-  do_require (res = 1, "ko")
+  res := my_asset["id0"].col.nth(1)
 }
