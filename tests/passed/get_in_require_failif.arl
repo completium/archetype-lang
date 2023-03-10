@@ -2,8 +2,12 @@ archetype get_in_require_failif
 
 asset myasset {
   id: string;
-  value: int;
+  value: nat;
+} initialized with {
+  {"myid"; 0}
 }
+
+variable res : bool = false
 
 entry exec () {
   require {
@@ -13,7 +17,6 @@ entry exec () {
     f1: myasset["myid"].value <> 0;
   }
   effect {
-    var a : int = 0;
-    a := 1
+    res := true
   }
 }

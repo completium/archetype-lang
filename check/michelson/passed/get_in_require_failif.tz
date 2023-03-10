@@ -1,7 +1,9 @@
-{ storage (map string int) ;
+{ storage (pair (map %myasset string nat) (bool %res)) ;
   parameter (unit %exec) ;
-  code { CDR ;
-         PUSH int 0 ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH nat 0 ;
          DUP 2 ;
          PUSH string "myid" ;
          GET ;
@@ -12,7 +14,7 @@
          EQ ;
          NOT ;
          IF { PUSH string "r1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
-         PUSH int 0 ;
+         PUSH nat 0 ;
          DUP 2 ;
          PUSH string "myid" ;
          GET ;
@@ -22,9 +24,9 @@
          COMPARE ;
          NEQ ;
          IF { PUSH string "f1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
-         PUSH int 0 ;
-         PUSH int 1 ;
+         PUSH bool True ;
+         DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
-         DROP 2 ;
+         PAIR ;
          NIL operation ;
          PAIR } }

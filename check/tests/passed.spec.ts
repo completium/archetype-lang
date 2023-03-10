@@ -13067,7 +13067,7 @@ describe('passed', async () => {
 
   it('fail_', async () => {
     await fail_.fail_.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_.fail_.exec({ as: alice })
     }, { string: "KO" })
@@ -13075,7 +13075,7 @@ describe('passed', async () => {
 
   it('fail_for', async () => {
     await fail_for.fail_for.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_for.fail_for.exec({ as: alice })
     }, { string: "KO" })
@@ -13083,7 +13083,7 @@ describe('passed', async () => {
 
   it('fail_if', async () => {
     await fail_if.fail_if.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_if.fail_if.f({ as: alice })
     }, { string: "OK" })
@@ -13091,7 +13091,7 @@ describe('passed', async () => {
 
   it('fail_match_list', async () => {
     await fail_match_list.fail_match_list.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_match_list.fail_match_list.exec({ as: alice })
     }, { string: "OK" })
@@ -13099,7 +13099,7 @@ describe('passed', async () => {
 
   it('fail_match_option', async () => {
     await fail_match_option.fail_match_option.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_match_option.fail_match_option.exec({ as: alice })
     }, { string: "OK" })
@@ -13107,7 +13107,7 @@ describe('passed', async () => {
 
   it('fail_while', async () => {
     await fail_while.fail_while.deploy({ as: alice })
-    // TODO
+
     await expect_to_fail(async () => {
       await fail_while.fail_while.f({ as: alice })
     }, { string: "OK" })
@@ -13122,7 +13122,7 @@ describe('passed', async () => {
 
   it('fold_reverse', async () => {
     await fold_reverse.fold_reverse.deploy({ as: alice })
-    // TODO
+
     const res_before = await fold_reverse.fold_reverse.get_res()
     assert(res_before.length == 0)
 
@@ -13167,22 +13167,50 @@ describe('passed', async () => {
 
   it('get_in_require_failif', async () => {
     await get_in_require_failif.get_in_require_failif.deploy({ as: alice })
-    // TODO
+
+    const res_before = await get_in_require_failif.get_in_require_failif.get_res()
+    assert(res_before == false)
+
+    await get_in_require_failif.get_in_require_failif.exec({ as: alice })
+
+    const res_after = await get_in_require_failif.get_in_require_failif.get_res()
+    assert(res_after == true)
   })
 
   it('get_some_with_msg', async () => {
     await get_some_with_msg.get_some_with_msg.deploy({ as: alice })
-    // TODO
+
+    const res_before = await get_some_with_msg.get_some_with_msg.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await get_some_with_msg.get_some_with_msg.exec({ as: alice })
+
+    const res_after = await get_some_with_msg.get_some_with_msg.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('greedy_and', async () => {
     await greedy_and.greedy_and.deploy({ as: alice })
-    // TODO
+
+    const res_before = await greedy_and.greedy_and.get_res()
+    assert(res_before == false)
+
+    await greedy_and.greedy_and.exec({ as: alice })
+
+    const res_after = await greedy_and.greedy_and.get_res()
+    assert(res_after == true)
   })
 
   it('greedy_or', async () => {
     await greedy_or.greedy_or.deploy({ as: alice })
-    // TODO
+
+    const res_before = await greedy_or.greedy_or.get_res()
+    assert(res_before == false)
+
+    await greedy_or.greedy_or.exec({ as: alice })
+
+    const res_after = await greedy_or.greedy_or.get_res()
+    assert(res_after == true)
   })
 
   it('implicit_cast_to_view', async () => {
