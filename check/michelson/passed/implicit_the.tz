@@ -1,12 +1,20 @@
-{ storage (map string int) ;
+{ storage (pair (map %my_asset string nat) (list %res string)) ;
   parameter (unit %exec) ;
-  code { CDR ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
          NIL string ;
          NIL string ;
          DUP 3 ;
          ITER { UNPAIR ;
-                PUSH int 0 ;
-                DUP 3 ;
+                PUSH nat 0 ;
+                PUSH int 2 ;
+                DUP 4 ;
+                INT ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CDR ; SWAP ; DROP 1 } ;
                 COMPARE ;
                 EQ ;
                 IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
@@ -14,6 +22,8 @@
                 DUG 2 ;
                 DROP 2 } ;
          ITER { CONS } ;
-         DROP 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

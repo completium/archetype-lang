@@ -13215,87 +13215,253 @@ describe('passed', async () => {
 
   it('implicit_cast_to_view', async () => {
     await implicit_cast_to_view.implicit_cast_to_view.deploy({ as: alice })
-    // TODO
+
+    const res_before = await implicit_cast_to_view.implicit_cast_to_view.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await implicit_cast_to_view.implicit_cast_to_view.exec({ as: alice })
+
+    const res_after = await implicit_cast_to_view.implicit_cast_to_view.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('implicit_the', async () => {
     await implicit_the.implicit_the.deploy({ as: alice })
-    // TODO
+
+    const res_before = await implicit_the.implicit_the.get_res()
+    assert(res_before.length == 0)
+
+    await implicit_the.implicit_the.exec({ as: alice })
+
+    const res_after = await implicit_the.implicit_the.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] == "id0")
+    assert(res_after[1] == "id2")
   })
 
   it('init_lambda', async () => {
     await init_lambda.init_lambda.deploy({ as: alice })
-    // TODO
+
+    const res_before = await init_lambda.init_lambda.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await init_lambda.init_lambda.exec(new Int(1), { as: alice })
+
+    const res_after = await init_lambda.init_lambda.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('instr_list_prepend', async () => {
     await instr_list_prepend.instr_list_prepend.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_list_prepend.instr_list_prepend.get_res()
+    assert(res_before.length == 3)
+    assert(res_before[0] == "1")
+    assert(res_before[1] == "2")
+    assert(res_before[2] == "3")
+
+    await instr_list_prepend.instr_list_prepend.exec({ as: alice })
+
+    const res_after = await instr_list_prepend.instr_list_prepend.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] == "0")
+    assert(res_after[1] == "1")
+    assert(res_after[2] == "2")
+    assert(res_after[3] == "3")
   })
 
   it('instr_map_put', async () => {
     await instr_map_put.instr_map_put.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_put.instr_map_put.get_res()
+    assert(res_before.length == 0)
+
+    await instr_map_put.instr_map_put.exec({ as: alice })
+
+    const res_after = await instr_map_put.instr_map_put.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
   })
 
   it('instr_map_remove', async () => {
     await instr_map_remove.instr_map_remove.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_put.instr_map_put.get_res()
+    assert(res_before.length == 1)
+    assert(res_before[0][0].equals(new Nat(0)))
+    assert(res_before[0][1] == "0")
+
+    await instr_map_put.instr_map_put.exec({ as: alice })
+
+    const res_after = await instr_map_put.instr_map_put.get_res()
+    assert(res_after.length == 0)
   })
 
   it('instr_map_update_local_record', async () => {
     await instr_map_update_local_record.instr_map_update_local_record.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_update_local_record.instr_map_update_local_record.get_res()
+    assert(res_before.length == 0)
+
+    await instr_map_update_local_record.instr_map_update_local_record.exec({ as: alice })
+
+    const res_after = await instr_map_update_local_record.instr_map_update_local_record.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
   })
 
   it('instr_map_update_local_var', async () => {
     await instr_map_update_local_var.instr_map_update_local_var.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_update_local_var.instr_map_update_local_var.get_res()
+    assert(res_before.length == 0)
+
+    await instr_map_update_local_var.instr_map_update_local_var.exec({ as: alice })
+
+    const res_after = await instr_map_update_local_var.instr_map_update_local_var.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
   })
 
   it('instr_map_update_storage_record', async () => {
     await instr_map_update_storage_record.instr_map_update_storage_record.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_update_storage_record.instr_map_update_storage_record.get_res()
+    assert(res_before.equals(new instr_map_update_storage_record.my_record(new Nat(0), [])))
+
+    await instr_map_update_storage_record.instr_map_update_storage_record.exec({ as: alice })
+
+    const res_after = await instr_map_update_storage_record.instr_map_update_storage_record.get_res()
+    assert(res_after.equals(new instr_map_update_storage_record.my_record(new Nat(0), [[new Nat(0), "0"]])))
   })
 
   it('instr_map_update_storage_var', async () => {
     await instr_map_update_storage_var.instr_map_update_storage_var.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_map_update_storage_var.instr_map_update_storage_var.get_res()
+    assert(res_before.length == 0)
+
+    await instr_map_update_storage_var.instr_map_update_storage_var.exec({ as: alice })
+
+    const res_after = await instr_map_update_storage_var.instr_map_update_storage_var.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0][0].equals(new Nat(0)))
+    assert(res_after[0][1] == "0")
   })
 
   it('instr_set_add', async () => {
     await instr_set_add.instr_set_add.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_set_add.instr_set_add.get_res()
+    assert(res_before.length == 3)
+    assert(res_before[0] == "1")
+    assert(res_before[1] == "2")
+    assert(res_before[2] == "3")
+
+    await instr_set_add.instr_set_add.exec({ as: alice })
+
+    const res_after = await instr_set_add.instr_set_add.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] == "0")
+    assert(res_after[1] == "1")
+    assert(res_after[2] == "2")
+    assert(res_after[3] == "3")
   })
 
   it('instr_set_remove', async () => {
     await instr_set_remove.instr_set_remove.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_set_remove.instr_set_remove.get_res()
+    assert(res_before.length == 3)
+    assert(res_before[0] == "1")
+    assert(res_before[1] == "2")
+    assert(res_before[2] == "3")
+
+    await instr_set_remove.instr_set_remove.exec({ as: alice })
+
+    const res_after = await instr_set_remove.instr_set_remove.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] == "2")
+    assert(res_after[1] == "3")
   })
 
   it('instr_set_update_add', async () => {
     await instr_set_update_add.instr_set_update_add.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_set_update_add.instr_set_update_add.get_res()
+    assert(res_before.length == 3)
+    assert(res_before[0] == "1")
+    assert(res_before[1] == "2")
+    assert(res_before[2] == "3")
+
+    await instr_set_update_add.instr_set_update_add.exec({ as: alice })
+
+    const res_after = await instr_set_update_add.instr_set_update_add.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] == "1")
+    assert(res_after[1] == "2")
+    assert(res_after[2] == "3")
+    assert(res_after[3] == "4")
   })
 
   it('instr_set_update_remove', async () => {
     await instr_set_update_remove.instr_set_update_remove.deploy({ as: alice })
-    // TODO
+
+    const res_before = await instr_set_update_remove.instr_set_update_remove.get_res()
+    assert(res_before.length == 3)
+    assert(res_before[0] == "1")
+    assert(res_before[1] == "2")
+    assert(res_before[2] == "3")
+
+    await instr_set_update_remove.instr_set_update_remove.exec({ as: alice })
+
+    const res_after = await instr_set_update_remove.instr_set_update_remove.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] == "2")
+    assert(res_after[1] == "3")
   })
 
   it('int_to_date', async () => {
     await int_to_date.int_to_date.deploy({ as: alice })
-    // TODO
+
+    const res_before = await int_to_date.int_to_date.get_res()
+    assert(res_before.toISOString() == '2000-01-01T00:00:00.000Z')
+
+    await int_to_date.int_to_date.exec({ as: alice })
+
+    const res_after = await int_to_date.int_to_date.get_res()
+    assert(res_after.toISOString() == '2020-12-31T00:00:00.000Z')
   })
 
   it('invariants_on_states', async () => {
     await invariants_on_states.invariants_on_states.deploy({ as: alice })
-    // TODO
+
+    const state_before = await invariants_on_states.invariants_on_states.get_state()
+    assert(state_before == invariants_on_states.states.One)
+    const v_before = await invariants_on_states.invariants_on_states.get_v()
+    assert(v_before.equals(new Int(0)))
+
+    await invariants_on_states.invariants_on_states.exec({ as: alice })
+
+    const state_after = await invariants_on_states.invariants_on_states.get_state()
+    assert(state_after == invariants_on_states.states.Two)
+    const v_after = await invariants_on_states.invariants_on_states.get_v()
+    assert(v_after.equals(new Int(1)))
   })
 
   it('invariants_on_variable', async () => {
     await invariants_on_variable.invariants_on_variable.deploy({ as: alice })
-    // TODO
+
+    const v_before = await invariants_on_variable.invariants_on_variable.get_v()
+    assert(v_before.equals(new Int(0)))
+
+    await invariants_on_variable.invariants_on_variable.exec({ as: alice })
+
+    const v_after = await invariants_on_variable.invariants_on_variable.get_v()
+    assert(v_after.equals(new Int(1)))
   })
 
   it('iterable_big_map_assign', async () => {
