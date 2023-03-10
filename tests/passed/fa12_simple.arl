@@ -6,10 +6,11 @@ asset ledger identified by holder to big_map {
   holder     : int;
   tokens     : nat = 0;
 } initialized by {
-  { holder = 0; tokens = totalsupply }
+  { holder = 0; tokens = totalsupply };
+  { holder = 1; tokens = 0 }
 }
 
 entry %transfer (from_ : int, to_ : int, value : nat) {
-  ledger./*add*/update(to_, { tokens += (value + 1) });
+  ledger./*add*/update(to_, { tokens += value });
   ledger.update(from_, { tokens -= value });
 }

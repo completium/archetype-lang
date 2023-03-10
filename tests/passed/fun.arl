@@ -4,9 +4,8 @@ function f (i : int) : int {
   return i
 }
 
+variable res : int = 0i
+
 entry exec () {
-  effect {
-    var res : int = f(0);
-    ()
-  }
+  res := f(1);
 }

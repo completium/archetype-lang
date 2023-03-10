@@ -1,11 +1,12 @@
-{ storage unit ;
+{ storage int ;
   parameter (unit %exec) ;
   code { LAMBDA int int { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
          SWAP ;
          CDR ;
          DUP 2 ;
-         PUSH int 0 ;
+         PUSH int 1 ;
          EXEC ;
+         SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;

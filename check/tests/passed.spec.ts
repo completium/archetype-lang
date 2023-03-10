@@ -11842,7 +11842,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_head_view.expr_method_asset_head_view.get_res()
-     assert(res_before.length == 0)
+    assert(res_before.length == 0)
 
     await expr_method_asset_head_view.expr_method_asset_head_view.exec({ as: alice })
 
@@ -12025,7 +12025,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_nth_view.expr_method_asset_nth_view.get_res()
-     assert(res_before.equals(Option.None()))
+    assert(res_before.equals(Option.None()))
 
     await expr_method_asset_nth_view.expr_method_asset_nth_view.exec({ as: alice })
 
@@ -12214,7 +12214,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_select_view.expr_method_asset_select_view.get_res()
-     assert(res_before.length == 0)
+    assert(res_before.length == 0)
 
     await expr_method_asset_select_view.expr_method_asset_select_view.exec({ as: alice })
 
@@ -12409,7 +12409,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_sort_view.expr_method_asset_sort_view.get_res()
-     assert(res_before.length == 0)
+    assert(res_before.length == 0)
 
     await expr_method_asset_sort_view.expr_method_asset_sort_view.exec({ as: alice })
 
@@ -12593,7 +12593,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Rational(0.5)))
     const res_before = await expr_method_asset_sum_rational.expr_method_asset_sum_rational.get_res()
-     assert(res_before.equals(new Rational(0)))
+    assert(res_before.equals(new Rational(0)))
 
     await expr_method_asset_sum_rational.expr_method_asset_sum_rational.exec({ as: alice })
 
@@ -12621,7 +12621,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_sum_view.expr_method_asset_sum_view.get_res()
-     assert(res_before.equals(new Nat(0)))
+    assert(res_before.equals(new Nat(0)))
 
     await expr_method_asset_sum_view.expr_method_asset_sum_view.exec({ as: alice })
 
@@ -12810,7 +12810,7 @@ describe('passed', async () => {
     assert(my_asset_before[2][0] == "id2")
     assert(my_asset_before[2][1].equals(new Nat(2)))
     const res_before = await expr_method_asset_tail_view.expr_method_asset_tail_view.get_res()
-     assert(res_before.length == 0)
+    assert(res_before.length == 0)
 
     await expr_method_asset_tail_view.expr_method_asset_tail_view.exec({ as: alice })
 
@@ -13035,42 +13035,82 @@ describe('passed', async () => {
 
   it('fa12_false', async () => {
     await fa12_false.fa12_false.deploy({ as: alice })
-    // TODO
+
+    const value_before = await fa12_false.fa12_false.get_ledger_value(new Int(0))
+    assert(value_before?.equals(new Nat(10000000)))
+
+    await fa12_false.fa12_false.transfer(new Int(0), { as: alice })
+
+    const value_after = await fa12_false.fa12_false.get_ledger_value(new Int(0))
+    assert(value_after?.equals(new Nat(10000001)))
+
+    await expect_to_fail(async () => {
+      await fa12_false.fa12_false.transfer(new Int(1), { as: alice })
+    }, { prim: "Pair", args: [{ string: "ASSET_NOT_FOUND" }, { string: "ledger" }] })
   })
 
   it('fa12_simple', async () => {
     await fa12_simple.fa12_simple.deploy({ as: alice })
-    // TODO
+
+    const value_0_before = await fa12_simple.fa12_simple.get_ledger_value(new Int(0))
+    assert(value_0_before?.equals(new Nat(10000000)))
+    const value_1_before = await fa12_simple.fa12_simple.get_ledger_value(new Int(1))
+    assert(value_1_before?.equals(new Nat(0)))
+
+    await fa12_simple.fa12_simple.transfer(new Int(0), new Int(1), new Nat(1), { as: alice })
+
+    const value_0_after = await fa12_simple.fa12_simple.get_ledger_value(new Int(0))
+    assert(value_0_after?.equals(new Nat(9999999)))
+    const value_1_after = await fa12_simple.fa12_simple.get_ledger_value(new Int(1))
+    assert(value_1_after?.equals(new Nat(1)))
   })
 
   it('fail_', async () => {
     await fail_.fail_.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_.fail_.exec({ as: alice })
+    }, { string: "KO" })
   })
 
   it('fail_for', async () => {
     await fail_for.fail_for.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_for.fail_for.exec({ as: alice })
+    }, { string: "KO" })
   })
 
   it('fail_if', async () => {
     await fail_if.fail_if.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_if.fail_if.f({ as: alice })
+    }, { string: "OK" })
   })
 
   it('fail_match_list', async () => {
     await fail_match_list.fail_match_list.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_match_list.fail_match_list.exec({ as: alice })
+    }, { string: "OK" })
   })
 
   it('fail_match_option', async () => {
     await fail_match_option.fail_match_option.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_match_option.fail_match_option.exec({ as: alice })
+    }, { string: "OK" })
   })
 
   it('fail_while', async () => {
     await fail_while.fail_while.deploy({ as: alice })
     // TODO
+    await expect_to_fail(async () => {
+      await fail_while.fail_while.f({ as: alice })
+    }, { string: "OK" })
   })
 
   it('fail_with_tuple_lit', async () => {
@@ -13083,11 +13123,28 @@ describe('passed', async () => {
   it('fold_reverse', async () => {
     await fold_reverse.fold_reverse.deploy({ as: alice })
     // TODO
+    const res_before = await fold_reverse.fold_reverse.get_res()
+    assert(res_before.length == 0)
+
+    await fold_reverse.fold_reverse.exec({ as: alice })
+
+    const res_after = await fold_reverse.fold_reverse.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(3)))
+    assert(res_after[1].equals(new Nat(2)))
+    assert(res_after[2].equals(new Nat(1)))
   })
 
   it('fun', async () => {
     await fun.fun.deploy({ as: alice })
-    // TODO
+
+    const res_before = await fun.fun.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await fun.fun.exec({ as: alice })
+
+    const res_after = await fun.fun.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('function_with_nat_to_string', async () => {

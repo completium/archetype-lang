@@ -36,6 +36,13 @@ export class Fun {
         }
         throw new Error("Contract not initialised");
     }
+    async get_res(): Promise<att.Int> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Int.from_mich(storage);
+        }
+        throw new Error("Contract not initialised");
+    }
     errors = {};
 }
 export const fun = new Fun();

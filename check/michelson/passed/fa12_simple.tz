@@ -12,9 +12,7 @@
            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          DUP 5 ;
-         PUSH nat 1 ;
-         DUP 4 ;
-         ADD ;
+         DUP 3 ;
          DUP 3 ;
          ADD ;
          SOME ;
