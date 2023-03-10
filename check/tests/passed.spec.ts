@@ -13739,7 +13739,7 @@ describe('passed', async () => {
     const res_concat_remove = await iterable_big_map_test.iterable_big_map_test.get_res_concat();
     assert(res_concat_remove.equals(new Bytes("")))
 
-    await iterable_big_map_test.iterable_big_map_test.iterate({as: alice})
+    await iterable_big_map_test.iterable_big_map_test.iterate({ as: alice })
 
     const mystr0_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr0");
     assert(mystr0_iterate?.equals(new Bytes("00")))
@@ -13757,7 +13757,14 @@ describe('passed', async () => {
 
   it('key_to_address', async () => {
     await key_to_address.key_to_address.deploy({ as: alice })
-    // TODO
+
+    const res_concat_remove = await key_to_address.key_to_address.get_res();
+    assert(res_concat_remove.equals(Option.None()))
+
+    await key_to_address.key_to_address.exec(alice.get_public_key(), { as: alice })
+
+    const mystr0_iterate = await key_to_address.key_to_address.get_res();
+    assert(mystr0_iterate?.equals(Option.Some(alice.get_address())))
   })
 
   it('lang_arith', async () => {
