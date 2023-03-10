@@ -13466,47 +13466,293 @@ describe('passed', async () => {
 
   it('iterable_big_map_assign', async () => {
     await iterable_big_map_assign.iterable_big_map_assign.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const str_before = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("str");
+    assert(str_before == undefined)
+
+    await iterable_big_map_assign.iterable_big_map_assign.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr0");
+    assert(mystr0_after == undefined)
+    const mystr1_after = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr1");
+    assert(mystr1_after == undefined)
+    const mystr2_after = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr2");
+    assert(mystr2_after == undefined)
+    const mystr3_after = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("mystr3");
+    assert(mystr3_after == undefined)
+    const str_after = await iterable_big_map_assign.iterable_big_map_assign.get_my_map_value("str");
+    assert(str_after?.equals(new Bytes("0a")))
   })
 
   it('iterable_big_map_contains', async () => {
     await iterable_big_map_contains.iterable_big_map_contains.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+    const res_before = await iterable_big_map_contains.iterable_big_map_contains.get_res();
+    assert(res_before == false)
+
+    await iterable_big_map_contains.iterable_big_map_contains.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr1");
+    assert(mystr1_after?.equals(new Bytes("01")))
+    const mystr2_after = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_contains.iterable_big_map_contains.get_my_map_value("mystr4");
+    assert(mystr4_after == undefined)
+    const res_after = await iterable_big_map_contains.iterable_big_map_contains.get_res();
+    assert(res_after == true)
   })
 
   it('iterable_big_map_for', async () => {
     await iterable_big_map_for.iterable_big_map_for.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+    const res_before = await iterable_big_map_for.iterable_big_map_for.get_res();
+    assert(res_before.equals(new Bytes("")))
+
+    await iterable_big_map_for.iterable_big_map_for.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr1");
+    assert(mystr1_after?.equals(new Bytes("01")))
+    const mystr2_after = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_for.iterable_big_map_for.get_my_map_value("mystr4");
+    assert(mystr4_after == undefined)
+    const res_after = await iterable_big_map_for.iterable_big_map_for.get_res();
+    assert(res_after.equals(new Bytes("00010203")))
   })
 
   it('iterable_big_map_get', async () => {
     await iterable_big_map_get.iterable_big_map_get.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+    const res_before = await iterable_big_map_get.iterable_big_map_get.get_res();
+    assert(res_before.equals(Option.None()))
+
+    await iterable_big_map_get.iterable_big_map_get.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr1");
+    assert(mystr1_after?.equals(new Bytes("01")))
+    const mystr2_after = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_get.iterable_big_map_get.get_my_map_value("mystr4");
+    assert(mystr4_after == undefined)
+    const res_after = await iterable_big_map_get.iterable_big_map_get.get_res();
+    assert(res_after.equals(Option.Some(new Bytes("02"))))
   })
 
   it('iterable_big_map_length', async () => {
     await iterable_big_map_length.iterable_big_map_length.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+    const res_before = await iterable_big_map_length.iterable_big_map_length.get_res();
+    assert(res_before.equals(new Nat(0)))
+
+    await iterable_big_map_length.iterable_big_map_length.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr1");
+    assert(mystr1_after?.equals(new Bytes("01")))
+    const mystr2_after = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_length.iterable_big_map_length.get_my_map_value("mystr4");
+    assert(mystr4_after == undefined)
+    const res_after = await iterable_big_map_length.iterable_big_map_length.get_res();
+    assert(res_after.equals(new Nat(4)))
   })
 
   it('iterable_big_map_put', async () => {
     await iterable_big_map_put.iterable_big_map_put.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+
+    await iterable_big_map_put.iterable_big_map_put.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr1");
+    assert(mystr1_after?.equals(new Bytes("01")))
+    const mystr2_after = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_put.iterable_big_map_put.get_my_map_value("mystr4");
+    assert(mystr4_after?.equals(new Bytes("04")))
   })
 
   it('iterable_big_map_remove', async () => {
     await iterable_big_map_remove.iterable_big_map_remove.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+
+    await iterable_big_map_remove.iterable_big_map_remove.exec({ as: alice })
+
+    const mystr0_after = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr0");
+    assert(mystr0_after?.equals(new Bytes("00")))
+    const mystr1_after = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr1");
+    assert(mystr1_after == undefined)
+    const mystr2_after = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr2");
+    assert(mystr2_after?.equals(new Bytes("02")))
+    const mystr3_after = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr3");
+    assert(mystr3_after?.equals(new Bytes("03")))
+    const mystr4_after = await iterable_big_map_remove.iterable_big_map_remove.get_my_map_value("mystr4");
+    assert(mystr4_after == undefined)
   })
 
   it('iterable_big_map_storage_decl', async () => {
     await iterable_big_map_storage_decl.iterable_big_map_storage_decl.deploy({ as: alice })
-    // TODO
+
+    const mystr0 = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_my_map_value("mystr0");
+    assert(mystr0?.equals(new Bytes("00")))
+    const mystr1 = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_my_map_value("mystr1");
+    assert(mystr1?.equals(new Bytes("01")))
+    const mystr2 = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_my_map_value("mystr2");
+    assert(mystr2?.equals(new Bytes("02")))
+    const mystr3 = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_my_map_value("mystr3");
+    assert(mystr3?.equals(new Bytes("03")))
+    const mystr4 = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_my_map_value("mystr4");
+    assert(mystr4 == undefined)
+    const r = await iterable_big_map_storage_decl.iterable_big_map_storage_decl.get_r()
+    assert(r.equals(new Nat(0)))
   })
 
   it('iterable_big_map_test', async () => {
     await iterable_big_map_test.iterable_big_map_test.deploy({ as: alice })
-    // TODO
+
+    const mystr0_before = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr0");
+    assert(mystr0_before?.equals(new Bytes("00")))
+    const mystr1_before = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr1");
+    assert(mystr1_before?.equals(new Bytes("01")))
+    const mystr2_before = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr2");
+    assert(mystr2_before?.equals(new Bytes("02")))
+    const mystr3_before = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr3");
+    assert(mystr3_before?.equals(new Bytes("03")))
+    const mystr4_before = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr4");
+    assert(mystr4_before == undefined)
+    const res_concat_before = await iterable_big_map_test.iterable_big_map_test.get_res_concat();
+    assert(res_concat_before.equals(new Bytes("")))
+
+    await iterable_big_map_test.iterable_big_map_test.put("mystr4", new Bytes("04"), { as: alice })
+
+    const mystr0_put = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr0");
+    assert(mystr0_put?.equals(new Bytes("00")))
+    const mystr1_put = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr1");
+    assert(mystr1_put?.equals(new Bytes("01")))
+    const mystr2_put = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr2");
+    assert(mystr2_put?.equals(new Bytes("02")))
+    const mystr3_put = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr3");
+    assert(mystr3_put?.equals(new Bytes("03")))
+    const mystr4_put = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr4");
+    assert(mystr4_put?.equals(new Bytes("04")))
+    const res_concat_put = await iterable_big_map_test.iterable_big_map_test.get_res_concat();
+    assert(res_concat_put.equals(new Bytes("")))
+
+    await iterable_big_map_test.iterable_big_map_test.remove("mystr4", { as: alice })
+
+    const mystr0_remove = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr0");
+    assert(mystr0_remove?.equals(new Bytes("00")))
+    const mystr1_remove = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr1");
+    assert(mystr1_remove?.equals(new Bytes("01")))
+    const mystr2_remove = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr2");
+    assert(mystr2_remove?.equals(new Bytes("02")))
+    const mystr3_remove = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr3");
+    assert(mystr3_remove?.equals(new Bytes("03")))
+    const mystr4_remove = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr4");
+    assert(mystr4_remove == undefined)
+    const res_concat_remove = await iterable_big_map_test.iterable_big_map_test.get_res_concat();
+    assert(res_concat_remove.equals(new Bytes("")))
+
+    await iterable_big_map_test.iterable_big_map_test.iterate({as: alice})
+
+    const mystr0_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr0");
+    assert(mystr0_iterate?.equals(new Bytes("00")))
+    const mystr1_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr1");
+    assert(mystr1_iterate?.equals(new Bytes("01")))
+    const mystr2_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr2");
+    assert(mystr2_iterate?.equals(new Bytes("02")))
+    const mystr3_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr3");
+    assert(mystr3_iterate?.equals(new Bytes("03")))
+    const mystr4_iterate = await iterable_big_map_test.iterable_big_map_test.get_my_map_value("mystr4");
+    assert(mystr4_iterate == undefined)
+    const res_concat_iterate = await iterable_big_map_test.iterable_big_map_test.get_res_concat();
+    assert(res_concat_iterate.equals(new Bytes("00010203")))
   })
 
   it('key_to_address', async () => {
