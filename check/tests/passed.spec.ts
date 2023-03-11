@@ -14491,52 +14491,172 @@ describe('passed', async () => {
 
   it('rat_arith_div', async () => {
     await rat_arith_div.rat_arith_div.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_arith_div.rat_arith_div.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_arith_div.rat_arith_div.exec(new Rational(2), { as: alice })
+
+    const res_after = await rat_arith_div.rat_arith_div.get_res()
+    assert(res_after.equals(new Rational(4)))
   })
 
   it('rat_arith_minus', async () => {
     await rat_arith_minus.rat_arith_minus.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_arith_minus.rat_arith_minus.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_arith_minus.rat_arith_minus.exec(new Rational(2), { as: alice })
+
+    const res_after = await rat_arith_minus.rat_arith_minus.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('rat_arith_mult', async () => {
     await rat_arith_mult.rat_arith_mult.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_arith_mult.rat_arith_mult.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_arith_mult.rat_arith_mult.exec(new Rational(2), { as: alice })
+
+    const res_after = await rat_arith_mult.rat_arith_mult.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('rat_arith_plus', async () => {
     await rat_arith_plus.rat_arith_plus.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_arith_plus.rat_arith_plus.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_arith_plus.rat_arith_plus.exec(new Rational(1), { as: alice })
+
+    const res_after = await rat_arith_plus.rat_arith_plus.get_res()
+    assert(res_after.equals(new Rational(1.5)))
   })
 
   it('rat_arith_uminus', async () => {
     await rat_arith_uminus.rat_arith_uminus.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_arith_uminus.rat_arith_uminus.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_arith_uminus.rat_arith_uminus.exec(new Rational(1), { as: alice })
+
+    const res_after = await rat_arith_uminus.rat_arith_uminus.get_res()
+    assert(res_after.equals(new Rational(-1)))
   })
 
   it('rat_cmp_eq', async () => {
     await rat_cmp_eq.rat_cmp_eq.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_cmp_eq.rat_cmp_eq.get_res()
+    assert(res_before == false)
+
+    await rat_cmp_eq.rat_cmp_eq.exec(new Rational(0.25), { as: alice })
+
+    const res_025 = await rat_cmp_eq.rat_cmp_eq.get_res()
+    assert(res_025 == true)
+
+    await rat_cmp_eq.rat_cmp_eq.exec(new Rational(1), { as: alice })
+
+    const res_1 = await rat_cmp_eq.rat_cmp_eq.get_res()
+    assert(res_1 == false)
+
+    await rat_cmp_eq.rat_cmp_eq.exec(new Rational(0), { as: alice })
+
+    const res_0 = await rat_cmp_eq.rat_cmp_eq.get_res()
+    assert(res_0 == false)
   })
 
   it('rat_cmp_ge', async () => {
     await rat_cmp_ge.rat_cmp_ge.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_cmp_ge.rat_cmp_ge.get_res()
+    assert(res_before == false)
+
+    await rat_cmp_ge.rat_cmp_ge.exec(new Rational(0.25), { as: alice })
+
+    const res_025 = await rat_cmp_ge.rat_cmp_ge.get_res()
+    assert(res_025 == true)
+
+    await rat_cmp_ge.rat_cmp_ge.exec(new Rational(1), { as: alice })
+
+    const res_1 = await rat_cmp_ge.rat_cmp_ge.get_res()
+    assert(res_1 == true)
+
+    await rat_cmp_ge.rat_cmp_ge.exec(new Rational(0), { as: alice })
+
+    const res_0 = await rat_cmp_ge.rat_cmp_ge.get_res()
+    assert(res_0 == false)
   })
 
   it('rat_cmp_gt', async () => {
     await rat_cmp_gt.rat_cmp_gt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_cmp_gt.rat_cmp_gt.get_res()
+    assert(res_before == false)
+
+    await rat_cmp_gt.rat_cmp_gt.exec(new Rational(0.25), { as: alice })
+
+    const res_025 = await rat_cmp_gt.rat_cmp_gt.get_res()
+    assert(res_025 == false)
+
+    await rat_cmp_gt.rat_cmp_gt.exec(new Rational(1), { as: alice })
+
+    const res_1 = await rat_cmp_gt.rat_cmp_gt.get_res()
+    assert(res_1 == true)
+
+    await rat_cmp_gt.rat_cmp_gt.exec(new Rational(0), { as: alice })
+
+    const res_0 = await rat_cmp_gt.rat_cmp_gt.get_res()
+    assert(res_0 == false)
   })
 
   it('rat_cmp_le', async () => {
     await rat_cmp_le.rat_cmp_le.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_cmp_le.rat_cmp_le.get_res()
+    assert(res_before == false)
+
+    await rat_cmp_le.rat_cmp_le.exec(new Rational(0.25), { as: alice })
+
+    const res_025 = await rat_cmp_le.rat_cmp_le.get_res()
+    assert(res_025 == true)
+
+    await rat_cmp_le.rat_cmp_le.exec(new Rational(1), { as: alice })
+
+    const res_1 = await rat_cmp_le.rat_cmp_le.get_res()
+    assert(res_1 == false)
+
+    await rat_cmp_le.rat_cmp_le.exec(new Rational(0), { as: alice })
+
+    const res_0 = await rat_cmp_le.rat_cmp_le.get_res()
+    assert(res_0 == true)
   })
 
   it('rat_cmp_lt', async () => {
     await rat_cmp_lt.rat_cmp_lt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_cmp_lt.rat_cmp_lt.get_res()
+    assert(res_before == false)
+
+    await rat_cmp_lt.rat_cmp_lt.exec(new Rational(0.25), { as: alice })
+
+    const res_025 = await rat_cmp_lt.rat_cmp_lt.get_res()
+    assert(res_025 == false)
+
+    await rat_cmp_lt.rat_cmp_lt.exec(new Rational(1), { as: alice })
+
+    const res_1 = await rat_cmp_lt.rat_cmp_lt.get_res()
+    assert(res_1 == false)
+
+    await rat_cmp_lt.rat_cmp_lt.exec(new Rational(0), { as: alice })
+
+    const res_0 = await rat_cmp_lt.rat_cmp_lt.get_res()
+    assert(res_0 == true)
   })
 
   it('rat_dur', async () => {
