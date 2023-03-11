@@ -14212,42 +14212,160 @@ describe('passed', async () => {
 
   it('multivars', async () => {
     await multivars.multivars.deploy({ as: alice })
-    // TODO
+
+    const u_before = await multivars.multivars.get_u()
+    assert(u_before.equals(new Nat(0)))
+    const v_before = await multivars.multivars.get_v()
+    assert(v_before == "")
+    const w_before = await multivars.multivars.get_w()
+    assert(w_before.equals(new Int(0)))
+    const x_before = await multivars.multivars.get_x()
+    assert(x_before.equals(new Bytes("00")))
+    const y_before = await multivars.multivars.get_y()
+    assert(y_before.equals(new Nat(1)))
+    const z_before = await multivars.multivars.get_z()
+    assert(z_before.equals(new Nat(0)))
+
+    await multivars.multivars.exec({ as: alice })
+
+    const u_after = await multivars.multivars.get_u()
+    assert(u_after.equals(new Nat(0)))
+    const v_after = await multivars.multivars.get_v()
+    assert(v_after == "")
+    const w_after = await multivars.multivars.get_w()
+    assert(w_after.equals(new Int(0)))
+    const x_after = await multivars.multivars.get_x()
+    assert(x_after.equals(new Bytes("00")))
+    const y_after = await multivars.multivars.get_y()
+    assert(y_after.equals(new Nat(1)))
+    const z_after = await multivars.multivars.get_z()
+    assert(z_after.equals(new Nat(2)))
   })
 
   it('multivars1', async () => {
     await multivars1.multivars1.deploy({ as: alice })
-    // TODO
+
+    const u_before = await multivars1.multivars1.get_u()
+    assert(u_before.equals(new Nat(1)))
+    const v_before = await multivars1.multivars1.get_v()
+    assert(v_before == "a")
+    const r_before = await multivars1.multivars1.get_r()
+    assert(r_before.equals(new Nat(0)))
+
+    await multivars1.multivars1.exec({ as: alice })
+
+    const u_after = await multivars1.multivars1.get_u()
+    assert(u_after.equals(new Nat(1)))
+    const v_after = await multivars1.multivars1.get_v()
+    assert(v_after == "a")
+    const r_after = await multivars1.multivars1.get_r()
+    assert(r_after.equals(new Nat(2)))
   })
 
   it('multivars_simple', async () => {
     await multivars_simple.multivars_simple.deploy({ as: alice })
-    // TODO
+
+    const u = await multivars_simple.multivars_simple.get_u()
+    assert(u.equals(new Nat(0)))
+    const v = await multivars_simple.multivars_simple.get_v()
+    assert(v == "")
+    const w = await multivars_simple.multivars_simple.get_w()
+    assert(w.equals(new Int(0)))
+    const x = await multivars_simple.multivars_simple.get_x()
+    assert(x.equals(new Bytes("00")))
+    const y = await multivars_simple.multivars_simple.get_y()
+    assert(y.equals(new Nat(1)))
+    const z = await multivars_simple.multivars_simple.get_z()
+    assert(z.equals(new Nat(0)))
   })
 
   it('mutez_to_nat', async () => {
     await mutez_to_nat.mutez_to_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await mutez_to_nat.mutez_to_nat.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await mutez_to_nat.mutez_to_nat.exec({ as: alice })
+
+    const res_after = await mutez_to_nat.mutez_to_nat.get_res()
+    assert(res_after.equals(new Nat(2000000)))
   })
 
   it('nat_to_string', async () => {
     await nat_to_string.nat_to_string.deploy({ as: alice })
-    // TODO
+
+    const res_before = await nat_to_string.nat_to_string.get_res()
+    assert(res_before == "")
+
+    await nat_to_string.nat_to_string.exec(new Nat(42), { as: alice })
+
+    const res_42 = await nat_to_string.nat_to_string.get_res()
+    assert(res_42 == "42")
+
+    await nat_to_string.nat_to_string.exec(new Nat(2), { as: alice })
+
+    const res_2 = await nat_to_string.nat_to_string.get_res()
+    assert(res_2 == "2")
+
+    await nat_to_string.nat_to_string.exec(new Nat(0), { as: alice })
+
+    const res_0 = await nat_to_string.nat_to_string.get_res()
+    assert(res_0 == "0")
   })
 
   it('nested_for', async () => {
     await nested_for.nested_for.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await nested_for.nested_for.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "")
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1] == "a")
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1] == "aa")
+    const res_before = await nested_for.nested_for.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await nested_for.nested_for.exec({ as: alice })
+
+    const my_asset_after = await nested_for.nested_for.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "")
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1] == "a")
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1] == "aa")
+    const res_after = await nested_for.nested_for.get_res()
+    assert(res_after.equals(new Nat(12)))
   })
 
   it('nested_if_return', async () => {
     await nested_if_return.nested_if_return.deploy({ as: alice })
-    // TODO
+
+    const a_before = await nested_if_return.nested_if_return.get_a()
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await nested_if_return.nested_if_return.get_b()
+    assert(b_before.equals(new Nat(0)))
+    const c_before = await nested_if_return.nested_if_return.get_c()
+    assert(c_before.equals(new Nat(0)))
+
+    await nested_if_return.nested_if_return.exec({ as: alice })
+
+    const a_after = await nested_if_return.nested_if_return.get_a()
+    assert(a_after.equals(new Nat(1)))
+    const b_after = await nested_if_return.nested_if_return.get_b()
+    assert(b_after.equals(new Nat(2)))
+    const c_after = await nested_if_return.nested_if_return.get_c()
+    assert(c_after.equals(new Nat(3)))
   })
 
   it('no_entrypoint', async () => {
     await no_entrypoint.no_entrypoint.deploy({ as: alice })
-    // TODO
+
+    const v = await no_entrypoint.no_entrypoint.get_v()
+    assert(v.equals(new Nat(0)))
   })
 
   it('not_int', async () => {
@@ -14270,7 +14388,8 @@ describe('passed', async () => {
 
   it('nothing', async () => {
     await nothing.nothing.deploy({ as: alice })
-    // TODO
+
+    await nothing.nothing.exec({ as: alice })
   })
 
   it('one_constant', async () => {

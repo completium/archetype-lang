@@ -1,16 +1,21 @@
 archetype nested_for
 
-asset myasset {
-  id : int;
+asset my_asset {
+  id : nat;
   v : string;
+} initialized with {
+  {0; ""};
+  {1; "a"};
+  {2; "aa"}
 }
 
+variable res : nat = 0
+
 entry exec () {
-  effect {
-    for c in myasset do
-      for d in myasset do
-        do_require(myasset[c].v = myasset[d].v, "ko")
-      done
+  for c in my_asset do
+    res += length(my_asset[c].v);
+    for d in my_asset do
+      res += length(my_asset[d].v)
     done
-  }
+  done
 }

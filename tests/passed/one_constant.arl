@@ -1,9 +1,9 @@
 archetype one_constant
 
-constant myconstant : string = ""
+constant my_constant : string = "my_constant"
+
+variable res : string = ""
 
 entry exec() {
-  effect {
-    ()
-  }
+  res := my_constant
 }

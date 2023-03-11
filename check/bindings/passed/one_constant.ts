@@ -36,6 +36,13 @@ export class One_constant {
         }
         throw new Error("Contract not initialised");
     }
+    async get_res(): Promise<string> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_string(storage);
+        }
+        throw new Error("Contract not initialised");
+    }
     errors = {};
 }
 export const one_constant = new One_constant();

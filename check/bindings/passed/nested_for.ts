@@ -1,12 +1,12 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const myasset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
-export const myasset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export type myasset_container = Array<[
-    att.Int,
+export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
+export type my_asset_container = Array<[
+    att.Nat,
     string
 ]>;
-export const myasset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("int", []), att.prim_annot_to_mich_type("string", []), []);
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("string", []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -43,15 +43,20 @@ export class Nested_for {
         }
         throw new Error("Contract not initialised");
     }
-    async get_myasset(): Promise<myasset_container> {
+    async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map(storage, (x, y) => [att.Int.from_mich(x), att.mich_to_string(y)]);
+            return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Nat.from_mich(x), att.mich_to_string(y)]);
         }
         throw new Error("Contract not initialised");
     }
-    errors = {
-        KO: att.string_to_mich("\"ko\"")
-    };
+    async get_res(): Promise<att.Nat> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Nat.from_mich((storage as att.Mpair).args[1]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    errors = {};
 }
 export const nested_for = new Nested_for();

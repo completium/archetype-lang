@@ -7,8 +7,8 @@
          DUP 3 ;
          SIZE ;
          ADD ;
-         SWAP ;
-         DROP 1 ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
          PAIR 3 ;
          NIL operation ;
          PAIR } }

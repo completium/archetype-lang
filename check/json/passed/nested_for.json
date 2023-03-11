@@ -4,13 +4,13 @@
   "types": {
     "assets": [
       {
-        "name": "myasset",
+        "name": "my_asset",
         "container_kind": "map",
         "fields": [
           {
             "name": "id",
             "type": {
-              "node": "int",
+              "node": "nat",
               "name": null,
               "int_value": null,
               "args": []
@@ -35,7 +35,7 @@
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "nat",
               "int": null,
               "bytes": null,
               "string": null,
@@ -63,7 +63,7 @@
           "var_type": null
         },
         "key_type_michelson": {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -92,10 +92,20 @@
   },
   "storage": [
     {
-      "name": "myasset",
+      "name": "my_asset",
       "type": {
         "node": "asset",
-        "name": "myasset",
+        "name": "my_asset",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res",
+      "type": {
+        "node": "nat",
+        "name": null,
         "int_value": null,
         "args": []
       },
@@ -104,29 +114,56 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "map",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
       "args": [
         {
-          "prim": "int",
+          "prim": "map",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
-          "annots": [],
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%my_asset"
+          ],
           "array": [],
           "var_id": null,
           "var_type": null
         },
         {
-          "prim": "string",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
           "args": [],
-          "annots": [],
+          "annots": [
+            "%res"
+          ],
           "array": [],
           "var_id": null,
           "var_type": null
@@ -147,21 +184,5 @@
   ],
   "getters": [],
   "views": [],
-  "errors": [
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "ko",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    }
-  ]
+  "errors": []
 }

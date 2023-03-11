@@ -1,7 +1,3 @@
 archetype nothing
 
-entry exec () {
-  effect {
-    ()
-  }
-}
+entry exec () { }
