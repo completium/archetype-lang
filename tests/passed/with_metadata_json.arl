@@ -6,7 +6,3 @@ with metadata `{
   "description": "description of MyToken",
   "thumbnailUri": "https://completium.com/img/logo_completium_128.png"
 }`
-
-entry exec () {
-  ()
-}

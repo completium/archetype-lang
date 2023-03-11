@@ -10,7 +10,6 @@ asset my_asset identified by id {
   {"id2"; 2; true}
 }
 
-
 variable res : nat = 0
 
 entry exec () {

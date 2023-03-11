@@ -7,6 +7,3 @@ asset my_asset identified by id {
   {"id1"};
   {"id2"}
 }
-
-entry exec () {
-}

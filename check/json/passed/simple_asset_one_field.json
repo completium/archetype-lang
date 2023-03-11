@@ -79,59 +79,22 @@
         "args": []
       },
       "const": false
-    },
-    {
-      "name": "n",
-      "type": {
-        "node": "int",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "const": false
     }
   ],
   "storage_type": {
     "value": {
-      "prim": "pair",
+      "prim": "set",
       "int": null,
       "bytes": null,
       "string": null,
       "args": [
         {
-          "prim": "set",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [
-            {
-              "prim": "string",
-              "int": null,
-              "bytes": null,
-              "string": null,
-              "args": [],
-              "annots": [],
-              "array": [],
-              "var_id": null,
-              "var_type": null
-            }
-          ],
-          "annots": [
-            "%my_asset"
-          ],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        {
-          "prim": "int",
+          "prim": "string",
           "int": null,
           "bytes": null,
           "string": null,
           "args": [],
-          "annots": [
-            "%n"
-          ],
+          "annots": [],
           "array": [],
           "var_id": null,
           "var_type": null
@@ -151,10 +114,6 @@
     },
     {
       "name": "remove_asset",
-      "args": []
-    },
-    {
-      "name": "exec",
       "args": []
     }
   ],

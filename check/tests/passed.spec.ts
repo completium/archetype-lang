@@ -15534,57 +15534,311 @@ describe('passed', async () => {
 
   it('simple_arith', async () => {
     await simple_arith.simple_arith.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_arith.simple_arith.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await simple_arith.simple_arith.exec({ as: alice })
+
+    const res_after = await simple_arith.simple_arith.get_res()
+    assert(res_after.equals(new Int(9)))
   })
 
   it('simple_asset', async () => {
     await simple_asset.simple_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset.simple_asset.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const n_before = await simple_asset.simple_asset.get_n()
+    assert(n_before.equals(new Int(0)))
+
+    await simple_asset.simple_asset.add_asset({ as: alice })
+
+    const my_asset_add_asset = await simple_asset.simple_asset.get_my_asset()
+    assert(my_asset_add_asset.length == 4)
+    assert(my_asset_add_asset[0][0] == "id0")
+    assert(my_asset_add_asset[0][1].equals(new Int(0)))
+    assert(my_asset_add_asset[1][0] == "id1")
+    assert(my_asset_add_asset[1][1].equals(new Int(1)))
+    assert(my_asset_add_asset[2][0] == "id2")
+    assert(my_asset_add_asset[2][1].equals(new Int(2)))
+    assert(my_asset_add_asset[3][0] == "id4")
+    assert(my_asset_add_asset[3][1].equals(new Int(4)))
+    const n_add_asset = await simple_asset.simple_asset.get_n()
+    assert(n_add_asset.equals(new Int(0)))
+
+    await expect_to_fail(async () => {
+      await simple_asset.simple_asset.add_asset({ as: alice })
+    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+
+    await simple_asset.simple_asset.remove_asset({ as: alice })
+
+    const my_asset_remove_asset = await simple_asset.simple_asset.get_my_asset()
+    assert(my_asset_remove_asset.length == 3)
+    assert(my_asset_remove_asset[0][0] == "id1")
+    assert(my_asset_remove_asset[0][1].equals(new Int(1)))
+    assert(my_asset_remove_asset[1][0] == "id2")
+    assert(my_asset_remove_asset[1][1].equals(new Int(2)))
+    assert(my_asset_remove_asset[2][0] == "id4")
+    assert(my_asset_remove_asset[2][1].equals(new Int(4)))
+    const n_remove_asset = await simple_asset.simple_asset.get_n()
+    assert(n_remove_asset.equals(new Int(0)))
+
+    await simple_asset.simple_asset.exec({ as: alice })
+
+    const my_asset_exec = await simple_asset.simple_asset.get_my_asset()
+    assert(my_asset_exec.length == 3)
+    assert(my_asset_exec[0][0] == "id1")
+    assert(my_asset_exec[0][1].equals(new Int(1)))
+    assert(my_asset_exec[1][0] == "id2")
+    assert(my_asset_exec[1][1].equals(new Int(2)))
+    assert(my_asset_exec[2][0] == "id4")
+    assert(my_asset_exec[2][1].equals(new Int(4)))
+    const n_exec = await simple_asset.simple_asset.get_n()
+    assert(n_exec.equals(new Int(1)))
   })
 
   it('simple_asset_2', async () => {
     await simple_asset_2.simple_asset_2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset_2.simple_asset_2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Int(0)))
+    assert(my_asset_before[0][1].v1 == true)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Int(1)))
+    assert(my_asset_before[1][1].v1 == true)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Int(2)))
+    assert(my_asset_before[2][1].v1 == true)
+    const n_before = await simple_asset_2.simple_asset_2.get_n()
+    assert(n_before.equals(new Int(0)))
+
+    await simple_asset_2.simple_asset_2.add_asset({ as: alice })
+
+    const my_asset_add_asset = await simple_asset_2.simple_asset_2.get_my_asset()
+    assert(my_asset_add_asset.length == 4)
+    assert(my_asset_add_asset[0][0] == "id0")
+    assert(my_asset_add_asset[0][1].v0.equals(new Int(0)))
+    assert(my_asset_add_asset[0][1].v1 == true)
+    assert(my_asset_add_asset[1][0] == "id1")
+    assert(my_asset_add_asset[1][1].v0.equals(new Int(1)))
+    assert(my_asset_add_asset[1][1].v1 == true)
+    assert(my_asset_add_asset[2][0] == "id2")
+    assert(my_asset_add_asset[2][1].v0.equals(new Int(2)))
+    assert(my_asset_add_asset[2][1].v1 == true)
+    assert(my_asset_add_asset[3][0] == "id4")
+    assert(my_asset_add_asset[3][1].v0.equals(new Int(4)))
+    assert(my_asset_add_asset[3][1].v1 == true)
+    const n_add_asset = await simple_asset_2.simple_asset_2.get_n()
+    assert(n_add_asset.equals(new Int(0)))
+
+    await expect_to_fail(async () => {
+      await simple_asset_2.simple_asset_2.add_asset({ as: alice })
+    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+
+    await simple_asset_2.simple_asset_2.remove_asset({ as: alice })
+
+    const my_asset_remove_asset = await simple_asset_2.simple_asset_2.get_my_asset()
+    assert(my_asset_remove_asset.length == 3)
+    assert(my_asset_remove_asset[0][0] == "id1")
+    assert(my_asset_remove_asset[0][1].v0.equals(new Int(1)))
+    assert(my_asset_remove_asset[0][1].v1 == true)
+    assert(my_asset_remove_asset[1][0] == "id2")
+    assert(my_asset_remove_asset[1][1].v0.equals(new Int(2)))
+    assert(my_asset_remove_asset[1][1].v1 == true)
+    assert(my_asset_remove_asset[2][0] == "id4")
+    assert(my_asset_remove_asset[2][1].v0.equals(new Int(4)))
+    assert(my_asset_remove_asset[2][1].v1 == true)
+    const n_remove_asset = await simple_asset_2.simple_asset_2.get_n()
+    assert(n_remove_asset.equals(new Int(0)))
+
+    await simple_asset_2.simple_asset_2.exec({ as: alice })
+
+    const my_asset_exec = await simple_asset_2.simple_asset_2.get_my_asset()
+    assert(my_asset_exec.length == 3)
+    assert(my_asset_exec[0][0] == "id1")
+    assert(my_asset_exec[0][1].v0.equals(new Int(1)))
+    assert(my_asset_exec[1][0] == "id2")
+    assert(my_asset_exec[1][1].v0.equals(new Int(2)))
+    assert(my_asset_exec[2][0] == "id4")
+    assert(my_asset_exec[2][1].v0.equals(new Int(4)))
+    const n_exec = await simple_asset_2.simple_asset_2.get_n()
+    assert(n_exec.equals(new Int(1)))
   })
 
   it('simple_asset_get_asset1_value', async () => {
     await simple_asset_get_asset1_value.simple_asset_get_asset1_value.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset_get_asset1_value.simple_asset_get_asset1_value.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Nat(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Nat(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Nat(2)))
+    const res_before = await simple_asset_get_asset1_value.simple_asset_get_asset1_value.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_asset_get_asset1_value.simple_asset_get_asset1_value.exec({ as: alice })
+
+    const my_asset_after = await simple_asset_get_asset1_value.simple_asset_get_asset1_value.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Nat(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Nat(2)))
+    const res_after = await simple_asset_get_asset1_value.simple_asset_get_asset1_value.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('simple_asset_get_asset2_value', async () => {
     await simple_asset_get_asset2_value.simple_asset_get_asset2_value.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset_get_asset2_value.simple_asset_get_asset2_value.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].v1 == true)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].v1 == true)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].v1 == true)
+    const res_before = await simple_asset_get_asset2_value.simple_asset_get_asset2_value.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_asset_get_asset2_value.simple_asset_get_asset2_value.exec({ as: alice })
+
+    const my_asset_after = await simple_asset_get_asset2_value.simple_asset_get_asset2_value.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].v1 == true)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].v1 == true)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].v1 == true)
+    const res_after = await simple_asset_get_asset2_value.simple_asset_get_asset2_value.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('simple_asset_get_asset2_value2', async () => {
     await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].v1 == true)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].v1 == true)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].v1 == true)
+    const res_before = await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.get_res()
+    assert(res_before == false)
+
+    await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.exec({ as: alice })
+
+    const my_asset_after = await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].v1 == true)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].v1 == true)
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].v1 == true)
+    const res_after = await simple_asset_get_asset2_value2.simple_asset_get_asset2_value2.get_res()
+    assert(res_after == true)
   })
 
   it('simple_asset_one_field', async () => {
     await simple_asset_one_field.simple_asset_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_asset_one_field.simple_asset_one_field.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0] == "id0")
+    assert(my_asset_before[1] == "id1")
+    assert(my_asset_before[2] == "id2")
+
+    await simple_asset_one_field.simple_asset_one_field.add_asset({ as: alice })
+
+    const my_asset_add_asset = await simple_asset_one_field.simple_asset_one_field.get_my_asset()
+    assert(my_asset_add_asset.length == 4)
+    assert(my_asset_add_asset[0] == "id0")
+    assert(my_asset_add_asset[1] == "id1")
+    assert(my_asset_add_asset[2] == "id2")
+    assert(my_asset_add_asset[3] == "id4")
+
+    await expect_to_fail(async () => {
+      await simple_asset_one_field.simple_asset_one_field.add_asset({ as: alice })
+    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+
+    await simple_asset_one_field.simple_asset_one_field.remove_asset({ as: alice })
+
+    const my_asset_remove_asset = await simple_asset_one_field.simple_asset_one_field.get_my_asset()
+    assert(my_asset_remove_asset.length == 3)
+    assert(my_asset_remove_asset[0] == "id1")
+    assert(my_asset_remove_asset[1] == "id2")
+    assert(my_asset_remove_asset[2] == "id4")
   })
 
   it('simple_asset_skip', async () => {
     await simple_asset_skip.simple_asset_skip.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await simple_asset_skip.simple_asset_skip.get_my_asset()
+    assert(my_asset.length == 3)
+    assert(my_asset[0][0] == "id0")
+    assert(my_asset[0][1].value.equals(new Int(0)))
+    assert(my_asset[0][1].v2.equals(new Nat(0)))
+    assert(my_asset[1][0] == "id1")
+    assert(my_asset[1][1].value.equals(new Int(1)))
+    assert(my_asset[1][1].v2.equals(new Nat(1)))
+    assert(my_asset[2][0] == "id2")
+    assert(my_asset[2][1].value.equals(new Int(2)))
+    assert(my_asset[2][1].v2.equals(new Nat(2)))
   })
 
   it('simple_asset_skip_empty', async () => {
     await simple_asset_skip_empty.simple_asset_skip_empty.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await simple_asset_skip_empty.simple_asset_skip_empty.get_my_asset()
+    assert(my_asset.length == 0)
   })
 
   it('simple_asset_skip_empty_one_field', async () => {
     await simple_asset_skip_empty_one_field.simple_asset_skip_empty_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await simple_asset_skip_empty_one_field.simple_asset_skip_empty_one_field.get_my_asset()
+    assert(my_asset.length == 0)
   })
 
   it('simple_asset_skip_one_field', async () => {
     await simple_asset_skip_one_field.simple_asset_skip_one_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await simple_asset_skip_one_field.simple_asset_skip_one_field.get_my_asset()
+    assert(my_asset.length == 3)
+    assert(my_asset[0] == "id0")
+    assert(my_asset[1] == "id1")
+    assert(my_asset[2] == "id2")
   })
 
   it('simple_assign1', async () => {

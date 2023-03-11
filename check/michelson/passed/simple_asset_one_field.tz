@@ -1,26 +1,21 @@
-{ storage (pair (set %my_asset string) (int %n)) ;
-  parameter (or (or (unit %add_asset) (unit %remove_asset)) (unit %exec)) ;
+{ storage (set string) ;
+  parameter (or (unit %add_asset) (unit %remove_asset)) ;
   code { UNPAIR ;
-         DIP 1 { UNPAIR } ;
          IF_LEFT
-           { IF_LEFT
-               { DROP 1 ;
-                 DUP ;
-                 PUSH string "id4" ;
-                 MEM ;
-                 IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
-                    { DUP ; PUSH bool True ; PUSH string "id4" ; UPDATE ; SWAP ; DROP 1 } ;
-                 PAIR ;
-                 NIL operation ;
-                 PAIR }
-               { DROP 1 ;
-                 DUP ;
-                 PUSH bool False ;
-                 PUSH string "id0" ;
-                 UPDATE ;
-                 SWAP ;
-                 DROP 1 ;
-                 PAIR ;
-                 NIL operation ;
-                 PAIR } }
-           { DROP 1 ; PAIR ; NIL operation ; PAIR } } }
+           { DROP 1 ;
+             DUP ;
+             PUSH string "id4" ;
+             MEM ;
+             IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                { DUP ; PUSH bool True ; PUSH string "id4" ; UPDATE ; SWAP ; DROP 1 } ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             DUP ;
+             PUSH bool False ;
+             PUSH string "id0" ;
+             UPDATE ;
+             SWAP ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }

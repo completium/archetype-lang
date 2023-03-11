@@ -7,9 +7,6 @@ export type my_asset_container = Array<[
     att.Int
 ]>;
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("int", []), []);
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
-}
 export class Simple_asset_skip_empty {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
@@ -30,18 +27,6 @@ export class Simple_asset_skip_empty {
     async deploy(params: Partial<ex.Parameters>) {
         const address = (await ex.deploy("../tests/passed/simple_asset_skip_empty.arl", {}, params)).address;
         this.address = address;
-    }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
-        if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
-        if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
     }
     async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
