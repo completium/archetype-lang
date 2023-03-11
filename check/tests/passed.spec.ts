@@ -4543,6 +4543,7 @@ describe('passed', async () => {
   it('effect_control_matchwith', async () => {
     await effect_control_matchwith.effect_control_matchwith.deploy({ as: alice })
 
+    // TODO: handle value out of enum definition
     const res_before = await effect_control_matchwith.effect_control_matchwith.get_res();
     assert(res_before.equals(new Int(0)))
     await effect_control_matchwith.effect_control_matchwith.exec({ as: alice })
@@ -15416,42 +15417,119 @@ describe('passed', async () => {
 
   it('simple', async () => {
     await simple.simple.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple.simple.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple.simple.exec(new Nat(2), { as: alice })
+
+    const res_after = await simple.simple.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('simple2', async () => {
     await simple2.simple2.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple2.simple2.get_n()
+    assert(n_before.equals(new Int(0)))
+
+    await simple2.simple2.set_value(new Int(1), { as: alice })
+
+    const n_set_value = await simple2.simple2.get_n()
+    assert(n_set_value.equals(new Int(1)))
+
+    await simple2.simple2.inc({ as: alice })
+
+    const n_inc = await simple2.simple2.get_n()
+    assert(n_inc.equals(new Int(2)))
   })
 
   it('simple3', async () => {
     await simple3.simple3.deploy({ as: alice })
-    // TODO
+
+    await simple3.simple3.exec({ as: alice })
   })
 
   it('simple4', async () => {
     await simple4.simple4.deploy({ as: alice })
-    // TODO
+
+    await simple4.simple4.exec({ as: alice })
   })
 
   it('simple_2vars', async () => {
     await simple_2vars.simple_2vars.deploy({ as: alice })
-    // TODO
+
+    const a_before = await simple_2vars.simple_2vars.get_a()
+    assert(a_before.equals(new Nat(0)))
+    const b_before = await simple_2vars.simple_2vars.get_b()
+    assert(b_before.equals(new Int(0)))
+
+    await simple_2vars.simple_2vars.exec({ as: alice })
+
+    const a_after = await simple_2vars.simple_2vars.get_a()
+    assert(a_after.equals(new Nat(2)))
+    const b_after = await simple_2vars.simple_2vars.get_b()
+    assert(b_after.equals(new Int(3)))
   })
 
   it('simple_addupdate', async () => {
     await simple_addupdate.simple_addupdate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_addupdate.simple_addupdate.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v1.equals(new Nat(0)))
+    assert(my_asset_before[0][1].v2.equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v1.equals(new Nat(1)))
+    assert(my_asset_before[1][1].v2.equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v1.equals(new Nat(2)))
+    assert(my_asset_before[2][1].v2.equals(new Int(2)))
+
+    await simple_addupdate.simple_addupdate.exec({ as: alice })
+
+    const my_asset_after = await simple_addupdate.simple_addupdate.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v1.equals(new Nat(0)))
+    assert(my_asset_after[0][1].v2.equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v1.equals(new Nat(1)))
+    assert(my_asset_after[1][1].v2.equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v1.equals(new Nat(2)))
+    assert(my_asset_after[2][1].v2.equals(new Int(2)))
+    assert(my_asset_after[3][0] == "id3")
+    assert(my_asset_after[3][1].v1.equals(new Nat(3)))
+    assert(my_asset_after[3][1].v2.equals(new Int(0)))
   })
 
   it('simple_addupdate_asset', async () => {
     await simple_addupdate_asset.simple_addupdate_asset.deploy({ as: alice })
-    // TODO
+
+    const updatableMap_before = await simple_addupdate_asset.simple_addupdate_asset.get_updatableMap()
+    assert(updatableMap_before.length == 0)
+
+    await simple_addupdate_asset.simple_addupdate_asset.update(new Nat(0), new Nat(1), "mystr", { as: alice })
+
+    const updatableMap_after = await simple_addupdate_asset.simple_addupdate_asset.get_updatableMap()
+    assert(updatableMap_after.length == 1)
+    assert(updatableMap_after[0][0].equals(new Nat(0)))
+    assert(updatableMap_after[0][1].value1.equals(new Nat(1)))
+    assert(updatableMap_after[0][1].value2 == "mystr")
   })
 
   it('simple_arg_int', async () => {
     await simple_arg_int.simple_arg_int.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_arg_int.simple_arg_int.get_n()
+    assert(n_before.equals(new Int(0)))
+
+    await simple_arg_int.simple_arg_int.assign(new Int(2), { as: alice })
+
+    const n_after = await simple_arg_int.simple_arg_int.get_n()
+    assert(n_after.equals(new Int(2)))
   })
 
   it('simple_arith', async () => {
