@@ -14379,9 +14379,12 @@ describe('passed', async () => {
 
   it('not_nat', async () => {
     await not_nat.not_nat.deploy({ as: alice })
+
     const res_before = await not_nat.not_nat.get_res();
     assert(res_before.equals(new Int(0)), "Invalid Value")
+
     await not_nat.not_nat.exec({ as: alice })
+
     const res_after = await not_nat.not_nat.get_res();
     assert(res_after.equals(new Int(-8)), "Invalid Value")
   })
@@ -14394,31 +14397,96 @@ describe('passed', async () => {
 
   it('one_constant', async () => {
     await one_constant.one_constant.deploy({ as: alice })
-    // TODO
+
+    const res_before = await one_constant.one_constant.get_res();
+    assert(res_before == "")
+
+    await one_constant.one_constant.exec({ as: alice })
+
+    const res_after = await one_constant.one_constant.get_res();
+    assert(res_after == "my_constant")
   })
 
   it('op_assign_rat_update_asset', async () => {
     await op_assign_rat_update_asset.op_assign_rat_update_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await op_assign_rat_update_asset.op_assign_rat_update_asset.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].r1.equals(new Rational(1)))
+    assert(my_asset_before[0][1].r2.equals(new Rational(1)))
+    assert(my_asset_before[0][1].r3.equals(new Rational(1)))
+    assert(my_asset_before[0][1].r4.equals(new Rational(1)))
+
+    await op_assign_rat_update_asset.op_assign_rat_update_asset.exec({ as: alice })
+
+    const my_asset_after = await op_assign_rat_update_asset.op_assign_rat_update_asset.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].r1.equals(new Rational(2)))
+    assert(my_asset_after[0][1].r2.equals(new Rational(0)))
+    assert(my_asset_after[0][1].r3.equals(new Rational(0.9)))
+    assert(my_asset_after[0][1].r4.equals(new Rational(1, new BigNumber(0.9))))
   })
 
   it('param_const', async () => {
     await param_const.param_const.deploy(new Nat(2), { as: alice })
+
     const res_before = await param_const.param_const.get_res();
-    assert(res_before.equals(new Nat(0)), "Invalid Value")
+    assert(res_before.equals(new Nat(0)))
+
     await param_const.param_const.exec({ as: alice })
+
     const res_after = await param_const.param_const.get_res();
-    assert(res_after.equals(new Nat(2)), "Invalid Value")
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('parameter_expr_map', async () => {
     await parameter_expr_map.parameter_expr_map.deploy({ as: alice })
-    // TODO
+
+    await parameter_expr_map.parameter_expr_map.e0({ as: alice })
+
+    const smap_before = await parameter_expr_map.parameter_expr_map.get_smap()
+    assert(smap_before.length == 0)
+    const slist_before = await parameter_expr_map.parameter_expr_map.get_slist()
+    assert(slist_before.length == 0)
+
+    await parameter_expr_map.parameter_expr_map.put([["a", new Nat(2)]], "k", new Nat(0), { as: alice })
+
+    const smap_put = await parameter_expr_map.parameter_expr_map.get_smap()
+    assert(smap_put.length == 2)
+    assert(smap_put[0][0] == "a")
+    assert(smap_put[0][1].equals(new Nat(2)))
+    assert(smap_put[1][0] == "k")
+    assert(smap_put[1][1].equals(new Nat(0)))
+    const slist_put = await parameter_expr_map.parameter_expr_map.get_slist()
+    assert(slist_put.length == 0)
+
+    await parameter_expr_map.parameter_expr_map.e2([new Nat(0)], { as: alice })
+
+    const smap_e2 = await parameter_expr_map.parameter_expr_map.get_smap()
+    assert(smap_e2.length == 2)
+    assert(smap_e2[0][0] == "a")
+    assert(smap_e2[0][1].equals(new Nat(2)))
+    assert(smap_e2[1][0] == "k")
+    assert(smap_e2[1][1].equals(new Nat(0)))
+    const slist_e2 = await parameter_expr_map.parameter_expr_map.get_slist()
+    assert(slist_e2.length == 1)
+    assert(slist_e2[0].equals(new Nat(0)))
   })
 
   it('partial_record', async () => {
     await partial_record.partial_record.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await partial_record.partial_record.get_my_asset()
+    assert(my_asset_before.length == 0)
+
+    await partial_record.partial_record.exec({ as: alice })
+
+    const my_asset_after = await partial_record.partial_record.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "myid")
+    assert(my_asset_after[0][1].equals(new Nat(0)))
   })
 
   it('rat_arith_div', async () => {

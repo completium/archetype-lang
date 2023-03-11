@@ -1,12 +1,12 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const asset1_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export const asset1_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
-export type asset1_container = Array<[
+export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
+export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export type my_asset_container = Array<[
     string,
-    att.Int
+    att.Nat
 ]>;
-export const asset1_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("int", []), []);
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("nat", []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -43,17 +43,10 @@ export class Partial_record {
         }
         throw new Error("Contract not initialised");
     }
-    async get_v(): Promise<att.Int> {
+    async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Int.from_mich((storage as att.Mpair).args[0]);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_asset1(): Promise<asset1_container> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map((storage as att.Mpair).args[1], (x, y) => [att.mich_to_string(x), att.Int.from_mich(y)]);
+            return att.mich_to_map(storage, (x, y) => [att.mich_to_string(x), att.Nat.from_mich(y)]);
         }
         throw new Error("Contract not initialised");
     }

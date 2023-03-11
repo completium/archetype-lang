@@ -1,6 +1,6 @@
 archetype op_assign_rat_update_asset
 
-asset ledger {
+asset my_asset {
   a: nat;
   r1: rational;
   r2: rational;
@@ -11,5 +11,5 @@ asset ledger {
 }
 
 entry exec () {
-  ledger.update(0, { r1 += 1; r2 -= 1; r3 *= 0.9; r4 /= 0.9 })
+  my_asset.update(0, { r1 += 1; r2 -= 1; r3 *= 0.9; r4 /= 0.9 })
 }

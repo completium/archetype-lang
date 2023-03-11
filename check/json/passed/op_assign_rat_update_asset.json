@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "ledger",
+        "name": "my_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -412,10 +412,10 @@
   },
   "storage": [
     {
-      "name": "ledger",
+      "name": "my_asset",
       "type": {
         "node": "asset",
-        "name": "ledger",
+        "name": "my_asset",
         "int_value": null,
         "args": []
       },

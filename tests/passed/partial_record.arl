@@ -1,14 +1,10 @@
 archetype partial_record
 
-variable v : int = 1
-
-asset asset1 {
+asset my_asset {
   id: string;
-  val: int = 0;
+  val: nat = 0;
 }
 
 entry exec () {
-  effect {
-    asset1.add({ id = "myid" })
-  }
+  my_asset.add({ id = "myid" })
 }
