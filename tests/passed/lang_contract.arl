@@ -6,14 +6,13 @@ entry otherentry(i : int) {
   res := i;
 }
 
-entry exec () {
+entry exec (a : address) {
   // simple
-  var e1 : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
-  transfer 0tz to entry e1(());
+  var e1 : contract<unit> = @tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb;
+  transfer 1tz to entry e1(());
 
   // dynamically from an address and string
-  var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
-  var e2 ?= get_entrypoint<int>("%an_entry", a) : "NOT_FOUND";
+  var e2 ?= get_entrypoint<int>("%otherentry", a) : "NOT_FOUND";
   transfer 0tz to entry e2(2);
 
   // from

@@ -9,7 +9,7 @@
   },
   "storage": [
     {
-      "name": "l",
+      "name": "res",
       "type": {
         "node": "list",
         "name": null,
@@ -90,7 +90,7 @@
   },
   "entrypoints": [
     {
-      "name": "default",
+      "name": "exec",
       "args": []
     }
   ],

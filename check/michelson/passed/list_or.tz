@@ -1,5 +1,5 @@
 { storage (list (or nat string)) ;
-  parameter (unit %default) ;
+  parameter (unit %exec) ;
   code { CDR ;
          DUP ;
          PUSH nat 1 ;

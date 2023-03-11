@@ -1,7 +1,7 @@
 archetype list_option
 
-variable l : list<option<nat>> = []
+variable res : list<option<nat>> = []
 
-entry default () {
-  l := prepend(l, some(1))
+entry exec () {
+  res := prepend(res, some(1))
 }

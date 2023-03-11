@@ -13769,122 +13769,178 @@ describe('passed', async () => {
 
   it('lang_arith', async () => {
     await lang_arith.lang_arith.deploy({ as: alice })
-    // TODO
+
+    await lang_arith.lang_arith.exec({ as: alice })
   })
 
   it('lang_asset', async () => {
     await lang_asset.lang_asset.deploy({ as: alice })
-    // TODO
+
+    await lang_asset.lang_asset.exec({ as: alice })
   })
 
   it('lang_assign', async () => {
     await lang_assign.lang_assign.deploy({ as: alice })
-    // TODO
+
+    await lang_assign.lang_assign.exec({ as: alice })
   })
 
   it('lang_big_map', async () => {
     await lang_big_map.lang_big_map.deploy({ as: alice })
-    // TODO
+
+    await lang_big_map.lang_big_map.exec({ as: alice })
   })
 
   it('lang_cast', async () => {
     await lang_cast.lang_cast.deploy({ as: alice })
-    // TODO
+
+    await lang_cast.lang_cast.exec({ as: alice })
   })
 
   it('lang_cmp', async () => {
     await lang_cmp.lang_cmp.deploy({ as: alice })
-    // TODO
+
+    await lang_cmp.lang_cmp.exec({ as: alice })
   })
 
   it('lang_contract', async () => {
-    await lang_contract.lang_contract.deploy({ as: alice })
-    // TODO
+    await lang_contract.lang_contract.deploy({amount: new Tez(1), as: alice })
+
+    await lang_contract.lang_contract.exec(lang_contract.lang_contract.get_address(), { as: alice })
   })
 
   it('lang_crypto', async () => {
     await lang_crypto.lang_crypto.deploy({ as: alice })
-    // TODO
+
+    await lang_crypto.lang_crypto.exec({ as: alice })
   })
 
   it('lang_cst', async () => {
     await lang_cst.lang_cst.deploy({ as: alice })
-    // TODO
+
+    await lang_cst.lang_cst.exec({ as: alice })
   })
 
   it('lang_entry', async () => {
     await lang_entry.lang_entry.deploy({ as: alice })
-    // TODO
+
+    await lang_entry.lang_entry.exec({ as: alice })
   })
 
   it('lang_enum', async () => {
     await lang_enum.lang_enum.deploy({ as: alice })
+
+    await lang_enum.lang_enum.exec({ as: alice })
   })
 
   it('lang_funs', async () => {
     await lang_funs.lang_funs.deploy({ as: alice })
-    // TODO
+
+    await lang_funs.lang_funs.exec({ as: alice })
   })
 
   it('lang_list', async () => {
     await lang_list.lang_list.deploy({ as: alice })
-    // TODO
+
+    await lang_list.lang_list.exec({ as: alice })
   })
 
   it('lang_literals', async () => {
     await lang_literals.lang_literals.deploy({ as: alice })
-    // TODO
+
+    await lang_literals.lang_literals.exec({ as: alice })
   })
 
   it('lang_map', async () => {
     await lang_map.lang_map.deploy({ as: alice })
-    // TODO
+
+    await lang_map.lang_map.exec({ as: alice })
   })
 
   it('lang_methods_asset', async () => {
     await lang_methods_asset.lang_methods_asset.deploy({ as: alice })
-    // TODO
+
+    await lang_methods_asset.lang_methods_asset.exec({ as: alice })
   })
 
   it('lang_set', async () => {
     await lang_set.lang_set.deploy({ as: alice })
-    // TODO
+
+    await lang_set.lang_set.exec({ as: alice })
   })
 
   it('large_if', async () => {
     await large_if.large_if.deploy({ as: alice })
+
     const res_before = await large_if.large_if.get_res();
-    assert(res_before.equals(new Nat(0)), "Invalid Value")
+    assert(res_before.equals(new Nat(0)))
+
     await large_if.large_if.exec({ as: alice })
+
     const res_after = await large_if.large_if.get_res();
-    assert(res_after.equals(new Nat(86)), "Invalid Value")
+    assert(res_after.equals(new Nat(86)))
   })
 
   it('list_list', async () => {
     await list_list.list_list.deploy({ as: alice })
-    // TODO
+
+    const res_before = await list_list.list_list.get_res();
+    assert(res_before.length == 0)
+
+    await list_list.list_list.exec({ as: alice })
+
+    const res_after = await list_list.list_list.get_res();
+    assert(res_after.length == 1)
+    assert(res_after[0].length == 1)
+    assert(res_after[0][0].equals(new Nat(1)))
   })
 
   it('list_nth_out_of_bound', async () => {
     await list_nth_out_of_bound.list_nth_out_of_bound.deploy({ as: alice })
-    // TODO
+
+    const res_before = await list_nth_out_of_bound.list_nth_out_of_bound.get_res();
+    assert(res_before.equals(Option.None()))
+
+    await list_nth_out_of_bound.list_nth_out_of_bound.exec({ as: alice })
+
+    const res_after = await list_nth_out_of_bound.list_nth_out_of_bound.get_res();
+    assert(res_after.equals(Option.None()))
   })
 
   it('list_option', async () => {
     await list_option.list_option.deploy({ as: alice })
-    // TODO
+
+    const res_before = await list_option.list_option.get_res();
+    assert(res_before.length == 0)
+
+    await list_option.list_option.exec({ as: alice })
+
+    const res_after = await list_option.list_option.get_res();
+    assert(res_after.length == 1)
+    assert(res_after[0].equals(Option.Some(new Nat(1))))
   })
 
   it('list_or', async () => {
     await list_or.list_or.deploy({ as: alice })
-    // TODO
+
+    const res_before = await list_or.list_or.get_res();
+    assert(res_before.length == 0)
+
+    await list_or.list_or.exec({ as: alice })
+
+    const res_after = await list_or.list_or.get_res();
+    assert(res_after.length == 1)
+    assert(res_after[0].equals(Or.Left(new Nat(1))))
   })
 
   it('lit_list', async () => {
     await lit_list.lit_list.deploy({ as: alice })
+
     const res_before = await lit_list.lit_list.get_res();
     assert(res_before.length == 0)
+
     await lit_list.lit_list.exec({ as: alice })
+
     const res_after = await lit_list.lit_list.get_res();
     assert(res_after.length == 3)
     assert(res_after[0].equals(new Nat(0)))
@@ -13894,9 +13950,12 @@ describe('passed', async () => {
 
   it('lit_map', async () => {
     await lit_map.lit_map.deploy({ as: alice })
+
     const res_before = await lit_map.lit_map.get_res();
     assert(res_before.length == 0)
+
     await lit_map.lit_map.exec({ as: alice })
+
     const res_after = await lit_map.lit_map.get_res();
     assert(res_after.length == 3)
     assert(res_after[0][0].equals(new Nat(0)))
@@ -13909,9 +13968,12 @@ describe('passed', async () => {
 
   it('lit_set', async () => {
     await lit_set.lit_set.deploy({ as: alice })
+
     const res_before = await lit_set.lit_set.get_res();
     assert(res_before.length == 0)
+
     await lit_set.lit_set.exec({ as: alice })
+
     const res_after = await lit_set.lit_set.get_res();
     assert(res_after.length == 3)
     assert(res_after[0].equals(new Nat(0)))
@@ -13921,12 +13983,25 @@ describe('passed', async () => {
 
   it('lit_tez_underscore', async () => {
     await lit_tez_underscore.lit_tez_underscore.deploy({ as: alice })
-    // TODO
+
+    const res0 = await lit_tez_underscore.lit_tez_underscore.get_res0();
+    assert(res0.equals(new Tez(1000)))
+    const res1 = await lit_tez_underscore.lit_tez_underscore.get_res1();
+    assert(res1.equals(new Tez(1000)))
+    const res2 = await lit_tez_underscore.lit_tez_underscore.get_res2();
+    assert(res2.equals(new Tez(1000)))
   })
 
   it('literal_in_argument', async () => {
     await literal_in_argument.literal_in_argument.deploy({ as: alice })
-    // TODO
+
+    const res_before = await literal_in_argument.literal_in_argument.get_res();
+    assert(res_before.equals(new Rational(0)))
+
+    await literal_in_argument.literal_in_argument.exec({ as: alice })
+
+    const res_after = await literal_in_argument.literal_in_argument.get_res();
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('map_asset', async () => {

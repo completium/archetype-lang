@@ -1,7 +1,7 @@
 { storage unit ;
   parameter (unit %exec) ;
   code { CDR ;
-         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
          SENDER ;
          COMPARE ;
          EQ ;

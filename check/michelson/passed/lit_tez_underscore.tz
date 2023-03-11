@@ -1,14 +1,3 @@
-{ storage mutez ;
-  parameter (unit %exec) ;
-  code { CDR ;
-         PUSH mutez 1000000000 ;
-         SWAP ;
-         DROP 1 ;
-         PUSH mutez 1000000000 ;
-         SWAP ;
-         DROP 1 ;
-         PUSH mutez 1000000000 ;
-         SWAP ;
-         DROP 1 ;
-         NIL operation ;
-         PAIR } }
+{ storage (pair (mutez %res0) (mutez %res1) (mutez %res2)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

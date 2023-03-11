@@ -81,7 +81,7 @@
               DUG 2 } ;
          DUP 4 ;
          DUP 5 ;
-         DUP 3 ;
+         PUSH string "key" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
@@ -90,7 +90,7 @@
          SWAP ;
          DROP 1 ;
          DUP 6 ;
-         DUP 4 ;
+         PUSH string "key" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
@@ -102,7 +102,7 @@
          SWAP ;
          PAIR ;
          SOME ;
-         DUP 3 ;
+         PUSH string "key" ;
          UPDATE ;
          DIP 1 { DIG 3 ; DROP 1 } ;
          DUG 3 ;
@@ -114,7 +114,7 @@
          DUG 2 ;
          DUP 4 ;
          DUP 5 ;
-         DUP 3 ;
+         PUSH string "key" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
@@ -123,7 +123,7 @@
          SWAP ;
          DROP 1 ;
          DUP 6 ;
-         DUP 4 ;
+         PUSH string "key" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
@@ -135,7 +135,7 @@
          SWAP ;
          PAIR ;
          SOME ;
-         DUP 3 ;
+         PUSH string "key" ;
          UPDATE ;
          DIP 1 { DIG 3 ; DROP 1 } ;
          DUG 3 ;
@@ -204,7 +204,7 @@
               DIP 1 { DIG 3 ; DROP 1 } ;
               DUG 3 } ;
          DUP 4 ;
-         DUP 2 ;
+         PUSH string "key" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }

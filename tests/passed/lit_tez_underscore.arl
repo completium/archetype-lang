@@ -1,9 +1,5 @@
 archetype lit_tez_underscore
 
-variable res : tez = 0tz
-
-entry exec () {
-  res := 1_000tz;
-  res := 1_000_000mtz;
-  res := 1_000_000_000utz
-}
+variable res0 : tez = 1_000tz
+variable res1 : tez = 1_000_000mtz
+variable res2 : tez = 1_000_000_000utz

@@ -9,7 +9,27 @@
   },
   "storage": [
     {
-      "name": "res",
+      "name": "res0",
+      "type": {
+        "node": "currency",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res1",
+      "type": {
+        "node": "currency",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "res2",
       "type": {
         "node": "currency",
         "name": null,
@@ -21,11 +41,51 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "mutez",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
-      "args": [],
+      "args": [
+        {
+          "prim": "mutez",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res0"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "mutez",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res1"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "mutez",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res2"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
       "annots": [],
       "array": [],
       "var_id": null,
@@ -33,12 +93,7 @@
     },
     "is_storable": true
   },
-  "entrypoints": [
-    {
-      "name": "exec",
-      "args": []
-    }
-  ],
+  "entrypoints": [],
   "getters": [],
   "views": [],
   "errors": []

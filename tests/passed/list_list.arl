@@ -1,7 +1,7 @@
 archetype list_list
 
-variable l : list<list<nat>> = []
+variable res : list<list<nat>> = []
 
-entry default () {
-  l := prepend(l, [1])
+entry exec () {
+  res := prepend(res, [1])
 }

@@ -263,6 +263,6 @@ function byte_to_nat(input : bytes) : nat {
 
 variable res : nat = 0
 
-entry exec() {
+entry exec () {
   res := byte_to_nat(0x56)
 }
