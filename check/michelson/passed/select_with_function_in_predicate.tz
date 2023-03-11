@@ -1,5 +1,5 @@
 { storage (pair (map %my_asset string int) (int %res)) ;
-  parameter (string %exec) ;
+  parameter (unit %exec) ;
   code { LAMBDA
            unit
            int
@@ -7,11 +7,12 @@
          SWAP ;
          UNPAIR ;
          DIP 1 { UNPAIR } ;
+         DROP 1 ;
          NIL string ;
          NIL string ;
-         DUP 4 ;
+         DUP 3 ;
          ITER { UNPAIR ;
-                DUP 8 ;
+                DUP 7 ;
                 UNIT ;
                 EXEC ;
                 DUP 3 ;
@@ -38,15 +39,15 @@
                 DROP 1 } ;
          CDR ;
          IF_NONE { PUSH string "OUT_OF_BOUND" ; FAILWITH } {} ;
-         DUP 4 ;
+         DUP 3 ;
          DUP 2 ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         DIP 1 { DIG 4 ; DROP 1 } ;
-         DUG 4 ;
-         DROP 3 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
          PAIR ;
          NIL operation ;
          PAIR ;

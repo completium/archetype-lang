@@ -1,7 +1,7 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (t: att.Sapling_transaction): att.Micheline => {
+    return t.to_mich();
 }
 export class Sapling_var {
     address: string | undefined;
@@ -24,15 +24,15 @@ export class Sapling_var {
         const address = (await ex.deploy("../tests/passed/sapling_var.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(t: att.Sapling_transaction, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(t), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(t: att.Sapling_transaction, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(t), params);
         }
         throw new Error("Contract not initialised");
     }

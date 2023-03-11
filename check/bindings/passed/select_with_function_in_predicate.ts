@@ -7,8 +7,8 @@ export type my_asset_container = Array<[
     att.Int
 ]>;
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("int", []), []);
-const exec_arg_to_mich = (str: string): att.Micheline => {
-    return att.string_to_mich(str);
+const exec_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Select_with_function_in_predicate {
     address: string | undefined;
@@ -31,15 +31,15 @@ export class Select_with_function_in_predicate {
         const address = (await ex.deploy("../tests/passed/select_with_function_in_predicate.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(str: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(str), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(str: string, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(str), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

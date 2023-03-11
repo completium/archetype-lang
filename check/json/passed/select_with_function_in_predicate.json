@@ -179,17 +179,7 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": [
-        {
-          "name": "str",
-          "type": {
-            "node": "string",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "getters": [],

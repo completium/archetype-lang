@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Duration, Int, Micheline, MichelineType, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Chain_id, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -13287,14 +13287,14 @@ describe('passed', async () => {
   it('instr_map_remove', async () => {
     await instr_map_remove.instr_map_remove.deploy({ as: alice })
 
-    const res_before = await instr_map_put.instr_map_put.get_res()
+    const res_before = await instr_map_remove.instr_map_remove.get_res()
     assert(res_before.length == 1)
     assert(res_before[0][0].equals(new Nat(0)))
     assert(res_before[0][1] == "0")
 
-    await instr_map_put.instr_map_put.exec({ as: alice })
+    await instr_map_remove.instr_map_remove.exec({ as: alice })
 
-    const res_after = await instr_map_put.instr_map_put.get_res()
+    const res_after = await instr_map_remove.instr_map_remove.get_res()
     assert(res_after.length == 0)
   })
 
@@ -15114,7 +15114,7 @@ describe('passed', async () => {
 
     await expect_to_fail(async () => {
       await reverse_otherwise.reverse_otherwise.exec({ as: alice })
-    }, {string: "false"})
+    }, { string: "false" })
   })
 
   it('reverse_with_enum', async () => {
@@ -15147,12 +15147,31 @@ describe('passed', async () => {
 
   it('same_varname_in_two_distinct_scope', async () => {
     await same_varname_in_two_distinct_scope.same_varname_in_two_distinct_scope.deploy({ as: alice })
-    // TODO
+
+    await same_varname_in_two_distinct_scope.same_varname_in_two_distinct_scope.exec({ as: alice })
   })
 
   it('sample_asset_view', async () => {
     await sample_asset_view.sample_asset_view.deploy({ as: alice })
-    // TODO
+
+    const res_before = await sample_asset_view.sample_asset_view.get_res();
+    assert(res_before.length == 0)
+
+    await sample_asset_view.sample_asset_view.exec([new Nat(0)], { as: alice })
+
+    const res_after = await sample_asset_view.sample_asset_view.get_res();
+    assert(res_after.length == 1)
+    assert(res_after[0].equals(new Nat(0)))
+
+    const g = await sample_asset_view.sample_asset_view.my_getter({ as: alice })
+    assert(g.length == 2)
+    assert(g[0].equals(new Nat(0)))
+    assert(g[1].equals(new Nat(2)))
+
+    const v = await sample_asset_view.sample_asset_view.view_my_view({ as: alice })
+    assert(v?.length == 2)
+    assert(v[0].equals(new Nat(0)))
+    assert(v[1].equals(new Nat(2)))
   })
 
   it('sample_view_asset_value', async () => {
@@ -15167,57 +15186,232 @@ describe('passed', async () => {
 
   it('sapling_empty_state', async () => {
     await sapling_empty_state.sapling_empty_state.deploy({ as: alice })
-    // TODO
+    // TODO: bug archetype-ts-type
+    const res_before = await sapling_empty_state.sapling_empty_state.get_res();
+    // assert(res_before.equals(new Sapling_state("")))
+
+    await sapling_empty_state.sapling_empty_state.exec({ as: alice })
+
+    const res_after = await sapling_empty_state.sapling_empty_state.get_res();
+    // assert(res_after.equals(new Sapling_state("")))
   })
 
   it('sapling_var', async () => {
     await sapling_var.sapling_var.deploy({ as: alice })
-    // TODO
+    // TODO: fix transaction sapling bytes
+    const n_before = await sapling_var.sapling_var.get_n();
+    // assert(n_before !== undefined)
+    const s_before = await sapling_var.sapling_var.get_s();
+    // assert(s_before !== undefined)
+
+    await sapling_var.sapling_var.exec(new Sapling_transaction("00000000000001f3849b5eba6e22354dbbccf076d39d63ab59d091f44bed6deb71a319cc10afed24a34ffaa403d7e58766dc6c5e0364a3d1a47e7286d87855544b8a9a4f04d6e1a6f80dba30932a82bb68fce3299aeed3ee9422d1330cffefed109dd0b753263470bea78799ee3f3cbb26a08c5dd8310ae8af66feb33950c45c67b7439e8c41e7941457b941e9ea3157105b860f9424eb210b4de663cd1239f692315049f789d367552c929f6b2aa4f0d01f2384ad1cc2daa5c4cd0731245506b614f67e7bd102ee0b639501c39b7028766fb469a99d3cd3754207098a1daec24645419514e76cbc29173e49d5d16e7aa43cd96acb77054aa333078b407987c4afdd42160bc5f585ba60296a8c1a1e48b7070c1d7106afdf6bf32c688d153b3871a784c354a779560000004f544b45fe787256593b593dcf8e54e9d57c15f86ad6ebc17c3ff65d5e7e6f216283ab4af840848b9a6928f3d65156fd10bef74b06366de141f906f94b48c9f0d0af5da81ee00177b8760cb6b99f74db3951eede8ad2be0b2f7aee18486431a9a1a439c639cacb0f6ebf7834e7c772d8cfa98ec7c844298f59107b5933c8876eeca7368bb9b0efb82b35e3acf6c0f6a1a7db98f3cd1c4e93f865dd654b393425d04a78e0a72529511e961025ba5e41d83a56825ab4db8809c7e9589959453608b4db6e1ce0ffa0077237bd3477007cc972642977b926d3d0d4f690550fbb543193ab31bf2c2ddf7c2a946fae1c62253dafaf25b87cbc18107469630b9f2cd0657cfdf4a6fff5d9f04bc1a50e43613900ffffffffff676980fbc2f4300c01f0b7820d00e3347c8da4ee614674376cbc45359daa54f9b5493e00000000"), { as: alice })
+
+    const n_after = await sapling_var.sapling_var.get_n();
+    // console.log(n_after.toString())
+    // assert(n_after !== undefined)
+    const s_after = await sapling_var.sapling_var.get_s();
+    // console.log(s_after.toString())
+    // assert(s_after !== undefined)
   })
 
   it('sapling_verify_update', async () => {
     await sapling_verify_update.sapling_verify_update.deploy({ as: alice })
-    // TODO
+    // TODO: find values
   })
 
   it('section_constant_effect', async () => {
     await section_constant_effect.section_constant_effect.deploy({ as: alice })
-    // TODO
+
+    const res2_before = await section_constant_effect.section_constant_effect.get_res2();
+    assert(res2_before.equals(new Nat(0)))
+    const res3_before = await section_constant_effect.section_constant_effect.get_res3();
+    assert(res3_before.equals(new Nat(0)))
+
+    await section_constant_effect.section_constant_effect.exec({ as: alice })
+
+    const res2_after = await section_constant_effect.section_constant_effect.get_res2();
+    assert(res2_after.equals(new Nat(2)))
+    const res3_after = await section_constant_effect.section_constant_effect.get_res3();
+    assert(res3_after.equals(new Nat(3)))
   })
 
   it('section_constant_transition', async () => {
     await section_constant_transition.section_constant_transition.deploy({ as: alice })
-    // TODO
+
+    const res2_before = await section_constant_transition.section_constant_transition.get_res2();
+    assert(res2_before.equals(new Nat(0)))
+    const res3_before = await section_constant_transition.section_constant_transition.get_res3();
+    assert(res3_before.equals(new Nat(0)))
+
+    await section_constant_transition.section_constant_transition.exec({ as: alice })
+
+    const res2_after = await section_constant_transition.section_constant_transition.get_res2();
+    assert(res2_after.equals(new Nat(2)))
+    const res3_after = await section_constant_transition.section_constant_transition.get_res3();
+    assert(res3_after.equals(new Nat(3)))
   })
 
   it('select_partition', async () => {
     await select_partition.select_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await select_partition.select_partition.get_my_asset_value("toto")
+    assert(my_asset_before == undefined)
+    const o_asset_before = await select_partition.select_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+    const res_before = await select_partition.select_partition.get_res()
+    assert(res_before.length == 0)
+
+    await select_partition.select_partition.init({ as: alice })
+
+    const my_asset_init = await select_partition.select_partition.get_my_asset_value("toto")
+    assert(my_asset_init?.length == 1)
+    assert(my_asset_init[0] == "tutu")
+    const o_asset_init = await select_partition.select_partition.get_o_asset()
+    assert(o_asset_init.length == 1)
+    assert(o_asset_init[0][0] == "tutu")
+    assert(o_asset_init[0][1].equals(new Nat(2)))
+    const res_init = await select_partition.select_partition.get_res()
+    assert(res_init.length == 0)
+
+    await select_partition.select_partition.exec({ as: alice })
+
+    const my_asset_after = await select_partition.select_partition.get_my_asset_value("toto")
+    assert(my_asset_after?.length == 1)
+    assert(my_asset_after[0] == "tutu")
+    const o_asset_after = await select_partition.select_partition.get_o_asset()
+    assert(o_asset_after.length == 1)
+    assert(o_asset_after[0][0] == "tutu")
+    assert(o_asset_after[0][1].equals(new Nat(2)))
+    const res_after = await select_partition.select_partition.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0] == "tutu")
   })
 
   it('select_partition_big_map', async () => {
     await select_partition_big_map.select_partition_big_map.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await select_partition_big_map.select_partition_big_map.get_my_asset_value("toto")
+    assert(my_asset_before == undefined)
+    const o_asset_before = await select_partition_big_map.select_partition_big_map.get_o_asset_value("tutu")
+    assert(o_asset_before == undefined)
+    const res_before = await select_partition_big_map.select_partition_big_map.get_res()
+    assert(res_before.length == 0)
+
+    await select_partition_big_map.select_partition_big_map.init({ as: alice })
+
+    const my_asset_init = await select_partition_big_map.select_partition_big_map.get_my_asset_value("toto")
+    assert(my_asset_init?.length == 1)
+    assert(my_asset_init[0] == "tutu")
+    const o_asset_init = await select_partition_big_map.select_partition_big_map.get_o_asset_value("tutu")
+    assert(o_asset_init?.equals(new Nat(2)))
+    const res_init = await select_partition_big_map.select_partition_big_map.get_res()
+    assert(res_init.length == 0)
+
+    await select_partition_big_map.select_partition_big_map.exec({ as: alice })
+
+    const my_asset_after = await select_partition_big_map.select_partition_big_map.get_my_asset_value("toto")
+    assert(my_asset_after?.length == 1)
+    assert(my_asset_after[0] == "tutu")
+    const o_asset_after = await select_partition_big_map.select_partition_big_map.get_o_asset_value("tutu")
+    assert(o_asset_after?.equals(new Nat(2)))
+    const res_after = await select_partition_big_map.select_partition_big_map.get_res()
+    assert(res_after.length == 1)
+    assert(res_after[0] == "tutu")
   })
 
   it('select_with_extra_var', async () => {
     await select_with_extra_var.select_with_extra_var.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await select_with_extra_var.select_with_extra_var.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_before = await select_with_extra_var.select_with_extra_var.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await select_with_extra_var.select_with_extra_var.exec("id2", { as: alice })
+
+    const my_asset_after = await select_with_extra_var.select_with_extra_var.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(2)))
+    const res_after = await select_with_extra_var.select_with_extra_var.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('select_with_extra_var2', async () => {
     await select_with_extra_var2.select_with_extra_var2.deploy({ as: alice })
-    // TODO
+
+    set_mockup_now(new Date("2020-01-01"))
+
+    const my_asset_before = await select_with_extra_var2.select_with_extra_var2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    const res_before = await select_with_extra_var2.select_with_extra_var2.get_res()
+    assert(res_before.length == 0)
+
+    await select_with_extra_var2.select_with_extra_var2.exec({ as: alice })
+
+    const my_asset_after = await select_with_extra_var2.select_with_extra_var2.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].toISOString() == '2020-12-31T00:00:00.000Z')
+    const res_after = await select_with_extra_var2.select_with_extra_var2.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0] == "id0")
+    assert(res_after[1] == "id1")
+    assert(res_after[2] == "id2")
   })
 
   it('select_with_function_in_predicate', async () => {
     await select_with_function_in_predicate.select_with_function_in_predicate.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await select_with_function_in_predicate.select_with_function_in_predicate.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_before = await select_with_function_in_predicate.select_with_function_in_predicate.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await select_with_function_in_predicate.select_with_function_in_predicate.exec({ as: alice })
+
+    const my_asset_after = await select_with_function_in_predicate.select_with_function_in_predicate.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(2)))
+    const res_after = await select_with_function_in_predicate.select_with_function_in_predicate.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('setdelegate', async () => {
     await setdelegate.setdelegate.deploy({ as: alice })
-    // TODO
+
+    // await setdelegate.setdelegate.exec(new Key_hash(alice.get_address().toString()), { as: alice })
   })
 
   it('simple', async () => {

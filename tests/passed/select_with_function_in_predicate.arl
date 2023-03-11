@@ -15,7 +15,7 @@ function f () : int {
   return 1
 }
 
-entry exec (str : string) {
+entry exec () {
   var l = my_asset.select(the.value = f());
   var k ?= l.nth(0) : "OUT_OF_BOUND";
   res := my_asset[k].value

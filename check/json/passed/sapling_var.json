@@ -85,7 +85,17 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "t",
+          "type": {
+            "node": "sapling_transaction",
+            "name": null,
+            "int_value": 8,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],

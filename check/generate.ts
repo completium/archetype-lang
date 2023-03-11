@@ -103,7 +103,7 @@ const generate_spec_passed = (input: Array<string>) => {
 
   const output = `/* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Duration, Int, Micheline, MichelineType, Nat, Option, Or, Rational, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Chain_id, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
