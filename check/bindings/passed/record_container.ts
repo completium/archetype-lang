@@ -31,9 +31,6 @@ export const my_record_mich_type: att.MichelineType = att.pair_array_to_mich_typ
     att.list_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%l"]),
     att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("string", []), ["%m"])
 ], []);
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
-}
 export class Record_container {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
@@ -54,18 +51,6 @@ export class Record_container {
     async deploy(params: Partial<ex.Parameters>) {
         const address = (await ex.deploy("../tests/passed/record_container.arl", {}, params)).address;
         this.address = address;
-    }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
-        if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
-        if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
     }
     async get_vl(): Promise<Array<my_record>> {
         if (this.address != undefined) {

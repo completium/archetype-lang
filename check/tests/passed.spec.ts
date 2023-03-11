@@ -14661,82 +14661,235 @@ describe('passed', async () => {
 
   it('rat_dur', async () => {
     await rat_dur.rat_dur.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_dur.rat_dur.get_res()
+    assert(res_before.equals(new Duration("0s")))
+
+    await rat_dur.rat_dur.exec({ as: alice })
+
+    const res_after = await rat_dur.rat_dur.get_res()
+    assert(res_after.equals(new Duration("30s")))
   })
 
   it('rat_int', async () => {
     await rat_int.rat_int.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_int.rat_int.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_int.rat_int.exec(new Int(-1), { as: alice })
+
+    const res_m1 = await rat_int.rat_int.get_res()
+    assert(res_m1.equals(new Rational(-1)))
+
+    await rat_int.rat_int.exec(new Int(0), { as: alice })
+
+    const res_0 = await rat_int.rat_int.get_res()
+    assert(res_0.equals(new Rational(0)))
+
+    await rat_int.rat_int.exec(new Int(1), { as: alice })
+
+    const res_1 = await rat_int.rat_int.get_res()
+    assert(res_1.equals(new Rational(1)))
   })
 
   it('rat_max', async () => {
     await rat_max.rat_max.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_max.rat_max.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_max.rat_max.exec({ as: alice })
+
+    const res_after = await rat_max.rat_max.get_res()
+    assert(res_after.equals(new Rational(0.5)))
   })
 
   it('rat_min', async () => {
     await rat_min.rat_min.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_min.rat_min.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_min.rat_min.exec({ as: alice })
+
+    const res_after = await rat_min.rat_min.get_res()
+    assert(res_after.equals(new Rational(2, new BigNumber(5))))
   })
 
   it('rat_nat', async () => {
     await rat_nat.rat_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_nat.rat_nat.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await rat_nat.rat_nat.exec(new Nat(1), { as: alice })
+
+    const res_1 = await rat_nat.rat_nat.get_res()
+    assert(res_1.equals(new Rational(1)))
+
+    await rat_nat.rat_nat.exec(new Nat(0), { as: alice })
+
+    const res_0 = await rat_nat.rat_nat.get_res()
+    assert(res_0.equals(new Rational(0)))
   })
 
   it('rat_neg', async () => {
     await rat_neg.rat_neg.deploy({ as: alice })
-    // TODO
+
+    const a_before = await rat_neg.rat_neg.get_a()
+    assert(a_before.equals(new Rational(0.5)))
+    const b_before = await rat_neg.rat_neg.get_b()
+    assert(b_before.equals(new Rational(-0.5)))
+    const c_before = await rat_neg.rat_neg.get_c()
+    assert(c_before.equals(new Rational(-0.5)))
+    const d_before = await rat_neg.rat_neg.get_d()
+    assert(d_before.equals(new Rational(0.5)))
+
+    const na_before = await rat_neg.rat_neg.get_na()
+    assert(na_before.equals(new Rational(-0.5)))
+    const nb_before = await rat_neg.rat_neg.get_nb()
+    assert(nb_before.equals(new Rational(0.5)))
+    const nc_before = await rat_neg.rat_neg.get_nc()
+    assert(nc_before.equals(new Rational(0.5)))
+    const nd_before = await rat_neg.rat_neg.get_nd()
+    assert(nd_before.equals(new Rational(-0.5)))
+
+    const ca_before = await rat_neg.rat_neg.get_ca()
+    assert(ca_before.equals(new Rational(0)))
+    const cb_before = await rat_neg.rat_neg.get_cb()
+    assert(cb_before.equals(new Rational(0)))
+    const cc_before = await rat_neg.rat_neg.get_cc()
+    assert(cc_before.equals(new Rational(0)))
+    const cd_before = await rat_neg.rat_neg.get_cd()
+    assert(cd_before.equals(new Rational(0)))
+
+    await rat_neg.rat_neg.exec({ as: alice })
+
+    const a_after = await rat_neg.rat_neg.get_a()
+    assert(a_after.equals(new Rational(0.5)))
+    const b_after = await rat_neg.rat_neg.get_b()
+    assert(b_after.equals(new Rational(-0.5)))
+    const c_after = await rat_neg.rat_neg.get_c()
+    assert(c_after.equals(new Rational(-0.5)))
+    const d_after = await rat_neg.rat_neg.get_d()
+    assert(d_after.equals(new Rational(0.5)))
+
+    const na_after = await rat_neg.rat_neg.get_na()
+    assert(na_after.equals(new Rational(-0.5)))
+    const nb_after = await rat_neg.rat_neg.get_nb()
+    assert(nb_after.equals(new Rational(0.5)))
+    const nc_after = await rat_neg.rat_neg.get_nc()
+    assert(nc_after.equals(new Rational(0.5)))
+    const nd_after = await rat_neg.rat_neg.get_nd()
+    assert(nd_after.equals(new Rational(-0.5)))
+
+    const ca_after = await rat_neg.rat_neg.get_ca()
+    assert(ca_after.equals(new Rational(1)))
+    const cb_after = await rat_neg.rat_neg.get_cb()
+    assert(cb_after.equals(new Rational(-1)))
+    const cc_after = await rat_neg.rat_neg.get_cc()
+    assert(cc_after.equals(new Rational(-1)))
+    const cd_after = await rat_neg.rat_neg.get_cd()
+    assert(cd_after.equals(new Rational(1)))
   })
 
   it('rat_tez', async () => {
     await rat_tez.rat_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_tez.rat_tez.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await rat_tez.rat_tez.exec({ as: alice })
+
+    const res_after = await rat_tez.rat_tez.get_res()
+    assert(res_after.equals(new Tez(0.3)))
   })
 
   it('rat_tez_big', async () => {
     await rat_tez_big.rat_tez_big.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rat_tez_big.rat_tez_big.get_res()
+    assert(res_before.equals(new Tez(0)))
+
+    await rat_tez_big.rat_tez_big.exec({ as: alice })
+
+    const res_after = await rat_tez_big.rat_tez_big.get_res()
+    assert(res_after.equals(new Tez(new BigNumber("6148914691236517204"), "mutez")))
   })
 
   it('rational_cmp', async () => {
     await rational_cmp.rational_cmp.deploy({ as: alice })
-    // TODO
+
+    await rational_cmp.rational_cmp.exec({ as: alice })
   })
 
   it('rational_duration', async () => {
     await rational_duration.rational_duration.deploy({ as: alice })
-    // TODO
+
+    set_mockup_now(new Date("2021-01-01"))
+
+    const last_exec_before = await rational_duration.rational_duration.get_last_exec();
+    assert(last_exec_before.toISOString() == '2020-01-01T00:00:00.000Z')
+
+    await rational_duration.rational_duration.exec(alice.get_address(), { amount: new Tez(1), as: alice })
+
+    const last_exec_after = await rational_duration.rational_duration.get_last_exec();
+    assert(last_exec_after.toISOString() == '2021-01-01T00:00:00.000Z')
   })
 
   it('rational_full', async () => {
-    await rational_full.rational_full.deploy({ as: alice })
-    // TODO
+    await rational_full.rational_full.deploy({ amount: new Tez(0.3), as: alice })
+
+    const my_asset_before = await rational_full.rational_full.get_my_asset()
+    assert(my_asset_before.length == 0)
+
+    await rational_full.rational_full.exec(alice.get_address(), new Rational(0.5), { as: alice })
+
+    const my_asset_after = await rational_full.rational_full.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(alice.get_address()))
+    assert(my_asset_after[0][1].equals(new Rational(0.5)))
   })
 
   it('rational_rat_tez_mult', async () => {
-    await rational_rat_tez_mult.rational_rat_tez_mult.deploy({ as: alice })
-    // TODO
+    await rational_rat_tez_mult.rational_rat_tez_mult.deploy({ amount: new Tez(0.2), as: alice })
+
+    await rational_rat_tez_mult.rational_rat_tez_mult.exec(alice.get_address(), { as: alice })
   })
 
   it('rational_simple', async () => {
     await rational_simple.rational_simple.deploy({ as: alice })
-    // TODO
   })
 
   it('rational_tez_rat_mult', async () => {
-    await rational_tez_rat_mult.rational_tez_rat_mult.deploy({ as: alice })
-    // TODO
+    await rational_tez_rat_mult.rational_tez_rat_mult.deploy({ amount: new Tez(0.3), as: alice })
+
+    await rational_tez_rat_mult.rational_tez_rat_mult.exec(alice.get_address(), { as: alice })
   })
 
   it('rec_update', async () => {
     await rec_update.rec_update.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rec_update.rec_update.get_res()
+    assert(res_before.equals(new rec_update.my_record("", new Int(0), new Nat(0))))
+
+    await rec_update.rec_update.exec({ as: alice })
+
+    const res_after = await rec_update.rec_update.get_res()
+    assert(res_after.equals(new rec_update.my_record("mystr", new Int(0), new Nat(2))))
   })
 
   it('rec_update2', async () => {
     await rec_update2.rec_update2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await rec_update2.rec_update2.get_res()
+    assert(res_before.equals(new rec_update2.my_record(new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0), new Nat(0))))
+
+    await rec_update2.rec_update2.exec({ as: alice })
+
+    const res_after = await rec_update2.rec_update2.get_res()
+    assert(res_after.equals(new rec_update2.my_record(new Nat(0), new Nat(1), new Nat(2), new Nat(3), new Nat(4), new Nat(5), new Nat(6), new Nat(7), new Nat(8), new Nat(9), new Nat(10), new Nat(11), new Nat(12))))
   })
 
   it('record_access', async () => {
@@ -14859,50 +15012,137 @@ describe('passed', async () => {
 
   it('record_container', async () => {
     await record_container.record_container.deploy({ as: alice })
-    // TODO
+
+    const vl = await record_container.record_container.get_vl()
+    assert(vl.length == 0)
+
+    const vm = await record_container.record_container.get_vm()
+    assert(vm.length == 0)
   })
 
   it('record_double_key', async () => {
     await record_double_key.record_double_key.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await record_double_key.record_double_key.get_my_asset()
+    assert(my_asset_before.length == 0)
+
+    await record_double_key.record_double_key.exec({ as: alice })
+
+    const my_asset_after = await record_double_key.record_double_key.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].a.equals(new Nat(0)))
+    assert(my_asset_after[0][0].b.equals(alice.get_address()))
+    assert(my_asset_after[0][1].c.equals(new Nat(2)))
+    assert(my_asset_after[0][1].d.equals(new Nat(0)))
   })
 
   it('record_in_enum', async () => {
     await record_in_enum.record_in_enum.deploy({ as: alice })
+
     const res_before = await record_in_enum.record_in_enum.get_res();
     assert(res_before.equals(new Nat(0)), "Invalid Value")
+
     await record_in_enum.record_in_enum.exec({ as: alice })
+
     const res_after = await record_in_enum.record_in_enum.get_res();
     assert(res_after.equals(new Nat(10)), "Invalid Value")
   })
 
   it('record_update', async () => {
     await record_update.record_update.deploy({ as: alice })
-    // TODO
+
+    const r_before = await record_update.record_update.get_r()
+    assert(r_before.equals(new record_update.my_record("", new Int(0), new Nat(0))))
+
+    await record_update.record_update.exec({ as: alice })
+
+    const r_after = await record_update.record_update.get_r()
+    assert(r_after.equals(new record_update.my_record("", new Int(1), new Nat(0))))
   })
 
   it('remove_asset_with_partition', async () => {
     await remove_asset_with_partition.remove_asset_with_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await remove_asset_with_partition.remove_asset_with_partition.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].value.equals(new Int(0)))
+    assert(my_asset_before[0][1].col.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].value.equals(new Int(1)))
+    assert(my_asset_before[1][1].col.length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].value.equals(new Int(2)))
+    assert(my_asset_before[2][1].col.length == 0)
+    const o_asset_before = await remove_asset_with_partition.remove_asset_with_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await remove_asset_with_partition.remove_asset_with_partition.init({ as: alice })
+
+    const my_asset_init = await remove_asset_with_partition.remove_asset_with_partition.get_my_asset()
+    assert(my_asset_init.length == 3)
+    assert(my_asset_init[0][0] == "id0")
+    assert(my_asset_init[0][1].value.equals(new Int(0)))
+    assert(my_asset_init[0][1].col.length == 1)
+    assert(my_asset_init[0][1].col[0] == "oid")
+    assert(my_asset_init[1][0] == "id1")
+    assert(my_asset_init[1][1].value.equals(new Int(1)))
+    assert(my_asset_init[1][1].col.length == 0)
+    assert(my_asset_init[2][0] == "id2")
+    assert(my_asset_init[2][1].value.equals(new Int(2)))
+    assert(my_asset_init[2][1].col.length == 0)
+    const o_asset_init = await remove_asset_with_partition.remove_asset_with_partition.get_o_asset()
+    assert(o_asset_init.length == 1)
+    assert(o_asset_init[0] == "oid")
+
+    await remove_asset_with_partition.remove_asset_with_partition.exec({ as: alice })
+
+    const my_asset_after = await remove_asset_with_partition.remove_asset_with_partition.get_my_asset()
+    assert(my_asset_after.length == 2)
+    assert(my_asset_after[0][0] == "id1")
+    assert(my_asset_after[0][1].value.equals(new Int(1)))
+    assert(my_asset_after[0][1].col.length == 0)
+    assert(my_asset_after[1][0] == "id2")
+    assert(my_asset_after[1][1].value.equals(new Int(2)))
+    assert(my_asset_after[1][1].col.length == 0)
+    const o_asset_after = await remove_asset_with_partition.remove_asset_with_partition.get_o_asset()
+    assert(o_asset_after.length == 0)
   })
 
   it('reverse_otherwise', async () => {
     await reverse_otherwise.reverse_otherwise.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await reverse_otherwise.reverse_otherwise.exec({ as: alice })
+    }, {string: "false"})
   })
 
   it('reverse_with_enum', async () => {
     await reverse_with_enum.reverse_with_enum.deploy({ as: alice })
-    // TODO
+
+    const res_before = await reverse_with_enum.reverse_with_enum.get_res();
+    assert(res_before.length == 0)
+
+    await reverse_with_enum.reverse_with_enum.exec({ as: alice })
+
+    const res_after = await reverse_with_enum.reverse_with_enum.get_res();
+    assert(res_after.length == 4)
+    assert(res_after[0].equals(new reverse_with_enum.entry1(new Int(3))))
+    assert(res_after[1].equals(new reverse_with_enum.entry2("2")))
+    assert(res_after[2].equals(new reverse_with_enum.entry2("1")))
+    assert(res_after[3].equals(new reverse_with_enum.entry1(new Int(0))))
   })
 
   it('rf_failif_with', async () => {
     await rf_failif_with.rf_failif_with.deploy({ as: alice })
+
+    await rf_failif_with.rf_failif_with.exec({ as: alice })
   })
 
   it('rf_require_otherwise', async () => {
     await rf_require_otherwise.rf_require_otherwise.deploy({ as: alice })
-    // TODO
+
+    await rf_require_otherwise.rf_require_otherwise.exec({ as: alice })
   })
 
   it('same_varname_in_two_distinct_scope', async () => {

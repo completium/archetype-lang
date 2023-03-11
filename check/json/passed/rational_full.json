@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "anasset",
+        "name": "my_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -138,10 +138,10 @@
   },
   "storage": [
     {
-      "name": "anasset",
+      "name": "my_asset",
       "type": {
         "node": "asset",
-        "name": "anasset",
+        "name": "my_asset",
         "int_value": null,
         "args": []
       },
@@ -212,6 +212,15 @@
     {
       "name": "exec",
       "args": [
+        {
+          "name": "dest",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
         {
           "name": "r3",
           "type": {

@@ -6,9 +6,9 @@ record my_record {
   c  : nat;
 }
 
-variable r : my_record = {a = ""; b = 0i; c = 0}
+variable res : my_record = {a = ""; b = 0i; c = 0}
 
 entry exec () {
-  r := { r with c = 2; a = "mystr" }
+  res := { res with c = 2; a = "mystr" }
 }
 

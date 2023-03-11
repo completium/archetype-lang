@@ -1,9 +1,3 @@
 archetype rational_simple
 
-constant r : rational = 1 / 2
-
-entry exec () {
-  effect {
-    ()
-  }
-}
+constant res : rational = 1 / 2

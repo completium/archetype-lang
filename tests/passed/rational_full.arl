@@ -2,23 +2,19 @@ archetype rational_full
 
 constant r1 : rational = 1 / 2
 
-asset anasset {
+asset my_asset {
   id : address;
   r2 : rational;
-} initialized by {
-  {@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 0.5}
 }
 
 function f (r : rational) : rational {
   return r
 }
 
-entry exec (r3 : rational) {
-  effect {
-    var dest = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
-    var r4 = 1 / 4;
-    do_require (r1 + (1 / 3) * f(r4) > r3 - anasset[dest].r2 - r4, "ko");
-    var m = 0.3 * 1tz;
-    transfer m to dest
-  }
+entry exec (dest : address, r3 : rational) {
+  my_asset.add({dest; 0.5});
+  var r4 = 1 / 4;
+  do_require (r1 + (1 / 3) * f(r4) > r3 - my_asset[dest].r2 - r4, "ko");
+  var m = 0.3 * 1tz;
+  transfer m to dest
 }

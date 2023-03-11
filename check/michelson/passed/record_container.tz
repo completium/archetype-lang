@@ -1,5 +1,5 @@
 { storage
     (pair (list %vl (pair (set %s nat) (list %l nat) (map %m nat string)))
           (map %vm nat (pair (set %s nat) (list %l nat) (map %m nat string)))) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR } ; DROP 1 ; PAIR ; NIL operation ; PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

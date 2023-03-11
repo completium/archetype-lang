@@ -16,7 +16,7 @@ record my_record {
   fm: nat;
 }
 
-variable r : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
+variable res : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
 
 entry exec () {
   var a : nat =  0;
@@ -33,7 +33,7 @@ entry exec () {
   var l : nat = 11;
   var m : nat = 12;
 
-  r := {  r with
+  res := {  res with
                  fa = a;
                  fb = b;
                  fc = c;

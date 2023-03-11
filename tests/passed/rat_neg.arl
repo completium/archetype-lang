@@ -10,6 +10,10 @@ variable nb : rational = -(1 / (-2))
 variable nc : rational = -((-1) / 2)
 variable nd : rational = -((-1) / (-2))
 
+variable ca : rational = 0.0
+variable cb : rational = 0.0
+variable cc : rational = 0.0
+variable cd : rational = 0.0
 
 entry exec () {
   var va : rational = 1 / 2;
@@ -17,10 +21,10 @@ entry exec () {
   var vc : rational = -1 / 2;
   var vd : rational = -1 / -2;
 
-  var ca = a + va;
-  var cb = b + vb;
-  var cc = c + vc;
-  var cd = d + vd;
+  ca := a + va;
+  cb := b + vb;
+  cc := c + vc;
+  cd := d + vd;
 
   do_require(2 / 4 = 1 / 2, "ko")
 }

@@ -88,7 +88,35 @@ export class Rat_neg {
     async get_nd(): Promise<att.Rational> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Rational.from_mich(att.pair_to_mich((storage as att.Mpair as att.Mpair).args.slice(7, 9)));
+            return att.Rational.from_mich((storage as att.Mpair).args[7]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_ca(): Promise<att.Rational> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Rational.from_mich((storage as att.Mpair).args[8]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_cb(): Promise<att.Rational> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Rational.from_mich((storage as att.Mpair).args[9]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_cc(): Promise<att.Rational> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Rational.from_mich((storage as att.Mpair).args[10]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_cd(): Promise<att.Rational> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Rational.from_mich(att.pair_to_mich((storage as att.Mpair as att.Mpair).args.slice(11, 13)));
         }
         throw new Error("Contract not initialised");
     }

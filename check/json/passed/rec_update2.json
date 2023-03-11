@@ -313,7 +313,7 @@
   },
   "storage": [
     {
-      "name": "r",
+      "name": "res",
       "type": {
         "node": "record",
         "name": "my_record",

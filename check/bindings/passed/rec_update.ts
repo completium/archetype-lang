@@ -56,7 +56,7 @@ export class Rec_update {
         }
         throw new Error("Contract not initialised");
     }
-    async get_r(): Promise<my_record> {
+    async get_res(): Promise<my_record> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return my_record.from_mich(storage);

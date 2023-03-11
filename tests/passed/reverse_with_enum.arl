@@ -7,7 +7,7 @@ enum myenum =
 variable res : list<myenum> = []
 
 entry exec () {
-    var ops : list<myenum> = [];
-    ops.reverse();
-    res := ops
+  var ops : list<myenum> = [entry1(0i); entry2("1"); entry2("2"); entry1(3i)];
+  ops.reverse();
+  res := ops
 }

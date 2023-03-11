@@ -79,6 +79,16 @@
             "is_key": true
           },
           {
+            "name": "value",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
             "name": "col",
             "type": {
               "node": "partition",
@@ -107,18 +117,45 @@
               "var_type": null
             },
             {
-              "prim": "set",
+              "prim": "pair",
               "int": null,
               "bytes": null,
               "string": null,
               "args": [
                 {
-                  "prim": "string",
+                  "prim": "int",
                   "int": null,
                   "bytes": null,
                   "string": null,
                   "args": [],
-                  "annots": [],
+                  "annots": [
+                    "%value"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "set",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "string",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%col"
+                  ],
                   "array": [],
                   "var_id": null,
                   "var_type": null
@@ -147,18 +184,45 @@
           "var_type": null
         },
         "value_type_michelson": {
-          "prim": "set",
+          "prim": "pair",
           "int": null,
           "bytes": null,
           "string": null,
           "args": [
             {
-              "prim": "string",
+              "prim": "int",
               "int": null,
               "bytes": null,
               "string": null,
               "args": [],
-              "annots": [],
+              "annots": [
+                "%value"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "set",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [
+                "%col"
+              ],
               "array": [],
               "var_id": null,
               "var_type": null
@@ -191,16 +255,6 @@
       "type": {
         "node": "asset",
         "name": "my_asset",
-        "int_value": null,
-        "args": []
-      },
-      "const": false
-    },
-    {
-      "name": "res",
-      "type": {
-        "node": "int",
-        "name": null,
         "int_value": null,
         "args": []
       },
@@ -257,18 +311,45 @@
               "var_type": null
             },
             {
-              "prim": "set",
+              "prim": "pair",
               "int": null,
               "bytes": null,
               "string": null,
               "args": [
                 {
-                  "prim": "string",
+                  "prim": "int",
                   "int": null,
                   "bytes": null,
                   "string": null,
                   "args": [],
-                  "annots": [],
+                  "annots": [
+                    "%value"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "set",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [
+                    {
+                      "prim": "string",
+                      "int": null,
+                      "bytes": null,
+                      "string": null,
+                      "args": [],
+                      "annots": [],
+                      "array": [],
+                      "var_id": null,
+                      "var_type": null
+                    }
+                  ],
+                  "annots": [
+                    "%col"
+                  ],
                   "array": [],
                   "var_id": null,
                   "var_type": null
@@ -286,19 +367,6 @@
           "array": [],
           "var_id": null,
           "var_type": null
-        },
-        {
-          "prim": "int",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [
-            "%res"
-          ],
-          "array": [],
-          "var_id": null,
-          "var_type": null
         }
       ],
       "annots": [],
@@ -309,6 +377,10 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "init",
+      "args": []
+    },
     {
       "name": "exec",
       "args": []

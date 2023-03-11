@@ -2,6 +2,18 @@
   parameter (unit %exec) ;
   code { CDR ;
          NIL (or (int %entry1) (string %entry2)) ;
+         PUSH int 3 ;
+         LEFT string ;
+         CONS ;
+         PUSH string "2" ;
+         RIGHT int ;
+         CONS ;
+         PUSH string "1" ;
+         RIGHT int ;
+         CONS ;
+         PUSH int 0 ;
+         LEFT string ;
+         CONS ;
          NIL (or (int %entry1) (string %entry2)) ;
          DUP 2 ;
          ITER { CONS } ;

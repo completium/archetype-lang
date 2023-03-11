@@ -1,5 +1,5 @@
 { storage (map address (pair int nat)) ;
-  parameter (pair %exec int nat) ;
+  parameter (pair %exec (address %dest) (pair %r3 int nat)) ;
   code { LAMBDA
            (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
            bool
@@ -25,7 +25,21 @@
          NIL operation ;
          DIG 3 ;
          UNPAIR ;
-         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         UNPAIR ;
+         SWAP ;
+         DUP 3 ;
+         DUP 3 ;
+         MEM ;
+         IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 3 ;
+              PUSH nat 2 ;
+              PUSH int 1 ;
+              PAIR ;
+              SOME ;
+              DUP 4 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
          PUSH nat 4 ;
          PUSH int 1 ;
          PAIR ;
@@ -40,12 +54,12 @@
          UNIT ;
          RIGHT unit ;
          DUP 9 ;
-         DUP 8 ;
+         DUP 9 ;
          GET ;
          IF_NONE
-           { PUSH string "anasset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         DUP 9 ;
+         DUP 8 ;
          DIP 1 { UNPAIR ; SWAP ; DUP } ;
          UNPAIR ;
          SWAP ;
@@ -176,7 +190,7 @@
          NIL operation ;
          DUP 8 ;
          ITER { CONS } ;
-         DUP 5 ;
+         DUP 6 ;
          CONTRACT unit ;
          IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
          DUP 4 ;
