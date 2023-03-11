@@ -15,7 +15,7 @@
          SWAP ;
          CDR ;
          DUP 2 ;
-         PUSH int 0 ;
+         PUSH int 1 ;
          DUP 3 ;
          PAIR ;
          EXEC ;

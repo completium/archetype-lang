@@ -1,7 +1,10 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const an_entry_arg_to_mich = (s: string): att.Micheline => {
+    return att.string_to_mich(s);
+}
+const exec_arg_to_mich = (contract_i: att.Address): att.Micheline => {
+    return contract_i.to_mich();
 }
 export class Simple_contract_call {
     address: string | undefined;
@@ -24,22 +27,34 @@ export class Simple_contract_call {
         const address = (await ex.deploy("../tests/passed/simple_contract_call.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async an_entry(s: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "an_entry", an_entry_arg_to_mich(s), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async exec(contract_i: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(contract_i), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_contract_i(): Promise<att.Address> {
+    async get_an_entry_param(s: string, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "an_entry", an_entry_arg_to_mich(s), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_exec_param(contract_i: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(contract_i), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res(): Promise<string> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Address.from_mich(storage);
+            return att.mich_to_string(storage);
         }
         throw new Error("Contract not initialised");
     }

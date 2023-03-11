@@ -9,9 +9,9 @@
   },
   "storage": [
     {
-      "name": "contract_i",
+      "name": "res",
       "type": {
-        "node": "address",
+        "node": "string",
         "name": null,
         "int_value": null,
         "args": []
@@ -21,7 +21,7 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "address",
+      "prim": "string",
       "int": null,
       "bytes": null,
       "string": null,
@@ -35,8 +35,32 @@
   },
   "entrypoints": [
     {
+      "name": "an_entry",
+      "args": [
+        {
+          "name": "s",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "contract_i",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],

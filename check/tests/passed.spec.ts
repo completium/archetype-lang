@@ -15843,91 +15843,243 @@ describe('passed', async () => {
 
   it('simple_assign1', async () => {
     await simple_assign1.simple_assign1.deploy({ as: alice })
+
     const n_before = await simple_assign1.simple_assign1.get_n();
     assert(n_before.equals(new Nat(0)), "Invalid Value")
+
     await simple_assign1.simple_assign1.exec({ as: alice })
+
     const n_after = await simple_assign1.simple_assign1.get_n();
     assert(n_after.equals(new Nat(1)), "Invalid Value")
   })
 
   it('simple_assign2', async () => {
     await simple_assign2.simple_assign2.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_assign2.simple_assign2.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const s_before = await simple_assign2.simple_assign2.get_s()
+    assert(s_before == "")
+
+    await simple_assign2.simple_assign2.exec({ as: alice })
+
+    const n_after = await simple_assign2.simple_assign2.get_n()
+    assert(n_after.equals(new Nat(3)))
+    const s_after = await simple_assign2.simple_assign2.get_s()
+    assert(s_after == "ab")
   })
 
   it('simple_assign3', async () => {
     await simple_assign3.simple_assign3.deploy({ as: alice })
-    // TODO
+
+    const i_before = await simple_assign3.simple_assign3.get_i()
+    assert(i_before.equals(new Int(0)))
+    const n_before = await simple_assign3.simple_assign3.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const s_before = await simple_assign3.simple_assign3.get_s()
+    assert(s_before == "")
+
+    await simple_assign3.simple_assign3.exec({ as: alice })
+
+    const i_after = await simple_assign3.simple_assign3.get_i()
+    assert(i_after.equals(new Int(4)))
+    const n_after = await simple_assign3.simple_assign3.get_n()
+    assert(n_after.equals(new Nat(3)))
+    const s_after = await simple_assign3.simple_assign3.get_s()
+    assert(s_after == "ab")
   })
 
   it('simple_contract_call', async () => {
-    await simple_contract_call.simple_contract_call.deploy({ as: alice })
-    // TODO
+    await simple_contract_call.simple_contract_call.deploy({ amount: new Tez(2), as: alice })
+
+    const res_before = await simple_contract_call.simple_contract_call.get_res()
+    assert(res_before == "")
+
+    await simple_contract_call.simple_contract_call.exec(simple_contract_call.simple_contract_call.get_address(), { as: alice })
+
+    const res_after = await simple_contract_call.simple_contract_call.get_res()
+    assert(res_after == "mystr")
   })
 
   it('simple_freeze', async () => {
     await simple_freeze.simple_freeze.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_freeze.simple_freeze.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_freeze.simple_freeze.exec(new Nat(2), { as: alice })
+
+    const res_after = await simple_freeze.simple_freeze.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('simple_fun1', async () => {
     await simple_fun1.simple_fun1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun1.simple_fun1.get_res()
+    assert(res_before.equals(new Int(-1)))
+
+    await simple_fun1.simple_fun1.exec({ as: alice })
+
+    const res_after = await simple_fun1.simple_fun1.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('simple_fun2', async () => {
     await simple_fun2.simple_fun2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun2.simple_fun2.get_res()
+    assert(res_before.equals(new Int(-1)))
+
+    await simple_fun2.simple_fun2.exec({ as: alice })
+
+    const res_after = await simple_fun2.simple_fun2.get_res()
+    assert(res_after.equals(new Int(0)))
   })
 
   it('simple_fun3', async () => {
     await simple_fun3.simple_fun3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun3.simple_fun3.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await simple_fun3.simple_fun3.exec({ as: alice })
+
+    const res_after = await simple_fun3.simple_fun3.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('simple_fun4', async () => {
     await simple_fun4.simple_fun4.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun4.simple_fun4.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await simple_fun4.simple_fun4.exec({ as: alice })
+
+    const res_after = await simple_fun4.simple_fun4.get_res()
+    assert(res_after.equals(new Int(11)))
   })
 
   it('simple_fun5', async () => {
     await simple_fun5.simple_fun5.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun5.simple_fun5.get_res()
+    assert(res_before.equals(new Int(-1)))
+
+    await simple_fun5.simple_fun5.exec({ as: alice })
+
+    const res_0 = await simple_fun5.simple_fun5.get_res()
+    assert(res_0.equals(new Int(0)))
+
+    await simple_fun5.simple_fun5.exec1({ as: alice })
+
+    const res_1 = await simple_fun5.simple_fun5.get_res()
+    assert(res_1.equals(new Int(1)))
   })
 
   it('simple_fun6', async () => {
     await simple_fun6.simple_fun6.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun6.simple_fun6.get_res()
+    assert(res_before.equals(new Int(-1)))
+
+    await simple_fun6.simple_fun6.exec({ as: alice })
+
+    const res_0 = await simple_fun6.simple_fun6.get_res()
+    assert(res_0.equals(new Int(0)))
+
+    await simple_fun6.simple_fun6.exec1({ as: alice })
+
+    const res_1 = await simple_fun6.simple_fun6.get_res()
+    assert(res_1.equals(new Int(1)))
+
+    await simple_fun6.simple_fun6.exec2({ as: alice })
+
+    const res_2 = await simple_fun6.simple_fun6.get_res()
+    assert(res_2.equals(new Int(2)))
   })
 
   it('simple_fun7', async () => {
     await simple_fun7.simple_fun7.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun7.simple_fun7.get_res()
+    assert(res_before.equals(new Int(0)))
+    const n_before = await simple_fun7.simple_fun7.get_n()
+    assert(n_before.equals(new Nat(1)))
+
+    await simple_fun7.simple_fun7.exec({ as: alice })
+
+    const res_after = await simple_fun7.simple_fun7.get_res()
+    assert(res_after.equals(new Int(2)))
+    const n_after = await simple_fun7.simple_fun7.get_n()
+    assert(n_after.equals(new Nat(1)))
   })
 
   it('simple_fun8', async () => {
     await simple_fun8.simple_fun8.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun8.simple_fun8.get_res()
+    assert(res_before.equals(new Int(0)))
+    const n_before = await simple_fun8.simple_fun8.get_n()
+    assert(n_before.equals(new Nat(1)))
+
+    await simple_fun8.simple_fun8.exec({ as: alice })
+
+    const res_after = await simple_fun8.simple_fun8.get_res()
+    assert(res_after.equals(new Int(1)))
+    const n_after = await simple_fun8.simple_fun8.get_n()
+    assert(n_after.equals(new Nat(1)))
   })
 
   it('simple_fun_alt', async () => {
     await simple_fun_alt.simple_fun_alt.deploy({ as: alice })
-    // TODO
+
+    await simple_fun_alt.simple_fun_alt.exec({ as: alice })
   })
 
   it('simple_fun_with_storage', async () => {
     await simple_fun_with_storage.simple_fun_with_storage.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun_with_storage.simple_fun_with_storage.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await simple_fun_with_storage.simple_fun_with_storage.exec({ as: alice })
+
+    const res_after = await simple_fun_with_storage.simple_fun_with_storage.get_res()
+    assert(res_after.equals(new Int(1)))
   })
 
   it('simple_fun_with_storage2', async () => {
     await simple_fun_with_storage2.simple_fun_with_storage2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun_with_storage2.simple_fun_with_storage2.get_res()
+    assert(res_before.equals(new Int(0)))
+    const n_before = await simple_fun_with_storage2.simple_fun_with_storage2.get_n()
+    assert(n_before.equals(new Nat(1)))
+
+    await simple_fun_with_storage2.simple_fun_with_storage2.exec({ as: alice })
+
+    const res_after = await simple_fun_with_storage2.simple_fun_with_storage2.get_res()
+    assert(res_after.equals(new Int(3)))
+    const n_after = await simple_fun_with_storage2.simple_fun_with_storage2.get_n()
+    assert(n_after.equals(new Nat(1)))
   })
 
   it('simple_fun_with_storage3', async () => {
     await simple_fun_with_storage3.simple_fun_with_storage3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_fun_with_storage3.simple_fun_with_storage3.get_res()
+    assert(res_before.equals(new Int(0)))
+    const n_before = await simple_fun_with_storage3.simple_fun_with_storage3.get_n()
+    assert(n_before.equals(new Nat(1)))
+
+    await simple_fun_with_storage3.simple_fun_with_storage3.exec({ as: alice })
+
+    const res_after = await simple_fun_with_storage3.simple_fun_with_storage3.get_res()
+    assert(res_after.equals(new Int(5)))
+    const n_after = await simple_fun_with_storage3.simple_fun_with_storage3.get_n()
+    assert(n_after.equals(new Nat(1)))
   })
 
   it('simple_get_field', async () => {
@@ -16057,22 +16209,50 @@ describe('passed', async () => {
 
   it('tern_bool_false', async () => {
     await tern_bool_false.tern_bool_false.deploy({ as: alice })
-    // TODO
+
+    const res_before = await tern_bool_false.tern_bool_false.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await tern_bool_false.tern_bool_false.exec({ as: alice })
+
+    const res_after = await tern_bool_false.tern_bool_false.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('tern_bool_true', async () => {
     await tern_bool_true.tern_bool_true.deploy({ as: alice })
-    // TODO
+
+    const res_before = await tern_bool_true.tern_bool_true.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await tern_bool_true.tern_bool_true.exec({ as: alice })
+
+    const res_after = await tern_bool_true.tern_bool_true.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('tern_opt', async () => {
     await tern_opt.tern_opt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await tern_opt.tern_opt.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await tern_opt.tern_opt.exec({ as: alice })
+
+    const res_after = await tern_opt.tern_opt.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('tern_opt_3', async () => {
     await tern_opt_3.tern_opt_3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await tern_opt_3.tern_opt_3.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await tern_opt_3.tern_opt_3.exec({ as: alice })
+
+    const res_after = await tern_opt_3.tern_opt_3.get_res()
+    assert(res_after.equals(new Nat(5)))
   })
 
   it('test_add_asset2_with_partition', async () => {
@@ -17718,17 +17898,30 @@ describe('passed', async () => {
 
   it('with_metadata_json', async () => {
     await with_metadata_json.with_metadata_json.deploy({ as: alice })
-    // TODO
+
+    const ks = await with_metadata_json.with_metadata_json.get_metadata_value("");
+    assert(ks?.hex_decode() == 'tezos-storage:here')
+    const v = await with_metadata_json.with_metadata_json.get_metadata_value("here");
+    assert(v)
+    assert(JSON.stringify(JSON.parse(v?.hex_decode())) == '{"symbol":"MTK","name":"MyToken","decimals":"1","description":"description of MyToken","thumbnailUri":"https://completium.com/img/logo_completium_128.png"}')
+
   })
 
   it('with_metadata_json_with_offchain_view', async () => {
     await with_metadata_json_with_offchain_view.with_metadata_json_with_offchain_view.deploy({ as: alice })
-    // TODO
+
+    const ks = await with_metadata_json_with_offchain_view.with_metadata_json_with_offchain_view.get_metadata_value("");
+    assert(ks?.hex_decode() == 'tezos-storage:here')
+    const v = await with_metadata_json_with_offchain_view.with_metadata_json_with_offchain_view.get_metadata_value("here");
+    assert(v)
+    assert(JSON.stringify(JSON.parse(v?.hex_decode())) == '{"symbol":"MTK","name":"MyToken","decimals":"1","description":"description of MyToken","thumbnailUri":"https://completium.com/img/logo_completium_128.png"}')
   })
 
   it('with_metadata_uri', async () => {
     await with_metadata_uri.with_metadata_uri.deploy({ as: alice })
-    // TODO
+
+    const ks = await with_metadata_uri.with_metadata_uri.get_metadata_value("");
+    assert(ks?.hex_decode() == 'https://completium.com/metadata/token_metadata.json')
   })
 
 })

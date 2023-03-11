@@ -1,21 +1,26 @@
-{ storage address ;
-  parameter (unit %exec) ;
+{ storage string ;
+  parameter (or (string %an_entry) (address %exec)) ;
   code { NIL operation ;
          SWAP ;
-         CDR ;
-         NIL operation ;
-         NIL operation ;
-         DUP 4 ;
-         ITER { CONS } ;
-         DUP 3 ;
-         CONTRACT %an_entry string ;
-         IF_NONE
-           { PUSH string "an_entry" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
-           {} ;
-         PUSH mutez 2000000 ;
-         PUSH string "mystr" ;
-         TRANSFER_TOKENS ;
-         CONS ;
-         ITER { CONS } ;
-         DIP 1 { SWAP ; DROP 1 } ;
-         PAIR } }
+         UNPAIR ;
+         IF_LEFT
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
+           { NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             CONTRACT %an_entry string ;
+             IF_NONE
+               { PUSH string "an_entry" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 2000000 ;
+             PUSH string "mystr" ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             SWAP ;
+             PAIR } } }
