@@ -1,4 +1,4 @@
-{ storage (pair (map %my_asset string (pair (int %v1) (int %v2) (int %v3))) (int %res)) ;
+{ storage (pair (map %my_asset string (pair (nat %v1) (nat %v2) (nat %v3))) (int %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
@@ -12,13 +12,13 @@
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          CDR ;
-         PUSH int 1 ;
+         PUSH nat 1 ;
          SWAP ;
          CDR ;
-         PUSH int 2 ;
+         PUSH nat 2 ;
          SWAP ;
          DROP 1 ;
-         PUSH int 3 ;
+         PUSH nat 3 ;
          SWAP ;
          PAIR ;
          SWAP ;

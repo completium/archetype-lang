@@ -2,9 +2,9 @@ archetype multi_update
 
 asset my_asset identified by id {
   id : string;
-  v1 : int;
-  v2 : int;
-  v3 : int;
+  v1 : nat;
+  v2 : nat;
+  v3 : nat;
 } initialized by {
   {"key"; 0; 0; 0}
 }

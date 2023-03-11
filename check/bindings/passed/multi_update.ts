@@ -2,7 +2,7 @@ import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
-    constructor(public v1: att.Int, public v2: att.Int, public v3: att.Int) { }
+    constructor(public v1: att.Nat, public v2: att.Nat, public v3: att.Nat) { }
     toString(): string {
         return JSON.stringify(this, null, 2);
     }
@@ -13,22 +13,22 @@ export class my_asset_value implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): my_asset_value {
-        return new my_asset_value(att.Int.from_mich((input as att.Mpair).args[0]), att.Int.from_mich((input as att.Mpair).args[1]), att.Int.from_mich((input as att.Mpair).args[2]));
+        return new my_asset_value(att.Nat.from_mich((input as att.Mpair).args[0]), att.Nat.from_mich((input as att.Mpair).args[1]), att.Nat.from_mich((input as att.Mpair).args[2]));
     }
 }
 export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
-    att.prim_annot_to_mich_type("int", ["%v1"]),
-    att.prim_annot_to_mich_type("int", ["%v2"]),
-    att.prim_annot_to_mich_type("int", ["%v3"])
+    att.prim_annot_to_mich_type("nat", ["%v1"]),
+    att.prim_annot_to_mich_type("nat", ["%v2"]),
+    att.prim_annot_to_mich_type("nat", ["%v3"])
 ], []);
 export type my_asset_container = Array<[
     string,
     my_asset_value
 ]>;
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
-    att.prim_annot_to_mich_type("int", ["%v1"]),
-    att.prim_annot_to_mich_type("int", ["%v2"]),
-    att.prim_annot_to_mich_type("int", ["%v3"])
+    att.prim_annot_to_mich_type("nat", ["%v1"]),
+    att.prim_annot_to_mich_type("nat", ["%v2"]),
+    att.prim_annot_to_mich_type("nat", ["%v3"])
 ], []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;

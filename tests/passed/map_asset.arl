@@ -1,14 +1,12 @@
 archetype map_asset
 
-asset myasset {
+asset my_asset {
   id : nat;
   m : map<string, nat>;
-} initialized by {
+} initialized with {
   {0; []}
 }
 
-variable ma : map<string, nat> = []
-
 entry exec() {
-  myasset[0].m.put("toto", 0)
+  my_asset[0].m.put("toto", 0)
 }

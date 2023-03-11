@@ -1,9 +1,8 @@
-{ storage (pair (map %my_asset string int) (int %res)) ;
-  parameter (string %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR } ;
-         PUSH int 1 ;
-         DUP 3 ;
+{ storage (map string nat) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 0 ;
+         DUP 2 ;
          PUSH string "id0" ;
          GET ;
          IF_NONE
@@ -13,8 +12,8 @@
          EQ ;
          NOT ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
-         PUSH int 1 ;
-         DUP 3 ;
+         PUSH nat 1 ;
+         DUP 2 ;
          PUSH string "id0" ;
          GET ;
          IF_NONE
@@ -23,7 +22,5 @@
          COMPARE ;
          EQ ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
-         DROP 1 ;
-         PAIR ;
          NIL operation ;
          PAIR } }

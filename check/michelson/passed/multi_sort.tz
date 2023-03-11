@@ -1,6 +1,9 @@
-{ storage (map string (pair (int %v1) (int %v2) (int %v3))) ;
+{ storage
+    (pair (map %my_asset string (pair (int %v1) (int %v2) (int %v3))) (list %res string)) ;
   parameter (unit %exec) ;
-  code { CDR ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
          NIL string ;
          DUP 2 ;
          ITER { UNPAIR ;
@@ -76,6 +79,8 @@
                 DIP 1 { DIG 2 ; DROP 1 } ;
                 DUG 2 ;
                 DROP 2 } ;
-         DROP 1 ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
          NIL operation ;
          PAIR } }

@@ -12,10 +12,8 @@ asset my_asset identified by id {
   {"id3"; 1; 2; 6}
 }
 
-entry exec () {
+variable res : asset_view<my_asset> = []
 
-  effect {
-    var res = my_asset.sort(v1, asc(v2), desc (v3))
-    (* res = ["id0"; "id3", "id1", "id2"] *)
-  }
+entry exec () {
+  res := my_asset.sort(v1, asc(v2), desc (v3))
 }

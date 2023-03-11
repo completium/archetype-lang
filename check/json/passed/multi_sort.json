@@ -200,73 +200,122 @@
         "args": []
       },
       "const": false
+    },
+    {
+      "name": "res",
+      "type": {
+        "node": "asset_view",
+        "name": "my_asset",
+        "int_value": null,
+        "args": []
+      },
+      "const": false
     }
   ],
   "storage_type": {
     "value": {
-      "prim": "map",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
       "args": [
         {
-          "prim": "string",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        {
-          "prim": "pair",
+          "prim": "map",
           "int": null,
           "bytes": null,
           "string": null,
           "args": [
             {
-              "prim": "int",
+              "prim": "string",
               "int": null,
               "bytes": null,
               "string": null,
               "args": [],
-              "annots": [
-                "%v1"
-              ],
+              "annots": [],
               "array": [],
               "var_id": null,
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "pair",
               "int": null,
               "bytes": null,
               "string": null,
-              "args": [],
-              "annots": [
-                "%v2"
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%v1"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%v2"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%v3"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
               ],
-              "array": [],
-              "var_id": null,
-              "var_type": null
-            },
-            {
-              "prim": "int",
-              "int": null,
-              "bytes": null,
-              "string": null,
-              "args": [],
-              "annots": [
-                "%v3"
-              ],
+              "annots": [],
               "array": [],
               "var_id": null,
               "var_type": null
             }
           ],
-          "annots": [],
+          "annots": [
+            "%my_asset"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "list",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [
+            "%res"
+          ],
           "array": [],
           "var_id": null,
           "var_type": null

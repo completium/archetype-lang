@@ -69,7 +69,14 @@ export class Multi_sort {
     async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map(storage, (x, y) => [att.mich_to_string(x), my_asset_value.from_mich(y)]);
+            return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.mich_to_string(x), my_asset_value.from_mich(y)]);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_res(): Promise<Array<string>> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_list((storage as att.Mpair).args[1], x => { return att.mich_to_string(x); });
         }
         throw new Error("Contract not initialised");
     }

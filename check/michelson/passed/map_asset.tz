@@ -1,14 +1,12 @@
-{ storage (pair (map %myasset nat (map string nat)) (map %ma string nat)) ;
+{ storage (map nat (map string nat)) ;
   parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR } ;
-         DROP 1 ;
+  code { CDR ;
          DUP ;
          DUP 2 ;
          PUSH nat 0 ;
          GET ;
          IF_NONE
-           { PUSH string "myasset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          PUSH nat 0 ;
          SOME ;
@@ -19,6 +17,5 @@
          UPDATE ;
          SWAP ;
          DROP 1 ;
-         PAIR ;
          NIL operation ;
          PAIR } }

@@ -13804,7 +13804,7 @@ describe('passed', async () => {
   })
 
   it('lang_contract', async () => {
-    await lang_contract.lang_contract.deploy({amount: new Tez(1), as: alice })
+    await lang_contract.lang_contract.deploy({ amount: new Tez(1), as: alice })
 
     await lang_contract.lang_contract.exec(lang_contract.lang_contract.get_address(), { as: alice })
   })
@@ -14006,22 +14006,68 @@ describe('passed', async () => {
 
   it('map_asset', async () => {
     await map_asset.map_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await map_asset.map_asset.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].length == 0)
+
+    await map_asset.map_asset.exec({ as: alice })
+
+    const my_asset_after = await map_asset.map_asset.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].length == 1)
+    assert(my_asset_after[0][1][0][0] == "toto")
+    assert(my_asset_after[0][1][0][1].equals(new Nat(0)))
   })
 
   it('match_entrypoint', async () => {
     await match_entrypoint.match_entrypoint.deploy({ as: alice })
-    // TODO
+
+    const res_before = await match_entrypoint.match_entrypoint.get_res();
+    assert(res_before.equals(new Nat(0)))
+
+    await match_entrypoint.match_entrypoint.exec({ as: alice })
+
+    const res_after = await match_entrypoint.match_entrypoint.get_res();
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('max_tez', async () => {
     await max_tez.max_tez.deploy({ as: alice })
-    // TODO
+
+    const res_before = await max_tez.max_tez.get_res();
+    assert(res_before.equals(new Tez(0)))
+
+    await max_tez.max_tez.exec({ as: alice })
+
+    const res_after = await max_tez.max_tez.get_res();
+    assert(res_after.equals(new Tez(new BigNumber("9223372036854775807"), 'mutez')))
   })
 
   it('method_in_dorequire_or_dofailif', async () => {
     await method_in_dorequire_or_dofailif.method_in_dorequire_or_dofailif.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await method_in_dorequire_or_dofailif.method_in_dorequire_or_dofailif.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Nat(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Nat(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Nat(2)))
+
+    await method_in_dorequire_or_dofailif.method_in_dorequire_or_dofailif.deploy({ as: alice })
+
+    const my_asset_after = await method_in_dorequire_or_dofailif.method_in_dorequire_or_dofailif.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Nat(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Nat(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Nat(2)))
   })
 
   it('miles_with_expiration_spec', async () => {
@@ -14031,31 +14077,137 @@ describe('passed', async () => {
 
   it('mod_rat', async () => {
     await mod_rat.mod_rat.deploy({ as: alice })
+
+    const res_before = await mod_rat.mod_rat.get_res();
+    assert(res_before.equals(new Rational(0)))
+
+    await mod_rat.mod_rat.exec(new Rational(1), new Rational(0.3), { as: alice })
+
+    const res_after = await mod_rat.mod_rat.get_res();
+    assert(res_after.equals(new Rational(0.1)))
   })
 
   it('multi_e', async () => {
     await multi_e.multi_e.deploy({ as: alice })
-    // TODO
+
+    await multi_e.multi_e.e1({ as: alice })
+    await multi_e.multi_e.e2({ as: alice })
+    await multi_e.multi_e.e3({ as: alice })
+    await multi_e.multi_e.e4({ as: alice })
+    await multi_e.multi_e.e5({ as: alice })
+    await multi_e.multi_e.e6({ as: alice })
+    await multi_e.multi_e.e7({ as: alice })
+    await multi_e.multi_e.e8({ as: alice })
   })
 
   it('multi_p', async () => {
     await multi_p.multi_p.deploy({ as: alice })
-    // TODO
+
+    await multi_p.multi_p.e1({ as: alice })
+    await multi_p.multi_p.e2({ as: alice })
+    await multi_p.multi_p.e3({ as: alice })
+    await multi_p.multi_p.e4({ as: alice })
+    await multi_p.multi_p.e5({ as: alice })
+    await multi_p.multi_p.e6({ as: alice })
+    await multi_p.multi_p.e7({ as: alice })
+    await multi_p.multi_p.e8({ as: alice })
+    await multi_p.multi_p.e9({ as: alice })
   })
 
   it('multi_sort', async () => {
     await multi_sort.multi_sort.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await multi_sort.multi_sort.get_my_asset()
+    assert(my_asset_before.length == 4)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v1.equals(new Int(1)))
+    assert(my_asset_before[0][1].v2.equals(new Int(2)))
+    assert(my_asset_before[0][1].v3.equals(new Int(7)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v1.equals(new Int(1)))
+    assert(my_asset_before[1][1].v2.equals(new Int(3)))
+    assert(my_asset_before[1][1].v3.equals(new Int(9)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v1.equals(new Int(1)))
+    assert(my_asset_before[2][1].v2.equals(new Int(3)))
+    assert(my_asset_before[2][1].v3.equals(new Int(8)))
+    assert(my_asset_before[3][0] == "id3")
+    assert(my_asset_before[3][1].v1.equals(new Int(1)))
+    assert(my_asset_before[3][1].v2.equals(new Int(2)))
+    assert(my_asset_before[3][1].v3.equals(new Int(6)))
+    const res_before = await multi_sort.multi_sort.get_res()
+    assert(res_before.length == 0)
+
+    await multi_sort.multi_sort.exec({ as: alice })
+
+    const my_asset_after = await multi_sort.multi_sort.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v1.equals(new Int(1)))
+    assert(my_asset_after[0][1].v2.equals(new Int(2)))
+    assert(my_asset_after[0][1].v3.equals(new Int(7)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v1.equals(new Int(1)))
+    assert(my_asset_after[1][1].v2.equals(new Int(3)))
+    assert(my_asset_after[1][1].v3.equals(new Int(9)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v1.equals(new Int(1)))
+    assert(my_asset_after[2][1].v2.equals(new Int(3)))
+    assert(my_asset_after[2][1].v3.equals(new Int(8)))
+    assert(my_asset_after[3][0] == "id3")
+    assert(my_asset_after[3][1].v1.equals(new Int(1)))
+    assert(my_asset_after[3][1].v2.equals(new Int(2)))
+    assert(my_asset_after[3][1].v3.equals(new Int(6)))
+    const res_after = await multi_sort.multi_sort.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0] == "id3")
+    assert(res_after[1] == "id1")
+    assert(res_after[2] == "id2")
+    assert(res_after[3] == "id0")
   })
 
   it('multi_update', async () => {
     await multi_update.multi_update.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await multi_update.multi_update.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "key")
+    assert(my_asset_before[0][1].v1.equals(new Nat(0)))
+    assert(my_asset_before[0][1].v2.equals(new Nat(0)))
+    assert(my_asset_before[0][1].v3.equals(new Nat(0)))
+
+    await multi_update.multi_update.exec({ as: alice })
+
+    const my_asset_after = await multi_update.multi_update.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "key")
+    assert(my_asset_after[0][1].v1.equals(new Nat(1)))
+    assert(my_asset_after[0][1].v2.equals(new Nat(2)))
+    assert(my_asset_after[0][1].v3.equals(new Nat(3)))
   })
 
   it('multi_var_storage', async () => {
     await multi_var_storage.multi_var_storage.deploy({ as: alice })
-    // TODO
+
+    const a_before = await multi_var_storage.multi_var_storage.get_a()
+    assert(a_before == "")
+    const b_before = await multi_var_storage.multi_var_storage.get_b()
+    assert(b_before.equals(Option.None()))
+    const c_before = await multi_var_storage.multi_var_storage.get_c()
+    assert(c_before.equals(new Nat(0)))
+    const d_before = await multi_var_storage.multi_var_storage.get_d()
+    assert(d_before.equals(new Int(1)))
+
+    await multi_var_storage.multi_var_storage.exec({ as: alice })
+
+    const a_after = await multi_var_storage.multi_var_storage.get_a()
+    assert(a_after == "")
+    const b_after = await multi_var_storage.multi_var_storage.get_b()
+    assert(b_after.equals(Option.None()))
+    const c_after = await multi_var_storage.multi_var_storage.get_c()
+    assert(c_after.equals(new Nat(2)))
+    const d_after = await multi_var_storage.multi_var_storage.get_d()
+    assert(d_after.equals(new Int(1)))
   })
 
   it('multivars', async () => {
