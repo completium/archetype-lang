@@ -1,30 +1,29 @@
 { storage nat ;
-  parameter (or (nat %f) (unit %exec)) ;
+  parameter (or (nat %f) (address %exec)) ;
   code { NIL operation ;
          SWAP ;
          UNPAIR ;
          IF_LEFT
            { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
-           { DROP 1 ;
-             PUSH nat 2 ;
-             DUP 2 ;
+           { PUSH nat 2 ;
+             DUP 3 ;
              ADD ;
              NIL operation ;
              NIL operation ;
-             DUP 5 ;
+             DUP 6 ;
              ITER { CONS } ;
-             PUSH address "KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw" ;
-             CONTRACT %set_value nat ;
+             DUP 4 ;
+             CONTRACT %f nat ;
              IF_NONE
-               { PUSH string "set_value" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               { PUSH string "f" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
                {} ;
              PUSH mutez 0 ;
              DUP 5 ;
              TRANSFER_TOKENS ;
              CONS ;
              ITER { CONS } ;
-             DIP 1 { DIG 2 ; DROP 1 } ;
-             DUG 2 ;
-             DROP 1 ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 2 ;
              SWAP ;
              PAIR } } }

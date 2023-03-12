@@ -1,5 +1,5 @@
 archetype transfer_simple
 
-entry exec () {
-  transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+entry exec (a : address) {
+  transfer 1tz to a;
 }

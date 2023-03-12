@@ -17201,7 +17201,18 @@ describe('passed', async () => {
 
   it('test_voting', async () => {
     await test_voting.test_voting.deploy({ as: alice })
-    // TODO
+
+    const total_before = await test_voting.test_voting.get_total()
+    assert(total_before.equals(new Nat(0)))
+    const power_before = await test_voting.test_voting.get_power()
+    assert(power_before.equals(new Nat(0)))
+
+    await test_voting.test_voting.exec({ as: alice })
+
+    const total_after = await test_voting.test_voting.get_total()
+    assert(total_after.equals(new Nat(20000000000000)))
+    const power_after = await test_voting.test_voting.get_power()
+    assert(power_after.equals(new Nat(0)))
   })
 
   it('ticket_create_ticket', async () => {
@@ -17688,47 +17699,129 @@ describe('passed', async () => {
 
   it('transfer_call', async () => {
     await transfer_call.transfer_call.deploy({ as: alice })
-    // TODO
+
+    const res_before = await transfer_call.transfer_call.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await transfer_call.transfer_call.exec(transfer_call.transfer_call.get_address(), { as: alice })
+
+    const res_after = await transfer_call.transfer_call.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('transfer_entrypoint', async () => {
     await transfer_entrypoint.transfer_entrypoint.deploy({ as: alice })
-    // TODO
+
+    const res_before = await transfer_entrypoint.transfer_entrypoint.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await transfer_entrypoint.transfer_entrypoint.exec({ as: alice })
+
+    const res_after = await transfer_entrypoint.transfer_entrypoint.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('transfer_entrypoint2', async () => {
     await transfer_entrypoint2.transfer_entrypoint2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await transfer_entrypoint2.transfer_entrypoint2.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await transfer_entrypoint2.transfer_entrypoint2.exec({ as: alice })
+
+    const res_after = await transfer_entrypoint2.transfer_entrypoint2.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('transfer_op', async () => {
-    await transfer_op.transfer_op.deploy({ as: alice })
-    // TODO
+    await transfer_op.transfer_op.deploy({ amount: new Tez(1), as: alice })
+
+    const alice_balance_before = await alice.get_balance()
+    const contract_balance_before = await transfer_op.transfer_op.get_balance()
+
+    await transfer_op.transfer_op.exec(alice.get_address(), { as: bob })
+
+    const alice_balance_after = await alice.get_balance()
+    const contract_balance_after = await transfer_op.transfer_op.get_balance()
+
+    assert(alice_balance_before.plus(new Tez(1)).equals(alice_balance_after))
+    assert(contract_balance_after.plus(new Tez(1)).equals(contract_balance_before))
   })
 
   it('transfer_require_entrypoint', async () => {
     await transfer_require_entrypoint.transfer_require_entrypoint.deploy({ as: alice })
-    // TODO
+
+    const res_before = await transfer_require_entrypoint.transfer_require_entrypoint.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await transfer_require_entrypoint.transfer_require_entrypoint.exec({ as: alice })
+
+    const res_after = await transfer_require_entrypoint.transfer_require_entrypoint.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('transfer_self', async () => {
     await transfer_self.transfer_self.deploy({ as: alice })
-    // TODO
+
+    const res_before = await transfer_self.transfer_self.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await transfer_self.transfer_self.exec({ as: alice })
+
+    const res_after = await transfer_self.transfer_self.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('transfer_simple', async () => {
-    await transfer_simple.transfer_simple.deploy({ as: alice })
-    // TODO
+    await transfer_simple.transfer_simple.deploy({ amount: new Tez(1), as: alice })
+
+    const alice_balance_before = await alice.get_balance()
+    const contract_balance_before = await transfer_simple.transfer_simple.get_balance()
+
+    await transfer_simple.transfer_simple.exec(alice.get_address(), { as: bob })
+
+    const alice_balance_after = await alice.get_balance()
+    const contract_balance_after = await transfer_simple.transfer_simple.get_balance()
+
+    assert(alice_balance_before.plus(new Tez(1)).equals(alice_balance_after))
+    assert(contract_balance_after.plus(new Tez(1)).equals(contract_balance_before))
   })
 
   it('transfer_simple_with_entrypoint', async () => {
-    await transfer_simple_with_entrypoint.transfer_simple_with_entrypoint.deploy({ as: alice })
-    // TODO
+    await transfer_simple_with_entrypoint.transfer_simple_with_entrypoint.deploy({ amount: new Tez(1), as: alice })
+
+    const alice_balance_before = await alice.get_balance()
+    const contract_balance_before = await transfer_simple_with_entrypoint.transfer_simple_with_entrypoint.get_balance()
+
+    await transfer_simple_with_entrypoint.transfer_simple_with_entrypoint.exec(alice.get_address(), { as: bob })
+
+    const alice_balance_after = await alice.get_balance()
+    const contract_balance_after = await transfer_simple_with_entrypoint.transfer_simple_with_entrypoint.get_balance()
+
+    assert(alice_balance_before.plus(new Tez(1)).equals(alice_balance_after))
+    assert(contract_balance_after.plus(new Tez(1)).equals(contract_balance_before))
   })
 
   it('tuple_in_contains', async () => {
     await tuple_in_contains.tuple_in_contains.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await tuple_in_contains.tuple_in_contains.get_my_asset();
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].id0 == "id")
+    assert(my_asset_before[0][0].id1.equals(new Int(0)))
+    assert(my_asset_before[0][1].equals(new Nat(0)))
+    const res_before = await tuple_in_contains.tuple_in_contains.get_res()
+    assert(res_before == false)
+
+    await tuple_in_contains.tuple_in_contains.exec({ as: alice })
+
+    const res_after = await tuple_in_contains.tuple_in_contains.get_res()
+    assert(res_after == true)
+    const my_asset_after = await tuple_in_contains.tuple_in_contains.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].id0 == "id")
+    assert(my_asset_after[0][0].id1.equals(new Int(0)))
+    assert(my_asset_after[0][1].equals(new Nat(0)))
   })
 
   it('type_never', async () => {
@@ -17739,17 +17832,49 @@ describe('passed', async () => {
 
   it('type_or', async () => {
     await type_or.type_or.deploy({ as: alice })
-    // TODO
+
+    const ls = await type_or.type_or.get_ls()
+    assert(ls.equals(Or.Left(new Nat(1))))
+    const lc = await type_or.type_or.get_lc()
+    assert(lc.equals(Or.Left(new Nat(1))))
+    const rs = await type_or.type_or.get_rs()
+    assert(rs.equals(Or.Right<Nat, string>("mystr")))
+    const rc = await type_or.type_or.get_rc()
+    assert(rc.equals(Or.Right<Nat, string>("mystr")))
   })
 
   it('type_set_enum_param', async () => {
     await type_set_enum_param.type_set_enum_param.deploy({ as: alice })
-    // TODO
+
+    const res_before = await type_set_enum_param.type_set_enum_param.get_res()
+    assert(res_before.length == 0)
+
+    await type_set_enum_param.type_set_enum_param.set_value(
+      [
+        new type_set_enum_param.e_1(),
+        new type_set_enum_param.e_2(new Nat(2)),
+        new type_set_enum_param.e_3("mystr"),
+        new type_set_enum_param.e_4([new Bytes("ff"), true])
+      ], { as: alice })
+
+    const res_after = await type_set_enum_param.type_set_enum_param.get_res()
+    assert(res_after.length == 4)
+    assert(res_after[0].equals(new type_set_enum_param.e_1()))
+    assert(res_after[1].equals(new type_set_enum_param.e_2(new Nat(2))))
+    assert(res_after[2].equals(new type_set_enum_param.e_3("mystr")))
+    assert(res_after[3].equals(new type_set_enum_param.e_4([new Bytes("ff"), true])))
   })
 
   it('type_storage_or', async () => {
     await type_storage_or.type_storage_or.deploy({ as: alice })
-    // TODO
+
+    const x_before = await type_storage_or.type_storage_or.get_x()
+    assert(x_before.equals(Or.Left(new Nat(2))))
+
+    await type_storage_or.type_storage_or.exec({ as: alice })
+
+    const x_after = await type_storage_or.type_storage_or.get_x()
+    assert(x_after.equals(Or.Right<Nat, string>("mystr")))
   })
 
   it('typetuple', async () => {

@@ -1,14 +1,14 @@
 { storage unit ;
-  parameter (unit %exec) ;
+  parameter (address %exec) ;
   code { NIL operation ;
          SWAP ;
-         CDR ;
-         PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
+         UNPAIR ;
+         DUP ;
          CONTRACT unit ;
          IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
          NIL operation ;
          NIL operation ;
-         DUP 5 ;
+         DUP 6 ;
          ITER { CONS } ;
          DUP 3 ;
          PUSH mutez 1000000 ;
@@ -16,8 +16,8 @@
          TRANSFER_TOKENS ;
          CONS ;
          ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         DROP 1 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
          SWAP ;
          PAIR } }

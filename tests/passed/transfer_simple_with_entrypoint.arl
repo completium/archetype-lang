@@ -1,6 +1,6 @@
 archetype transfer_simple_with_entrypoint
 
-entry exec () {
-  var e : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+entry exec (a : address) {
+  var e : contract<unit> = a;
   transfer 1tz to entry e(());
 }

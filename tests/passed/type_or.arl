@@ -4,7 +4,3 @@ variable ls : or<nat, string> = left<string>(1)
 variable lc : or<nat, string> = left<nat, string>(1)
 variable rs : or<nat, string> = right<nat>("mystr")
 variable rc : or<nat, string> = right<nat, string>("mystr")
-
-entry exec() {
-  ()
-}

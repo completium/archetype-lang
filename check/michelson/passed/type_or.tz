@@ -3,5 +3,5 @@
           (or %lc nat string)
           (or %rs nat string)
           (or %rc nat string)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 4 } ; DROP 1 ; PAIR 4 ; NIL operation ; PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

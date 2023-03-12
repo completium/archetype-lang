@@ -1,8 +1,5 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
-}
 export class Type_or {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
@@ -23,18 +20,6 @@ export class Type_or {
     async deploy(params: Partial<ex.Parameters>) {
         const address = (await ex.deploy("../tests/passed/type_or.arl", {}, params)).address;
         this.address = address;
-    }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
-        if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
-    }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
-        if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
-        }
-        throw new Error("Contract not initialised");
     }
     async get_ls(): Promise<att.Or<att.Nat, string>> {
         if (this.address != undefined) {

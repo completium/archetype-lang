@@ -6,7 +6,7 @@ entry f(n : nat) {
   res := n
 }
 
-entry exec () {
+entry exec (a : address) {
   var n : nat = res + 2;
-  transfer 0tz to @KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw call set_value<nat>(n);
+  transfer 0tz to a call f<nat>(n);
 }
