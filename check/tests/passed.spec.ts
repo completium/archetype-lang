@@ -17800,7 +17800,8 @@ describe('passed', async () => {
 
   it('var_without_effect', async () => {
     await var_without_effect.var_without_effect.deploy({ as: alice })
-    // TODO
+
+    await var_without_effect.var_without_effect.exec({ as: alice })
   })
 
   it('variable_in_container', async () => {
@@ -17887,19 +17888,33 @@ describe('passed', async () => {
 
   it('view_simple', async () => {
     await view_simple.view_simple.deploy({ as: alice })
-    // TODO
+
+    const n_before = await view_simple.view_simple.get_n()
+    assert(n_before.equals(new Nat(2)))
+
+    const n_view_before = await view_simple.view_simple.view_get({ as: alice })
+    assert(n_view_before?.equals(new Nat(2)))
+
+    await view_simple.view_simple.setN(new Nat(3), { as: alice })
+
+    const n_after = await view_simple.view_simple.get_n()
+    assert(n_after.equals(new Nat(3)))
+
+    const n_view_after = await view_simple.view_simple.view_get({ as: alice })
+    assert(n_view_after?.equals(new Nat(3)))
   })
 
   it('view_simple_caller', async () => {
+    await view_simple.view_simple.deploy({ as: alice })
     await view_simple_caller.view_simple_caller.deploy({ as: alice })
-    // TODO
-    const res_before = await view_simple_caller.view_simple_caller.get_res()
-    assert(res_before.equals(Option.None()))
 
-    // await view_simple_caller.view_simple_caller.exec(alice.get_address(), { as: alice })
+    const n_before = await view_simple_caller.view_simple_caller.get_n()
+    assert(n_before.equals(Option.None()))
 
-    // const res_after = await view_simple_caller.view_simple_caller.get_res()
-    // assert(res_after.equals(Option.Some(alice.get_address())))
+    await view_simple_caller.view_simple_caller.exec(view_simple.view_simple.get_address(), { as: alice })
+
+    const n_after = await view_simple_caller.view_simple_caller.get_n()
+    assert(n_after.equals(Option.Some(new Nat(2))))
   })
 
   it('view_storage_0', async () => {
