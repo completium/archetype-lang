@@ -16084,127 +16084,437 @@ describe('passed', async () => {
 
   it('simple_get_field', async () => {
     await simple_get_field.simple_get_field.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await simple_get_field.simple_get_field.get_my_asset();
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Int(0)))
+    assert(my_asset_before[0][1] == "str")
+    const res_before = await simple_get_field.simple_get_field.get_res()
+    assert(res_before == "")
+
+    await simple_get_field.simple_get_field.exec({ as: alice })
+
+    const my_asset_after = await simple_get_field.simple_get_field.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Int(0)))
+    assert(my_asset_after[0][1] == "str")
+    const res_after = await simple_get_field.simple_get_field.get_res()
+    assert(res_after == "str")
   })
 
   it('simple_if3', async () => {
     await simple_if3.simple_if3.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_if3.simple_if3.get_str()
+    assert(str_before == "")
+    const n_before = await simple_if3.simple_if3.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const i_before = await simple_if3.simple_if3.get_i()
+    assert(i_before.equals(new Int(0)))
+
+    await simple_if3.simple_if3.exec(new Int(0), { as: alice })
+
+    const str_0 = await simple_if3.simple_if3.get_str()
+    assert(str_0 == "mystr")
+    const n_0 = await simple_if3.simple_if3.get_n()
+    assert(n_0.equals(new Nat(0)))
+    const i_0 = await simple_if3.simple_if3.get_i()
+    assert(i_0.equals(new Int(1)))
+
+    await simple_if3.simple_if3.exec(new Int(1), { as: alice })
+
+    const str_1 = await simple_if3.simple_if3.get_str()
+    assert(str_1 == "mystr")
+    const n_1 = await simple_if3.simple_if3.get_n()
+    assert(n_1.equals(new Nat(4)))
+    const i_1 = await simple_if3.simple_if3.get_i()
+    assert(i_1.equals(new Int(1)))
   })
 
   it('simple_multi_entry', async () => {
     await simple_multi_entry.simple_multi_entry.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_multi_entry.simple_multi_entry.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await simple_multi_entry.simple_multi_entry.e1({ as: alice })
+
+    const n_e1 = await simple_multi_entry.simple_multi_entry.get_n()
+    assert(n_e1.equals(new Nat(1)))
+
+    await simple_multi_entry.simple_multi_entry.e2({ as: alice })
+
+    const n_e2 = await simple_multi_entry.simple_multi_entry.get_n()
+    assert(n_e2.equals(new Nat(2)))
   })
 
   it('simple_multi_entry2', async () => {
     await simple_multi_entry2.simple_multi_entry2.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_multi_entry2.simple_multi_entry2.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await simple_multi_entry2.simple_multi_entry2.e1(new Nat(1), { as: alice })
+
+    const n_e1 = await simple_multi_entry2.simple_multi_entry2.get_n()
+    assert(n_e1.equals(new Nat(1)))
+
+    await simple_multi_entry2.simple_multi_entry2.e2(new Nat(1), new Nat(1), { as: alice })
+
+    const n_e2 = await simple_multi_entry2.simple_multi_entry2.get_n()
+    assert(n_e2.equals(new Nat(2)))
+
+    await simple_multi_entry2.simple_multi_entry2.e3({ as: alice })
+
+    const n_e3 = await simple_multi_entry2.simple_multi_entry2.get_n()
+    assert(n_e3.equals(new Nat(0)))
   })
 
   it('simple_multi_entry3', async () => {
     await simple_multi_entry3.simple_multi_entry3.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_multi_entry3.simple_multi_entry3.get_str()
+    assert(str_before == "")
+    const n_before = await simple_multi_entry3.simple_multi_entry3.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const i_before = await simple_multi_entry3.simple_multi_entry3.get_i()
+    assert(i_before.equals(new Int(0)))
+
+    await simple_multi_entry3.simple_multi_entry3.e1(new Nat(1), { as: alice })
+
+    const str_e1 = await simple_multi_entry3.simple_multi_entry3.get_str()
+    assert(str_e1 == "")
+    const n_e1 = await simple_multi_entry3.simple_multi_entry3.get_n()
+    assert(n_e1.equals(new Nat(3)))
+    const i_e1 = await simple_multi_entry3.simple_multi_entry3.get_i()
+    assert(i_e1.equals(new Int(1)))
+
+    await simple_multi_entry3.simple_multi_entry3.e2(new Nat(1), new Nat(1), { as: alice })
+
+    const str_e2 = await simple_multi_entry3.simple_multi_entry3.get_str()
+    assert(str_e2 == "mystring")
+    const n_e2 = await simple_multi_entry3.simple_multi_entry3.get_n()
+    assert(n_e2.equals(new Nat(2)))
+    const i_e2 = await simple_multi_entry3.simple_multi_entry3.get_i()
+    assert(i_e2.equals(new Int(7)))
+
+    await simple_multi_entry3.simple_multi_entry3.e3({ as: alice })
+
+    const str_e3 = await simple_multi_entry3.simple_multi_entry3.get_str()
+    assert(str_e3 == "mystring")
+    const n_e3 = await simple_multi_entry3.simple_multi_entry3.get_n()
+    assert(n_e3.equals(new Nat(5)))
+    const i_e3 = await simple_multi_entry3.simple_multi_entry3.get_i()
+    assert(i_e3.equals(new Int(7)))
   })
 
   it('simple_op_add', async () => {
     await simple_op_add.simple_op_add.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_op_add.simple_op_add.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_op_add.simple_op_add.exec({ as: alice })
+
+    const res_after = await simple_op_add.simple_op_add.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('simple_op_uminus', async () => {
     await simple_op_uminus.simple_op_uminus.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_op_uminus.simple_op_uminus.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await simple_op_uminus.simple_op_uminus.exec({ as: alice })
+
+    const res_after = await simple_op_uminus.simple_op_uminus.get_res()
+    assert(res_after.equals(new Int(-1)))
   })
 
   it('simple_record_assign', async () => {
     await simple_record_assign.simple_record_assign.deploy({ as: alice })
-    // TODO
+
+    const r_before = await simple_record_assign.simple_record_assign.get_r()
+    assert(r_before.equals(new simple_record_assign.my_record("id", new Nat(0))))
+
+    await simple_record_assign.simple_record_assign.exec({ as: alice })
+
+    const r_after = await simple_record_assign.simple_record_assign.get_r()
+    assert(r_after.equals(new simple_record_assign.my_record("id", new Nat(1))))
   })
 
   it('simple_record_assign1', async () => {
     await simple_record_assign1.simple_record_assign1.deploy({ as: alice })
-    // TODO
+
+    const r_before = await simple_record_assign1.simple_record_assign1.get_r()
+    assert(r_before.equals(new simple_record_assign1.my_record(new Nat(0))))
+
+    await simple_record_assign1.simple_record_assign1.exec({ as: alice })
+
+    const r_after = await simple_record_assign1.simple_record_assign1.get_r()
+    assert(r_after.equals(new simple_record_assign1.my_record(new Nat(1))))
   })
 
   it('simple_record_assign2', async () => {
     await simple_record_assign2.simple_record_assign2.deploy({ as: alice })
-    // TODO
+
+    const p_before = await simple_record_assign2.simple_record_assign2.get_p()
+    assert(p_before.equals(new Nat(0)))
+    const r_before = await simple_record_assign2.simple_record_assign2.get_r()
+    assert(r_before.equals(new simple_record_assign2.my_record("id", new Nat(0), new Nat(0), new Nat(0))))
+    const q_before = await simple_record_assign2.simple_record_assign2.get_q()
+    assert(q_before.equals(new Nat(0)))
+
+    await simple_record_assign2.simple_record_assign2.exec({ as: alice })
+
+    const p_after = await simple_record_assign2.simple_record_assign2.get_p()
+    assert(p_after.equals(new Nat(0)))
+    const r_after = await simple_record_assign2.simple_record_assign2.get_r()
+    assert(r_after.equals(new simple_record_assign2.my_record("id", new Nat(0), new Nat(0), new Nat(1))))
+    const q_after = await simple_record_assign2.simple_record_assign2.get_q()
+    assert(q_after.equals(new Nat(0)))
   })
 
   it('simple_record_lit', async () => {
     await simple_record_lit.simple_record_lit.deploy({ as: alice })
-    // TODO
+
+    await simple_record_lit.simple_record_lit.exec({ as: alice })
   })
 
   it('simple_record_lit_rev', async () => {
     await simple_record_lit_rev.simple_record_lit_rev.deploy({ as: alice })
-    // TODO
+
+    await simple_record_lit_rev.simple_record_lit_rev.exec({ as: alice })
   })
 
   it('simple_reverse', async () => {
     await simple_reverse.simple_reverse.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_reverse.simple_reverse.get_res()
+    assert(res_before.length == 0)
+
+    await simple_reverse.simple_reverse.exec({ as: alice })
+
+    const res_after = await simple_reverse.simple_reverse.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0] == "i2")
+    assert(res_after[1] == "i1")
+    assert(res_after[2] == "i0")
   })
 
   it('simple_sequence', async () => {
     await simple_sequence.simple_sequence.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_sequence.simple_sequence.get_str()
+    assert(str_before == "")
+    const n_before = await simple_sequence.simple_sequence.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const i_before = await simple_sequence.simple_sequence.get_i()
+    assert(i_before.equals(new Int(0)))
+
+    await simple_sequence.simple_sequence.exec({ as: alice })
+
+    const str_after = await simple_sequence.simple_sequence.get_str()
+    assert(str_after == "mystring")
+    const n_after = await simple_sequence.simple_sequence.get_n()
+    assert(n_after.equals(new Nat(5)))
+    const i_after = await simple_sequence.simple_sequence.get_i()
+    assert(i_after.equals(new Int(0)))
   })
 
   it('simple_sequence_with_arg', async () => {
     await simple_sequence_with_arg.simple_sequence_with_arg.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_sequence_with_arg.simple_sequence_with_arg.get_str()
+    assert(str_before == "")
+    const n_before = await simple_sequence_with_arg.simple_sequence_with_arg.get_n()
+    assert(n_before.equals(new Nat(0)))
+    const i_before = await simple_sequence_with_arg.simple_sequence_with_arg.get_i()
+    assert(i_before.equals(new Int(0)))
+
+    await simple_sequence_with_arg.simple_sequence_with_arg.exec(new Nat(2), { as: alice })
+
+    const str_after = await simple_sequence_with_arg.simple_sequence_with_arg.get_str()
+    assert(str_after == "mystring")
+    const n_after = await simple_sequence_with_arg.simple_sequence_with_arg.get_n()
+    assert(n_after.equals(new Nat(4)))
+    const i_after = await simple_sequence_with_arg.simple_sequence_with_arg.get_i()
+    assert(i_after.equals(new Int(0)))
   })
 
   it('simple_sequence_with_arg2', async () => {
     await simple_sequence_with_arg2.simple_sequence_with_arg2.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_sequence_with_arg2.simple_sequence_with_arg2.get_str()
+    assert(str_before == "")
+    const n_before = await simple_sequence_with_arg2.simple_sequence_with_arg2.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await simple_sequence_with_arg2.simple_sequence_with_arg2.exec(new Nat(2), new Nat(2), { as: alice })
+
+    const str_after = await simple_sequence_with_arg2.simple_sequence_with_arg2.get_str()
+    assert(str_after == "mystring")
+    const n_after = await simple_sequence_with_arg2.simple_sequence_with_arg2.get_n()
+    assert(n_after.equals(new Nat(7)))
   })
 
   it('simple_sequence_with_arg_var', async () => {
     await simple_sequence_with_arg_var.simple_sequence_with_arg_var.deploy({ as: alice })
-    // TODO
+
+    const str_before = await simple_sequence_with_arg_var.simple_sequence_with_arg_var.get_str()
+    assert(str_before == "")
+    const n_before = await simple_sequence_with_arg_var.simple_sequence_with_arg_var.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await simple_sequence_with_arg_var.simple_sequence_with_arg_var.exec(new Nat(2), { as: alice })
+
+    const str_after = await simple_sequence_with_arg_var.simple_sequence_with_arg_var.get_str()
+    assert(str_after == "mystring")
+    const n_after = await simple_sequence_with_arg_var.simple_sequence_with_arg_var.get_n()
+    assert(n_after.equals(new Nat(7)))
   })
 
   it('simple_while', async () => {
     await simple_while.simple_while.deploy({ as: alice })
-    // TODO
+
+    const res_before = await simple_while.simple_while.get_res()
+    assert(res_before == false)
+
+    await simple_while.simple_while.exec({ as: alice })
+
+    const res_after = await simple_while.simple_while.get_res()
+    assert(res_after == true)
   })
 
   it('simple_with_arg_view', async () => {
     await simple_with_arg_view.simple_with_arg_view.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_with_arg_view.simple_with_arg_view.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    const n_getter_before = await simple_with_arg_view.simple_with_arg_view.getValue({ as: alice })
+    assert(n_getter_before.equals(new Nat(0)))
+
+    await simple_with_arg_view.simple_with_arg_view.assign(new Nat(2), { as: alice })
+
+    const n_after = await simple_with_arg_view.simple_with_arg_view.get_n()
+    assert(n_after.equals(new Nat(2)))
+
+    const n_getter_after = await simple_with_arg_view.simple_with_arg_view.getValue({ as: alice })
+    assert(n_getter_after.equals(new Nat(2)))
   })
 
   it('simple_with_type_annot', async () => {
     await simple_with_type_annot.simple_with_type_annot.deploy({ as: alice })
-    // TODO
+
+    const k_before = await simple_with_type_annot.simple_with_type_annot.get_k()
+    assert(k_before.equals(new Nat(0)))
+
+    await simple_with_type_annot.simple_with_type_annot.exec(new Nat(2), { as: alice })
+
+    const k_after = await simple_with_type_annot.simple_with_type_annot.get_k()
+    assert(k_after.equals(new Nat(2)))
   })
 
   it('simple_with_view', async () => {
     await simple_with_view.simple_with_view.deploy({ as: alice })
-    // TODO
+
+    const n_before = await simple_with_view.simple_with_view.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    const n_getter_before = await simple_with_view.simple_with_view.getValue({ as: alice })
+    assert(n_getter_before.equals(new Nat(0)))
+
+    await simple_with_view.simple_with_view.assign({ as: alice })
+
+    const n_after = await simple_with_view.simple_with_view.get_n()
+    assert(n_after.equals(new Nat(2)))
+
+    const n_getter_after = await simple_with_view.simple_with_view.getValue({ as: alice })
+    assert(n_getter_after.equals(new Nat(2)))
   })
 
   it('sourced_by', async () => {
     await sourced_by.sourced_by.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await sourced_by.sourced_by.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(alice.get_address()))
+    assert(my_asset_before[0][1] == "")
+
+    await sourced_by.sourced_by.e0({ as: alice })
+    await expect_to_fail(async () => {
+      await sourced_by.sourced_by.e0({ as: bob })
+    }, { string: "INVALID_SOURCE" })
+
+    const my_asset_e0 = await sourced_by.sourced_by.get_my_asset()
+    assert(my_asset_e0.length == 1)
+    assert(my_asset_e0[0][0].equals(alice.get_address()))
+    assert(my_asset_e0[0][1] == "")
+
+    await sourced_by.sourced_by.e1({ as: alice })
+    await expect_to_fail(async () => {
+      await sourced_by.sourced_by.e1({ as: bob })
+    }, { string: "INVALID_SOURCE" })
+
+    const my_asset_e1 = await sourced_by.sourced_by.get_my_asset()
+    assert(my_asset_e1.length == 1)
+    assert(my_asset_e1[0][0].equals(alice.get_address()))
+    assert(my_asset_e1[0][1] == "")
+
+    await sourced_by.sourced_by.e2({ as: alice })
+    await expect_to_fail(async () => {
+      await sourced_by.sourced_by.e2({ as: bob })
+    }, { string: "INVALID_SOURCE" })
+
+    const my_asset_e2 = await sourced_by.sourced_by.get_my_asset()
+    assert(my_asset_e2.length == 1)
+    assert(my_asset_e2[0][0].equals(alice.get_address()))
+    assert(my_asset_e2[0][1] == "")
   })
 
   it('state_in_effect', async () => {
     await state_in_effect.state_in_effect.deploy({ as: alice })
-    // TODO
+
+    const state_before = await state_in_effect.state_in_effect.get_state()
+    assert(state_before == state_in_effect.states.S1)
+    const res_before = await state_in_effect.state_in_effect.get_res()
+    assert(res_before.equals(new Int(-1)))
+
+    await state_in_effect.state_in_effect.exec({ as: alice })
+
+    const state_after = await state_in_effect.state_in_effect.get_state()
+    assert(state_after == state_in_effect.states.S1)
+    const res_after = await state_in_effect.state_in_effect.get_res()
+    assert(res_after.equals(new Int(0)))
   })
 
   it('state_is', async () => {
     await state_is.state_is.deploy({ as: alice })
-    // TODO
+
+    const state_before = await state_is.state_is.get_state()
+    assert(state_before == state_is.states.Init)
+
+    await expect_to_fail(async () => {
+      await state_is.state_is.exec({ as: alice })
+    }, {string: "INVALID_STATE"})
+
+    await state_is.state_is.tr({ as: alice })
+
+    const state_0 = await state_is.state_is.get_state()
+    assert(state_0 == state_is.states.Running)
+
+    await state_is.state_is.exec({ as: alice })
+
+    const state_after = await state_is.state_is.get_state()
+    assert(state_after == state_is.states.Running)
   })
 
   it('state_var', async () => {
     await state_var.state_var.deploy({ as: alice })
-    // TODO
+
+    await state_var.state_var.exec({ as: alice })
   })
 
   it('tern_bool_false', async () => {
@@ -16845,11 +17155,14 @@ describe('passed', async () => {
   })
 
   it('test_global_constant', async () => {
-    await register_global_constant(new Nat(2).to_mich(), { as: alice });
+    await register_global_constant(new Nat(2).to_mich(), { as: alice })
     await test_global_constant.test_global_constant.deploy({ as: alice })
+
     const res_before = await test_global_constant.test_global_constant.get_res()
     assert(res_before.equals(new Nat(0)))
+
     await test_global_constant.test_global_constant.exec({ as: alice })
+
     const res_after = await test_global_constant.test_global_constant.get_res()
     assert(res_after.equals(new Nat(2)))
   })

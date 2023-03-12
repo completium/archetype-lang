@@ -62,11 +62,30 @@
     {
       "name": "exec",
       "args": []
+    },
+    {
+      "name": "tr",
+      "args": []
     }
   ],
   "getters": [],
   "views": [],
   "errors": [
+    {
+      "kind": "InvalidState",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INVALID_STATE",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
     {
       "kind": "InvalidState",
       "args": [],

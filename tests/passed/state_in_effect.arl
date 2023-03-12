@@ -7,7 +7,7 @@ states =
   | S4
   | S5
 
-variable res : int = 0
+variable res : int = -1
 
 entry exec () {
   effect {

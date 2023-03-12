@@ -6,5 +6,8 @@
          DROP 1 ;
          DUP ;
          LOOP { PUSH bool False ; SWAP ; DROP 1 ; DUP } ;
+         PUSH bool True ;
+         SWAP ;
+         DROP 1 ;
          NIL operation ;
          PAIR } }

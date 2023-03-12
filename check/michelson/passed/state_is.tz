@@ -1,10 +1,23 @@
 { storage int ;
-  parameter (unit %exec) ;
-  code { CDR ;
-         DUP ;
-         PUSH int 1 ;
-         COMPARE ;
-         NEQ ;
-         IF { PUSH string "INVALID_STATE" ; FAILWITH } {} ;
-         NIL operation ;
-         PAIR } }
+  parameter (or (unit %exec) (unit %tr)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DROP 1 ;
+             DUP ;
+             PUSH int 1 ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "INVALID_STATE" ; FAILWITH } {} ;
+             NIL operation ;
+             PAIR }
+           { DROP 1 ;
+             DUP ;
+             DUP ;
+             PUSH int 0 ;
+             COMPARE ;
+             EQ ;
+             IF { PUSH int 1 ; DIP 1 { SWAP ; DROP 1 } ; SWAP }
+                { PUSH string "INVALID_STATE" ; FAILWITH } ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }

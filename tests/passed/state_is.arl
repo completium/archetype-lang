@@ -10,3 +10,8 @@ entry exec () {
      ()
    }
 }
+
+transition tr() {
+  from Init
+  to Running
+}

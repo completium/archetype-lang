@@ -4,7 +4,7 @@
          IF_LEFT
            { IF_LEFT
                { DROP 1 ;
-                 PUSH address "tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk" ;
+                 PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
                  SOURCE ;
                  COMPARE ;
                  EQ ;
@@ -13,7 +13,7 @@
                  NIL operation ;
                  PAIR }
                { DROP 1 ;
-                 PUSH address "tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk" ;
+                 PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
                  SOURCE ;
                  COMPARE ;
                  EQ ;

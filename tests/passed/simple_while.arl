@@ -7,4 +7,5 @@ entry exec () {
   while res do
     res := false
   done;
+  res := true
 }
