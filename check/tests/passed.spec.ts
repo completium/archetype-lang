@@ -17754,7 +17754,10 @@ describe('passed', async () => {
 
   it('typetuple', async () => {
     await typetuple.typetuple.deploy({ as: alice })
-    // TODO
+
+    const v = await typetuple.typetuple.get_v()
+    assert(v[0].equals(new Int(1)))
+    assert(v[1] == '')
   })
 
   it('unused_argument', async () => {
@@ -17795,7 +17798,30 @@ describe('passed', async () => {
 
   it('update_minus_equal', async () => {
     await update_minus_equal.update_minus_equal.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await update_minus_equal.update_minus_equal.get_my_asset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Nat(10)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Nat(11)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Nat(12)))
+    const res_before = await update_minus_equal.update_minus_equal.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await update_minus_equal.update_minus_equal.exec({ as: alice })
+
+    const my_asset_after = await update_minus_equal.update_minus_equal.get_my_asset();
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Nat(10)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Nat(8)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Nat(12)))
+    const res_after = await update_minus_equal.update_minus_equal.get_res()
+    assert(res_after.equals(new Int(0)))
   })
 
   it('var_without_effect', async () => {
@@ -17806,7 +17832,14 @@ describe('passed', async () => {
 
   it('variable_in_container', async () => {
     await variable_in_container.variable_in_container.deploy({ as: alice })
-    // TODO
+
+    const v_before = await variable_in_container.variable_in_container.get_v()
+    assert(v_before.equals(new variable_in_container.rt([], [], [])))
+
+    await variable_in_container.variable_in_container.exec({ as: alice })
+
+    const v_after = await variable_in_container.variable_in_container.get_v()
+    assert(v_after.equals(new variable_in_container.rt([new Nat(0)], [new Nat(0), new Nat(0)], [[new Nat(0), new Nat(0)]])))
   })
 
   it('very_simple', async () => {
@@ -17823,67 +17856,252 @@ describe('passed', async () => {
 
   it('view_0', async () => {
     await view_0.view_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_0.view_0.get_res()
+    assert(res_before.equals(Option.None()))
+
+    const v = await view_0.view_0.view_get({ as: alice });
+    assert(v?.equals(new Nat(2)))
+
+    await view_0.view_0.exec({ as: alice })
+
+    const res_after = await view_0.view_0.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
   })
 
   it('view_all_chain', async () => {
     await view_all_chain.view_all_chain.deploy({ as: alice })
-    // TODO
+
+    const n_before = await view_all_chain.view_all_chain.get_n()
+    assert(n_before.equals(Option.None()))
+
+    const v = await view_all_chain.view_all_chain.view_get({ as: alice });
+    assert(v?.equals(new Nat(0)))
+
+    await view_all_chain.view_all_chain.exec({ as: alice })
+
+    const n_after = await view_all_chain.view_all_chain.get_n()
+    assert(n_after.equals(Option.Some(new Nat(0))))
   })
 
   it('view_args_0', async () => {
     await view_args_0.view_args_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_args_0.view_args_0.get_res()
+    assert(res_before.equals(Option.None()))
+
+    const v = await view_args_0.view_args_0.view_get(new Nat(2), { as: alice });
+    assert(v?.equals(new Nat(2)))
+
+    await view_args_0.view_args_0.exec({ as: alice })
+
+    const res_after = await view_args_0.view_args_0.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
   })
 
   it('view_args_1', async () => {
     await view_args_1.view_args_1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_args_1.view_args_1.get_res()
+    assert(res_before.equals(Option.None()))
+
+    const v = await view_args_1.view_args_1.view_get(new Nat(1), "toto", new Bytes("123456"), { as: alice });
+    assert(v?.equals(new Nat(8)))
+
+    await view_args_1.view_args_1.exec({ as: alice })
+
+    const res_after = await view_args_1.view_args_1.get_res()
+    assert(res_after.equals(Option.Some(new Nat(8))))
   })
 
   it('view_args_storage_0', async () => {
     await view_args_storage_0.view_args_storage_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_args_storage_0.view_args_storage_0.get_res()
+    assert(res_before.equals(Option.None()))
+    const n_before = await view_args_storage_0.view_args_storage_0.get_n()
+    assert(n_before.equals(new Nat(2)))
+
+    const v = await view_args_storage_0.view_args_storage_0.view_get(new Nat(2), { as: alice });
+    assert(v?.equals(new Nat(4)))
+
+    await view_args_storage_0.view_args_storage_0.exec({ as: alice })
+
+    const res_after = await view_args_storage_0.view_args_storage_0.get_res()
+    assert(res_after.equals(Option.Some(new Nat(4))))
+    const n_after = await view_args_storage_0.view_args_storage_0.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('view_args_storage_1', async () => {
     await view_args_storage_1.view_args_storage_1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_args_storage_1.view_args_storage_1.get_res()
+    assert(res_before.equals(Option.None()))
+    const k_before = await view_args_storage_1.view_args_storage_1.get_k()
+    assert(k_before.equals(new Int(10)))
+    const str_before = await view_args_storage_1.view_args_storage_1.get_str()
+    assert(str_before == "abc")
+
+    const v = await view_args_storage_1.view_args_storage_1.view_get(new Nat(1), "toto", new Bytes("123456"), { as: alice });
+    assert(v?.equals(new Nat(21)))
+
+    await view_args_storage_1.view_args_storage_1.exec({ as: alice })
+
+    const res_after = await view_args_storage_1.view_args_storage_1.get_res()
+    assert(res_after.equals(Option.Some(new Nat(21))))
+    const k_after = await view_args_storage_1.view_args_storage_1.get_k()
+    assert(k_after.equals(new Int(10)))
+    const str_after = await view_args_storage_1.view_args_storage_1.get_str()
+    assert(str_after == "abc")
   })
 
   it('view_asset', async () => {
     await view_asset.view_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await view_asset.view_asset.get_my_asset();
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "value")
+    const res_before = await view_asset.view_asset.get_res()
+    assert(res_before.equals(Option.None()))
+
+    const v = await view_asset.view_asset.view_get(new Nat(0), { as: alice });
+    assert(v == "value")
+
+    await view_asset.view_asset.exec({ as: alice })
+
+    const my_asset_after = await view_asset.view_asset.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "value")
+    const res_after = await view_asset.view_asset.get_res()
+    assert(res_after.equals(Option.Some<string>("value")))
   })
 
   it('view_exhaustive', async () => {
     await view_exhaustive.view_exhaustive.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await view_exhaustive.view_exhaustive.get_my_asset();
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "value")
+    const n_before = await view_exhaustive.view_exhaustive.get_n()
+    assert(n_before.equals(new Nat(2)))
+    const r_before = await view_exhaustive.view_exhaustive.get_r()
+    assert(r_before.equals(new Nat(0)))
+    const state_before = await view_exhaustive.view_exhaustive.get_state()
+    assert(state_before == view_exhaustive.states.One)
+
+    const v = await view_exhaustive.view_exhaustive.view_getN({ as: alice });
+    assert(v?.equals(new Nat(2)))
+
+    await view_exhaustive.view_exhaustive.exec({ as: alice })
+
+    const my_asset_after = await view_exhaustive.view_exhaustive.get_my_asset();
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "value")
+    const n_after = await view_exhaustive.view_exhaustive.get_n()
+    assert(n_after.equals(new Nat(2)))
+    const r_after = await view_exhaustive.view_exhaustive.get_r()
+    assert(r_after.equals(new Nat(2)))
+    const state_after = await view_exhaustive.view_exhaustive.get_state()
+    assert(state_after == view_exhaustive.states.One)
   })
 
   it('view_in_arg', async () => {
     await view_in_arg.view_in_arg.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await view_in_arg.view_in_arg.get_my_asset();
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_before = await view_in_arg.view_in_arg.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await view_in_arg.view_in_arg.exec({ as: alice })
+
+    const my_asset_after = await view_in_arg.view_in_arg.get_my_asset();
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(2)))
+    const res_after = await view_in_arg.view_in_arg.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('view_offchain', async () => {
     await view_offchain.view_offchain.deploy({ as: alice })
-    // TODO
+
+    const n_before = await view_offchain.view_offchain.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await view_offchain.view_offchain.set(new Nat(2), { as: alice })
+
+    const n_after = await view_offchain.view_offchain.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('view_offchain_nat', async () => {
     await view_offchain_nat.view_offchain_nat.deploy({ as: alice })
-    // TODO
+
+    const bm_0_before = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(0))
+    assert(bm_0_before == 'zero')
+    const bm_1_before = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(1))
+    assert(bm_1_before == 'one')
+    const bm_2_before = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(2))
+    assert(bm_2_before == 'two')
+    const bm_3_before = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(3))
+    assert(bm_3_before == undefined)
+
+    await view_offchain_nat.view_offchain_nat.set(new Nat(3), 'three', { as: alice })
+
+    const bm_0_after = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(0))
+    assert(bm_0_after == 'zero')
+    const bm_1_after = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(1))
+    assert(bm_1_after == 'one')
+    const bm_2_after = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(2))
+    assert(bm_2_after == 'two')
+    const bm_3_after = await view_offchain_nat.view_offchain_nat.get_bm_value(new Nat(3))
+    assert(bm_3_after == 'three')
   })
 
   it('view_onchain', async () => {
     await view_onchain.view_onchain.deploy({ as: alice })
-    // TODO
+
+    const n_before = await view_onchain.view_onchain.get_n()
+    assert(n_before.equals(Option.None()))
+
+    const v = await view_onchain.view_onchain.view_getN({ as: alice });
+    assert(v?.equals(new Nat(0)))
+
+    await view_onchain.view_onchain.exec({ as: alice })
+
+    const n_after = await view_onchain.view_onchain.get_n()
+    assert(n_after.equals(Option.Some(new Nat(0))))
   })
 
   it('view_onchain_offchain', async () => {
     await view_onchain_offchain.view_onchain_offchain.deploy({ as: alice })
-    // TODO
+
+    const n_before = await view_onchain_offchain.view_onchain_offchain.get_n()
+    assert(n_before.equals(Option.None()))
+
+    const v = await view_onchain_offchain.view_onchain_offchain.view_getN({ as: alice });
+    assert(v?.equals(new Nat(0)))
+
+    await view_onchain_offchain.view_onchain_offchain.exec({ as: alice })
+
+    const n_after = await view_onchain_offchain.view_onchain_offchain.get_n()
+    assert(n_after.equals(Option.Some(new Nat(0))))
   })
 
   it('view_simple', async () => {
