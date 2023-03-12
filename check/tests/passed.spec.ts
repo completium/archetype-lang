@@ -15575,7 +15575,7 @@ describe('passed', async () => {
 
     await expect_to_fail(async () => {
       await simple_asset.simple_asset.add_asset({ as: alice })
-    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+    }, { "prim": "Pair", "args": [{ "string": "KEY_EXISTS" }, { "string": "my_asset" }] })
 
     await simple_asset.simple_asset.remove_asset({ as: alice })
 
@@ -15642,7 +15642,7 @@ describe('passed', async () => {
 
     await expect_to_fail(async () => {
       await simple_asset_2.simple_asset_2.add_asset({ as: alice })
-    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+    }, { "prim": "Pair", "args": [{ "string": "KEY_EXISTS" }, { "string": "my_asset" }] })
 
     await simple_asset_2.simple_asset_2.remove_asset({ as: alice })
 
@@ -15790,7 +15790,7 @@ describe('passed', async () => {
 
     await expect_to_fail(async () => {
       await simple_asset_one_field.simple_asset_one_field.add_asset({ as: alice })
-    }, {"prim":"Pair","args": [{"string": "KEY_EXISTS"},{"string": "my_asset"}]})
+    }, { "prim": "Pair", "args": [{ "string": "KEY_EXISTS" }, { "string": "my_asset" }] })
 
     await simple_asset_one_field.simple_asset_one_field.remove_asset({ as: alice })
 
@@ -17759,16 +17759,38 @@ describe('passed', async () => {
 
   it('unused_argument', async () => {
     await unused_argument.unused_argument.deploy({ as: alice })
-    // TODO
+
+    const n_before = await unused_argument.unused_argument.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await unused_argument.unused_argument.e("", new Nat(2), { as: alice })
+
+    const n_after = await unused_argument.unused_argument.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('unused_variable', async () => {
     await unused_variable.unused_variable.deploy({ as: alice })
-    // TODO
+
+    const n_before = await unused_variable.unused_variable.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await unused_variable.unused_variable.e({ as: alice })
+
+    const n_after = await unused_variable.unused_variable.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('unused_variable_opt', async () => {
     await unused_variable_opt.unused_variable_opt.deploy({ as: alice })
+
+    const n_before = await unused_variable_opt.unused_variable_opt.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await unused_variable_opt.unused_variable_opt.e({ as: alice })
+
+    const n_after = await unused_variable_opt.unused_variable_opt.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('update_minus_equal', async () => {
@@ -17788,7 +17810,14 @@ describe('passed', async () => {
 
   it('very_simple', async () => {
     await very_simple.very_simple.deploy({ as: alice })
-    // TODO
+
+    const res_before = await very_simple.very_simple.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await very_simple.very_simple.exec({ as: alice })
+
+    const res_after = await very_simple.very_simple.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('view_0', async () => {
@@ -17864,36 +17893,159 @@ describe('passed', async () => {
   it('view_simple_caller', async () => {
     await view_simple_caller.view_simple_caller.deploy({ as: alice })
     // TODO
+    const res_before = await view_simple_caller.view_simple_caller.get_res()
+    assert(res_before.equals(Option.None()))
+
+    // await view_simple_caller.view_simple_caller.exec(alice.get_address(), { as: alice })
+
+    // const res_after = await view_simple_caller.view_simple_caller.get_res()
+    // assert(res_after.equals(Option.Some(alice.get_address())))
   })
 
   it('view_storage_0', async () => {
     await view_storage_0.view_storage_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_0.view_storage_0.get_res()
+    assert(res_before.equals(Option.None()))
+    const n_before = await view_storage_0.view_storage_0.get_n()
+    assert(n_before.equals(new Nat(2)))
+
+    const v = await view_storage_0.view_storage_0.view_get({ as: alice });
+    assert(v?.equals(new Nat(2)))
+
+    await view_storage_0.view_storage_0.exec({ as: alice })
+
+    const res_after = await view_storage_0.view_storage_0.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
+    const n_after = await view_storage_0.view_storage_0.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('view_storage_1', async () => {
     await view_storage_1.view_storage_1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_1.view_storage_1.get_res()
+    assert(res_before.equals(Option.None()))
+    const i_before = await view_storage_1.view_storage_1.get_i()
+    assert(i_before.equals(new Nat(1)))
+
+    const v = await view_storage_1.view_storage_1.view_get({ as: alice });
+    assert(v?.equals(new Nat(1)))
+
+    await view_storage_1.view_storage_1.exec({ as: alice })
+
+    const res_after = await view_storage_1.view_storage_1.get_res()
+    assert(res_after.equals(Option.Some(new Nat(1))))
+    const i_after = await view_storage_1.view_storage_1.get_i()
+    assert(i_after.equals(new Nat(1)))
   })
 
   it('view_storage_2', async () => {
     await view_storage_2.view_storage_2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_2.view_storage_2.get_res()
+    assert(res_before.equals(Option.None()))
+    const i_before = await view_storage_2.view_storage_2.get_i()
+    assert(i_before.equals(new Nat(1)))
+    const n_before = await view_storage_2.view_storage_2.get_n()
+    assert(n_before.equals(new Nat(2)))
+
+    const v = await view_storage_2.view_storage_2.view_get({ as: alice });
+    assert(v?.equals(new Nat(3)))
+
+    await view_storage_2.view_storage_2.exec({ as: alice })
+
+    const res_after = await view_storage_2.view_storage_2.get_res()
+    assert(res_after.equals(Option.Some(new Nat(3))))
+    const i_after = await view_storage_2.view_storage_2.get_i()
+    assert(i_after.equals(new Nat(1)))
+    const n_after = await view_storage_2.view_storage_2.get_n()
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('view_storage_3', async () => {
     await view_storage_3.view_storage_3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_3.view_storage_3.get_res()
+    assert(res_before.equals(Option.None()))
+    const a_before = await view_storage_3.view_storage_3.get_a()
+    assert(a_before.equals(new Nat(1)))
+    const b_before = await view_storage_3.view_storage_3.get_b()
+    assert(b_before.equals(new Nat(2)))
+    const c_before = await view_storage_3.view_storage_3.get_c()
+    assert(c_before.equals(new Nat(3)))
+
+    const v = await view_storage_3.view_storage_3.view_get({ as: alice });
+    assert(v?.equals(new Nat(5)))
+
+    await view_storage_3.view_storage_3.exec({ as: alice })
+
+    const res_after = await view_storage_3.view_storage_3.get_res()
+    assert(res_after.equals(Option.Some(new Nat(5))))
+    const a_after = await view_storage_3.view_storage_3.get_a()
+    assert(a_after.equals(new Nat(1)))
+    const b_after = await view_storage_3.view_storage_3.get_b()
+    assert(b_after.equals(new Nat(2)))
+    const c_after = await view_storage_3.view_storage_3.get_c()
+    assert(c_after.equals(new Nat(3)))
   })
 
   it('view_storage_4', async () => {
     await view_storage_4.view_storage_4.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_4.view_storage_4.get_res()
+    assert(res_before.equals(Option.None()))
+    const a_before = await view_storage_4.view_storage_4.get_a()
+    assert(a_before.equals(new Nat(1)))
+    const b_before = await view_storage_4.view_storage_4.get_b()
+    assert(b_before.equals(new Nat(2)))
+    const c_before = await view_storage_4.view_storage_4.get_c()
+    assert(c_before.equals(new Nat(3)))
+
+    const v = await view_storage_4.view_storage_4.view_get({ as: alice });
+    assert(v?.equals(new Nat(3)))
+
+    await view_storage_4.view_storage_4.exec({ as: alice })
+
+    const res_after = await view_storage_4.view_storage_4.get_res()
+    assert(res_after.equals(Option.Some(new Nat(3))))
+    const a_after = await view_storage_4.view_storage_4.get_a()
+    assert(a_after.equals(new Nat(1)))
+    const b_after = await view_storage_4.view_storage_4.get_b()
+    assert(b_after.equals(new Nat(2)))
+    const c_after = await view_storage_4.view_storage_4.get_c()
+    assert(c_after.equals(new Nat(3)))
   })
 
   it('view_storage_5', async () => {
     await view_storage_5.view_storage_5.deploy({ as: alice })
-    // TODO
+
+    const res_before = await view_storage_5.view_storage_5.get_res()
+    assert(res_before.equals(Option.None()))
+    const a_before = await view_storage_5.view_storage_5.get_a()
+    assert(a_before.equals(new Nat(1)))
+    const b_before = await view_storage_5.view_storage_5.get_b()
+    assert(b_before.equals(new Nat(2)))
+    const c_before = await view_storage_5.view_storage_5.get_c()
+    assert(c_before.equals(new Nat(3)))
+    const d_before = await view_storage_5.view_storage_5.get_d()
+    assert(d_before.equals(new Nat(4)))
+
+    const v = await view_storage_5.view_storage_5.view_get({ as: alice });
+    assert(v?.equals(new Nat(5)))
+
+    await view_storage_5.view_storage_5.exec({ as: alice })
+
+    const res_after = await view_storage_5.view_storage_5.get_res()
+    assert(res_after.equals(Option.Some(new Nat(5))))
+    const a_after = await view_storage_5.view_storage_5.get_a()
+    assert(a_after.equals(new Nat(1)))
+    const b_after = await view_storage_5.view_storage_5.get_b()
+    assert(b_after.equals(new Nat(2)))
+    const c_after = await view_storage_5.view_storage_5.get_c()
+    assert(c_after.equals(new Nat(3)))
+    const d_after = await view_storage_5.view_storage_5.get_d()
+    assert(d_after.equals(new Nat(4)))
   })
 
   it('with_metadata_json', async () => {
