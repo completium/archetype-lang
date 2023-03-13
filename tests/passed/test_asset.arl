@@ -12,11 +12,6 @@ asset my_asset identified by j {
   { 0; [] }
 }
 
-enum my_enums =
-| Init initial
-| InProgress
-| Completed
-
 asset my_asset_all identified by id {
   id : address;
   k : int;

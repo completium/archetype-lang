@@ -338,36 +338,7 @@
         }
       }
     ],
-    "enums": [
-      {
-        "name": "my_enums",
-        "constructors": [
-          {
-            "name": "Init",
-            "types": []
-          },
-          {
-            "name": "InProgress",
-            "types": []
-          },
-          {
-            "name": "Completed",
-            "types": []
-          }
-        ],
-        "type_michelson": {
-          "prim": "int",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        }
-      }
-    ],
+    "enums": [],
     "records": [],
     "events": []
   },
