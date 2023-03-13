@@ -1,7 +1,7 @@
 { storage int ;
   parameter (unit %exec) ;
   code { CDR ;
-         PUSH nat 0 ;
+         PUSH nat 2 ;
          DUP ;
          INT ;
          DIP 1 { SWAP ; DROP 1 } ;
