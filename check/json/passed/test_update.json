@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "myasset",
+        "name": "my_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -86,7 +86,7 @@
         }
       },
       {
-        "name": "myasset2",
+        "name": "my_asset_2",
         "container_kind": "map",
         "fields": [
           {
@@ -174,20 +174,20 @@
   },
   "storage": [
     {
-      "name": "myasset",
+      "name": "my_asset",
       "type": {
         "node": "asset",
-        "name": "myasset",
+        "name": "my_asset",
         "int_value": null,
         "args": []
       },
       "const": false
     },
     {
-      "name": "myasset2",
+      "name": "my_asset_2",
       "type": {
         "node": "asset",
-        "name": "myasset2",
+        "name": "my_asset_2",
         "int_value": null,
         "args": []
       },
@@ -231,7 +231,7 @@
             }
           ],
           "annots": [
-            "%myasset"
+            "%my_asset"
           ],
           "array": [],
           "var_id": null,
@@ -267,7 +267,7 @@
             }
           ],
           "annots": [
-            "%myasset2"
+            "%my_asset_2"
           ],
           "array": [],
           "var_id": null,

@@ -18328,42 +18328,168 @@ describe('passed', async () => {
 
   it('test_result', async () => {
     await test_result.test_result.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_result.test_result.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_result.test_result.exec({ as: alice })
+
+    const res_after = await test_result.test_result.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('test_tez', async () => {
     await test_tez.test_tez.deploy({ as: alice })
-    // TODO
+
+    const a = await test_tez.test_tez.get_a()
+    assert(a.equals(new Tez(1)))
+    const b = await test_tez.test_tez.get_b()
+    assert(b.equals(new Tez(1.2)))
+    const c = await test_tez.test_tez.get_c()
+    assert(c.equals(new Tez(1000, "mutez")))
+    const d = await test_tez.test_tez.get_d()
+    assert(d.equals(new Tez(1200, "mutez")))
+    const e = await test_tez.test_tez.get_e()
+    assert(e.equals(new Tez(1, "mutez")))
+    const f = await test_tez.test_tez.get_f()
+    assert(f.equals(new Tez(1, "mutez")))
   })
 
   it('test_transfer', async () => {
-    await test_transfer.test_transfer.deploy({ as: alice })
-    // TODO
+    await test_transfer.test_transfer.deploy({ amount: new Tez(1), as: alice })
+
+    const res_before = await test_transfer.test_transfer.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_transfer.test_transfer.exec(alice.get_address(), test_transfer.test_transfer.get_address(), { as: alice })
+
+    const res_after = await test_transfer.test_transfer.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('test_transition', async () => {
     await test_transition.test_transition.deploy({ as: alice })
-    // TODO
+
+    const state_before = await test_transition.test_transition.get_state()
+    assert(state_before == test_transition.states.First)
+
+    await test_transition.test_transition.mytr({ as: alice })
+
+    const state_0 = await test_transition.test_transition.get_state()
+    assert(state_0 == test_transition.states.Second)
+
+    await test_transition.test_transition.mytr_b({ as: alice })
+
+    const state_1 = await test_transition.test_transition.get_state()
+    assert(state_1 == test_transition.states.Third)
+
+    await test_transition.test_transition.mytr_a({ as: alice })
+
+    const state_2 = await test_transition.test_transition.get_state()
+    assert(state_2 == test_transition.states.Third)
+
+    await expect_to_fail(async () => {
+      await test_transition.test_transition.mytr({ as: alice })
+    }, { string: "INVALID_STATE" })
+
+    const state_3 = await test_transition.test_transition.get_state()
+    assert(state_3 == test_transition.states.Third)
+
+    await expect_to_fail(async () => {
+      await test_transition.test_transition.mytr_b({ as: alice })
+    }, { string: "INVALID_STATE" })
+
+    const state_4 = await test_transition.test_transition.get_state()
+    assert(state_4 == test_transition.states.Third)
+
+    await test_transition.test_transition.mytr_a({ as: alice })
+
+    const state_after = await test_transition.test_transition.get_state()
+    assert(state_after == test_transition.states.Third)
   })
 
   it('test_tuple_access_1', async () => {
     await test_tuple_access_1.test_tuple_access_1.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_tuple_access_1.test_tuple_access_1.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_tuple_access_1.test_tuple_access_1.get_rv()
+    assert(rv_before.equals(new Int(0)))
+
+    await test_tuple_access_1.test_tuple_access_1.exec({ as: alice })
+
+    const rid_after = await test_tuple_access_1.test_tuple_access_1.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_tuple_access_1.test_tuple_access_1.get_rv()
+    assert(rv_after.equals(new Int(2)))
   })
 
   it('test_tuple_access_2', async () => {
     await test_tuple_access_2.test_tuple_access_2.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_tuple_access_2.test_tuple_access_2.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_tuple_access_2.test_tuple_access_2.get_rv()
+    assert(rv_before.equals(new Int(0)))
+    const rb_before = await test_tuple_access_2.test_tuple_access_2.get_rb()
+    assert(rb_before == false)
+
+    await test_tuple_access_2.test_tuple_access_2.exec({ as: alice })
+
+    const rid_after = await test_tuple_access_2.test_tuple_access_2.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_tuple_access_2.test_tuple_access_2.get_rv()
+    assert(rv_after.equals(new Int(2)))
+    const rb_after = await test_tuple_access_2.test_tuple_access_2.get_rb()
+    assert(rb_after == true)
   })
 
   it('test_tuple_access_3', async () => {
     await test_tuple_access_3.test_tuple_access_3.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_tuple_access_3.test_tuple_access_3.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_tuple_access_3.test_tuple_access_3.get_rv()
+    assert(rv_before.equals(new Int(0)))
+    const rb_before = await test_tuple_access_3.test_tuple_access_3.get_rb()
+    assert(rb_before == false)
+    const rn_before = await test_tuple_access_3.test_tuple_access_3.get_rn()
+    assert(rn_before.equals(new Nat(0)))
+
+    await test_tuple_access_3.test_tuple_access_3.exec({ as: alice })
+
+    const rid_after = await test_tuple_access_3.test_tuple_access_3.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_tuple_access_3.test_tuple_access_3.get_rv()
+    assert(rv_after.equals(new Int(2)))
+    const rb_after = await test_tuple_access_3.test_tuple_access_3.get_rb()
+    assert(rb_after == true)
+    const rn_after = await test_tuple_access_3.test_tuple_access_3.get_rn()
+    assert(rn_after.equals(new Nat(3)))
   })
 
   it('test_update', async () => {
     await test_update.test_update.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_update.test_update.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].equals(new Int(2)))
+    assert(my_asset_before[0][1] == "mystr")
+    const my_asset_2_before = await test_update.test_update.get_my_asset_2()
+    assert(my_asset_2_before.length == 1)
+    assert(my_asset_2_before[0][0].equals(new Int(1)))
+    assert(my_asset_2_before[0][1].equals(new Int(2)))
+
+    await test_update.test_update.exec({ as: alice })
+
+    const my_asset_after = await test_update.test_update.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].equals(new Int(2)))
+    assert(my_asset_after[0][1] == "value")
+    const my_asset_2_after = await test_update.test_update.get_my_asset_2()
+    assert(my_asset_2_after.length == 1)
+    assert(my_asset_2_after[0][0].equals(new Int(1)))
+    assert(my_asset_2_after[0][1].equals(new Int(2)))
   })
 
   it('test_var', async () => {

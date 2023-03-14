@@ -4,7 +4,7 @@
          SWAP ;
          CDR ;
          DUP 2 ;
-         PUSH int 0 ;
+         PUSH int 2 ;
          EXEC ;
          SWAP ;
          DROP 1 ;

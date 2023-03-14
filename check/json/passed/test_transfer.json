@@ -50,7 +50,26 @@
     },
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "a",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "c",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],

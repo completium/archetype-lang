@@ -3,8 +3,11 @@ import * as att from "@completium/archetype-ts-types";
 const f_arg_to_mich = (n: att.Nat): att.Micheline => {
     return n.to_mich();
 }
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (a: att.Address, c: att.Address): att.Micheline => {
+    return att.pair_to_mich([
+        a.to_mich(),
+        c.to_mich()
+    ]);
 }
 export class Test_transfer {
     address: string | undefined;
@@ -33,9 +36,9 @@ export class Test_transfer {
         }
         throw new Error("Contract not initialised");
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(a: att.Address, c: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(a, c), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -45,9 +48,9 @@ export class Test_transfer {
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(a: att.Address, c: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(a, c), params);
         }
         throw new Error("Contract not initialised");
     }

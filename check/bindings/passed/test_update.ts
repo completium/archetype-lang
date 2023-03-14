@@ -1,19 +1,19 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const myasset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
-export const myasset2_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
-export const myasset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export const myasset2_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
-export type myasset_container = Array<[
+export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export const my_asset_2_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export const my_asset_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
+export const my_asset_2_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("int", []);
+export type my_asset_container = Array<[
     att.Int,
     string
 ]>;
-export type myasset2_container = Array<[
+export type my_asset_2_container = Array<[
     att.Int,
     att.Int
 ]>;
-export const myasset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("int", []), att.prim_annot_to_mich_type("string", []), []);
-export const myasset2_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("int", []), att.prim_annot_to_mich_type("int", []), []);
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("int", []), att.prim_annot_to_mich_type("string", []), []);
+export const my_asset_2_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("int", []), att.prim_annot_to_mich_type("int", []), []);
 const exec_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -50,14 +50,14 @@ export class Test_update {
         }
         throw new Error("Contract not initialised");
     }
-    async get_myasset(): Promise<myasset_container> {
+    async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_map((storage as att.Mpair).args[0], (x, y) => [att.Int.from_mich(x), att.mich_to_string(y)]);
         }
         throw new Error("Contract not initialised");
     }
-    async get_myasset2(): Promise<myasset2_container> {
+    async get_my_asset_2(): Promise<my_asset_2_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_map((storage as att.Mpair).args[1], (x, y) => [att.Int.from_mich(x), att.Int.from_mich(y)]);

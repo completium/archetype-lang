@@ -1,17 +1,21 @@
 archetype test_update
 
-asset myasset {
+asset my_asset {
   id : int;
   v : string;
+} initialized with {
+  {2i; "mystr"}
 }
 
-asset myasset2 {
+asset my_asset_2 {
   i : int;
   k : int;
+} initialized with {
+  {1i; 2i}
 }
 
 entry exec () {
   effect {
-    myasset.update(myasset2[1].k, { v = "value" })
+    my_asset.update(my_asset_2[1].k, { v = "value" })
   }
 }

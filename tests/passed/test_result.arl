@@ -7,5 +7,5 @@ function f (i : int) : int {
 }
 
 entry exec () {
-  res := f(0)
+  res := f(2)
 }
