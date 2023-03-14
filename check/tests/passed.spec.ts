@@ -17243,12 +17243,41 @@ describe('passed', async () => {
 
   it('test_asset_multi_key', async () => {
     await test_asset_multi_key.test_asset_multi_key.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_multi_key.test_asset_multi_key.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].i.equals(new Nat(0)))
+    assert(my_asset_before[0][0].s == "mystr_0")
+    assert(my_asset_before[0][1] == true)
+
+    await test_asset_multi_key.test_asset_multi_key.exec({ as: alice })
+
+    const my_asset_after = await test_asset_multi_key.test_asset_multi_key.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0].i.equals(new Nat(0)))
+    assert(my_asset_after[0][0].s == "mystr_0")
+    assert(my_asset_after[0][1] == false)
   })
 
   it('test_asset_multi_key_complex', async () => {
     await test_asset_multi_key_complex.test_asset_multi_key_complex.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_multi_key_complex.test_asset_multi_key_complex.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0].i.equals(new Nat(0)))
+    assert(my_asset_before[0][0].s == "mystr_0")
+    assert(my_asset_before[0][1] == true)
+
+    await test_asset_multi_key_complex.test_asset_multi_key_complex.exec({ as: alice })
+
+    const my_asset_after = await test_asset_multi_key_complex.test_asset_multi_key_complex.get_my_asset()
+    assert(my_asset_after.length == 2)
+    assert(my_asset_after[0][0].i.equals(new Nat(0)))
+    assert(my_asset_after[0][0].s == "mystr_0")
+    assert(my_asset_after[0][1] == false)
+    assert(my_asset_after[1][0].i.equals(new Nat(1)))
+    assert(my_asset_after[1][0].s == "mystr_1")
+    assert(my_asset_after[1][1] == false)
   })
 
   it('test_asset_nth_agg_0', async () => {
