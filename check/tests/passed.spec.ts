@@ -17729,17 +17729,127 @@ describe('passed', async () => {
 
   it('test_asset_select_agg_0', async () => {
     await test_asset_select_agg_0.test_asset_select_agg_0.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_agg_0.test_asset_select_agg_0.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id")
+    assert(my_asset_before[0][1].length == 0)
+    const o_asset_before = await test_asset_select_agg_0.test_asset_select_agg_0.get_o_asset()
+    assert(o_asset_before.length == 3)
+    assert(o_asset_before[0].equals(new Nat(0)))
+    assert(o_asset_before[1].equals(new Nat(1)))
+    assert(o_asset_before[2].equals(new Nat(2)))
+    const res_before = await test_asset_select_agg_0.test_asset_select_agg_0.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_agg_0.test_asset_select_agg_0.exec(new Nat(1), { as: alice })
+
+    const my_asset_after = await test_asset_select_agg_0.test_asset_select_agg_0.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id")
+    assert(my_asset_after[0][1].length == 3)
+    assert(my_asset_after[0][1][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1][1].equals(new Nat(1)))
+    assert(my_asset_after[0][1][2].equals(new Nat(2)))
+    const o_asset_after = await test_asset_select_agg_0.test_asset_select_agg_0.get_o_asset()
+    assert(o_asset_after.length == 3)
+    assert(o_asset_after[0].equals(new Nat(0)))
+    assert(o_asset_after[1].equals(new Nat(1)))
+    assert(o_asset_after[2].equals(new Nat(2)))
+    const res_after = await test_asset_select_agg_0.test_asset_select_agg_0.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
   })
 
   it('test_asset_select_agg_1', async () => {
     await test_asset_select_agg_1.test_asset_select_agg_1.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_agg_1.test_asset_select_agg_1.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id")
+    assert(my_asset_before[0][1].length == 0)
+    const o_asset_before = await test_asset_select_agg_1.test_asset_select_agg_1.get_o_asset()
+    assert(o_asset_before.length == 3)
+    assert(o_asset_before[0][0].equals(new Nat(0)))
+    assert(o_asset_before[0][1] == "mystr0")
+    assert(o_asset_before[1][0].equals(new Nat(1)))
+    assert(o_asset_before[1][1] == "mystr1")
+    assert(o_asset_before[2][0].equals(new Nat(2)))
+    assert(o_asset_before[2][1] == "mystr2")
+    const res_before = await test_asset_select_agg_1.test_asset_select_agg_1.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_agg_1.test_asset_select_agg_1.exec(new Nat(1), { as: alice })
+
+    const my_asset_after = await test_asset_select_agg_1.test_asset_select_agg_1.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id")
+    assert(my_asset_after[0][1].length == 3)
+    assert(my_asset_after[0][1][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1][1].equals(new Nat(1)))
+    assert(my_asset_after[0][1][2].equals(new Nat(2)))
+    const o_asset_after = await test_asset_select_agg_1.test_asset_select_agg_1.get_o_asset()
+    assert(o_asset_after.length == 3)
+    assert(o_asset_after[0][0].equals(new Nat(0)))
+    assert(o_asset_after[0][1] == "mystr0")
+    assert(o_asset_after[1][0].equals(new Nat(1)))
+    assert(o_asset_after[1][1] == "mystr1")
+    assert(o_asset_after[2][0].equals(new Nat(2)))
+    assert(o_asset_after[2][1] == "mystr2")
+    const res_after = await test_asset_select_agg_1.test_asset_select_agg_1.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_agg_2', async () => {
     await test_asset_select_agg_2.test_asset_select_agg_2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_agg_2.test_asset_select_agg_2.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id")
+    assert(my_asset_before[0][1].length == 0)
+    const o_asset_before = await test_asset_select_agg_2.test_asset_select_agg_2.get_o_asset()
+    assert(o_asset_before.length == 3)
+    assert(o_asset_before[0][0].equals(new Nat(0)))
+    assert(o_asset_before[0][1].s == "mystr0")
+    assert(o_asset_before[0][1].b == true)
+    assert(o_asset_before[1][0].equals(new Nat(1)))
+    assert(o_asset_before[1][1].s == "mystr1")
+    assert(o_asset_before[1][1].b == true)
+    assert(o_asset_before[2][0].equals(new Nat(2)))
+    assert(o_asset_before[2][1].s == "mystr2")
+    assert(o_asset_before[2][1].b == true)
+    const res_before = await test_asset_select_agg_2.test_asset_select_agg_2.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_agg_2.test_asset_select_agg_2.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_agg_2.test_asset_select_agg_2.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id")
+    assert(my_asset_after[0][1].length == 3)
+    assert(my_asset_after[0][1][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1][1].equals(new Nat(1)))
+    assert(my_asset_after[0][1][2].equals(new Nat(2)))
+    const o_asset_after = await test_asset_select_agg_2.test_asset_select_agg_2.get_o_asset()
+    assert(o_asset_after.length == 3)
+    assert(o_asset_after[0][0].equals(new Nat(0)))
+    assert(o_asset_after[0][1].s == "mystr0")
+    assert(o_asset_after[0][1].b == true)
+    assert(o_asset_after[1][0].equals(new Nat(1)))
+    assert(o_asset_after[1][1].s == "mystr1")
+    assert(o_asset_after[1][1].b == true)
+    assert(o_asset_after[2][0].equals(new Nat(2)))
+    assert(o_asset_after[2][1].s == "mystr2")
+    assert(o_asset_after[2][1].b == true)
+    const res_after = await test_asset_select_agg_2.test_asset_select_agg_2.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_coll_0', async () => {
@@ -18282,7 +18392,7 @@ describe('passed', async () => {
 
   it('test_bound_value', async () => {
     await test_bound_value.test_bound_value.deploy({ as: alice })
-    // TODO
+
     const x_before = await test_bound_value.test_bound_value.get_x()
     assert(x_before.equals(new Int(1)))
 
@@ -18305,12 +18415,53 @@ describe('passed', async () => {
 
   it('test_complex_sum', async () => {
     await test_complex_sum.test_complex_sum.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_complex_sum.test_complex_sum.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v1.equals(new Int(0)))
+    assert(my_asset_before[0][1].v2.equals(new Int(3)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v1.equals(new Int(1)))
+    assert(my_asset_before[1][1].v2.equals(new Int(3)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v1.equals(new Int(2)))
+    assert(my_asset_before[2][1].v2.equals(new Int(3)))
+    const res_before = await test_complex_sum.test_complex_sum.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_complex_sum.test_complex_sum.exec({ as: alice })
+
+    const my_asset_after = await test_complex_sum.test_complex_sum.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v1.equals(new Int(0)))
+    assert(my_asset_after[0][1].v2.equals(new Int(3)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v1.equals(new Int(1)))
+    assert(my_asset_after[1][1].v2.equals(new Int(3)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v1.equals(new Int(2)))
+    assert(my_asset_after[2][1].v2.equals(new Int(3)))
+    const res_after = await test_complex_sum.test_complex_sum.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('test_conditions', async () => {
     await test_conditions.test_conditions.deploy({ as: alice })
-    // TODO
+
+    const i_before = await test_conditions.test_conditions.get_i()
+    assert(i_before.equals(new Int(0)))
+
+    await test_conditions.test_conditions.a1({ as: alice })
+
+    const i_1 = await test_conditions.test_conditions.get_i()
+    assert(i_1.equals(new Int(0)))
+
+    await test_conditions.test_conditions.a2({ as: alice })
+
+    const i_after = await test_conditions.test_conditions.get_i()
+    assert(i_after.equals(new Int(1)))
   })
 
   it('test_contains_get', async () => {

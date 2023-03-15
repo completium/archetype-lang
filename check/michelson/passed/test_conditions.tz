@@ -6,7 +6,7 @@
              PUSH nat 2 ;
              PUSH nat 1 ;
              COMPARE ;
-             EQ ;
+             NEQ ;
              NOT ;
              IF { PUSH string "c1" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
              PUSH bool True ;
@@ -26,7 +26,7 @@
              PUSH nat 2 ;
              PUSH nat 1 ;
              COMPARE ;
-             EQ ;
+             NEQ ;
              NOT ;
              IF { PUSH string "c4" ; PUSH string "INVALID_CONDITION" ; PAIR ; FAILWITH } {} ;
              PUSH bool True ;

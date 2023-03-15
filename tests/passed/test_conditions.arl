@@ -4,7 +4,7 @@ variable i : int = 0
 
 entry a1 () {
   require {
-    c1 : 1 = 2;
+    c1 : 1 <> 2;
     c2 : true;
     c3 : 1 + 3 = 4;
   }
@@ -15,7 +15,7 @@ entry a1 () {
 
 entry a2 () {
   require {
-    c4 : 1 = 2;
+    c4 : 1 <> 2;
     c5 : true;
     c6 : 1 + 3 = 4;
   }
