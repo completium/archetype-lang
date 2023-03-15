@@ -17854,32 +17854,187 @@ describe('passed', async () => {
 
   it('test_asset_select_coll_0', async () => {
     await test_asset_select_coll_0.test_asset_select_coll_0.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_coll_0.test_asset_select_coll_0.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0].equals(new Nat(0)))
+    assert(my_asset_before[1].equals(new Nat(1)))
+    assert(my_asset_before[2].equals(new Nat(2)))
+    const res_before = await test_asset_select_coll_0.test_asset_select_coll_0.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_coll_0.test_asset_select_coll_0.exec(new Nat(1), { as: alice })
+
+    const my_asset_after = await test_asset_select_coll_0.test_asset_select_coll_0.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0].equals(new Nat(0)))
+    assert(my_asset_after[1].equals(new Nat(1)))
+    assert(my_asset_after[2].equals(new Nat(2)))
+    const res_after = await test_asset_select_coll_0.test_asset_select_coll_0.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
   })
 
   it('test_asset_select_coll_1', async () => {
     await test_asset_select_coll_1.test_asset_select_coll_1.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_coll_1.test_asset_select_coll_1.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "mystr0")
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1] == "mystr1")
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1] == "mystr2")
+    const res_before = await test_asset_select_coll_1.test_asset_select_coll_1.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_coll_1.test_asset_select_coll_1.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_coll_1.test_asset_select_coll_1.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "mystr0")
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1] == "mystr1")
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1] == "mystr2")
+    const res_after = await test_asset_select_coll_1.test_asset_select_coll_1.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_coll_2', async () => {
     await test_asset_select_coll_2.test_asset_select_coll_2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_coll_2.test_asset_select_coll_2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].s == "mystr0")
+    assert(my_asset_before[0][1].b == true)
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1].s == "mystr1")
+    assert(my_asset_before[1][1].b == true)
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1].s == "mystr2")
+    assert(my_asset_before[2][1].b == true)
+    const res_before = await test_asset_select_coll_2.test_asset_select_coll_2.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_coll_2.test_asset_select_coll_2.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_coll_2.test_asset_select_coll_2.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].s == "mystr0")
+    assert(my_asset_after[0][1].b == true)
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1].s == "mystr1")
+    assert(my_asset_after[1][1].b == true)
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1].s == "mystr2")
+    assert(my_asset_after[2][1].b == true)
+    const res_after = await test_asset_select_coll_2.test_asset_select_coll_2.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_view_0', async () => {
     await test_asset_select_view_0.test_asset_select_view_0.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_view_0.test_asset_select_view_0.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0].equals(new Nat(0)))
+    assert(my_asset_before[1].equals(new Nat(1)))
+    assert(my_asset_before[2].equals(new Nat(2)))
+    const res_before = await test_asset_select_view_0.test_asset_select_view_0.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_view_0.test_asset_select_view_0.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_view_0.test_asset_select_view_0.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0].equals(new Nat(0)))
+    assert(my_asset_after[1].equals(new Nat(1)))
+    assert(my_asset_after[2].equals(new Nat(2)))
+    const res_after = await test_asset_select_view_0.test_asset_select_view_0.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_view_1', async () => {
     await test_asset_select_view_1.test_asset_select_view_1.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_view_1.test_asset_select_view_1.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1] == "mystr0")
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1] == "mystr1")
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1] == "mystr2")
+    const res_before = await test_asset_select_view_1.test_asset_select_view_1.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_view_1.test_asset_select_view_1.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_view_1.test_asset_select_view_1.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1] == "mystr0")
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1] == "mystr1")
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1] == "mystr2")
+    const res_after = await test_asset_select_view_1.test_asset_select_view_1.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_select_view_2', async () => {
     await test_asset_select_view_2.test_asset_select_view_2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_select_view_2.test_asset_select_view_2.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0].equals(new Nat(0)))
+    assert(my_asset_before[0][1].s == "mystr0")
+    assert(my_asset_before[0][1].b == true)
+    assert(my_asset_before[1][0].equals(new Nat(1)))
+    assert(my_asset_before[1][1].s == "mystr1")
+    assert(my_asset_before[1][1].b == true)
+    assert(my_asset_before[2][0].equals(new Nat(2)))
+    assert(my_asset_before[2][1].s == "mystr2")
+    assert(my_asset_before[2][1].b == true)
+    const res_before = await test_asset_select_view_2.test_asset_select_view_2.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_select_view_2.test_asset_select_view_2.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_select_view_2.test_asset_select_view_2.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0].equals(new Nat(0)))
+    assert(my_asset_after[0][1].s == "mystr0")
+    assert(my_asset_after[0][1].b == true)
+    assert(my_asset_after[1][0].equals(new Nat(1)))
+    assert(my_asset_after[1][1].s == "mystr1")
+    assert(my_asset_after[1][1].b == true)
+    assert(my_asset_after[2][0].equals(new Nat(2)))
+    assert(my_asset_after[2][1].s == "mystr2")
+    assert(my_asset_after[2][1].b == true)
+    const res_after = await test_asset_select_view_2.test_asset_select_view_2.get_res()
+    assert(res_after.length == 3)
+    assert(res_after[0].equals(new Nat(0)))
+    assert(res_after[1].equals(new Nat(1)))
+    assert(res_after[2].equals(new Nat(2)))
   })
 
   it('test_asset_sort_agg_0', async () => {
