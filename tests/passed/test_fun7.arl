@@ -1,7 +1,7 @@
 archetype test_fun7
 
 variable res : nat = 0
-variable i : int = 0
+variable i : int = 2
 
 function h (n : nat) : nat {
   return (n + abs(i))

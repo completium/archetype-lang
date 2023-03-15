@@ -19422,52 +19422,126 @@ describe('passed', async () => {
 
   it('test_for_list_alt', async () => {
     await test_for_list_alt.test_for_list_alt.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_for_list_alt.test_for_list_alt.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_for_list_alt.test_for_list_alt.exec({ as: alice })
+
+    const res_after = await test_for_list_alt.test_for_list_alt.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('test_fun0', async () => {
     await test_fun0.test_fun0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun0.test_fun0.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await test_fun0.test_fun0.exec(new Rational(2), { as: alice })
+
+    const res_after = await test_fun0.test_fun0.get_res()
+    assert(res_after.equals(new Rational(1)))
   })
 
   it('test_fun1', async () => {
     await test_fun1.test_fun1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun1.test_fun1.get_res()
+    assert(res_before == false)
+
+    await test_fun1.test_fun1.e({ as: alice })
+
+    const res_after = await test_fun1.test_fun1.get_res()
+    assert(res_after == true)
   })
 
   it('test_fun2', async () => {
     await test_fun2.test_fun2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun2.test_fun2.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await test_fun2.test_fun2.e({ as: alice })
+
+    const res_after = await test_fun2.test_fun2.get_res()
+    assert(res_after.equals(new Rational(0.15)))
   })
 
   it('test_fun3', async () => {
     await test_fun3.test_fun3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun3.test_fun3.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_fun3.test_fun3.e({ as: alice })
+
+    const res_after = await test_fun3.test_fun3.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('test_fun4', async () => {
     await test_fun4.test_fun4.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun4.test_fun4.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await test_fun4.test_fun4.e({ as: alice })
+
+    const res_after = await test_fun4.test_fun4.get_res()
+    assert(res_after.equals(new Rational(0.15)))
   })
 
   it('test_fun5', async () => {
     await test_fun5.test_fun5.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun5.test_fun5.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_fun5.test_fun5.e({ as: alice })
+
+    const res_after = await test_fun5.test_fun5.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('test_fun6', async () => {
     await test_fun6.test_fun6.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun6.test_fun6.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await test_fun6.test_fun6.e({ as: alice })
+
+    const res_after = await test_fun6.test_fun6.get_res()
+    assert(res_after.equals(new Rational(0.15)))
   })
 
   it('test_fun7', async () => {
     await test_fun7.test_fun7.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_fun7.test_fun7.get_res()
+    assert(res_before.equals(new Nat(0)))
+    const i_before = await test_fun7.test_fun7.get_i()
+    assert(i_before.equals(new Int(2)))
+
+    await test_fun7.test_fun7.e({ as: alice })
+
+    const res_after = await test_fun7.test_fun7.get_res()
+    assert(res_after.equals(new Nat(3)))
+    const i_after = await test_fun7.test_fun7.get_i()
+    assert(i_after.equals(new Int(2)))
   })
 
   it('test_fun8', async () => {
     await test_fun8.test_fun8.deploy({ as: alice })
-    // TODO
+
+    const permissions_descriptor_before = await test_fun8.test_fun8.get_permissions_descriptor()
+    assert(permissions_descriptor_before.equals(new test_fun8.permissions(new test_fun8.basic_permissions(new test_fun8.No_transfer(), new test_fun8.Owner_no_hook(), new test_fun8.Owner_no_hook()), Option.None())))
+
+    await test_fun8.test_fun8.exec({ as: alice })
+
+    const permissions_descriptor_after = await test_fun8.test_fun8.get_permissions_descriptor()
+    assert(permissions_descriptor_after.equals(new test_fun8.permissions(new test_fun8.basic_permissions(new test_fun8.No_transfer(), new test_fun8.Owner_no_hook(), new test_fun8.Owner_no_hook()), Option.None())))
   })
 
   it('test_fun_asset', async () => {
@@ -19520,7 +19594,14 @@ describe('passed', async () => {
 
   it('test_if_int_nat', async () => {
     await test_if_int_nat.test_if_int_nat.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_if_int_nat.test_if_int_nat.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_if_int_nat.test_if_int_nat.exec(new Nat(2), new Int(1), { as: alice })
+
+    const res_after = await test_if_int_nat.test_if_int_nat.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('test_init_asset', async () => {
@@ -19595,12 +19676,38 @@ describe('passed', async () => {
 
   it('test_list_contains', async () => {
     await test_list_contains.test_list_contains.deploy({ as: alice })
-    // TODO
+
+    const rf_before = await test_list_contains.test_list_contains.get_rf()
+    assert(rf_before == false)
+    const rt_before = await test_list_contains.test_list_contains.get_rt()
+    assert(rt_before == false)
+
+    await test_list_contains.test_list_contains.exec({ as: alice })
+
+    const rf_after = await test_list_contains.test_list_contains.get_rf()
+    assert(rf_after == true)
+    const rt_after = await test_list_contains.test_list_contains.get_rt()
+    assert(rt_after == true)
   })
 
   it('test_list_contains2', async () => {
     await test_list_contains2.test_list_contains2.deploy({ as: alice })
-    // TODO
+
+    const rf_before = await test_list_contains2.test_list_contains2.get_rf()
+    assert(rf_before == false)
+    const rt_before = await test_list_contains2.test_list_contains2.get_rt()
+    assert(rt_before == false)
+    const rt2_before = await test_list_contains2.test_list_contains2.get_rt2()
+    assert(rt2_before == false)
+
+    await test_list_contains2.test_list_contains2.exec({ as: alice })
+
+    const rf_after = await test_list_contains2.test_list_contains2.get_rf()
+    assert(rf_after == true)
+    const rt_after = await test_list_contains2.test_list_contains2.get_rt()
+    assert(rt_after == true)
+    const rt2_after = await test_list_contains2.test_list_contains2.get_rt2()
+    assert(rt2_after == true)
   })
 
   it('test_list_mynth', async () => {
@@ -19720,7 +19827,14 @@ describe('passed', async () => {
 
   it('test_record_simple', async () => {
     await test_record_simple.test_record_simple.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_simple.test_record_simple.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_record_simple.test_record_simple.exec({ as: alice })
+
+    const res_after = await test_record_simple.test_record_simple.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('test_remove_asset_with_partition', async () => {

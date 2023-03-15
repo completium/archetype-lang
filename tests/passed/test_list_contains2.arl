@@ -7,7 +7,7 @@ variable rt2 : bool = false
 entry exec () {
   var l : list<string> = ["1"; "2"; "3"];
   rt := contains(l, "2");
-  rf := contains(l, "0");
+  rf := not contains(l, "0");
   var l2 : list<nat> = [1; 2; 3];
   rt2 := contains(l2, 2);
 }

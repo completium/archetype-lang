@@ -1,4 +1,4 @@
-{ storage (set string) ;
+{ storage bool ;
   parameter (unit %e) ;
   code { LAMBDA
            unit
@@ -12,7 +12,10 @@
              COMPARE ;
              LT ;
              IF { CAR } { CDR } ;
-             PUSH bool True ;
+             PUSH nat 0 ;
+             DUP 2 ;
+             COMPARE ;
+             EQ ;
              DIP 1 { SWAP ; DROP 1 } ;
              SWAP ;
              DROP 1 ;
@@ -20,6 +23,11 @@
              DROP 1 } ;
          SWAP ;
          CDR ;
+         DUP 2 ;
+         UNIT ;
+         EXEC ;
+         SWAP ;
+         DROP 1 ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

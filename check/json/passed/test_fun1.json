@@ -2,79 +2,17 @@
   "name": "test_fun1",
   "parameters": [],
   "types": {
-    "assets": [
-      {
-        "name": "sig",
-        "container_kind": "map",
-        "fields": [
-          {
-            "name": "id",
-            "type": {
-              "node": "string",
-              "name": null,
-              "int_value": null,
-              "args": []
-            },
-            "is_key": true
-          }
-        ],
-        "container_type_michelson": {
-          "prim": "set",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [
-            {
-              "prim": "string",
-              "int": null,
-              "bytes": null,
-              "string": null,
-              "args": [],
-              "annots": [],
-              "array": [],
-              "var_id": null,
-              "var_type": null
-            }
-          ],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        "key_type_michelson": {
-          "prim": "string",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        "value_type_michelson": {
-          "prim": "unit",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        }
-      }
-    ],
+    "assets": [],
     "enums": [],
     "records": [],
     "events": []
   },
   "storage": [
     {
-      "name": "sig",
+      "name": "res",
       "type": {
-        "node": "asset",
-        "name": "sig",
+        "node": "bool",
+        "name": null,
         "int_value": null,
         "args": []
       },
@@ -83,23 +21,11 @@
   ],
   "storage_type": {
     "value": {
-      "prim": "set",
+      "prim": "bool",
       "int": null,
       "bytes": null,
       "string": null,
-      "args": [
-        {
-          "prim": "string",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        }
-      ],
+      "args": [],
       "annots": [],
       "array": [],
       "var_id": null,

@@ -1,15 +1,13 @@
 archetype test_fun1
 
-asset sig {
-   id : string;
-}
+variable res : bool = false
 
 function f() : bool {
   var b = min (0, 1);
 
-  return true
+  return (b = 0)
 }
 
 entry e() {
-  ()
+  res := f()
 }

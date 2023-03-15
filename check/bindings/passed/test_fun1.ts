@@ -1,8 +1,5 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const sig_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export type sig_container = Array<string>;
-export const sig_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []);
 const e_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
@@ -39,10 +36,10 @@ export class Test_fun1 {
         }
         throw new Error("Contract not initialised");
     }
-    async get_sig(): Promise<sig_container> {
+    async get_res(): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_list(storage, x => { return att.mich_to_string(x); });
+            return att.mich_to_bool(storage);
         }
         throw new Error("Contract not initialised");
     }

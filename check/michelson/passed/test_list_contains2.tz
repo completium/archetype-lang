@@ -39,6 +39,7 @@
          DUP 3 ;
          PAIR ;
          EXEC ;
+         NOT ;
          DIP 1 { DIG 2 ; DROP 1 } ;
          DUG 2 ;
          NIL nat ;

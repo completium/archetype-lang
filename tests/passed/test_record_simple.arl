@@ -9,8 +9,6 @@ record my_record {
 variable res : nat = 0
 
 entry exec () {
-  effect {
-    var lit1 : my_record = {id = "mystr"; v = 1i; n = 3};
-    res := lit1.n
-  }
+  const lit1 : my_record = {id = "mystr"; v = 1i; n = 3};
+  res := lit1.n
 }
