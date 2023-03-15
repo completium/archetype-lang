@@ -28,7 +28,7 @@
                            DUP 9 ;
                            DUP 2 ;
                            COMPARE ;
-                           GT ;
+                           LT ;
                            IF { PUSH int 1 } { PUSH int 0 } ;
                            SWAP ;
                            DROP 1 ;
