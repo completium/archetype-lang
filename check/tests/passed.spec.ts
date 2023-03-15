@@ -18283,6 +18283,13 @@ describe('passed', async () => {
   it('test_bound_value', async () => {
     await test_bound_value.test_bound_value.deploy({ as: alice })
     // TODO
+    const x_before = await test_bound_value.test_bound_value.get_x()
+    assert(x_before.equals(new Int(1)))
+
+    await test_bound_value.test_bound_value.exec({ as: alice })
+
+    const x_after = await test_bound_value.test_bound_value.get_x()
+    assert(x_after.equals(new Int(0)))
   })
 
   it('test_caller_getter', async () => {
@@ -18292,7 +18299,8 @@ describe('passed', async () => {
 
   it('test_cmp_bool', async () => {
     await test_cmp_bool.test_cmp_bool.deploy({ as: alice })
-    // TODO
+
+    await test_cmp_bool.test_cmp_bool.exec({ as: alice })
   })
 
   it('test_complex_sum', async () => {

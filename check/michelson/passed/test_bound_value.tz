@@ -1,3 +1,10 @@
 { storage int ;
   parameter (unit %exec) ;
-  code { CDR ; PUSH int 0 ; DUP 2 ; SWAP ; DROP 2 ; NIL operation ; PAIR } }
+  code { CDR ;
+         PUSH int 0 ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

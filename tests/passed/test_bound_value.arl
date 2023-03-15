@@ -5,6 +5,6 @@ variable x : int = 1
 entry exec () {
   effect {
     var a : int = 0;
-    a := x
+    x := a
   }
 }
