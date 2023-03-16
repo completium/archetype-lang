@@ -3,14 +3,21 @@ import * as att from "@completium/archetype-ts-types";
 const callback_arg_to_mich = (k: att.Nat): att.Micheline => {
     return k.to_mich();
 }
-const main_arg_to_mich = (): att.Micheline => {
+const exec_arg_to_mich = (a: att.Address): att.Micheline => {
+    return a.to_mich();
+}
+const getN_arg_to_mich = (): att.Micheline => {
     return att.unit_mich;
 }
+export const deploy_getN_callback = async (params: Partial<ex.Parameters>): Promise<att.DeployResult> => {
+    return await ex.deploy_callback("getN", att.prim_annot_to_mich_type("nat", []), params);
+};
 export class Test_caller_getter {
     address: string | undefined;
     constructor(address: string | undefined = undefined) {
         this.address = address;
     }
+    getN_callback_address: string | undefined;
     get_address(): att.Address {
         if (undefined != this.address) {
             return new att.Address(this.address);
@@ -26,6 +33,7 @@ export class Test_caller_getter {
     async deploy(params: Partial<ex.Parameters>) {
         const address = (await ex.deploy("../tests/passed/test_caller_getter.arl", {}, params)).address;
         this.address = address;
+        this.getN_callback_address = (await deploy_getN_callback(params)).address;
     }
     async callback(k: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
@@ -33,9 +41,9 @@ export class Test_caller_getter {
         }
         throw new Error("Contract not initialised");
     }
-    async main(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(a: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "main", main_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(a), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -45,23 +53,26 @@ export class Test_caller_getter {
         }
         throw new Error("Contract not initialised");
     }
-    async get_main_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(a: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "main", main_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(a), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_n(): Promise<att.Nat> {
+    async getN(params: Partial<ex.Parameters>): Promise<att.Nat> {
         if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Nat.from_mich((storage as att.Mpair).args[0]);
+            if (this.getN_callback_address != undefined) {
+                const entrypoint = new att.Entrypoint(new att.Address(this.getN_callback_address), "callback");
+                await ex.call(this.address, "getN", att.getter_args_to_mich(getN_arg_to_mich(), entrypoint), params);
+                return await ex.get_callback_value<att.Nat>(this.getN_callback_address, x => { return att.Nat.from_mich(x); });
+            }
         }
         throw new Error("Contract not initialised");
     }
     async get_res(): Promise<att.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.Nat.from_mich((storage as att.Mpair).args[1]);
+            return att.Nat.from_mich(storage);
         }
         throw new Error("Contract not initialised");
     }

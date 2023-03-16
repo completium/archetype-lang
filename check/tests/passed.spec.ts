@@ -19635,37 +19635,276 @@ describe('passed', async () => {
 
   it('test_asset_update_partition_4', async () => {
     await test_asset_update_partition_4.test_asset_update_partition_4.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_4.test_asset_update_partition_4.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_4.test_asset_update_partition_4.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_4.test_asset_update_partition_4.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_4.test_asset_update_partition_4.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 2)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(2)))
+    assert(my_asset_after[1][1].c[1].equals(new Nat(5)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    const o_asset_after = await test_asset_update_partition_4.test_asset_update_partition_4.get_o_asset()
+    assert(o_asset_after.length == 2)
+    assert(o_asset_after[0][0].equals(new Nat(2)))
+    assert(o_asset_after[0][1] == "strn")
+    assert(o_asset_after[1][0].equals(new Nat(5)))
+    assert(o_asset_after[1][1] == "str5")
   })
 
   it('test_asset_update_partition_5', async () => {
     await test_asset_update_partition_5.test_asset_update_partition_5.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_5.test_asset_update_partition_5.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_5.test_asset_update_partition_5.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_5.test_asset_update_partition_5.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_5.test_asset_update_partition_5.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 2)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(2)))
+    assert(my_asset_after[1][1].c[1].equals(new Nat(5)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    const o_asset_after = await test_asset_update_partition_5.test_asset_update_partition_5.get_o_asset()
+    assert(o_asset_after.length == 2)
+    assert(o_asset_after[0][0].equals(new Nat(2)))
+    assert(o_asset_after[0][1] == "strn")
+    assert(o_asset_after[1][0].equals(new Nat(5)))
+    assert(o_asset_after[1][1] == "str5")
   })
 
   it('test_asset_update_partition_6', async () => {
     await test_asset_update_partition_6.test_asset_update_partition_6.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_6.test_asset_update_partition_6.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 3)
+    assert(my_asset_before[1][1].c[0].equals(new Nat(0)))
+    assert(my_asset_before[1][1].c[1].equals(new Nat(2)))
+    assert(my_asset_before[1][1].c[2].equals(new Nat(5)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_6.test_asset_update_partition_6.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_6.test_asset_update_partition_6.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_6.test_asset_update_partition_6.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 1)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(0)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    // TODO: Bug
+    // const o_asset_after = await test_asset_update_partition_3.test_asset_update_partition_3.get_o_asset()
+    // assert(o_asset_after.length == 1)
+    // assert(o_asset_after[0].equals(new Nat(0)))
   })
 
   it('test_asset_update_partition_7', async () => {
     await test_asset_update_partition_7.test_asset_update_partition_7.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_7.test_asset_update_partition_7.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_7.test_asset_update_partition_7.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_7.test_asset_update_partition_7.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_7.test_asset_update_partition_7.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 2)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(2)))
+    assert(my_asset_after[1][1].c[1].equals(new Nat(5)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    const o_asset_after = await test_asset_update_partition_7.test_asset_update_partition_7.get_o_asset()
+    assert(o_asset_after.length == 2)
+    assert(o_asset_after[0][0].equals(new Nat(2)))
+    assert(o_asset_after[0][1].v == "strn")
+    assert(o_asset_after[0][1].i.equals(new Int(0)))
+    assert(o_asset_after[1][0].equals(new Nat(5)))
+    assert(o_asset_after[1][1].v == "str5")
+    assert(o_asset_after[1][1].i.equals(new Int(5)))
   })
 
   it('test_asset_update_partition_8', async () => {
     await test_asset_update_partition_8.test_asset_update_partition_8.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_8.test_asset_update_partition_8.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 0)
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_8.test_asset_update_partition_8.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_8.test_asset_update_partition_8.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_8.test_asset_update_partition_8.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 2)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(2)))
+    assert(my_asset_after[1][1].c[1].equals(new Nat(5)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    const o_asset_after = await test_asset_update_partition_8.test_asset_update_partition_8.get_o_asset()
+    assert(o_asset_after.length == 2)
+    assert(o_asset_after[0][0].equals(new Nat(2)))
+    assert(o_asset_after[0][1].v == "strn")
+    assert(o_asset_after[0][1].i.equals(new Int(0)))
+    assert(o_asset_after[1][0].equals(new Nat(5)))
+    assert(o_asset_after[1][1].v == "str5")
+    assert(o_asset_after[1][1].i.equals(new Int(5)))
   })
 
   it('test_asset_update_partition_9', async () => {
     await test_asset_update_partition_9.test_asset_update_partition_9.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_update_partition_9.test_asset_update_partition_9.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_before[0][1].c.length == 0)
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_before[1][1].c.length == 3)
+    assert(my_asset_before[1][1].c[0].equals(new Nat(0)))
+    assert(my_asset_before[1][1].c[1].equals(new Nat(2)))
+    assert(my_asset_before[1][1].c[2].equals(new Nat(5)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_before[2][1].c.length == 0)
+    const o_asset_before = await test_asset_update_partition_9.test_asset_update_partition_9.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_asset_update_partition_9.test_asset_update_partition_9.exec(new Nat(2), { as: alice })
+
+    const my_asset_after = await test_asset_update_partition_9.test_asset_update_partition_9.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].v0.equals(new Nat(0)))
+    assert(my_asset_after[0][1].c.length == 0)
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].v0.equals(new Nat(1)))
+    assert(my_asset_after[1][1].c.length == 1)
+    assert(my_asset_after[1][1].c[0].equals(new Nat(0)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].v0.equals(new Nat(2)))
+    assert(my_asset_after[2][1].c.length == 0)
+    // TODO: Bug
+    // const o_asset_after = await test_asset_update_partition_3.test_asset_update_partition_3.get_o_asset()
+    // assert(o_asset_after.length == 1)
+    // assert(o_asset_after[0].equals(new Nat(0)))
   })
 
   it('test_asset_view', async () => {
     await test_asset_view.test_asset_view.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_asset_view.test_asset_view.get_my_asset()
+    assert(my_asset_before.length == 3)
+    assert(my_asset_before[0][0] == "id0")
+    assert(my_asset_before[0][1].equals(new Int(0)))
+    assert(my_asset_before[1][0] == "id1")
+    assert(my_asset_before[1][1].equals(new Int(1)))
+    assert(my_asset_before[2][0] == "id2")
+    assert(my_asset_before[2][1].equals(new Int(2)))
+    const res_before = await test_asset_view.test_asset_view.get_res()
+    assert(res_before.length == 0)
+
+    await test_asset_view.test_asset_view.exec({ as: alice })
+
+    const my_asset_after = await test_asset_view.test_asset_view.get_my_asset()
+    assert(my_asset_after.length == 3)
+    assert(my_asset_after[0][0] == "id0")
+    assert(my_asset_after[0][1].equals(new Int(0)))
+    assert(my_asset_after[1][0] == "id1")
+    assert(my_asset_after[1][1].equals(new Int(1)))
+    assert(my_asset_after[2][0] == "id2")
+    assert(my_asset_after[2][1].equals(new Int(2)))
+    const res_after = await test_asset_view.test_asset_view.get_res()
+    assert(res_after.length == 2)
+    assert(res_after[0] == "id1")
+    assert(res_after[1] == "id2")
   })
 
   it('test_bound_value', async () => {
@@ -19682,7 +19921,14 @@ describe('passed', async () => {
 
   it('test_caller_getter', async () => {
     await test_caller_getter.test_caller_getter.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_caller_getter.test_caller_getter.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_caller_getter.test_caller_getter.exec(test_caller_getter.test_caller_getter.get_address(), { as: alice })
+
+    const res_after = await test_caller_getter.test_caller_getter.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('test_cmp_bool', async () => {
@@ -19744,7 +19990,22 @@ describe('passed', async () => {
 
   it('test_contains_get', async () => {
     await test_contains_get.test_contains_get.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_contains_get.test_contains_get.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id1")
+    assert(my_asset_before[0][1].equals(new Int(2)))
+    const res_before = await test_contains_get.test_contains_get.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_contains_get.test_contains_get.exec({ as: alice })
+
+    const my_asset_after = await test_contains_get.test_contains_get.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id1")
+    assert(my_asset_after[0][1].equals(new Int(2)))
+    const res_after = await test_contains_get.test_contains_get.get_res()
+    assert(res_after.equals(new Int(2)))
   })
 
   it('test_contract', async () => {

@@ -1,15 +1,17 @@
 archetype test_caller_getter
 
-variable n   : nat = 0
 variable res : nat = 0
 
 entry callback(k : nat) {
-  res := n
+  res := k
 }
 
-entry main() {
-  n := 1;
-  match get_entrypoint<(unit * contract<nat>)>("%getN", @KT1V6R5EQRfipGY1AgigYrgbb1tfbGBJ9B4s) with
+getter getN() : nat {
+  return 2
+}
+
+entry exec(a : address) {
+  match get_entrypoint<(unit * contract<nat>)>("%getN", a) with
     | some(c) ->
       transfer 0tz to entry c((Unit, self.callback))
     | none -> fail("INVALID_ENTRY")

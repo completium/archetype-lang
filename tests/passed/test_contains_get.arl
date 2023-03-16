@@ -3,9 +3,11 @@ archetype test_contains_get
 asset my_asset identified by id {
   id : string;
   value : int;
+} initialized with {
+  {"id1"; 2i}
 }
 
-variable res : int = 0
+variable res : int = 0i
 
 entry exec () {
   effect {
