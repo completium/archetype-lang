@@ -20355,12 +20355,36 @@ describe('passed', async () => {
 
   it('test_iter', async () => {
     await test_iter.test_iter.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_iter.test_iter.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_iter.test_iter.exec(new Int(0), new Int(4), { as: alice })
+
+    const res_0_4 = await test_iter.test_iter.get_res()
+    assert(res_0_4.equals(new Int(10)))
+
+    await test_iter.test_iter.exec(new Int(1), new Int(3), { as: alice })
+
+    const res_1_3 = await test_iter.test_iter.get_res()
+    assert(res_1_3.equals(new Int(6)))
+
+    await test_iter.test_iter.exec(new Int(0), new Int(0), { as: alice })
+
+    const res_0_0 = await test_iter.test_iter.get_res()
+    assert(res_0_0.equals(new Int(0)))
   })
 
   it('test_iter2', async () => {
     await test_iter2.test_iter2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_iter2.test_iter2.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await test_iter2.test_iter2.exec({ as: alice })
+
+    const res_after = await test_iter2.test_iter2.get_res()
+    assert(res_after.equals(new Int(6)))
   })
 
   it('test_length_operations', async () => {

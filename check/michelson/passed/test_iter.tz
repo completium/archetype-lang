@@ -3,6 +3,9 @@
   code { UNPAIR ;
          UNPAIR ;
          SWAP ;
+         PUSH int 0 ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
          DUP ;
          DUP 3 ;
          DUP 2 ;
