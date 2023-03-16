@@ -28,8 +28,8 @@ export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to
     att.prim_annot_to_mich_type("int", ["%f1"]),
     att.prim_annot_to_mich_type("int", ["%f2"])
 ], []), []);
-const exec_arg_to_mich = (k: att.Int): att.Micheline => {
-    return k.to_mich();
+const exec_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Test_read_asset_after_operation {
     address: string | undefined;
@@ -52,15 +52,15 @@ export class Test_read_asset_after_operation {
         const address = (await ex.deploy("../tests/passed/test_read_asset_after_operation.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(k: att.Int, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(k), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(k: att.Int, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(k), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

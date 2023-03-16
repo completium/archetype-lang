@@ -1,23 +1,17 @@
 archetype test_prec
 
-constant a : int = 0
-constant b : int = 0
-constant c : int = 0
+constant a : nat = 1
+constant b : nat = 2
+constant c : nat = 3
 
-constant i : bool = true
-constant j : bool = true
-constant k : bool = true
+variable x0 : nat = a + b + c
+variable y0 : nat = a + (b + c)
+variable z0 : nat = (a + b) + c
 
-variable x0 : int = a + b + c
-variable y0 : int = a + (b + c)
-variable z0 : int = (a + b) + c
+variable x1 : nat = a + b * c
+variable y1 : nat = (a + b) * c
+variable z1 : nat = a + (b * c)
 
-variable x1 : int = a + b * c
-variable y1 : int = (a + b) * c
-variable z1 : int = a + (b * c)
-
-variable x2 : int = a * b + c
-variable y2 : int = (a * b) + c
-variable z2 : int = a * (b + c)
-
-entry exec() { }
+variable x2 : nat = a * b + c
+variable y2 : nat = (a * b) + c
+variable z2 : nat = a * (b + c)

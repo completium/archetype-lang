@@ -20472,32 +20472,97 @@ describe('passed', async () => {
 
   it('test_parameter', async () => {
     await test_parameter.test_parameter.deploy(new Nat(2), "mystr", { as: alice })
-    // TODO
+
+    const res_before = await test_parameter.test_parameter.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_parameter.test_parameter.exec({ as: alice })
+
+    const res_after = await test_parameter.test_parameter.get_res()
+    assert(res_after.equals(new Nat(7)))
   })
 
   it('test_parameter_const', async () => {
     await test_parameter_const.test_parameter_const.deploy(new Nat(2), { as: alice })
-    // TODO
+
+    const res_before = await test_parameter_const.test_parameter_const.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_parameter_const.test_parameter_const.exec({ as: alice })
+
+    const res_after = await test_parameter_const.test_parameter_const.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('test_prec', async () => {
     await test_prec.test_prec.deploy({ as: alice })
-    // TODO
+
+    const x0 = await test_prec.test_prec.get_x0()
+    assert(x0.equals(new Nat(6)))
+    const y0 = await test_prec.test_prec.get_y0()
+    assert(y0.equals(new Nat(6)))
+    const z0 = await test_prec.test_prec.get_z0()
+    assert(z0.equals(new Nat(6)))
+
+    const x1 = await test_prec.test_prec.get_x1()
+    assert(x1.equals(new Nat(7)))
+    const y1 = await test_prec.test_prec.get_y1()
+    assert(y1.equals(new Nat(9)))
+    const z1 = await test_prec.test_prec.get_z1()
+    assert(z1.equals(new Nat(7)))
+
+    const x2 = await test_prec.test_prec.get_x2()
+    assert(x2.equals(new Nat(5)))
+    const y2 = await test_prec.test_prec.get_y2()
+    assert(y2.equals(new Nat(5)))
+    const z2 = await test_prec.test_prec.get_z2()
+    assert(z2.equals(new Nat(5)))
   })
 
   it('test_rational', async () => {
     await test_rational.test_rational.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_rational.test_rational.get_res()
+    assert(res_before == false)
+
+    await test_rational.test_rational.exec({ as: alice })
+
+    const res_after = await test_rational.test_rational.get_res()
+    assert(res_after == true)
   })
 
   it('test_read_asset_after_operation', async () => {
     await test_read_asset_after_operation.test_read_asset_after_operation.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_read_asset_after_operation.test_read_asset_after_operation.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id")
+    assert(my_asset_before[0][1].f1.equals(new Int(1)))
+    assert(my_asset_before[0][1].f2.equals(new Int(2)))
+
+    await test_read_asset_after_operation.test_read_asset_after_operation.exec({ as: alice })
+
+    const my_asset_after = await test_read_asset_after_operation.test_read_asset_after_operation.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id")
+    assert(my_asset_after[0][1].f1.equals(new Int(1)))
+    assert(my_asset_after[0][1].f2.equals(new Int(2)))
   })
 
   it('test_read_asset_after_update', async () => {
     await test_read_asset_after_update.test_read_asset_after_update.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_read_asset_after_update.test_read_asset_after_update.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id")
+    assert(my_asset_before[0][1].equals(new Int(1)))
+
+    await test_read_asset_after_update.test_read_asset_after_update.exec({ as: alice })
+
+    const my_asset_after = await test_read_asset_after_update.test_read_asset_after_update.get_my_asset()
+    assert(my_asset_after.length == 1)
+    assert(my_asset_after[0][0] == "id")
+    assert(my_asset_after[0][1].equals(new Int(0)))
   })
 
   it('test_record', async () => {

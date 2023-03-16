@@ -1,7 +1,7 @@
 archetype test_parameter(p : nat = 0, n : string = "")
 
-variable r : nat = 0
+variable res : nat = 0
 
 entry exec () {
-  r := p + length(n)
+  res := p + length(n)
 }

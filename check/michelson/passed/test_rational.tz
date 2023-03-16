@@ -52,7 +52,7 @@
          LEFT unit ;
          LEFT (or unit unit) ;
          RIGHT unit ;
-         DUP 4 ;
+         DUP 3 ;
          PUSH nat 10 ;
          PUSH int 1 ;
          PAIR ;
@@ -67,7 +67,7 @@
               PUSH nat 5 ;
               PUSH int 2 ;
               PAIR ;
-              DUP 5 ;
+              DUP 4 ;
               PAIR ;
               PAIR ;
               EXEC ;

@@ -1,12 +1,12 @@
 { storage
-    (pair (int %x0)
-          (int %y0)
-          (int %z0)
-          (int %x1)
-          (int %y1)
-          (int %z1)
-          (int %x2)
-          (int %y2)
-          (int %z2)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 9 } ; DROP 1 ; PAIR 9 ; NIL operation ; PAIR } }
+    (pair (nat %x0)
+          (nat %y0)
+          (nat %z0)
+          (nat %x1)
+          (nat %y1)
+          (nat %z1)
+          (nat %x2)
+          (nat %y2)
+          (nat %z2)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

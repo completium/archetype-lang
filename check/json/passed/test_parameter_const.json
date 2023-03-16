@@ -21,7 +21,7 @@
   },
   "storage": [
     {
-      "name": "r",
+      "name": "res",
       "type": {
         "node": "nat",
         "name": null,

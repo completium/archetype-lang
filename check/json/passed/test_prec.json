@@ -11,7 +11,7 @@
     {
       "name": "x0",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -21,7 +21,7 @@
     {
       "name": "y0",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -31,7 +31,7 @@
     {
       "name": "z0",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -41,7 +41,7 @@
     {
       "name": "x1",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -51,7 +51,7 @@
     {
       "name": "y1",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -61,7 +61,7 @@
     {
       "name": "z1",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -71,7 +71,7 @@
     {
       "name": "x2",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -81,7 +81,7 @@
     {
       "name": "y2",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -91,7 +91,7 @@
     {
       "name": "z2",
       "type": {
-        "node": "int",
+        "node": "nat",
         "name": null,
         "int_value": null,
         "args": []
@@ -107,7 +107,7 @@
       "string": null,
       "args": [
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -120,7 +120,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -133,7 +133,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -146,7 +146,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -159,7 +159,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -172,7 +172,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -185,7 +185,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -198,7 +198,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -211,7 +211,7 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "nat",
           "int": null,
           "bytes": null,
           "string": null,
@@ -231,12 +231,7 @@
     },
     "is_storable": true
   },
-  "entrypoints": [
-    {
-      "name": "exec",
-      "args": []
-    }
-  ],
+  "entrypoints": [],
   "getters": [],
   "views": [],
   "errors": []

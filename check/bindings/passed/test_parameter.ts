@@ -53,7 +53,7 @@ export class Test_parameter {
         }
         throw new Error("Contract not initialised");
     }
-    async get_r(): Promise<att.Nat> {
+    async get_res(): Promise<att.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.Nat.from_mich((storage as att.Mpair).args[2]);

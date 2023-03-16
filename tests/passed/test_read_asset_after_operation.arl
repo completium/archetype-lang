@@ -8,7 +8,7 @@ asset my_asset {
   {"id"; 1; 2}
 }
 
-entry exec (k : int) {
+entry exec () {
   effect {
     var local = my_asset["id"].f1 * my_asset["id"].f2;
     do_require (local > 0, "ko");

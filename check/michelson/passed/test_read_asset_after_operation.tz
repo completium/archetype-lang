@@ -1,14 +1,14 @@
 { storage (map string (pair (int %f1) (int %f2))) ;
-  parameter (int %exec) ;
-  code { UNPAIR ;
-         DUP 2 ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         DUP ;
          PUSH string "id" ;
          GET ;
          IF_NONE
            { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
          CDR ;
-         DUP 3 ;
+         DUP 2 ;
          PUSH string "id" ;
          GET ;
          IF_NONE
@@ -22,6 +22,6 @@
          GT ;
          NOT ;
          IF { PUSH string "ko" ; FAILWITH } {} ;
-         DROP 2 ;
+         DROP 1 ;
          NIL operation ;
          PAIR } }

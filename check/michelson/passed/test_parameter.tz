@@ -1,4 +1,4 @@
-{ storage (pair (nat %p) (string %n) (nat %r)) ;
+{ storage (pair (nat %p) (string %n) (nat %res)) ;
   parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR 3 } ;

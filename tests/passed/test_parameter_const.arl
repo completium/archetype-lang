@@ -1,7 +1,7 @@
 archetype test_parameter_const(const c : nat)
 
-variable r : nat = 0
+variable res : nat = 0
 
 entry exec () {
-  r := c
+  res := c
 }

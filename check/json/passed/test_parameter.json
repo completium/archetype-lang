@@ -32,7 +32,7 @@
   },
   "storage": [
     {
-      "name": "r",
+      "name": "res",
       "type": {
         "node": "nat",
         "name": null,
@@ -82,7 +82,7 @@
           "string": null,
           "args": [],
           "annots": [
-            "%r"
+            "%res"
           ],
           "array": [],
           "var_id": null,
