@@ -15,7 +15,6 @@ record rt {
 }
 
 variable res : nat = 0
-variable v : nat = 0
 
 variable r : rt = {n = 0; k = 1i}
 

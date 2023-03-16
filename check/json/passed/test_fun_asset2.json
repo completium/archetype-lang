@@ -153,16 +153,6 @@
       "const": false
     },
     {
-      "name": "v",
-      "type": {
-        "node": "nat",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "const": false
-    },
-    {
       "name": "r",
       "type": {
         "node": "record",
@@ -213,19 +203,6 @@
           "args": [],
           "annots": [
             "%res"
-          ],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        {
-          "prim": "nat",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [
-            "%v"
           ],
           "array": [],
           "var_id": null,

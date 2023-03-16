@@ -20173,37 +20173,104 @@ describe('passed', async () => {
 
   it('test_fun_asset', async () => {
     await test_fun_asset.test_fun_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_fun_asset.test_fun_asset.get_my_asset()
+    assert(my_asset_before.length == 4)
+    assert(my_asset_before[0].equals(new Nat(0)))
+    assert(my_asset_before[1].equals(new Nat(1)))
+    assert(my_asset_before[2].equals(new Nat(2)))
+    assert(my_asset_before[3].equals(new Nat(3)))
+    const res_before = await test_fun_asset.test_fun_asset.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_fun_asset.test_fun_asset.exec({ as: alice })
+
+    const my_asset_after = await test_fun_asset.test_fun_asset.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0].equals(new Nat(0)))
+    assert(my_asset_after[1].equals(new Nat(1)))
+    assert(my_asset_after[2].equals(new Nat(2)))
+    assert(my_asset_after[3].equals(new Nat(3)))
+    const res_after = await test_fun_asset.test_fun_asset.get_res()
+    assert(res_after.equals(new Nat(4)))
   })
 
   it('test_fun_asset2', async () => {
     await test_fun_asset2.test_fun_asset2.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_fun_asset2.test_fun_asset2.get_my_asset()
+    assert(my_asset_before.length == 4)
+    assert(my_asset_before[0].equals(new Nat(0)))
+    assert(my_asset_before[1].equals(new Nat(1)))
+    assert(my_asset_before[2].equals(new Nat(2)))
+    assert(my_asset_before[3].equals(new Nat(3)))
+    const r_before = await test_fun_asset2.test_fun_asset2.get_r()
+    assert(r_before.equals(new test_fun_asset2.rt(new Nat(0), new Int(1))))
+    const res_before = await test_fun_asset2.test_fun_asset2.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_fun_asset2.test_fun_asset2.exec({ as: alice })
+
+    const my_asset_after = await test_fun_asset2.test_fun_asset2.get_my_asset()
+    assert(my_asset_after.length == 4)
+    assert(my_asset_after[0].equals(new Nat(0)))
+    assert(my_asset_after[1].equals(new Nat(1)))
+    assert(my_asset_after[2].equals(new Nat(2)))
+    assert(my_asset_after[3].equals(new Nat(3)))
+    const r_after = await test_fun_asset2.test_fun_asset2.get_r()
+    assert(r_after.equals(new test_fun_asset2.rt(new Nat(0), new Int(1))))
+    const res_after = await test_fun_asset2.test_fun_asset2.get_res()
+    assert(res_after.equals(new Nat(4)))
   })
 
   it('test_fun_fail', async () => {
     await test_fun_fail.test_fun_fail.deploy({ as: alice })
-    // TODO
+
+    await expect_to_fail(async () => {
+      await test_fun_fail.test_fun_fail.exec({ as: alice })
+    }, { string: "error" })
   })
 
   it('test_getter', async () => {
     await test_getter.test_getter.deploy({ as: alice })
-    // TODO
+
+    const n_before = await test_getter.test_getter.get_n();
+    assert(n_before.equals(new Nat(2)))
+
+    const n = await test_getter.test_getter.getN({as: alice});
+    assert(n.equals(new Nat(2)))
+
+    const n_after = await test_getter.test_getter.get_n();
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('test_getter2', async () => {
     await test_getter2.test_getter2.deploy({ as: alice })
-    // TODO
+
+    const n_before = await test_getter2.test_getter2.get_n();
+    assert(n_before.equals(new Nat(2)))
+
+    await test_getter2.test_getter2.a({ as: alice })
+
+    const n = await test_getter2.test_getter2.getN({as: alice});
+    assert(n.equals(new Nat(2)))
+
+    const n_after = await test_getter2.test_getter2.get_n();
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('test_getter_with_arg', async () => {
     await test_getter_with_arg.test_getter_with_arg.deploy({ as: alice })
-    // TODO
+
+    const s = await test_getter_with_arg.test_getter_with_arg.getArg("mystr", {as: alice});
+    assert(s == "mystr")
   })
 
   it('test_getter_with_args', async () => {
     await test_getter_with_args.test_getter_with_args.deploy({ as: alice })
-    // TODO
+
+    const n = await test_getter_with_args.test_getter_with_args.getSum(new Nat(1), new Nat(2), {as: alice});
+    assert(n.equals(new Nat(3)))
   })
 
   it('test_global_constant', async () => {

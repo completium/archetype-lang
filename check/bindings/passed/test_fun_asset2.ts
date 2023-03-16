@@ -72,17 +72,10 @@ export class Test_fun_asset2 {
         }
         throw new Error("Contract not initialised");
     }
-    async get_v(): Promise<att.Nat> {
-        if (this.address != undefined) {
-            const storage = await ex.get_raw_storage(this.address);
-            return att.Nat.from_mich((storage as att.Mpair).args[2]);
-        }
-        throw new Error("Contract not initialised");
-    }
     async get_r(): Promise<rt> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return rt.from_mich(att.pair_to_mich((storage as att.Mpair as att.Mpair).args.slice(3, 5)));
+            return rt.from_mich(att.pair_to_mich((storage as att.Mpair as att.Mpair).args.slice(2, 4)));
         }
         throw new Error("Contract not initialised");
     }
