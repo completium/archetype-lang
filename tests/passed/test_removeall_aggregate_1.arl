@@ -12,7 +12,7 @@ asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0; 1; 2]};
   {"id1"; []};
   {"id2"; []}
 }

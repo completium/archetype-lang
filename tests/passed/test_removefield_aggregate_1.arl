@@ -12,11 +12,11 @@ asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0; 1; 2]};
   {"id1"; []};
   {"id2"; []}
 }
 
-entry exec (n : nat) {
-  my_asset["id0"].col.remove(n)
+entry exec () {
+  my_asset["id0"].col.remove(1)
 }

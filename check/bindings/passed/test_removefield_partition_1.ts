@@ -1,17 +1,20 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
+export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
-export const my_asset_value_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []);
-export type o_asset_container = Array<string>;
+export const my_asset_value_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
+export type o_asset_container = Array<att.Nat>;
 export type my_asset_container = Array<[
     string,
-    Array<string>
+    Array<att.Nat>
 ]>;
-export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []);
-export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []), []);
-const exec_arg_to_mich = (s: string): att.Micheline => {
-    return att.string_to_mich(s);
+export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []), []);
+const init_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
+}
+const exec_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Test_removefield_partition_1 {
     address: string | undefined;
@@ -34,29 +37,41 @@ export class Test_removefield_partition_1 {
         const address = (await ex.deploy("../tests/passed/test_removefield_partition_1.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(s: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async init(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(s), params);
+            return await ex.call(this.address, "init", init_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(s: string, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(s), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_init_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "init", init_arg_to_mich(), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
     async get_o_asset(): Promise<o_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.mich_to_string(x); });
+            return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.Nat.from_mich(x); });
         }
         throw new Error("Contract not initialised");
     }
     async get_my_asset(): Promise<my_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_map((storage as att.Mpair).args[1], (x, y) => [att.mich_to_string(x), att.mich_to_list(y, x => { return att.mich_to_string(x); })]);
+            return att.mich_to_map((storage as att.Mpair).args[1], (x, y) => [att.mich_to_string(x), att.mich_to_list(y, x => { return att.Nat.from_mich(x); })]);
         }
         throw new Error("Contract not initialised");
     }

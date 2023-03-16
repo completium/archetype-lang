@@ -2,6 +2,10 @@ archetype test_removeall_aggregate
 
 asset o_asset identified by oid {
   oid : nat;
+} initialized with {
+  {0};
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
@@ -9,7 +13,7 @@ asset my_asset identified by id {
   value  : int;
   col    : aggregate<o_asset>;
 } initialized by {
-  {"id0"; 0; []};
+  {"id0"; 0; [0; 1; 2]};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }

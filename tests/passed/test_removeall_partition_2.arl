@@ -14,6 +14,12 @@ asset my_asset identified by id {
   {"id2"; []; 0}
 }
 
+entry init() {
+  my_asset["id0"].col.add({0});
+  my_asset["id0"].col.add({1});
+  my_asset["id0"].col.add({2})
+}
+
 entry exec () {
   my_asset["id0"].col.remove_all()
 }
