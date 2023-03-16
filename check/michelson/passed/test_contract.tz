@@ -1,58 +1,64 @@
-{ storage address ;
-  parameter (address %exec) ;
+{ storage unit ;
+  parameter
+    (or (or (pair %myaction1 (address %a) (mutez %t)) (string %myaction2))
+        (or (unit %pay) (address %exec))) ;
   code { NIL operation ;
          SWAP ;
          UNPAIR ;
-         NIL operation ;
-         NIL operation ;
-         DUP 5 ;
-         ITER { CONS } ;
-         DUP 4 ;
-         CONTRACT %myaction1 (pair address mutez) ;
-         IF_NONE
-           { PUSH string "myaction1" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
-           {} ;
-         PUSH mutez 0 ;
-         PUSH mutez 1000000 ;
-         DUP 6 ;
-         PAIR ;
-         TRANSFER_TOKENS ;
-         CONS ;
-         ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         NIL operation ;
-         NIL operation ;
-         DUP 5 ;
-         ITER { CONS } ;
-         DUP 4 ;
-         CONTRACT %myaction2 string ;
-         IF_NONE
-           { PUSH string "myaction2" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
-           {} ;
-         PUSH mutez 0 ;
-         PUSH string "string" ;
-         TRANSFER_TOKENS ;
-         CONS ;
-         ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         NIL operation ;
-         NIL operation ;
-         DUP 5 ;
-         ITER { CONS } ;
-         DUP 4 ;
-         CONTRACT %pay unit ;
-         IF_NONE
-           { PUSH string "pay" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
-           {} ;
-         PUSH mutez 1000000 ;
-         PUSH unit Unit ;
-         TRANSFER_TOKENS ;
-         CONS ;
-         ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         DROP 1 ;
-         SWAP ;
-         PAIR } }
+         IF_LEFT
+           { IF_LEFT { UNPAIR ; SWAP ; DROP 2 ; SWAP ; PAIR } { DROP 1 ; SWAP ; PAIR } }
+           { IF_LEFT
+               { DROP 1 ; SWAP ; PAIR }
+               { NIL operation ;
+                 NIL operation ;
+                 DUP 5 ;
+                 ITER { CONS } ;
+                 DUP 3 ;
+                 CONTRACT %myaction1 (pair address mutez) ;
+                 IF_NONE
+                   { PUSH string "myaction1" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                   {} ;
+                 PUSH mutez 0 ;
+                 PUSH mutez 1000000 ;
+                 SENDER ;
+                 PAIR ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 NIL operation ;
+                 NIL operation ;
+                 DUP 5 ;
+                 ITER { CONS } ;
+                 DUP 3 ;
+                 CONTRACT %myaction2 string ;
+                 IF_NONE
+                   { PUSH string "myaction2" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                   {} ;
+                 PUSH mutez 0 ;
+                 PUSH string "string" ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 NIL operation ;
+                 NIL operation ;
+                 DUP 5 ;
+                 ITER { CONS } ;
+                 DUP 3 ;
+                 CONTRACT %pay unit ;
+                 IF_NONE
+                   { PUSH string "pay" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+                   {} ;
+                 PUSH mutez 1000000 ;
+                 PUSH unit Unit ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 2 ; DROP 1 } ;
+                 DUG 2 ;
+                 DROP 1 ;
+                 SWAP ;
+                 PAIR } } } }

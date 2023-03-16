@@ -20009,13 +20009,21 @@ describe('passed', async () => {
   })
 
   it('test_contract', async () => {
-    await test_contract.test_contract.deploy({ as: alice })
-    // TODO
+    await test_contract.test_contract.deploy({amount: new Tez(1), as: alice })
+
+    await test_contract.test_contract.exec(test_contract.test_contract.get_address(), { as: alice })
   })
 
   it('test_contract_self', async () => {
     await test_contract_self.test_contract_self.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_contract_self.test_contract_self.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_contract_self.test_contract_self.exec({ as: alice })
+
+    const res_after = await test_contract_self.test_contract_self.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('test_create_contract_bytes', async () => {
@@ -20025,7 +20033,18 @@ describe('passed', async () => {
 
   it('test_fget', async () => {
     await test_fget.test_fget.deploy({ as: alice })
-    // TODO
+
+    const owner_before = await test_fget.test_fget.get_owner()
+    assert(owner_before.length == 0)
+    const mile_before = await test_fget.test_fget.get_mile()
+    assert(mile_before.length == 0)
+
+    await test_fget.test_fget.deploy({ as: alice })
+
+    const owner_after = await test_fget.test_fget.get_owner()
+    assert(owner_after.length == 0)
+    const mile_after = await test_fget.test_fget.get_mile()
+    assert(mile_after.length == 0)
   })
 
   it('test_for_list_alt', async () => {

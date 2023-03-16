@@ -7,21 +7,10 @@
     "records": [],
     "events": []
   },
-  "storage": [
-    {
-      "name": "contract_i",
-      "type": {
-        "node": "address",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "const": false
-    }
-  ],
+  "storage": [],
   "storage_type": {
     "value": {
-      "prim": "address",
+      "prim": "unit",
       "int": null,
       "bytes": null,
       "string": null,
@@ -34,6 +23,47 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "myaction1",
+      "args": [
+        {
+          "name": "a",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "t",
+          "type": {
+            "node": "currency",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "myaction2",
+      "args": [
+        {
+          "name": "s",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "pay",
+      "args": []
+    },
     {
       "name": "exec",
       "args": [

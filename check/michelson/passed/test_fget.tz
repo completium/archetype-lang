@@ -4,6 +4,17 @@
   parameter (address %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
+         DUP 3 ;
+         DUP 2 ;
+         MEM ;
+         IF { PUSH string "owner" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+            { DUP 3 ;
+              EMPTY_SET string ;
+              SOME ;
+              DUP 3 ;
+              UPDATE ;
+              DIP 1 { DIG 2 ; DROP 1 } ;
+              DUG 2 } ;
          NIL string ;
          NIL string ;
          DUP 5 ;

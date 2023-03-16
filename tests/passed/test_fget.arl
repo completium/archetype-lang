@@ -13,6 +13,7 @@ asset owner identified by addr {
 
 
 entry exec (ow : address) {
+  owner.add({ow; []});
   var valid_miles = owner[ow].miles.select(the.expiration > now);
   for m in owner[ow].miles do
     do_require (mile[m].quantity > 0, "ko")

@@ -1,11 +1,21 @@
 archetype test_contract
 
-variable contract_i : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+entry myaction1(a : address, t : tez) {
+
+}
+
+entry myaction2(s : string) {
+
+}
+
+entry pay() {
+
+}
 
 entry exec (a : address) {
   effect {
-    transfer 0tz to contract_i call myaction1<address * tez>((a, 1tz));
-    transfer 0tz to contract_i call myaction2<string>("string");
-    transfer 1tz to contract_i call pay<unit>(())
+    transfer 0tz to a call myaction1<address * tez>((caller, 1tz));
+    transfer 0tz to a call myaction2<string>("string");
+    transfer 1tz to a call pay<unit>(())
   }
 }
