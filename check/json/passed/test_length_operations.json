@@ -7,10 +7,21 @@
     "records": [],
     "events": []
   },
-  "storage": [],
+  "storage": [
+    {
+      "name": "res",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
   "storage_type": {
     "value": {
-      "prim": "unit",
+      "prim": "nat",
       "int": null,
       "bytes": null,
       "string": null,

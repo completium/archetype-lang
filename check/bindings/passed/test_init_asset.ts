@@ -1,6 +1,6 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
-export const my_asset_simple_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
+export const o_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("string", []);
 export class my_asset_value implements att.ArchetypeType {
     constructor(public value: att.Int, public myaggregate: Array<string>) { }
@@ -23,12 +23,12 @@ export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mic
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), ["%myaggregate"])
 ], []);
-export type my_asset_simple_container = Array<string>;
+export type o_asset_container = Array<string>;
 export type my_asset_container = Array<[
     string,
     my_asset_value
 ]>;
-export const my_asset_simple_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []);
+export const o_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), []);
 export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("int", ["%value"]),
     att.set_annot_to_mich_type(att.prim_annot_to_mich_type("string", []), ["%myaggregate"])
@@ -69,7 +69,7 @@ export class Test_init_asset {
         }
         throw new Error("Contract not initialised");
     }
-    async get_my_asset_simple(): Promise<my_asset_simple_container> {
+    async get_o_asset(): Promise<o_asset_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
             return att.mich_to_list((storage as att.Mpair).args[0], x => { return att.mich_to_string(x); });

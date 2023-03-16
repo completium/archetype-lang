@@ -8,9 +8,3 @@ asset my_asset {
 } initialized by {
   { id = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; tokens = total }
 }
-
-entry exec() {
-  effect {
-    ()
-  }
-}

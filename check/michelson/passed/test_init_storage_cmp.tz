@@ -55,10 +55,5 @@
           (bool %le_str_str)
           (bool %eq_bool_bool)
           (bool %ne_bool_bool)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR 56 } ;
-         DROP 1 ;
-         PAIR 56 ;
-         NIL operation ;
-         PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

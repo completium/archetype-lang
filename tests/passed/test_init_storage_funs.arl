@@ -36,9 +36,3 @@ variable length_str : nat       = length("abcdef")
 
 variable concat_byt : bytes = concat(0x12, 0xef)
 variable slice_byt  : option<bytes> = slice(0xabcdef01, 1, 2)
-
-entry exec () {
-  effect {
-    ()
-  }
-}

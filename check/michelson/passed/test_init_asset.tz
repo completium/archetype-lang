@@ -1,5 +1,5 @@
 { storage
-    (pair (set %my_asset_simple string)
+    (pair (set %o_asset string)
           (map %my_asset string (pair (int %value) (set %myaggregate string)))) ;
   parameter (unit %exec) ;
   code { UNPAIR ;

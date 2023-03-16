@@ -65,9 +65,3 @@ variable le_str_str : bool = "a" >= "b"
 
 variable eq_bool_bool : bool = true =  false
 variable ne_bool_bool : bool = true <> false
-
-entry exec () {
-  effect {
-    ()
-  }
-}

@@ -36,6 +36,13 @@ export class Test_length_operations {
         }
         throw new Error("Contract not initialised");
     }
+    async get_res(): Promise<att.Nat> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.Nat.from_mich(storage);
+        }
+        throw new Error("Contract not initialised");
+    }
     errors = {};
 }
 export const test_length_operations = new Test_length_operations();

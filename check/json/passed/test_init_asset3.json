@@ -139,12 +139,7 @@
     },
     "is_storable": true
   },
-  "entrypoints": [
-    {
-      "name": "exec",
-      "args": []
-    }
-  ],
+  "entrypoints": [],
   "getters": [],
   "views": [],
   "errors": []

@@ -54,9 +54,3 @@ variable tez_tez_minus  : tez      = 2tz - 1tz
 variable int_tez_mult   : tez      = 2 * 1tz
 variable rat_tez_mult   : tez      = 1.1 * 1tz
 variable int_tez_ediv   : tez      = 1tz div 2
-
-entry exec () {
-  effect {
-    ()
-  }
-}

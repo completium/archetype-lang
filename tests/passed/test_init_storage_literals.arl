@@ -33,7 +33,3 @@ variable b : bytes = 0xff
 variable vunit : unit = ()
 variable oleft  : or<string, nat> = left<nat>("str")
 variable oright : or<string, nat> = right<string>(0)
-
-entry exec () {
-  ()
-}

@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "my_asset_simple",
+        "name": "o_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -92,7 +92,7 @@
             "name": "myaggregate",
             "type": {
               "node": "aggregate",
-              "name": "my_asset_simple",
+              "name": "o_asset",
               "int_value": null,
               "args": []
             },
@@ -241,10 +241,10 @@
   },
   "storage": [
     {
-      "name": "my_asset_simple",
+      "name": "o_asset",
       "type": {
         "node": "asset",
-        "name": "my_asset_simple",
+        "name": "o_asset",
         "int_value": null,
         "args": []
       },
@@ -287,7 +287,7 @@
             }
           ],
           "annots": [
-            "%my_asset_simple"
+            "%o_asset"
           ],
           "array": [],
           "var_id": null,

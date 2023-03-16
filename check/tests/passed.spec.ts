@@ -1025,8 +1025,8 @@ import * as test_init_storage_cmp from '../bindings/passed/test_init_storage_cmp
 import * as test_init_storage_funs from '../bindings/passed/test_init_storage_funs'
 import * as test_init_storage_literals from '../bindings/passed/test_init_storage_literals'
 import * as test_init_storage_simple from '../bindings/passed/test_init_storage_simple'
+import * as test_initialized_with from '../bindings/passed/test_initialized_with'
 import * as test_initialized_with_asset from '../bindings/passed/test_initialized_with_asset'
-import * as test_initializedby from '../bindings/passed/test_initializedby'
 import * as test_iter from '../bindings/passed/test_iter'
 import * as test_iter2 from '../bindings/passed/test_iter2'
 import * as test_length_operations from '../bindings/passed/test_length_operations'
@@ -20343,13 +20343,13 @@ describe('passed', async () => {
     // TODO
   })
 
-  it('test_initialized_with_asset', async () => {
-    await test_initialized_with_asset.test_initialized_with_asset.deploy({ as: alice })
+  it('test_initialized_with', async () => {
+    await test_initialized_with.test_initialized_with.deploy({ as: alice })
     // TODO
   })
 
-  it('test_initializedby', async () => {
-    await test_initializedby.test_initializedby.deploy({ as: alice })
+  it('test_initialized_with_asset', async () => {
+    await test_initialized_with_asset.test_initialized_with_asset.deploy({ as: alice })
     // TODO
   })
 
@@ -20364,8 +20364,15 @@ describe('passed', async () => {
   })
 
   it('test_length_operations', async () => {
-    await test_length_operations.test_length_operations.deploy({ as: alice })
-    // TODO
+    await test_length_operations.test_length_operations.deploy({ amount: new Tez(1), as: alice })
+
+    const res_before = await test_length_operations.test_length_operations.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await test_length_operations.test_length_operations.exec({ as: alice })
+
+    const res_after = await test_length_operations.test_length_operations.get_res()
+    assert(res_after.equals(new Nat(1)))
   })
 
   it('test_list_contains', async () => {

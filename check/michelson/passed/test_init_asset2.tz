@@ -1,3 +1,3 @@
 { storage (map address int) ;
-  parameter (unit %exec) ;
+  parameter unit ;
   code { CDR ; NIL operation ; PAIR } }

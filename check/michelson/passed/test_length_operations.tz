@@ -1,4 +1,4 @@
-{ storage unit ;
+{ storage nat ;
   parameter (unit %exec) ;
   code { NIL operation ;
          SWAP ;
@@ -16,4 +16,10 @@
          CONS ;
          ITER { CONS } ;
          DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DUP 2 ;
+         SIZE ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
          PAIR } }

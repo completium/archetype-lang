@@ -1,3 +1,3 @@
 { storage (pair (nat %n) (int %i) (string %s)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ; DIP 1 { UNPAIR 3 } ; DROP 1 ; PAIR 3 ; NIL operation ; PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

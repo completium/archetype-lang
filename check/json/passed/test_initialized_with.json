@@ -1,5 +1,5 @@
 {
-  "name": "test_init_asset2",
+  "name": "test_initialized_with",
   "parameters": [],
   "types": {
     "assets": [
@@ -10,7 +10,7 @@
           {
             "name": "id",
             "type": {
-              "node": "address",
+              "node": "string",
               "name": null,
               "int_value": null,
               "args": []
@@ -18,7 +18,17 @@
             "is_key": true
           },
           {
-            "name": "tokens",
+            "name": "v1",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "v2",
             "type": {
               "node": "int",
               "name": null,
@@ -35,7 +45,7 @@
           "string": null,
           "args": [
             {
-              "prim": "address",
+              "prim": "string",
               "int": null,
               "bytes": null,
               "string": null,
@@ -46,11 +56,38 @@
               "var_type": null
             },
             {
-              "prim": "int",
+              "prim": "pair",
               "int": null,
               "bytes": null,
               "string": null,
-              "args": [],
+              "args": [
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%v1"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%v2"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
               "annots": [],
               "array": [],
               "var_id": null,
@@ -63,7 +100,7 @@
           "var_type": null
         },
         "key_type_michelson": {
-          "prim": "address",
+          "prim": "string",
           "int": null,
           "bytes": null,
           "string": null,
@@ -74,11 +111,38 @@
           "var_type": null
         },
         "value_type_michelson": {
-          "prim": "int",
+          "prim": "pair",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
+          "args": [
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%v1"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%v2"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
           "annots": [],
           "array": [],
           "var_id": null,
@@ -110,7 +174,7 @@
       "string": null,
       "args": [
         {
-          "prim": "address",
+          "prim": "string",
           "int": null,
           "bytes": null,
           "string": null,
@@ -121,11 +185,38 @@
           "var_type": null
         },
         {
-          "prim": "int",
+          "prim": "pair",
           "int": null,
           "bytes": null,
           "string": null,
-          "args": [],
+          "args": [
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%v1"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%v2"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
           "annots": [],
           "array": [],
           "var_id": null,

@@ -16,10 +16,5 @@
           (nat %length_str)
           (bytes %concat_byt)
           (option %slice_byt bytes)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR 17 } ;
-         DROP 1 ;
-         PAIR 17 ;
-         NIL operation ;
-         PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

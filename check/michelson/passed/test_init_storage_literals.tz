@@ -32,10 +32,5 @@
           (unit %vunit)
           (or %oleft string nat)
           (or %oright string nat)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR 33 } ;
-         DROP 1 ;
-         PAIR 33 ;
-         NIL operation ;
-         PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

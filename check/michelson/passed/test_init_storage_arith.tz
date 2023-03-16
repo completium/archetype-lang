@@ -40,10 +40,5 @@
           (mutez %int_tez_mult)
           (mutez %rat_tez_mult)
           (mutez %int_tez_ediv)) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR 41 } ;
-         DROP 1 ;
-         PAIR 41 ;
-         NIL operation ;
-         PAIR } }
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }
