@@ -6,9 +6,13 @@ asset o_asset {
 
 asset my_asset identified by id {
   id : string;
-  anaggregate : partition<o_asset>;
+  c : partition<o_asset>;
 } initialized by {
   {"id3"; []}
+}
+
+entry init() {
+  my_asset["id3"].c.add({0})
 }
 
 entry exec () {

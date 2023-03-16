@@ -79,7 +79,7 @@
             "is_key": true
           },
           {
-            "name": "anaggregate",
+            "name": "c",
             "type": {
               "node": "partition",
               "name": "o_asset",
@@ -286,6 +286,10 @@
     "is_storable": true
   },
   "entrypoints": [
+    {
+      "name": "init",
+      "args": []
+    },
     {
       "name": "exec",
       "args": []

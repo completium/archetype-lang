@@ -20447,7 +20447,31 @@ describe('passed', async () => {
 
   it('test_remove_asset_with_partition', async () => {
     await test_remove_asset_with_partition.test_remove_asset_with_partition.deploy({ as: alice })
-    // TODO
+
+    const my_asset_before = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_my_asset()
+    assert(my_asset_before.length == 1)
+    assert(my_asset_before[0][0] == "id3")
+    assert(my_asset_before[0][1].length == 0)
+    const o_asset_before = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_o_asset()
+    assert(o_asset_before.length == 0)
+
+    await test_remove_asset_with_partition.test_remove_asset_with_partition.init({ as: alice })
+
+    const my_asset_init = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_my_asset()
+    assert(my_asset_init.length == 1)
+    assert(my_asset_init[0][0] == "id3")
+    assert(my_asset_init[0][1].length == 1)
+    assert(my_asset_init[0][1][0].equals(new Nat(0)))
+    const o_asset_init = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_o_asset()
+    assert(o_asset_init.length == 1)
+    assert(o_asset_init[0].equals(new Nat(0)))
+
+    await test_remove_asset_with_partition.test_remove_asset_with_partition.exec({ as: alice })
+
+    const my_asset_after = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_my_asset()
+    assert(my_asset_after.length == 0)
+    const o_asset_after = await test_remove_asset_with_partition.test_remove_asset_with_partition.get_o_asset()
+    assert(o_asset_after.length == 0)
   })
 
   it('test_removeall_aggregate', async () => {
