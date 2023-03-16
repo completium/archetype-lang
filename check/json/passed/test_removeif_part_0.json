@@ -4,7 +4,7 @@
   "types": {
     "assets": [
       {
-        "name": "my_asset",
+        "name": "o_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -65,7 +65,7 @@
         }
       },
       {
-        "name": "s_asset",
+        "name": "my_asset",
         "container_kind": "map",
         "fields": [
           {
@@ -82,7 +82,7 @@
             "name": "c",
             "type": {
               "node": "partition",
-              "name": "my_asset",
+              "name": "o_asset",
               "int_value": null,
               "args": []
             },
@@ -177,20 +177,20 @@
   },
   "storage": [
     {
-      "name": "my_asset",
+      "name": "o_asset",
       "type": {
         "node": "asset",
-        "name": "my_asset",
+        "name": "o_asset",
         "int_value": null,
         "args": []
       },
       "const": false
     },
     {
-      "name": "s_asset",
+      "name": "my_asset",
       "type": {
         "node": "asset",
-        "name": "s_asset",
+        "name": "my_asset",
         "int_value": null,
         "args": []
       },
@@ -223,7 +223,7 @@
             }
           ],
           "annots": [
-            "%my_asset"
+            "%o_asset"
           ],
           "array": [],
           "var_id": null,
@@ -271,7 +271,7 @@
             }
           ],
           "annots": [
-            "%s_asset"
+            "%my_asset"
           ],
           "array": [],
           "var_id": null,
@@ -287,18 +287,12 @@
   },
   "entrypoints": [
     {
+      "name": "init",
+      "args": []
+    },
+    {
       "name": "exec",
-      "args": [
-        {
-          "name": "n",
-          "type": {
-            "node": "nat",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "getters": [],

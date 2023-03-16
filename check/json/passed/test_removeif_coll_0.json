@@ -110,17 +110,7 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": [
-        {
-          "name": "n",
-          "type": {
-            "node": "nat",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "getters": [],

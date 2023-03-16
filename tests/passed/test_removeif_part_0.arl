@@ -1,18 +1,27 @@
 archetype test_removeif_part_0
 
-asset my_asset identified by id {
-  id     : nat;
+asset o_asset identified by id {
+  id : nat;
 }
 
-asset s_asset identified by sid {
+asset my_asset identified by sid {
   sid : string;
-  c   : partition<my_asset>;
+  c   : partition<o_asset>;
 } initialized by {
   {"id0"; []};
   {"id1"; []};
   {"id2"; []}
 }
 
-entry exec (n : nat) {
-  s_asset["id0"].c.remove_if(the.id >= n)
+entry init() {
+  my_asset["id0"].c.add({0});
+  my_asset["id0"].c.add({1});
+  my_asset["id0"].c.add({2});
+  my_asset["id0"].c.add({3});
+  my_asset["id0"].c.add({4});
+  my_asset["id0"].c.add({5})
+}
+
+entry exec () {
+  my_asset["id0"].c.remove_if(the.id >= 3)
 }

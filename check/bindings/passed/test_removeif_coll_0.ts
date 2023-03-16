@@ -3,8 +3,8 @@ import * as att from "@completium/archetype-ts-types";
 export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export type my_asset_container = Array<att.Nat>;
 export const my_asset_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), []);
-const exec_arg_to_mich = (n: att.Nat): att.Micheline => {
-    return n.to_mich();
+const exec_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Test_removeif_coll_0 {
     address: string | undefined;
@@ -27,15 +27,15 @@ export class Test_removeif_coll_0 {
         const address = (await ex.deploy("../tests/passed/test_removeif_coll_0.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(n: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(n), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(n: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(n), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

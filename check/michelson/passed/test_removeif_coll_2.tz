@@ -1,31 +1,28 @@
 { storage (map nat (pair (string %s) (bool %b))) ;
-  parameter (pair %exec (nat %n) (string %is)) ;
-  code { UNPAIR ;
-         UNPAIR ;
-         SWAP ;
-         DUP 3 ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         DUP ;
          ITER { UNPAIR ;
-                DUP 4 ;
+                PUSH nat 3 ;
                 DUP 2 ;
                 COMPARE ;
                 GE ;
                 IF { PUSH bool True }
-                   { DUP 3 ;
+                   { PUSH string "mystr0" ;
                      DUP 3 ;
                      GET 1 ;
                      COMPARE ;
                      EQ ;
-                     IF { DUP 2 ; GET 2 ; NOT ; IF { PUSH bool True } { PUSH bool False } }
-                        { PUSH bool False } ;
                      IF { PUSH bool True } { PUSH bool False } } ;
-                IF { DUP 5 ;
+                IF { PUSH bool True }
+                   { DUP 2 ; GET 2 ; IF { PUSH bool True } { PUSH bool False } } ;
+                IF { DUP 3 ;
                      NONE (pair string bool) ;
                      DUP 3 ;
                      UPDATE ;
-                     DIP 1 { DIG 4 ; DROP 1 } ;
-                     DUG 4 }
+                     DIP 1 { DIG 2 ; DROP 1 } ;
+                     DUG 2 }
                    {} ;
                 DROP 2 } ;
-         DROP 2 ;
          NIL operation ;
          PAIR } }

@@ -1,22 +1,25 @@
 archetype test_removeif_agg_0
 
-asset my_asset identified by id {
+asset o_asset identified by id {
   id     : nat;
 } initialized by {
   {0};
   {1};
-  {2}
+  {2};
+  {3};
+  {4};
+  {5}
 }
 
-asset s_asset identified by sid {
+asset my_asset identified by sid {
   sid : string;
-  c   : aggregate<my_asset>;
+  c   : aggregate<o_asset>;
 } initialized by {
-  {"id0"; []};
+  {"id0"; [0; 1; 2; 3; 4; 5]};
   {"id1"; []};
   {"id2"; []}
 }
 
-entry exec (n : nat) {
-  s_asset["id0"].c.remove_if(the.id >= n)
+entry exec () {
+  my_asset["id0"].c.remove_if(the.id >= 3)
 }

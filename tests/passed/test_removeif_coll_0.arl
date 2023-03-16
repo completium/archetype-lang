@@ -5,9 +5,12 @@ asset my_asset identified by id {
 } initialized by {
   {0};
   {1};
-  {2}
+  {2};
+  {3};
+  {4};
+  {5}
 }
 
-entry exec (n : nat) {
-    my_asset.remove_if(the.id >= n)
+entry exec () {
+    my_asset.remove_if(the.id >= 3)
 }

@@ -1,19 +1,18 @@
 { storage (set nat) ;
-  parameter (nat %exec) ;
-  code { UNPAIR ;
-         DUP 2 ;
-         ITER { DUP 2 ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         DUP ;
+         ITER { PUSH nat 3 ;
                 DUP 2 ;
                 COMPARE ;
                 GE ;
-                IF { DUP 3 ;
+                IF { DUP 2 ;
                      PUSH bool False ;
                      DUP 3 ;
                      UPDATE ;
-                     DIP 1 { DIG 2 ; DROP 1 } ;
-                     DUG 2 }
+                     DIP 1 { SWAP ; DROP 1 } ;
+                     SWAP }
                    {} ;
                 DROP 1 } ;
-         DROP 1 ;
          NIL operation ;
          PAIR } }

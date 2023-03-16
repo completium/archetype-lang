@@ -1,41 +1,40 @@
 { storage
-    (pair (map %my_asset nat (pair (string %s) (bool %b))) (map %s_asset string (set nat))) ;
-  parameter (pair %exec (nat %n) (string %is)) ;
+    (pair (map %o_asset nat (pair (string %s) (bool %b))) (map %my_asset string (set nat))) ;
+  parameter (unit %exec) ;
   code { UNPAIR ;
          DIP 1 { UNPAIR } ;
-         UNPAIR ;
-         SWAP ;
-         DUP 4 ;
+         DROP 1 ;
+         DUP 2 ;
          PUSH string "id0" ;
          GET ;
          IF_NONE
-           { PUSH string "s_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
            {} ;
-         ITER { DUP 4 ;
+         ITER { DUP 2 ;
                 DUP 2 ;
                 GET ;
                 IF_NONE
-                  { PUSH string "s_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                  { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                   {} ;
-                DUP 4 ;
+                PUSH nat 3 ;
                 DUP 3 ;
                 COMPARE ;
                 GE ;
                 IF { PUSH bool True }
-                   { DUP 3 ;
+                   { PUSH string "mystr0" ;
                      DUP 2 ;
                      GET 1 ;
                      COMPARE ;
                      EQ ;
-                     IF { DUP ; GET 2 ; NOT ; IF { PUSH bool True } { PUSH bool False } }
-                        { PUSH bool False } ;
                      IF { PUSH bool True } { PUSH bool False } } ;
-                IF { DUP 6 ;
-                     DUP 7 ;
+                IF { PUSH bool True }
+                   { DUP ; GET 2 ; IF { PUSH bool True } { PUSH bool False } } ;
+                IF { DUP 4 ;
+                     DUP 5 ;
                      PUSH string "id0" ;
                      GET ;
                      IF_NONE
-                       { PUSH string "s_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
                        {} ;
                      PUSH bool False ;
                      DUP 5 ;
@@ -43,11 +42,10 @@
                      SOME ;
                      PUSH string "id0" ;
                      UPDATE ;
-                     DIP 1 { DIG 5 ; DROP 1 } ;
-                     DUG 5 }
+                     DIP 1 { DIG 3 ; DROP 1 } ;
+                     DUG 3 }
                    {} ;
                 DROP 2 } ;
-         DROP 2 ;
          PAIR ;
          NIL operation ;
          PAIR } }
