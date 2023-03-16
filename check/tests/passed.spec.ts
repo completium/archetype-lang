@@ -20009,7 +20009,7 @@ describe('passed', async () => {
   })
 
   it('test_contract', async () => {
-    await test_contract.test_contract.deploy({amount: new Tez(1), as: alice })
+    await test_contract.test_contract.deploy({ amount: new Tez(1), as: alice })
 
     await test_contract.test_contract.exec(test_contract.test_contract.get_address(), { as: alice })
   })
@@ -20404,52 +20404,156 @@ describe('passed', async () => {
 
   it('test_record', async () => {
     await test_record.test_record.deploy({ as: alice })
-    // TODO
+
+    await test_record.test_record.exec({ as: alice })
   })
 
   it('test_record_access_0', async () => {
     await test_record_access_0.test_record_access_0.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_access_0.test_record_access_0.get_res()
+    assert(res_before == "")
+
+    await test_record_access_0.test_record_access_0.exec({ as: alice })
+
+    const res_after = await test_record_access_0.test_record_access_0.get_res()
+    assert(res_after == "mystr")
   })
 
   it('test_record_access_1', async () => {
     await test_record_access_1.test_record_access_1.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_record_access_1.test_record_access_1.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_record_access_1.test_record_access_1.get_rv()
+    assert(rv_before.equals(new Int(0)))
+
+    await test_record_access_1.test_record_access_1.exec({ as: alice })
+
+    const rid_after = await test_record_access_1.test_record_access_1.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_record_access_1.test_record_access_1.get_rv()
+    assert(rv_after.equals(new Int(2)))
   })
 
   it('test_record_access_2', async () => {
     await test_record_access_2.test_record_access_2.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_record_access_2.test_record_access_2.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_record_access_2.test_record_access_2.get_rv()
+    assert(rv_before.equals(new Int(0)))
+    const rb_before = await test_record_access_2.test_record_access_2.get_rb()
+    assert(rb_before == false)
+
+    await test_record_access_2.test_record_access_2.exec({ as: alice })
+
+    const rid_after = await test_record_access_2.test_record_access_2.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_record_access_2.test_record_access_2.get_rv()
+    assert(rv_after.equals(new Int(2)))
+    const rb_after = await test_record_access_2.test_record_access_2.get_rb()
+    assert(rb_after == true)
+
   })
 
   it('test_record_access_3', async () => {
     await test_record_access_3.test_record_access_3.deploy({ as: alice })
-    // TODO
+
+    const rid_before = await test_record_access_3.test_record_access_3.get_rid()
+    assert(rid_before == "")
+    const rv_before = await test_record_access_3.test_record_access_3.get_rv()
+    assert(rv_before.equals(new Int(0)))
+    const rb_before = await test_record_access_3.test_record_access_3.get_rb()
+    assert(rb_before == false)
+    const rn_before = await test_record_access_3.test_record_access_3.get_rn()
+    assert(rn_before.equals(new Nat(0)))
+
+    await test_record_access_3.test_record_access_3.exec({ as: alice })
+
+    const rid_after = await test_record_access_3.test_record_access_3.get_rid()
+    assert(rid_after == "mystr")
+    const rv_after = await test_record_access_3.test_record_access_3.get_rv()
+    assert(rv_after.equals(new Int(2)))
+    const rb_after = await test_record_access_3.test_record_access_3.get_rb()
+    assert(rb_after == true)
+    const rn_after = await test_record_access_3.test_record_access_3.get_rn()
+    assert(rn_after.equals(new Nat(3)))
   })
 
   it('test_record_assign_1', async () => {
     await test_record_assign_1.test_record_assign_1.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_assign_1.test_record_assign_1.get_res()
+    assert(res_before.equals(new test_record_assign_1.my_record("", new Nat(0))))
+
+    await test_record_assign_1.test_record_assign_1.exec("mystr", { as: alice })
+
+    const res_after = await test_record_assign_1.test_record_assign_1.get_res()
+    assert(res_after.equals(new test_record_assign_1.my_record("mystr", new Nat(0))))
   })
 
   it('test_record_assign_2', async () => {
     await test_record_assign_2.test_record_assign_2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_assign_2.test_record_assign_2.get_res()
+    assert(res_before.equals(new test_record_assign_2.my_record("", new Nat(0))))
+
+    await test_record_assign_2.test_record_assign_2.exec(new Nat(2), { as: alice })
+
+    const res_after = await test_record_assign_2.test_record_assign_2.get_res()
+    assert(res_after.equals(new test_record_assign_2.my_record("", new Nat(2))))
   })
 
   it('test_record_assign_3', async () => {
     await test_record_assign_3.test_record_assign_3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_assign_3.test_record_assign_3.get_res()
+    assert(res_before.equals(new test_record_assign_3.my_record("", new Nat(0), new Int(0))))
+
+    await test_record_assign_3.test_record_assign_3.exec(new Int(3), { as: alice })
+
+    const res_after = await test_record_assign_3.test_record_assign_3.get_res()
+    assert(res_after.equals(new test_record_assign_3.my_record("", new Nat(0), new Int(3))))
   })
 
   it('test_record_assign_full', async () => {
     await test_record_assign_full.test_record_assign_full.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_assign_full.test_record_assign_full.get_res()
+    assert(res_before.equals(new test_record_assign_full.my_record("", new Nat(0), new Int(0), false)))
+
+    await test_record_assign_full.test_record_assign_full.setv0("mystr", { as: alice })
+
+    const res_v0 = await test_record_assign_full.test_record_assign_full.get_res()
+    assert(res_v0.equals(new test_record_assign_full.my_record("mystr", new Nat(0), new Int(0), false)))
+
+    await test_record_assign_full.test_record_assign_full.setv1(new Nat(2), { as: alice })
+
+    const res_v1 = await test_record_assign_full.test_record_assign_full.get_res()
+    assert(res_v1.equals(new test_record_assign_full.my_record("mystr", new Nat(2), new Int(0), false)))
+
+    await test_record_assign_full.test_record_assign_full.setv2(new Int(3), { as: alice })
+
+    const res_v2 = await test_record_assign_full.test_record_assign_full.get_res()
+    assert(res_v2.equals(new test_record_assign_full.my_record("mystr", new Nat(2), new Int(3), false)))
+
+    await test_record_assign_full.test_record_assign_full.setv3(true, { as: alice })
+
+    const res_v3 = await test_record_assign_full.test_record_assign_full.get_res()
+    assert(res_v3.equals(new test_record_assign_full.my_record("mystr", new Nat(2), new Int(3), true)))
   })
 
   it('test_record_assign_var', async () => {
     await test_record_assign_var.test_record_assign_var.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_record_assign_var.test_record_assign_var.get_res()
+    assert(res_before.equals(new test_record_assign_var.my_record("", new Nat(0), new Int(0))))
+
+    await test_record_assign_var.test_record_assign_var.exec(new Int(3), { as: alice })
+
+    const res_after = await test_record_assign_var.test_record_assign_var.get_res()
+    assert(res_after.equals(new test_record_assign_var.my_record("", new Nat(0), new Int(3))))
   })
 
   it('test_record_simple', async () => {
