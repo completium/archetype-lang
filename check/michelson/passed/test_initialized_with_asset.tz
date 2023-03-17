@@ -1,16 +1,5 @@
 { storage
-    (pair (set %my_asset_simple string)
-          (map %my_asset string (pair (int %value) (set %myaggregate string)))) ;
-  parameter (unit %exec) ;
-  code { UNPAIR ;
-         DIP 1 { UNPAIR } ;
-         DROP 1 ;
-         DUP 2 ;
-         NONE (pair int (set string)) ;
-         PUSH string "my_id" ;
-         UPDATE ;
-         DIP 1 { SWAP ; DROP 1 } ;
-         SWAP ;
-         PAIR ;
-         NIL operation ;
-         PAIR } }
+    (pair (set %o_asset nat)
+          (map %my_asset string (pair (int %value) (set %myaggregate nat)))) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

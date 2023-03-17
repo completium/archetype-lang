@@ -20237,7 +20237,7 @@ describe('passed', async () => {
     const n_before = await test_getter.test_getter.get_n();
     assert(n_before.equals(new Nat(2)))
 
-    const n = await test_getter.test_getter.getN({as: alice});
+    const n = await test_getter.test_getter.getN({ as: alice });
     assert(n.equals(new Nat(2)))
 
     const n_after = await test_getter.test_getter.get_n();
@@ -20252,7 +20252,7 @@ describe('passed', async () => {
 
     await test_getter2.test_getter2.a({ as: alice })
 
-    const n = await test_getter2.test_getter2.getN({as: alice});
+    const n = await test_getter2.test_getter2.getN({ as: alice });
     assert(n.equals(new Nat(2)))
 
     const n_after = await test_getter2.test_getter2.get_n();
@@ -20262,14 +20262,14 @@ describe('passed', async () => {
   it('test_getter_with_arg', async () => {
     await test_getter_with_arg.test_getter_with_arg.deploy({ as: alice })
 
-    const s = await test_getter_with_arg.test_getter_with_arg.getArg("mystr", {as: alice});
+    const s = await test_getter_with_arg.test_getter_with_arg.getArg("mystr", { as: alice });
     assert(s == "mystr")
   })
 
   it('test_getter_with_args', async () => {
     await test_getter_with_args.test_getter_with_args.deploy({ as: alice })
 
-    const n = await test_getter_with_args.test_getter_with_args.getSum(new Nat(1), new Nat(2), {as: alice});
+    const n = await test_getter_with_args.test_getter_with_args.getSum(new Nat(1), new Nat(2), { as: alice });
     assert(n.equals(new Nat(3)))
   })
 
@@ -20540,7 +20540,7 @@ describe('passed', async () => {
     assert(lt_str_str == false)
     const le_str_str = await test_init_storage_cmp.test_init_storage_cmp.get_le_str_str()
     assert(le_str_str == false)
-    const eq_bool_bool  = await test_init_storage_cmp.test_init_storage_cmp.get_eq_bool_bool()
+    const eq_bool_bool = await test_init_storage_cmp.test_init_storage_cmp.get_eq_bool_bool()
     assert(eq_bool_bool == false)
     const ne_bool_bool = await test_init_storage_cmp.test_init_storage_cmp.get_ne_bool_bool()
     assert(ne_bool_bool == true)
@@ -20671,17 +20671,43 @@ describe('passed', async () => {
 
   it('test_init_storage_simple', async () => {
     await test_init_storage_simple.test_init_storage_simple.deploy({ as: alice })
-    // TODO
+
+    const n = await test_init_storage_simple.test_init_storage_simple.get_n()
+    assert(n.equals(new Nat(0)))
+    const i = await test_init_storage_simple.test_init_storage_simple.get_i()
+    assert(i.equals(new Int(1)))
+    const s = await test_init_storage_simple.test_init_storage_simple.get_s()
+    assert(s == "str")
   })
 
   it('test_initialized_with', async () => {
     await test_initialized_with.test_initialized_with.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await test_initialized_with.test_initialized_with.get_my_asset()
+    assert(my_asset.length == 3)
+    assert(my_asset[0][0] == "id0")
+    assert(my_asset[0][1].v1.equals(new Int(0)))
+    assert(my_asset[0][1].v2.equals(new Int(3)))
+    assert(my_asset[1][0] == "id1")
+    assert(my_asset[1][1].v1.equals(new Int(1)))
+    assert(my_asset[1][1].v2.equals(new Int(3)))
+    assert(my_asset[2][0] == "id2")
+    assert(my_asset[2][1].v1.equals(new Int(2)))
+    assert(my_asset[2][1].v2.equals(new Int(3)))
   })
 
   it('test_initialized_with_asset', async () => {
     await test_initialized_with_asset.test_initialized_with_asset.deploy({ as: alice })
-    // TODO
+
+    const my_asset = await test_initialized_with_asset.test_initialized_with_asset.get_my_asset()
+    assert(my_asset.length == 1)
+    assert(my_asset[0][0] == "my_id")
+    assert(my_asset[0][1].value.equals(new Int(2)))
+    assert(my_asset[0][1].myaggregate.length == 1)
+    assert(my_asset[0][1].myaggregate[0].equals(new Nat(0)))
+    const o_asset = await test_initialized_with_asset.test_initialized_with_asset.get_o_asset()
+    assert(o_asset.length == 1)
+    assert(o_asset[0].equals(new Nat(0)))
   })
 
   it('test_iter', async () => {

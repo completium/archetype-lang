@@ -1,17 +1,15 @@
 archetype test_initialized_with_asset
 
-asset my_asset_simple identified by str {
-  str : string
+asset o_asset identified by str {
+  str : nat
+} initialized with {
+  {0}
 }
 
 asset my_asset identified by id {
   id : string;
   value : int;
-  myaggregate : aggregate<my_asset_simple>;
+  myaggregate : aggregate<o_asset>;
 } initialized with {
-  { "my_id"; 0; [] }
-}
-
-entry exec () {
-  my_asset.remove ("my_id")
+  { "my_id"; 2; [0] }
 }
