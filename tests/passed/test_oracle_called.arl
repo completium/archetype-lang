@@ -1,0 +1,5 @@
+archetype test_oracle_called
+
+getter get(s : string) : string * date * nat {
+  return ((s, 2022-01-01, 2))
+}

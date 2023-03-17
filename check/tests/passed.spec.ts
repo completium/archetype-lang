@@ -1039,6 +1039,7 @@ import * as test_list_nth from '../bindings/passed/test_list_nth'
 import * as test_metadata from '../bindings/passed/test_metadata'
 import * as test_operations from '../bindings/passed/test_operations'
 import * as test_oracle from '../bindings/passed/test_oracle'
+import * as test_oracle_called from '../bindings/passed/test_oracle_called'
 import * as test_parameter from '../bindings/passed/test_parameter'
 import * as test_parameter_const from '../bindings/passed/test_parameter_const'
 import * as test_prec from '../bindings/passed/test_prec'
@@ -20794,37 +20795,89 @@ describe('passed', async () => {
 
   it('test_list_mynth', async () => {
     await test_list_mynth.test_list_mynth.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_list_mynth.test_list_mynth.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await test_list_mynth.test_list_mynth.exec({ as: alice })
+
+    const res_after = await test_list_mynth.test_list_mynth.get_res()
+    assert(res_after.equals(Option.Some<string>("2")))
   })
 
   it('test_list_mynth2', async () => {
     await test_list_mynth2.test_list_mynth2.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_list_mynth2.test_list_mynth2.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await test_list_mynth2.test_list_mynth2.exec({ as: alice })
+
+    const res_after = await test_list_mynth2.test_list_mynth2.get_res()
+    assert(res_after.equals(Option.Some<string>("2")))
   })
 
   it('test_list_mynth3', async () => {
     await test_list_mynth3.test_list_mynth3.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_list_mynth3.test_list_mynth3.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await test_list_mynth3.test_list_mynth3.exec({ as: alice })
+
+    const res_after = await test_list_mynth3.test_list_mynth3.get_res()
+    assert(res_after.equals(Option.Some<string>("2")))
   })
 
   it('test_list_nth', async () => {
     await test_list_nth.test_list_nth.deploy({ as: alice })
-    // TODO
+
+    const res_before = await test_list_nth.test_list_nth.get_res()
+    assert(res_before == "")
+
+    await test_list_nth.test_list_nth.exec({ as: alice })
+
+    const res_after = await test_list_nth.test_list_nth.get_res()
+    assert(res_after == "2")
   })
 
   it('test_metadata', async () => {
     await test_metadata.test_metadata.deploy({ as: alice })
-    // TODO
+
+    const value_before = await test_metadata.test_metadata.get_metadata_value("")
+    assert(value_before == undefined)
+
+    await test_metadata.test_metadata.exec({ as: alice })
+
+    const value_after = await test_metadata.test_metadata.get_metadata_value("")
+    assert(value_after?.equals(new Bytes("00")))
   })
 
   it('test_operations', async () => {
-    await test_operations.test_operations.deploy({ as: alice })
-    // TODO
+    await test_operations.test_operations.deploy({ amount: new Tez(1), as: alice })
+
+    await test_operations.test_operations.exec(alice.get_address(), { as: alice })
   })
 
   it('test_oracle', async () => {
     await test_oracle.test_oracle.deploy({ as: alice })
-    // TODO
+    await test_oracle_called.test_oracle_called.deploy({ as: alice })
+
+    const v_before = await test_oracle.test_oracle.get_v()
+    assert(v_before[0] == "")
+    assert(v_before[1].toISOString() == '2020-01-01T00:00:00.000Z')
+    assert(v_before[2].equals(new Nat(0)))
+
+    await test_oracle.test_oracle.exec(test_oracle_called.test_oracle_called.get_address(), { as: alice })
+
+    const v_after = await test_oracle.test_oracle.get_v()
+    assert(v_after[0] == "XTZ-USD")
+    assert(v_after[1].toISOString() == '2022-01-01T00:00:00.000Z')
+    assert(v_after[2].equals(new Nat(2)))
+  })
+
+  it('test_oracle_called', async () => {
+    await test_oracle_called.test_oracle_called.deploy({ as: alice })
   })
 
   it('test_parameter', async () => {

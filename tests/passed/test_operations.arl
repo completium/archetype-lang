@@ -1,9 +1,11 @@
 archetype test_operations
 
-entry exec() {
-  var res : int = length(operations);
-  var e   : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
-  var op  : operation = make_operation(0tz, e, ());
+entry exec(a : address) {
+  var init : int = length(operations);
+  do_require(init = 0, "ko");
+  var e   : contract<unit> = a;
+  var op  : operation = make_operation(1tz, e, ());
   operations := prepend(operations, op);
+  var res : int = length(operations);
   do_require(res = 1, "ko")
 }

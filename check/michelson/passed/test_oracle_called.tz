@@ -1,0 +1,25 @@
+{ storage unit ;
+  parameter (pair %get (string %s) (contract %callback (pair string timestamp nat))) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         UNPAIR ;
+         NIL operation ;
+         NIL operation ;
+         DUP 6 ;
+         ITER { CONS } ;
+         DUP 4 ;
+         AMOUNT ;
+         PUSH nat 2 ;
+         PUSH timestamp 1640995200 ;
+         PAIR ;
+         DUP 6 ;
+         PAIR ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
+         SWAP ;
+         PAIR } }

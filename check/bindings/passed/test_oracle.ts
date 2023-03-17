@@ -7,8 +7,8 @@ const update_value_arg_to_mich = (p: [
 ]): att.Micheline => {
     return att.pair_to_mich([att.string_to_mich(p[0]), att.date_to_mich(p[1]), p[2].to_mich()]);
 }
-const exec_arg_to_mich = (): att.Micheline => {
-    return att.unit_mich;
+const exec_arg_to_mich = (addr: att.Address): att.Micheline => {
+    return addr.to_mich();
 }
 export class Test_oracle {
     address: string | undefined;
@@ -41,9 +41,9 @@ export class Test_oracle {
         }
         throw new Error("Contract not initialised");
     }
-    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(addr: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(addr), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -57,9 +57,9 @@ export class Test_oracle {
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(addr: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(addr), params);
         }
         throw new Error("Contract not initialised");
     }

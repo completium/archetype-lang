@@ -25,12 +25,37 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "a",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],
   "views": [],
   "errors": [
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "ko",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
     {
       "kind": "Invalid",
       "args": [],

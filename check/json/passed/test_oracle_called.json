@@ -1,0 +1,117 @@
+{
+  "name": "test_oracle_called",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [],
+  "getters": [
+    {
+      "name": "get",
+      "args": [
+        {
+          "name": "s",
+          "type": {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ],
+      "return": {
+        "node": "tuple",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "date",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "nat",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        ]
+      },
+      "return_michelson": {
+        "value": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "timestamp",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "is_storable": true
+      }
+    }
+  ],
+  "views": [],
+  "errors": []
+}

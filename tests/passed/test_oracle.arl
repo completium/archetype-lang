@@ -6,8 +6,6 @@ entry update_value(p : string * date * nat) {
   v := p
 }
 
-entry exec () {
-  var addr = KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r;
-
+entry exec (addr : address) {
   transfer 0tz to addr call get<string * contract<string * date * nat>>(("XTZ-USD", self.update_value))
 }

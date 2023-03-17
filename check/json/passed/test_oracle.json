@@ -122,7 +122,17 @@
     },
     {
       "name": "exec",
-      "args": []
+      "args": [
+        {
+          "name": "addr",
+          "type": {
+            "node": "address",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
     }
   ],
   "getters": [],
