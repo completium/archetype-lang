@@ -1310,7 +1310,7 @@ describe('passed', async () => {
     assert(o_asset_exec.length == 1, "Invalid Value")
     assert(o_asset_exec[0][0] == "oid", "Invalid Value")
     assert(o_asset_exec[0][1].v.equals(new Nat(0)), "Invalid Value")
-    // BUG
+    // TODO: Bug
     // assert(o_asset_exec[0][1].c.equals(new Nat(1)), "Invalid Value")
 
     await addupdate_partition_with_no_effect_on_default_value.addupdate_partition_with_no_effect_on_default_value.exec2({ as: alice })
@@ -1324,7 +1324,7 @@ describe('passed', async () => {
     assert(o_asset_exec2.length == 1, "Invalid Value")
     assert(o_asset_exec2[0][0] == "oid", "Invalid Value")
     assert(o_asset_exec2[0][1].v.equals(new Nat(1)), "Invalid Value")
-    // BUG
+    // TODO: Bug
     // assert(o_asset_exec2[0][1].c.equals(new Nat(1)), "Invalid Value")
   })
 
@@ -1341,7 +1341,7 @@ describe('passed', async () => {
     assert(my_asset_exec.length == 1, "Invalid Value")
     assert(my_asset_exec[0][0] == "id0", "Invalid Value")
     assert(my_asset_exec[0][1].v.equals(new Nat(0)), "Invalid Value")
-    // BUG
+    // TODO: Bug
     // assert(my_asset_exec[0][1].c.equals(new Nat(1)), "Invalid Value")
 
     await addupdate_with_no_effect_on_default_value.addupdate_with_no_effect_on_default_value.exec2({ as: alice })
@@ -1349,7 +1349,7 @@ describe('passed', async () => {
     assert(my_asset_exec2.length == 1, "Invalid Value")
     assert(my_asset_exec2[0][0] == "id0", "Invalid Value")
     assert(my_asset_exec2[0][1].v.equals(new Nat(1)), "Invalid Value")
-    // BUG
+    // TODO: Bug
     // assert(my_asset_exec2[0][1].c.equals(new Nat(1)), "Invalid Value")
   })
 
@@ -3863,7 +3863,7 @@ describe('passed', async () => {
   it('custom_args_with_record', async () => {
     await custom_args_with_record.custom_args_with_record.deploy({ as: alice })
 
-    // TODO: bug binder
+    // TODO: Bug binder
     // const res_before = await custom_args_with_record.custom_args_with_record.get_res();
     // assert(res_before.equals(new Nat(0)))
     // await custom_args_with_record.custom_args_with_record.exec(new custom_args_with_record.my_arg(new Int(1), new Nat(2), alice.get_address()), {as : alice})
@@ -3874,7 +3874,7 @@ describe('passed', async () => {
   it('custom_storage', async () => {
     await custom_storage.custom_storage.deploy({ as: alice })
 
-    // TODO: bug binder
+    // TODO: Bug binder
     // const r_before = await custom_storage.custom_storage.get_r();
     // assert(r_before.equals(new custom_storage.my_record(new Int(1), new Nat(2), "mystr")))
 
@@ -3926,7 +3926,7 @@ describe('passed', async () => {
 
     const a_before = await custom_storage3.custom_storage3.get_a();
     assert(a_before.equals(new Nat(0)));
-    // TODO: bug binder
+    // TODO: Bug binder
     // const b_before = await custom_storage3.custom_storage3.get_b();
     // assert(b_before.equals(new Nat(0)));
     // const c_before = await custom_storage3.custom_storage3.get_c();
@@ -3988,7 +3988,7 @@ describe('passed', async () => {
   it('custom_storage4', async () => {
     await custom_storage4.custom_storage4.deploy({ as: alice })
 
-    // TODO: bug binder
+    // TODO: Bug binder
     // const r_before = await custom_storage4.custom_storage4.get_r();
     // assert(r_before.equals(new custom_storage4.my_record(new Int(0), new Nat(0), "", new Nat(0))))
     // await custom_storage4.custom_storage4.exec({ as: alice })
@@ -4009,7 +4009,7 @@ describe('passed', async () => {
   it('custom_storage6', async () => {
     await custom_storage6.custom_storage6.deploy({ as: alice })
 
-    // TODO: bug binder
+    // TODO: Bug binder
     // const r_before = await custom_storage6.custom_storage6.get_r();
     // assert(r_before.equals(new custom_storage6.my_record(new Int(1), new Nat(2), alice.get_address())))
     // await custom_storage6.custom_storage6.exec({ as: alice })
@@ -4020,7 +4020,7 @@ describe('passed', async () => {
   it('custom_storage7', async () => {
     await custom_storage7.custom_storage7.deploy({ as: alice })
 
-    // TODO: bug binder
+    // TODO: Bug binder
     // const r_before = await custom_storage7.custom_storage7.get_r();
     // assert(r_before.equals(new custom_storage7.my_record(new Int(1), new Nat(2), alice.get_address())))
     // await custom_storage7.custom_storage7.exec({ as: alice })
@@ -4921,7 +4921,7 @@ describe('passed', async () => {
     const my_asset_after = await effect_method_asset_addupdate_partition.effect_method_asset_addupdate_partition.get_my_asset()
     assert(my_asset_after.length == 3)
     assert(my_asset_after[0][0] == "id0")
-    // TODO: bug
+    // TODO: Bug
     // assert(my_asset_after[0][1].length == 1)
     // assert(my_asset_after[0][1][0].equals(new Int(0)))
     assert(my_asset_after[1][0] == "id1")
@@ -15188,37 +15188,29 @@ describe('passed', async () => {
 
   it('sapling_empty_state', async () => {
     await sapling_empty_state.sapling_empty_state.deploy({ as: alice })
-    // TODO: bug archetype-ts-type
     const res_before = await sapling_empty_state.sapling_empty_state.get_res();
-    // assert(res_before.equals(new Sapling_state("")))
+    assert(res_before !== undefined)
 
     await sapling_empty_state.sapling_empty_state.exec({ as: alice })
 
     const res_after = await sapling_empty_state.sapling_empty_state.get_res();
-    // assert(res_after.equals(new Sapling_state("")))
+    assert(res_after !== undefined)
   })
 
   it('sapling_var', async () => {
     await sapling_var.sapling_var.deploy({ as: alice })
-    // TODO: fix transaction sapling bytes
     const n_before = await sapling_var.sapling_var.get_n();
-    // assert(n_before !== undefined)
+    assert(n_before.equals(new Int(0)))
     const s_before = await sapling_var.sapling_var.get_s();
-    // assert(s_before !== undefined)
+    assert(s_before !== undefined)
 
-    await sapling_var.sapling_var.exec(new Sapling_transaction("00000000000001f3849b5eba6e22354dbbccf076d39d63ab59d091f44bed6deb71a319cc10afed24a34ffaa403d7e58766dc6c5e0364a3d1a47e7286d87855544b8a9a4f04d6e1a6f80dba30932a82bb68fce3299aeed3ee9422d1330cffefed109dd0b753263470bea78799ee3f3cbb26a08c5dd8310ae8af66feb33950c45c67b7439e8c41e7941457b941e9ea3157105b860f9424eb210b4de663cd1239f692315049f789d367552c929f6b2aa4f0d01f2384ad1cc2daa5c4cd0731245506b614f67e7bd102ee0b639501c39b7028766fb469a99d3cd3754207098a1daec24645419514e76cbc29173e49d5d16e7aa43cd96acb77054aa333078b407987c4afdd42160bc5f585ba60296a8c1a1e48b7070c1d7106afdf6bf32c688d153b3871a784c354a779560000004f544b45fe787256593b593dcf8e54e9d57c15f86ad6ebc17c3ff65d5e7e6f216283ab4af840848b9a6928f3d65156fd10bef74b06366de141f906f94b48c9f0d0af5da81ee00177b8760cb6b99f74db3951eede8ad2be0b2f7aee18486431a9a1a439c639cacb0f6ebf7834e7c772d8cfa98ec7c844298f59107b5933c8876eeca7368bb9b0efb82b35e3acf6c0f6a1a7db98f3cd1c4e93f865dd654b393425d04a78e0a72529511e961025ba5e41d83a56825ab4db8809c7e9589959453608b4db6e1ce0ffa0077237bd3477007cc972642977b926d3d0d4f690550fbb543193ab31bf2c2ddf7c2a946fae1c62253dafaf25b87cbc18107469630b9f2cd0657cfdf4a6fff5d9f04bc1a50e43613900ffffffffff676980fbc2f4300c01f0b7820d00e3347c8da4ee614674376cbc45359daa54f9b5493e00000000"), { as: alice })
-
-    const n_after = await sapling_var.sapling_var.get_n();
-    // console.log(n_after.toString())
-    // assert(n_after !== undefined)
-    const s_after = await sapling_var.sapling_var.get_s();
-    // console.log(s_after.toString())
-    // assert(s_after !== undefined)
+    await expect_to_fail(async () => {
+      await sapling_var.sapling_var.exec(new Sapling_transaction("00000000000001f3849b5eba6e22354dbbccf076d39d63ab59d091f44bed6deb71a319cc10afed24a34ffaa403d7e58766dc6c5e0364a3d1a47e7286d87855544b8a9a4f04d6e1a6f80dba30932a82bb68fce3299aeed3ee9422d1330cffefed109dd0b753263470bea78799ee3f3cbb26a08c5dd8310ae8af66feb33950c45c67b7439e8c41e7941457b941e9ea3157105b860f9424eb210b4de663cd1239f692315049f789d367552c929f6b2aa4f0d01f2384ad1cc2daa5c4cd0731245506b614f67e7bd102ee0b639501c39b7028766fb469a99d3cd3754207098a1daec24645419514e76cbc29173e49d5d16e7aa43cd96acb77054aa333078b407987c4afdd42160bc5f585ba60296a8c1a1e48b7070c1d7106afdf6bf32c688d153b3871a784c354a779560000004f544b45fe787256593b593dcf8e54e9d57c15f86ad6ebc17c3ff65d5e7e6f216283ab4af840848b9a6928f3d65156fd10bef74b06366de141f906f94b48c9f0d0af5da81ee00177b8760cb6b99f74db3951eede8ad2be0b2f7aee18486431a9a1a439c639cacb0f6ebf7834e7c772d8cfa98ec7c844298f59107b5933c8876eeca7368bb9b0efb82b35e3acf6c0f6a1a7db98f3cd1c4e93f865dd654b393425d04a78e0a72529511e961025ba5e41d83a56825ab4db8809c7e9589959453608b4db6e1ce0ffa0077237bd3477007cc972642977b926d3d0d4f690550fbb543193ab31bf2c2ddf7c2a946fae1c62253dafaf25b87cbc18107469630b9f2cd0657cfdf4a6fff5d9f04bc1a50e43613900ffffffffff676980fbc2f4300c01f0b7820d00e3347c8da4ee614674376cbc45359daa54f9b5493e00000000"), { as: alice })
+    }, { string: "BAD TRANSACTION" })
   })
 
   it('sapling_verify_update', async () => {
     await sapling_verify_update.sapling_verify_update.deploy({ as: alice })
-    // TODO: find values
   })
 
   it('section_constant_effect', async () => {

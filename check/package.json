@@ -8,7 +8,7 @@
     "completium_add_users": "completium-cli generate account as account_0 && completium-cli generate account as account_1 && completium-cli generate account as account_2 && completium-cli generate account as account_3",
     "mockup_init": "completium-cli mockup init",
     "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts ./tests/type-errors.spec.ts ./tests/model-errors.spec.ts ./tests/contracts/*.spec.ts ./tests/passed.spec.ts",
-    "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g test_oracle",
+    "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g sapling_",
     "test:syntax-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts",
     "test:type-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/type-errors.spec.ts",
     "test:model-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/model-errors.spec.ts",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@completium/archetype-binder-ts": "0.1.12",
-    "@completium/archetype-ts-types": "0.1.6",
+    "@completium/archetype-ts-types": "0.1.7",
     "@completium/event-listener": "^0.0.4",
     "@completium/experiment-ts": "0.1.13",
     "bignumber.js": "^9.1.1",

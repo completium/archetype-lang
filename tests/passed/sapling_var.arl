@@ -9,6 +9,6 @@ entry exec (t : sapling_transaction(8)) {
     n := v[1];
     s := v[2]
   end
-  | none -> ()
+  | none -> fail("BAD TRANSACTION")
   end;
 }

@@ -6,7 +6,7 @@
          DUP 2 ;
          SAPLING_VERIFY_UPDATE ;
          IF_NONE
-           {}
+           { PUSH string "BAD TRANSACTION" ; FAILWITH }
            { DUP ;
              GET 3 ;
              DIP 1 { DIG 3 ; DROP 1 } ;

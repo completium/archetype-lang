@@ -50,6 +50,8 @@ export class Sapling_var {
         }
         throw new Error("Contract not initialised");
     }
-    errors = {};
+    errors = {
+        BAD_TRANSACTION: att.string_to_mich("\"BAD TRANSACTION\"")
+    };
 }
 export const sapling_var = new Sapling_var();
