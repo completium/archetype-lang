@@ -353,6 +353,7 @@ and builtin =
   | Bratdur
   | Bmuteztonat
   | Bsimplify_rational
+  | Bis_implicit_address
 [@@deriving show {with_path = false}]
 
 and klv =
@@ -1500,6 +1501,7 @@ end = struct
     | Brattez         -> "_rattez"
     | Bratdur         -> "_ratdur"
     | Bmuteztonat     -> "_muteztonat"
+    | Bis_implicit_address -> "_is_implicit_address"
 
   let flat (c : code) : code =
     let f l = List.fold_left (fun accu x -> match x.node with | SEQ l -> accu @ l | _ -> accu @ [x]) [] l in

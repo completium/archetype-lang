@@ -1833,6 +1833,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msimplify_rational _x -> assert false
     | Mget_numerator _x     -> assert false
     | Mget_denominator _x   -> assert false
+    | Misimplicitaddress _x -> assert false
 
 
     (* crypto functions *)

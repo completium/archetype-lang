@@ -280,6 +280,7 @@ let to_const = function
   | Cgetnumerator          -> "get_numerator"
   | Cgetdenominator        -> "get_denominator"
   | Cglobalconstant        -> "global_constant"
+  | Cisimplicitaddress     -> "is_implicit_address"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"

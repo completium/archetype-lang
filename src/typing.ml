@@ -1537,6 +1537,7 @@ let cryptoops : opinfo list =
      op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                                             (`Ty A.vtnat               ) Mint.empty;
      op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]                                (`Ty A.vtaddress           ) Mint.empty;
      op "key_to_address"       A.Ckeytoaddress      `Total None [A.vtkey]                                                 (`Ty A.vtaddress           ) Mint.empty;
+     op "is_implicit_address"  A.Cisimplicitaddress `Total None [A.vtaddress]                                             (`Ty A.vtbool              ) Mint.empty;
     ]
 
 (* -------------------------------------------------------------------- *)

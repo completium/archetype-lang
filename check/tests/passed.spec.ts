@@ -1027,6 +1027,7 @@ import * as test_init_storage_literals from '../bindings/passed/test_init_storag
 import * as test_init_storage_simple from '../bindings/passed/test_init_storage_simple'
 import * as test_initialized_with from '../bindings/passed/test_initialized_with'
 import * as test_initialized_with_asset from '../bindings/passed/test_initialized_with_asset'
+import * as test_is_implicit_address from '../bindings/passed/test_is_implicit_address'
 import * as test_iter from '../bindings/passed/test_iter'
 import * as test_iter2 from '../bindings/passed/test_iter2'
 import * as test_length_operations from '../bindings/passed/test_length_operations'
@@ -20701,6 +20702,38 @@ describe('passed', async () => {
     const o_asset = await test_initialized_with_asset.test_initialized_with_asset.get_o_asset()
     assert(o_asset.length == 1)
     assert(o_asset[0].equals(new Nat(0)))
+  })
+
+  it('test_is_implicit_address', async () => {
+    await test_is_implicit_address.test_is_implicit_address.deploy({ as: alice })
+
+    const res_before = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_before == false)
+
+    await test_is_implicit_address.test_is_implicit_address.exec(new Address("tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"), { as: alice })
+
+    const res_tz1 = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_tz1 == true)
+
+    await test_is_implicit_address.test_is_implicit_address.exec(new Address("tz2BFTyPeYRzxd5aiBchbXN3WCZhx7BqbMBq"), { as: alice })
+
+    const res_tz2 = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_tz2 == true)
+
+    await test_is_implicit_address.test_is_implicit_address.exec(new Address("tz3hFR7NZtjT2QtzgMQnWb4xMuD6yt2YzXUt"), { as: alice })
+
+    const res_tz3 = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_tz3 == true)
+
+    await test_is_implicit_address.test_is_implicit_address.exec(new Address("tz4HVR6aty9KwsQFHh81C1G7gBdhxT8kuytm"), { as: alice })
+
+    const res_tz4 = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_tz4 == true)
+
+    await test_is_implicit_address.test_is_implicit_address.exec(new Address("KT1Ns7vKToTAx1F4hJdyDTRUzUERWKaXXt1e"), { as: alice })
+
+    const res_kt1 = await test_is_implicit_address.test_is_implicit_address.get_res()
+    assert(res_kt1 == false)
   })
 
   it('test_iter', async () => {

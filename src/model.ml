@@ -406,6 +406,7 @@ type 'term mterm_node  =
   | Msimplify_rational of 'term
   | Mget_numerator     of 'term
   | Mget_denominator   of 'term
+  | Misimplicitaddress of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -1451,6 +1452,7 @@ let cmp_mterm_node
     | Msimplify_rational x1, Msimplify_rational x2                                     -> cmp x1 x2
     | Mget_numerator x1, Mget_numerator x2                                             -> cmp x1 x2
     | Mget_denominator x1, Mget_denominator x2                                         -> cmp x1 x2
+    | Misimplicitaddress x1, Misimplicitaddress x2                                     -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1908,6 +1910,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msimplify_rational x           -> Msimplify_rational (f x)
   | Mget_numerator x               -> Mget_numerator (f x)
   | Mget_denominator x             -> Mget_denominator (f x)
+  | Misimplicitaddress x           -> Misimplicitaddress (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2281,6 +2284,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Msimplify_rational x                  -> f accu x
   | Mget_numerator x                      -> f accu x
   | Mget_denominator x                    -> f accu x
+  | Misimplicitaddress x                  -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -3460,6 +3464,10 @@ let fold_map_term
   | Mget_denominator x ->
     let xe, xa = f accu x in
     g (Mget_denominator xe), xa
+
+  | Misimplicitaddress x ->
+    let xe, xa = f accu x in
+    g (Misimplicitaddress xe), xa
 
   (* crypto functions *)
 

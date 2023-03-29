@@ -798,6 +798,10 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let fx = f x in
         M.Mkeytoaddress (fx)
 
+      | A.Pcall (None, A.Cconst A.Cisimplicitaddress, [], [AExpr x]) ->
+        let fx = f x in
+        M.Misimplicitaddress (fx)
+
       | A.Pcall (_, A.Cid id, _, args) ->
         M.Mapp (M.mk_mident id, List.map (fun x -> term_arg_to_expr f x) args)
 

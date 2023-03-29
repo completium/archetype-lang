@@ -1,0 +1,24 @@
+{ storage bool ;
+  parameter (address %exec) ;
+  code { LAMBDA
+           address
+           bool
+           { PACK ;
+             PUSH nat 1 ;
+             PUSH nat 6 ;
+             SLICE ;
+             IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+             PUSH bytes 0x00 ;
+             COMPARE ;
+             EQ } ;
+         SWAP ;
+         UNPAIR ;
+         DUP 3 ;
+         DUP 2 ;
+         EXEC ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } }

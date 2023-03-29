@@ -1427,6 +1427,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "get_denominator (%a)"
         f x
 
+    | Misimplicitaddress x ->
+      Format.fprintf fmt "is_implicit_address (%a)"
+        f x
 
     (* crypto functions *)
 

@@ -237,6 +237,7 @@ type const =
   | Ccontracttoaddress
   | Caddresstocontract
   | Ckeytoaddress
+  | Cisimplicitaddress
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower

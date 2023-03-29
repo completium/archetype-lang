@@ -309,6 +309,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Bratdur          -> true
     | T.Bmuteztonat      -> true
     | T.Bsimplify_rational -> false
+    | T.Bis_implicit_address -> false
   in
 
   let add_builtin b =
@@ -447,6 +448,11 @@ let to_ir (model : M.model) : T.ir =
     | Bsimplify_rational -> begin
         let targ = T.trat in
         let tret = T.trat in
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | Bis_implicit_address -> begin
+        let targ = T.taddress in
+        let tret = T.tbool in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
   in
@@ -1149,6 +1155,7 @@ let to_ir (model : M.model) : T.ir =
     | Msimplify_rational x -> let b = T.Bsimplify_rational in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mget_numerator     x -> T.Iunop (Ucar,  f x)
     | Mget_denominator   x -> T.Iunop (Ucdr,  f x)
+    | Misimplicitaddress x -> let b = T.Bis_implicit_address  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
 
     (* crypto functions *)
 
@@ -1578,6 +1585,16 @@ let map_implem : (string * T.code list) list = [
         cneq];
       cconcat;
       cdip (1, [cdrop 2])
+    ];
+  get_fun_name T.Bis_implicit_address, T.[
+      cpack;
+      cpush (tnat, Dint Big_int.unit_big_int);
+      cpush (tnat, Dint (Big_int.big_int_of_int 6));
+      cslice;
+      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+      cpush (tbytes, Dbytes ("00"));
+      ccompare;
+      ceq
     ]
 ]
 
@@ -1699,6 +1716,7 @@ let concrete_michelson b : T.code =
   | T.Bratdur         -> T.cseq (get_implem b)
   | T.Bmuteztonat     -> T.cseq (get_implem b)
   | T.Bsimplify_rational -> T.cseq (get_implem b)
+  | T.Bis_implicit_address -> T.cseq (get_implem b)
 
 type stack_item = {
   id: string;
