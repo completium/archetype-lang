@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 # --------------------------------------------------------------------
-.PHONY: all js merlin build build-deps run clean
+.PHONY: all js merlin build build-deps run test clean
 
 # --------------------------------------------------------------------
 all: build compiler
@@ -33,6 +33,9 @@ merlin:
 
 run:
 	$(MAKE) -C src run
+
+test:
+	$(MAKE) -C src test
 
 install:
 	@dune install

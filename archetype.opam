@@ -29,6 +29,7 @@ depends: [
   "js_of_ocaml-ppx" {>= "3.9.0"}
   "hex" {>= "1.4.0"}
   "xmlm"
+  "alcotest"
   "odoc" {with-doc}
 ]
 build: [

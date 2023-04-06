@@ -35,5 +35,6 @@ on the Tezos blockchain, with a specific focus on contract security
    (js_of_ocaml-ppx (>= 3.9.0))
    (hex (>= 1.4.0))
     xmlm
+    alcotest
   )
 )

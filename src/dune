@@ -48,3 +48,9 @@
   (libraries archetype menhirLib unix)
   (public_name archetype)
   (name     compiler))
+
+(executable
+ (name unit_test)
+ (modules unit_test)
+ (libraries archetype alcotest)
+ (modes byte))

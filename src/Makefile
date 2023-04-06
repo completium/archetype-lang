@@ -27,6 +27,9 @@ plugin: __force__
 clean: __force__
 	dune clean
 
+test:
+	dune exec ./unit_test.exe
+
 merlin: .merlin
 
 # --------------------------------------------------------------------
