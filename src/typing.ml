@@ -2535,6 +2535,7 @@ let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
 let empty ?cache (nm : A.lident) : env =
   let cb (lc, error) =
+    assert false;
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
@@ -6831,8 +6832,13 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
         let cached = stats |> Option.bind (Env.Import.get_in_cache env) in
 
-        match cached with Some cached -> Option.get cached.id_env | None ->
+        match cached with
+        | Some cached ->
+            if   check_and_emit_name_free env cached.id_name
+            then Env.Import.push env cached
+            else env
 
+        | None ->
           let make_importdecl_from_ast id ((ienv, iast) : env * A.ast) =
             let entrypoints, views =
               List.fold_left (fun (accu_entrypoints, accu_views) v ->
