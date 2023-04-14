@@ -1084,9 +1084,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_parameters ps
       (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) m
 
-  | Dimport (id, path) ->
+  | Dimport (Some id, path) ->
     Format.fprintf fmt "import %a from \"%a\""
       pp_id id
+      pp_id path
+
+  | Dimport (None, path) ->
+    Format.fprintf fmt "import \"%a\""
       pp_id path
 
   | Dvariable (id, typ, dv, kind) ->

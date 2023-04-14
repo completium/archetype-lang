@@ -262,7 +262,7 @@ and enum_kind =
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
   | Darchetype     of lident * parameters * metadata option
-  | Dimport        of lident * lident
+  | Dimport        of lident option * lident
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
@@ -577,7 +577,8 @@ let cst_min_block_time = "min_block_time"
 
 let get_name = function
   | Darchetype  _                   -> "archetype"
-  | Dimport (id, _)                 -> unloc id
+  | Dimport (Some id, _)            -> unloc id
+  | Dimport (None, _)               -> "_import"
   | Dvariable (id, _, _, _)         -> unloc id
   | Denum (EKenum id, _)            -> unloc id
   | Denum (EKstate, _)              -> "_state"

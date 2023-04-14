@@ -1,6 +1,6 @@
 archetype import_rec_1
 
-import import_rec_0 from "./tests/proposal/import_rec_0.arl"
+import "./tests/proposal/import_rec_0.arl"
 
 record my_record {
   x: nat;

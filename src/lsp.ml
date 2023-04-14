@@ -227,7 +227,7 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
           Pt_helper.check_json pt;
           if (List.is_empty !Error.errors)
           then
-            let res_ast = Typing.typing Typing.empty0 pt in
+            let res_ast = Typing.typing (fun _ -> Typing.empty0) pt in
             if List.is_empty !Error.errors
             then
               let _ = res_ast

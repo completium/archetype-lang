@@ -1300,7 +1300,7 @@ type acttx = [
 
 type groups = {
   gr_archetypes  : PT.lident                    loced list;
-  gr_imports     : (PT.lident * PT.lident)      loced list;
+  gr_imports     : (PT.lident option * PT.lident) loced list;
   gr_states      : PT.enum_decl                 loced list;
   gr_enums       : (PT.lident * PT.enum_decl)   loced list;
   gr_assets      : PT.asset_decl                loced list;
@@ -6776,13 +6776,13 @@ let sort_decl refs l =
     List.sort cmp l
 
 (* -------------------------------------------------------------------- *)
-let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  let for1 (env : env) (a : (PT.lident * PT.lident) loced) =
+let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loced list) =
+  let for1 (env : env) (a : (PT.lident option * PT.lident) loced) =
     let lo, (id, path) = deloc a in
     let ext = Filename.extension (unloc path) in
 
-    match ext with
-    | ".tz" -> begin
+    match id, ext with
+    | Some id, ".tz" -> begin
         match Micheline.parse (unloc path) with
         | Some content -> begin
             let views = Micheline.get_views content in
@@ -6822,7 +6822,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
           Env.emit_error env (lo, FileNotFound (unloc path)); env
       end
 
-    | ".arl" -> begin
+    | None, ".arl" -> begin
         let stats =
           try
             let stats = Unix.stat (unloc path) in
@@ -6833,7 +6833,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
 
         match cached with Some cached -> Option.get cached.id_env | None ->
 
-          let make_importdecl_from_ast ((ienv, iast) : env * A.ast) =
+          let make_importdecl_from_ast id ((ienv, iast) : env * A.ast) =
             let entrypoints, views =
               List.fold_left (fun (accu_entrypoints, accu_views) v ->
                   let args_to_type args =
@@ -6890,8 +6890,9 @@ let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list)
 
           match opt with
           | Some pt -> begin
-              let import = typing (empty ~cache:(Env.Import.get_cache env) id) pt in
-              let importdecl = make_importdecl_from_ast import in
+              let import = typing (empty ~cache:(Env.Import.get_cache env)) pt in
+              let id = Env.name (fst import) in
+              let importdecl = make_importdecl_from_ast id import in
 
               Env.Import.push_in_cache env (Option.get stats) importdecl;
 
@@ -6962,6 +6963,15 @@ and for_grouped_declarations (env : env) (toploc, g) =
   in (env, output)
 
 (* -------------------------------------------------------------------- *)
+and get_arl_header (decls : (PT.declaration list) loced) =
+  match unloc decls with
+  | { pldesc = Darchetype (x, params, metadata) } :: decls ->
+      Some ((x, params, metadata), decls)
+
+  | _ ->
+      None
+
+(* -------------------------------------------------------------------- *)
 and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : env * A.ast =
   let sorted_decl_ids = List.map (PT.get_name |@ unloc) (unloc decls) in
   let toploc = loc decls in
@@ -7017,7 +7027,14 @@ and pretype (env : env) (cmd : PT.declaration list) =
   List.fold_left for1 env cmd
 
 (* -------------------------------------------------------------------- *)
-and typing ?init (env : env) (cmd : PT.archetype) =
+and typing ?init (env : A.lident -> env) (cmd : PT.archetype) =
+  let name =
+    match get_arl_header cmd with
+    | None ->
+        mkloc (loc cmd) "<unknown>"
+    | Some ((name, _, _), _) ->
+        name in
+
   let decls = unloc cmd in
-  let env = pretype env decls in
+  let env = pretype (env name) decls in
   for_declarations env (mkloc (loc cmd) decls) ?init

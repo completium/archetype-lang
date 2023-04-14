@@ -298,7 +298,8 @@ archetype:
 | ARCHETYPE x=ident ps=parameters m=metadata { Darchetype (x, ps, m) }
 
 import:
-| IMPORT x=ident FROM y=loc(STRING) {Dimport (x, y)}
+| IMPORT x=ident FROM y=loc(STRING) {Dimport (Some x, y)}
+| IMPORT y=loc(STRING) {Dimport (None, y)}
 
 %inline metadata:
 | WITH_METADATA v=loc(STRING)     { Some (Muri v) }

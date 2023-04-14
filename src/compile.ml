@@ -216,7 +216,7 @@ let type_ (pt : ParseTree.archetype) : Typing.env * Ast.ast =
     | "" -> None
     | x  -> Some (Io.parse_expr (FIString x))
   in
-  Typing.typing Typing.empty0 pt ?init
+  Typing.typing (fun name -> Typing.empty name) pt ?init
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
