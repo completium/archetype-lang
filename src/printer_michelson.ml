@@ -838,7 +838,7 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
 
 and pp_expr (fmt : Format.formatter) (e : dexpr) =
   let f = pp_expr in
-  match e with
+  match e.node with
   | Dvar v              -> pp_var fmt v
   | Depair (e1, e2)     -> Format.fprintf fmt "(%a, %a)" pp_expr e1 pp_expr e2
   | Ddata (_, d)        -> pp_data fmt d

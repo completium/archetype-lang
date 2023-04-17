@@ -558,15 +558,22 @@ type offchain_view = {
 
 type dvar   = [`VLocal of int | `VGlobal of ident]
 
-(* and  dexpr_node = *)
-and  dexpr =
+and  dexpr_node =
   | Dvar       of dvar
   | Depair     of dexpr * dexpr
   | Ddata      of type_ * data
   | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
-(* and dexpr = { node : dexpr_node; type_ : type_ } *)
+and dexpr = { node : dexpr_node; type_ : type_ option }
+[@@deriving show {with_path = false}]
+
+let mk_dexpr ?type_ node = {node; type_}
+
+let dvar   dv    = mk_dexpr (Dvar dv)
+let depair a  b  = mk_dexpr (Depair (a, b))
+let ddata  ty d  = mk_dexpr (Ddata (ty, d))
+let dfun   op ld = mk_dexpr (Dfun (op, ld))
 
 type dinstr =
   (* | DIAssign   of dtyvar * dexpr *)
@@ -1188,7 +1195,7 @@ let rec cmp_dvar (v1 : dvar) (v2 : dvar) =
 and cmp_dlocal l1 l2 =
   Option.cmp cmp_dexpr !l1 !l2
 
-and cmp_dexpr e1 e2 =
+and cmp_dexpr_node e1 e2 =
   match e1, e2 with
   | Dvar  v1, Dvar  v2 -> cmp_dvar v1 v2
   | Ddata (_, d1), Ddata (_, d2) -> cmp_data d1 d2
@@ -1196,6 +1203,8 @@ and cmp_dexpr e1 e2 =
   | Dfun (op1, l1), Dfun (op2, l2) -> op1 = op2 && List.for_all2 cmp_dexpr l1 l2
   | _ -> false
 
+and cmp_dexpr (e1 : dexpr) (e2 : dexpr) =
+  cmp_dexpr_node e1.node e2.node && Option.cmp cmp_type e1.type_ e2.type_
 
 (* -------------------------------------------------------------------- *)
 
@@ -1504,7 +1513,7 @@ end = struct
     | Bis_implicit_address -> "_is_implicit_address"
 
   let flat (c : code) : code =
-    let f l = List.fold_left (fun accu x -> match x.node with | SEQ l -> accu @ l | _ -> accu @ [x]) [] l in
+    let f (l : code list) : code list = List.fold_left (fun (accu : code list) (x : code) -> match x.node with | SEQ l -> accu @ l | _ -> accu @ [x]) [] l in
     map_seq f c
 
   let handle_failwith (c : code) : code =

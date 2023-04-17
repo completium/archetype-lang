@@ -376,19 +376,19 @@ end = struct
     | _ -> assert false
 
   let rec write_var (e : dexpr) (x : rstack1) =
-    match x, e with
-    | #dvar as x, e -> [DIAssign (x, e)]
+    match x, e.node with
+    | #dvar as x, _ -> [DIAssign (x, e)]
     | `Paired (x1, x2), Depair (e1, e2) ->
       let a = vlocal () in
       write_var e1 (a :> rstack1)
       @ write_var e2 x2
-      @ write_var (Dvar a) x1
+      @ write_var (dvar a) x1
     | _ -> assert false
 
-  let rec dexpr_of_rstack1 (x : rstack1) =
+  let rec dexpr_of_rstack1 (x : rstack1) : dexpr =
     match x with
-    | #dvar as x -> Dvar x
-    | `Paired (x, y) -> Depair (dexpr_of_rstack1 x, dexpr_of_rstack1 y)
+    | #dvar as x -> dvar x
+    | `Paired (x, y) -> depair (dexpr_of_rstack1 x) (dexpr_of_rstack1 y)
 
   let rec merge_rstack (s1 : rstack) (s2 : rstack) =
     assert (List.length s1 = List.length s2);
@@ -397,7 +397,7 @@ end = struct
     | (#dvar as x) :: s1, (#dvar as y) :: s2 ->
       let (is1, is2), s = merge_rstack s1 s2 in
       let a = vlocal () in
-      (([DIAssign (a, Dvar x)] @ is1), is2), y :: s
+      (([DIAssign (a, dvar x)] @ is1), is2), y :: s
 
     | `Paired (x1, y1) :: s1, `Paired (x2, y2) :: s2 ->
       merge_rstack (x1 :: y1 :: s1) (x2 :: y2 :: s2)
@@ -430,7 +430,7 @@ end = struct
       (DVar x, [])
 
     | (`VGlobal _) as n ->
-      let x = gen () in (DVar x, [DIAssign (n, Dvar (`VLocal x))])
+      let x = gen () in (DVar x, [DIAssign (n, dvar (`VLocal x))])
 
   exception UnificationFailure
 
@@ -446,7 +446,7 @@ end = struct
       raise UnificationFailure
 
   let rec unify_dexpr (uf : UF.uf) (e1 : dexpr) (e2 : dexpr) =
-    match e1, e2 with
+    match e1.node, e2.node with
     | Dvar x, Dvar y ->
       unify_dvar uf x y
 
@@ -485,20 +485,20 @@ end = struct
     | `VLocal  i -> `VLocal (UF.find uf i)
 
   let rec dexpr_apply_uf (uf : UF.uf) (e : dexpr) : dexpr =
-    match e with
+    match e.node with
     | Dvar x ->
-      Dvar (dvar_apply_uf uf x)
+      dvar (dvar_apply_uf uf x)
 
     | Depair (e1, e2) ->
       let e1 = dexpr_apply_uf uf e1 in
       let e2 = dexpr_apply_uf uf e2 in
-      Depair (e1, e2)
+      depair e1 e2
 
     | Ddata _ ->
       e
 
     | Dfun (o, es) ->
-      Dfun (o, List.map (dexpr_apply_uf uf) es)
+      dfun o (List.map (dexpr_apply_uf uf) es)
 
   let dpattern_apply_uf (_uf : UF.uf) (p : dpattern) : dpattern =
     p
@@ -587,7 +587,7 @@ end = struct
           | false, true  -> ([], []), s1
           | true , true  -> assert false in
         let x = vlocal () in
-        mkdecomp ((x :> rstack1) :: s) [DIIf (Dvar x, (pr1 @ b1, pr2 @ b2))]
+        mkdecomp ((x :> rstack1) :: s) [DIIf (dvar x, (pr1 @ b1, pr2 @ b2))]
       end
 
     (* Stack manipulation *)
@@ -618,8 +618,8 @@ end = struct
       let x, s = List.pop s in
       let y, s = List.pop s in
       let a = vlocal () in
-      let wri1 = write_var (Dvar a) x in
-      let wri2 = write_var (Dvar a) y in
+      let wri1 = write_var (dvar a) x in
+      let wri2 = write_var (dvar a) y in
       mkdecomp ((a :> rstack1) :: s) (wri1 @ wri2)
 
     | DUP_N n ->
@@ -628,13 +628,13 @@ end = struct
       let pre, s = List.split_at (n-1) s in
       let y, s = List.pop s in
       let a = vlocal () in
-      let wri1 = write_var (Dvar a) x in
-      let wri2 = write_var (Dvar a) y in
+      let wri1 = write_var (dvar a) x in
+      let wri2 = write_var (dvar a) y in
       mkdecomp (pre @ (a :> rstack1) :: s) (wri1 @ wri2)
 
     | PUSH (t, d) ->
       let x, s = List.pop s in
-      let wri = write_var (Ddata (t, d)) x in
+      let wri = write_var (ddata t d) x in
       mkdecomp s wri
 
     | SWAP ->
@@ -727,7 +727,7 @@ end = struct
         | #dvar as v ->
           let x1 = vlocal () in
           let x2 = vlocal () in
-          let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
+          let op = DIAssign (v, dfun (`Bop Bpair) [dvar x1; dvar x2]) in
           mkdecomp ((x1 :> rstack1) :: (x2 :> rstack1) :: s) [op]
       end
 
@@ -746,7 +746,7 @@ end = struct
             | #dvar as v ->
               let x1 = vlocal () in
               let x2 = vlocal () in
-              let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
+              let op = DIAssign (v, dfun (`Bop Bpair) [dvar x1; dvar x2]) in
               (x1 :> rstack1), (x2 :> rstack1) :: s, [op]
           in
 
@@ -783,8 +783,8 @@ end = struct
         let a = vlocal () in
         let y = doit (n mod 2 <> 0) (n / 2) (a :> rstack1) x in
 
-        let wri1 = write_var (Dvar a) x in
-        let wri2 = write_var (Dvar a) y in
+        let wri1 = write_var (dvar a) x in
+        let wri2 = write_var (dvar a) y in
 
         mkdecomp ((a :> rstack1) :: x :: s) (wri1 @ wri2)
       end
@@ -851,7 +851,7 @@ end = struct
       let xs = vlocal () in
       mkdecomp
         ((xs :> rstack1) :: s)
-        [DIIter (as_dvar x, Dvar xs, bd)]
+        [DIIter (as_dvar x, dvar xs, bd)]
 
     | LOOP cs ->
       let cond = vlocal () in
@@ -898,7 +898,7 @@ end = struct
     let args = List.init n (fun _ -> vlocal ()) in
     mkdecomp
       ((args :> rstack) @ s)
-      (write_var (Dfun (op, List.map (fun v -> Dvar v) args)) x)
+      (write_var (dfun op (List.map (fun v -> dvar v) args)) x)
 
   and compile_match (s : rstack) (bs : ((string * int) * code list) list) =
     let sc, subs = List.split (List.map (fun ((name, n), b) ->
@@ -912,7 +912,7 @@ end = struct
     let x  = vlocal () in
     let sc = List.fold_left (fun x y -> snd (merge_rstack x y)) (List.hd sc) (List.tl sc) in
 
-    mkdecomp ((x :> rstack1) :: sc) [DIMatch (Dvar x, subs)]
+    mkdecomp ((x :> rstack1) :: sc) [DIMatch (dvar x, subs)]
 
   and decompile_s (s : rstack) (c : code list) : decomp =
     let (failure, stack), code = List.fold_left_map (fun (oldfail, stack) code ->
@@ -933,7 +933,7 @@ end = struct
 
   (* -------------------------------------------------------------------- *)
   let rec expr_fv (e : dexpr) : Sdvar.t =
-    match e with
+    match e.node with
     | Dvar x ->
       Sdvar.singleton x
 
@@ -958,7 +958,7 @@ end = struct
   (* -------------------------------------------------------------------- *)
   let rec instr_wr (i : dinstr) =
     match i with
-    | DIAssign (x, Dvar y) when x = y ->
+    | DIAssign (x, {node = Dvar y; _}) when x = y ->
       Sdvar.empty
 
     | DIAssign (x, _) ->
@@ -992,7 +992,7 @@ end = struct
 
   (* -------------------------------------------------------------------- *)
   let rec expr_cttprop (env : dexpr Mint.t) (e : dexpr) =
-    match e with
+    match e.node with
     | Dvar (`VLocal x) ->
       Option.get_dfl e (Mint.find_opt x env)
 
@@ -1002,14 +1002,14 @@ end = struct
     | Depair (e1, e2) ->
       let e1 = expr_cttprop env e1 in
       let e2 = expr_cttprop env e2 in
-      Depair (e1, e2)
+      depair e1 e2
 
     | Ddata _ ->
       e
 
     | Dfun (op, es) ->
       let es = List.map (expr_cttprop env) es in
-      Dfun (op, es)
+      dfun op es
 
   type cttenv = dexpr Mint.t
 
@@ -1021,7 +1021,7 @@ end = struct
 
   let rec instr_cttprop (env0 : cttenv) (code : dinstr) =
     match code with
-    | DIAssign ((`VLocal i), Dvar (`VLocal j)) when i = j ->
+    | DIAssign ((`VLocal i), {node = Dvar (`VLocal j)}) when i = j ->
       env0, []
 
     | DIAssign ((`VLocal i) as x, e) ->
@@ -1315,16 +1315,16 @@ end = struct
       let f = for_expr in
       let tunknown = tunit in
       let mk_map = MKMap in
-      match e with
+      match e.node with
       | Dvar v          -> mk_mvar (M.mk_mident (dumloc (for_dvar v))) tunit
       | Ddata (t, d)    -> for_data ~t d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
-      | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
-      | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
-      | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool
-      | Dfun (`Uop Uge, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mge     (f a, f b)) tbool
-      | Dfun (`Uop Ult, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mlt     (f a, f b)) tbool
-      | Dfun (`Uop Ule, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mle     (f a, f b)) tbool
+      | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
+      | Dfun (`Uop Une, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
+      | Dfun (`Uop Ugt, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mgt     (f a, f b)) tbool
+      | Dfun (`Uop Uge, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mge     (f a, f b)) tbool
+      | Dfun (`Uop Ult, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mlt     (f a, f b)) tbool
+      | Dfun (`Uop Ule, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mle     (f a, f b)) tbool
       | Dfun (op, args) -> begin
           match op, args with
           | `Zop Znow,                       [] -> mnow
