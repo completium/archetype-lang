@@ -2535,7 +2535,6 @@ let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
 let empty ?cache (nm : A.lident) : env =
   let cb (lc, error) =
-    assert false;
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
