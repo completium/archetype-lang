@@ -18,9 +18,18 @@ let test_string_to_duration () =
   (* let result = 2 + 2 in *)
   (* check int "result should be 4" 4 result *)
 
+let test_string_to_duration_36s () =
+  let expected : string = Core.mk_duration
+   ~seconds:(Big_int.big_int_of_int 36)
+    () |> Core.duration_to_timestamp |> Core.big_int_to_string
+     in
+  let actual : string = Core.string_to_duration "36s" |> Core.duration_to_timestamp |> Core.big_int_to_string in
+  Alcotest.(check string) "big_int equality" expected actual
+
 (* List your test cases here *)
 let suite_core = [
-  "Test string_to_duration", `Quick, test_string_to_duration
+  "Test string_to_duration_3w8d4h34m18s", `Quick, test_string_to_duration;
+  "Test string_to_duration_36s", `Quick, test_string_to_duration_36s
 ]
 
 (* Run the test suite *)
