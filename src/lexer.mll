@@ -154,7 +154,7 @@ let no_transfer = "no" blank+ "transfer"
 let fail_if  = "fail" blank+ "if"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
-let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
+let tz_addr  = (("tz" ('1' | '2' | '3' | '4')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 let tz_expr  = "expr" ['0'-'9' 'a'-'z' 'A'-'Z']+
 
 (* -------------------------------------------------------------------- *)
