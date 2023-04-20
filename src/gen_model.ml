@@ -238,7 +238,38 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let get_enum_type_opt = function | Some (A.Tenum id) -> Some id | _ -> None in
 
-  let is_enum_type a = a |> get_enum_type_opt |> Option.is_some in
+  let is_enum_type a id =
+    match get_enum_type_opt a with
+    | None -> false
+    | Some lid -> begin
+        let mid = to_mident lid in
+        let oast =
+          match fst mid with
+          | Some v -> begin
+              let a = Typing.Env.Import.get _tenv (unloc v) in
+              (match a.id_ast with
+               | Some a -> Some a
+               | _ -> None)
+            end
+          | None -> Some ast
+        in
+        match oast with
+        | Some ast -> begin
+            let denum = List.fold_left (fun accu v ->
+                match v with
+                | A.Denum e -> Some e
+                | _ -> accu
+              ) None ast.decls in
+            match denum with
+            | Some enum -> begin
+                List.exists (fun (x : A.enum_item_struct) -> String.equal id (unloc x.name)) enum.items
+              end
+            | None -> false
+          end
+        | None -> false
+      end
+  in
+
   let get_enum_type a = a |> get_enum_type_opt |> Option.get in
 
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
@@ -304,8 +335,8 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([M.mk_mident  i], Option.map type_to_type t, f v, c)
 
       (* enum value *)
-      | A.Pvar id when is_enum_type pterm.type_ -> M.Menumval (to_mident id, [], to_mident (get_enum_type pterm.type_))
-      | A.Pcall (_, Cid id, [], args) when is_enum_type pterm.type_ -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, to_mident (get_enum_type pterm.type_))
+      | A.Pvar id when is_enum_type pterm.type_ (unloc_longident id) -> M.Menumval (to_mident id, [], to_mident (get_enum_type pterm.type_))
+      | A.Pcall (_, Cid id, [], args) when is_enum_type pterm.type_ (unloc id) -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, to_mident (get_enum_type pterm.type_))
 
 
       | A.Pvar ((_, { pldesc = "state" }))           -> M.Mvar (M.mk_mident (dumloc ""), Vstate)
