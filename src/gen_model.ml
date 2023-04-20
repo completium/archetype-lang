@@ -1504,7 +1504,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     }
   in
 
-  let process_import (i : A.import_struct) : M.import =
+  (* let process_import (i : A.import_struct) : M.import =
     M.{
       name        = i.name;
       path        = i.path;
@@ -1512,7 +1512,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       views       = List.map (fun (x, (y, z)) -> (x, (type_to_type y, type_to_type z))) i.views;
       entrypoints = List.map (fun (x, y) -> (x, type_to_type y)) i.entrypoints;
     }
-  in
+  in *)
 
   let process_decl_ (env : env) = function
     | A.Dvariable v -> process_var env v
@@ -1530,10 +1530,12 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let name = ast.name in
   let env = mk_env () in
 
+  (* let a = tenv.env_loaded in *)
+  (* List.iter (fun (x : A.import_struct) -> Format.printf "%a@\n" Printer_tools.pp_id x.name) ast.imports; *)
+
   let parameters = List.map (process_parameter env) ast.parameters in
-  let imports = List.map process_import (* ast.imports *) [] in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
 
-  M.mk_model ~parameters ~imports ?metadata ~decls ~functions ~loc:ast.loc name
+  M.mk_model ~parameters ?metadata ~decls ~functions ~loc:ast.loc name

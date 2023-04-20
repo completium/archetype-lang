@@ -768,24 +768,9 @@ type extra = {
 }
 [@@deriving show {with_path = false}]
 
-type import_kind_node =
-  | INMichelson of michelson_struct
-  | INArchetype
-[@@deriving show {with_path = false}]
-
-type import = {
-  name: lident;
-  path: lident;
-  kind_node: import_kind_node;
-  views: (ident * (type_ * type_)) list;
-  entrypoints: (ident * type_) list;
-}
-[@@deriving show {with_path = false}]
-
 type model = {
   name          : lident;
   parameters    : parameter list;
-  imports       : import list;
   metadata      : metadata_kind option;
   api_items     : api_storage list;
   decls         : decl_node list;
@@ -862,8 +847,8 @@ let mk_odel_enum name current_type : odel_enum =
 let mk_extra ?(original_decls = []) () : extra =
   { original_decls }
 
-let mk_model ?(parameters = []) ?(imports = []) ?metadata ?(api_items = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
-  { name; imports; parameters; metadata; api_items; storage; decls; functions; extra; loc }
+let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
+  { name; parameters; metadata; api_items; storage; decls; functions; extra; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -3936,7 +3921,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
   {
     name          = h KIarchetype model.name;
     parameters    = List.map for_parameter model.parameters;
-    imports       = List.map id model.imports;
     metadata      = Option.map for_metadata model.metadata;
     api_items     = List.map for_api_item  model.api_items;
     decls         = List.map for_decl_node model.decls;

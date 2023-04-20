@@ -1,0 +1,9 @@
+archetype import_arl_enum_use
+
+import "tests/proposal/import_arl_enum_def.arl"
+
+variable v : option<import_arl_enum_def::my_event> = none
+
+entry exec() {
+  v := some(import_arl_enum_def::A)
+}

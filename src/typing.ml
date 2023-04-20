@@ -6607,19 +6607,6 @@ let variables_of_vdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
-let imports_of_vdecls idecls : A.import_struct list =
-  let for1 (decl : env importdecl) : A.import_struct =
-    A.{
-      name = decl.id_name;
-      path = decl.id_path;
-      kind_node = (match decl.id_content with | Some v -> INMichelson {ms_content = v} | None -> INArchetype);
-      views = decl.id_views;
-      entrypoints = decl.id_entrypoints;
-    }
-
-  in List.map for1 idecls
-
-(* -------------------------------------------------------------------- *)
 let functions_of_fdecls fdecls =
   let for1 (decl : fundecl) =
     let args = List.map (fun (x, ty) -> A.{

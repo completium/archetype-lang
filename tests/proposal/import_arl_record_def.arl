@@ -1,0 +1,6 @@
+archetype import_arl_record_def
+
+record my_record {
+  a: nat;
+  b: string
+}

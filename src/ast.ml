@@ -627,15 +627,6 @@ type import_kind_node =
   | INArchetype
 [@@deriving show {with_path = false}]
 
-type import_struct = {
-  name: lident;
-  path: lident;
-  kind_node: import_kind_node;
-  views: (ident * (type_ * type_)) list;
-  entrypoints: (ident * type_) list;
-}
-[@@deriving show {with_path = false}]
-
 type ast = {
   name           : lident;
   parameters     : parameter list;

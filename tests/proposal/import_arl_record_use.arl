@@ -1,0 +1,9 @@
+archetype import_arl_record_use
+
+import "tests/proposal/import_arl_record_def.arl"
+
+variable v : option<import_arl_record_def::my_record> = none
+
+entry exec() {
+  v := some(import_arl_record_def::{a = 2; b = "mystr"})
+}
