@@ -1907,6 +1907,8 @@ module Env : sig
     val get_in_cache  : t -> key -> (t importdecl) option
     val push_in_cache : t -> key -> t importdecl -> unit
     val get_cache     : t -> cache
+
+    val get_all : t -> (ident * t importdecl) list
   end
 end = struct
   type ecallback = error -> unit
@@ -2395,6 +2397,10 @@ end = struct
 
     let get_cache (env : t) =
       env.env_loaded
+
+    let get_all (env : t) =
+      Mlib.bindings !(env.env_loaded)
+      |> List.map (fun (_, v) -> (unloc v.id_name, v))
   end
 
 end
@@ -6820,9 +6826,9 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
         match cached with
         | Some cached ->
-            if   check_and_emit_name_free env cached.id_name
-            then Env.Import.push env cached
-            else env
+          if   check_and_emit_name_free env cached.id_name
+          then Env.Import.push env cached
+          else env
 
         | None ->
           let make_importdecl_from_ast id ((ienv, iast) : env * A.ast) =
@@ -6958,10 +6964,10 @@ and for_grouped_declarations (env : env) (toploc, g) =
 and get_arl_header (decls : (PT.declaration list) loced) =
   match unloc decls with
   | { pldesc = Darchetype (x, params, metadata) } :: decls ->
-      Some ((x, params, metadata), decls)
+    Some ((x, params, metadata), decls)
 
   | _ ->
-      None
+    None
 
 (* -------------------------------------------------------------------- *)
 and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : env * A.ast =
@@ -7023,9 +7029,9 @@ and typing ?init (env : A.lident -> env) (cmd : PT.archetype) =
   let name =
     match get_arl_header cmd with
     | None ->
-        mkloc (loc cmd) "<unknown>"
+      mkloc (loc cmd) "<unknown>"
     | Some ((name, _, _), _) ->
-        name in
+      name in
 
   let decls = unloc cmd in
   let env = pretype (env name) decls in

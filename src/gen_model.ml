@@ -236,6 +236,11 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     | _ -> false
   in
 
+  let get_enum_type_opt = function | Some (A.Tenum id) -> Some id | _ -> None in
+
+  let is_enum_type a = a |> get_enum_type_opt |> Option.is_some in
+  let get_enum_type a = a |> get_enum_type_opt |> Option.get in
+
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
     let is_record t = match M.get_ntype t with | M.Trecord _ | M.Tevent _ -> true | _ -> false in
     let type_ = type_to_type (Option.get pterm.type_) in
@@ -299,8 +304,8 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([M.mk_mident  i], Option.map type_to_type t, f v, c)
 
       (* enum value *)
-      | A.Pvar id when A.Utils.is_enum_value ast (longident_to_lident id) -> M.Menumval (to_mident id, [], A.Utils.get_enum_values ast (longident_to_lident id) |> Option.get |> unloc)
-      | A.Pcall (_, Cid id, [], args) when A.Utils.is_enum_value ast id -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, A.Utils.get_enum_values ast id |> Option.get |> unloc)
+      | A.Pvar id when is_enum_type pterm.type_ -> M.Menumval (to_mident id, [], to_mident (get_enum_type pterm.type_))
+      | A.Pcall (_, Cid id, [], args) when is_enum_type pterm.type_ -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, to_mident (get_enum_type pterm.type_))
 
 
       | A.Pvar ((_, { pldesc = "state" }))           -> M.Mvar (M.mk_mident (dumloc ""), Vstate)
@@ -989,8 +994,12 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         M.mk_enum_item (M.mk_mident id) ~args:(List.map type_to_type x.args)
       ) e.items in
     let initial : A.lident option = List.fold_left (fun accu (x : A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
-    (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)
-    let enum = M.mk_enum (M.mk_mident (A.Utils.get_enum_name e)) (M.mk_mident (Option.get initial)) ~values:values in
+    let enum_name =
+      match e.kind with
+      | EKenum id -> to_mident id
+      | EKstate namespace -> M.mk_mident ~namespace (dumloc "state")
+    in
+    let enum = M.mk_enum enum_name (M.mk_mident (Option.get initial)) ~values:values in
     M.Denum enum
   in
 
@@ -1441,7 +1450,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
-                 let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], "state")) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
+                 let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], M.mk_mident (dumloc "state"))) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
                  M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
@@ -1532,9 +1541,25 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let name = ast.name in
   let env = mk_env () in
 
+  let iasts = Typing.Env.Import.get_all _tenv in
+  let adecls = List.fold_right (fun (_, x : ident * 'b Typing.importdecl) accu -> begin
+        match x.id_ast with
+        | None -> accu
+        | Some x -> begin
+            let ds = x.decls |> List.filter (function
+                | A.Dvariable _ -> false
+                | A.Dasset    _ -> false
+                | A.Drecord   _ -> true
+                | A.Denum     _ -> true
+                | A.Devent    _ -> true) in
+            ds @ accu
+          end
+      end) iasts ast.decls
+  in
+
   let parameters = List.map (process_parameter env) ast.parameters in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
-  let decls = List.map (process_decl_ env) ast.decls in
+  let decls = List.map (process_decl_ env) adecls in
   let functions = List.map (process_fun_ env) ast.funs in
 
   M.mk_model ~parameters ?metadata ~decls ~functions ~loc:ast.loc name

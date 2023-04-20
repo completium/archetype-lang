@@ -3,6 +3,8 @@ archetype import_rec_2
 import "./tests/proposal/import_rec_0.arl"
 import "./tests/proposal/import_rec_1.arl"
 
+variable r : option<import_rec_1::my_record> = none
+
 entry exec () {
-  const r = import_rec_1::{ x = 0; r = import_rec_0::{a = 2; b = "mystring"} };
+  r := some(import_rec_1::{ x = 0; r = import_rec_0::{a = 2; b = "mystring"} });
 }

@@ -757,14 +757,10 @@ module Utils : sig
   val get_container_asset_field : ast -> (lident * lident ) -> container
   val get_named_field_list      : ast -> lident -> pterm list -> (lident * pterm) list
   val get_field_list            : ast -> lident -> lident list
-  val get_enum_values           : ast -> lident -> lident option
   val is_variable               : ast -> lident -> bool
   val is_asset                  : ast -> lident -> bool
-  val is_enum_value             : ast -> lident -> bool
   val is_parameter              : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
-  val get_enum_name             : enum -> lident
-  val get_enum_values           : ast -> lident -> lident option
 
 end = struct
   open Tools
@@ -830,32 +826,12 @@ end = struct
        Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
 
-  let get_enum_name (e : enum) =
-    match e.kind with
-    | EKenum id -> snd id
-    | EKstate _ -> dumloc "state"
-
-  let get_enum_opt ast ident =
-    List.fold_left (fun accu (x : enum) ->
-        if (Location.unloc (get_enum_name x)) = (Location.unloc ident)
-        then Some x
-        else accu
-      ) None (get_enums ast)
-
   let get_asset_opt ast ident =
     List.fold_left (fun accu (x : asset) ->
         if (Location.unloc (snd x.name)) = (Location.unloc ident)
         then Some x
         else accu
       ) None (get_assets ast)
-
-  let get_enum_values ast ident =
-    List.fold_left (
-      fun accu (x : enum) ->
-        if List.fold_left (fun accu (x : enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
-        then (Some (get_enum_name x))
-        else accu
-    ) None (get_enums ast)
 
   let get_variable_opt ast ident : variable option =
     List.fold_left (
@@ -872,11 +848,6 @@ end = struct
 
   let is_asset ast ident =
     match get_asset_opt ast ident with
-    | Some _ -> true
-    | None   -> false
-
-  let is_enum_value ast ident =
-    match get_enum_values ast ident with
     | Some _ -> true
     | None   -> false
 

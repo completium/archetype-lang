@@ -37,6 +37,7 @@
          PUSH address "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" ;
          PUSH address "tz2R8Ttg1X887xhwEiraXEKQtBhwNbMayqQc" ;
          PUSH address "tz3dqrqbhfAcwWMFjj2pvx4bXmxtUEPtHWda" ;
+         PUSH address "tz4HVR6aty9KwsQFHh81C1G7gBdhxT8kuytm" ;
          PUSH address "KT1DvC4vS8hykGRCmoqGnnk1RV2wfFyp3BDv" ;
          PUSH int 2522058 ;
          PUSH timestamp 1546300800 ;
@@ -80,17 +81,17 @@
          NONE int ;
          PUSH nat 0 ;
          SOME ;
-         DUP 38 ;
+         DUP 39 ;
          PUSH string "key" ;
          MEM ;
          IF { PUSH string "my_asset" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
-            { DUP 38 ;
+            { DUP 39 ;
               PUSH int 2 ;
               SOME ;
               PUSH string "key" ;
               UPDATE ;
-              DIP 1 { DIG 37 ; DROP 1 } ;
-              DUG 37 } ;
+              DIP 1 { DIG 38 ; DROP 1 } ;
+              DUG 38 } ;
          PUSH bytes 0xff ;
          CHAIN_ID ;
          PUSH chain_id "NetXdQprcVkpaWU" ;
@@ -100,6 +101,6 @@
               "edsigtvwtJaiM7phNNkZjazqKtthDxc3WswYNL961GKgz7VxvPJmWJ8WEkmEZd9oFM1RvwABYW3uYgwGRP7nuBns5WrqyfYsUaB" ;
          PUSH unit Unit ;
          PUSH unit Unit ;
-         DROP 45 ;
+         DROP 46 ;
          NIL operation ;
          PAIR } }

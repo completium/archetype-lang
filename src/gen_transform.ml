@@ -768,7 +768,7 @@ let remove_enum (model : model) : model =
     map_mterm_model aux model
   in
 
-  let process_asset_state (model : model) : model =
+  (* let process_asset_state (model : model) : model =
     let get_state_mident an = mk_mident (dumloc ("state_" ^ an)) in
 
     let map = ref MapString.empty in
@@ -817,7 +817,7 @@ let remove_enum (model : model) : model =
       | _ -> map_mterm (aux ctx) mt
     in
     map_mterm_model aux model
-  in
+  in *)
 
   let map =
     let mk_enum_info (e : enum) : enum_info =
@@ -1021,7 +1021,7 @@ let remove_enum (model : model) : model =
       | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, aux v)}
       | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
-          let info : enum_info = get_info eid in
+          let info : enum_info = get_info (unloc_mident eid) in
           let f = MapString.find (unloc_mident id) info.fitems in
           f args
         end
@@ -1062,7 +1062,7 @@ let remove_enum (model : model) : model =
     { model with decls = decls }
   in
   model
-  |> process_asset_state
+  (* |> process_asset_state *)
   |> add_od_enum
   |> clean
   |> map_model (fun _ x -> x) for_type for_mterm

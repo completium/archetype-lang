@@ -443,7 +443,7 @@ type 'term mterm_node  =
   | Mminblocktime
   (* variable *)
   | Mvar              of mident * 'term var_kind_gen
-  | Menumval          of mident * 'term list * ident  (* value * args * ident of enum *)
+  | Menumval          of mident * 'term list * mident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -955,8 +955,8 @@ let mk_pvar id t = mk_mterm (Mvar(id, Vparam)) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar)) t
 let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate)) ((Tenum (mk_mident (dumloc "state"))), None)
 
-let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum (mk_mident e)))
-let mk_state_value id = mk_enum_value id (dumloc "state")
+let mk_enum_value  ?(args=[]) id (e : mident) = mk_mterm (Menumval(id, args, e)) (mktype (Tenum e))
+let mk_state_value id = mk_enum_value id (mk_mident (dumloc "state"))
 
 let mk_btez v = mk_mterm (Mmutez v) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1932,7 +1932,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mminblocktime                  -> Mminblocktime
   (* variable *)
   | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
-  | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
+  | Menumval (id, args, e)         -> Menumval (g id, List.map f args, g e)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)

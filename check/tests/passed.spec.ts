@@ -279,6 +279,7 @@ import * as entry_token from '../bindings/passed/entry_token'
 import * as entry_without_effect from '../bindings/passed/entry_without_effect'
 import * as enum_all from '../bindings/passed/enum_all'
 import * as enum_key from '../bindings/passed/enum_key'
+import * as enum_simple from '../bindings/passed/enum_simple'
 import * as enum_with_args from '../bindings/passed/enum_with_args'
 import * as enum_with_args_multi from '../bindings/passed/enum_with_args_multi'
 import * as enum_without_args from '../bindings/passed/enum_without_args'
@@ -6948,6 +6949,18 @@ describe('passed', async () => {
     assert(tvls_after[2][1].equals(new Nat(0)))
     assert(tvls_after[3][0].equals(new enum_key.Tier4()))
     assert(tvls_after[3][1].equals(new Nat(0)))
+  })
+
+  it('enum_simple', async () => {
+    await enum_simple.enum_simple.deploy({ as: alice })
+
+    const res_before = await enum_simple.enum_simple.get_res()
+    assert(res_before.equals(new enum_simple.A()))
+
+    await enum_simple.enum_simple.exec({ as: alice })
+
+    const res_after = await enum_simple.enum_simple.get_res()
+    assert(res_after.equals(new enum_simple.B()))
   })
 
   it('enum_with_args', async () => {

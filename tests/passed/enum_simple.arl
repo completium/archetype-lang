@@ -1,0 +1,12 @@
+archetype enum_simple
+
+enum my_event =
+| A
+| B
+| C
+
+variable res : my_event = A
+
+entry exec() {
+  res := B
+}
