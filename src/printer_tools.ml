@@ -6,7 +6,7 @@ open Tools
 exception Anomaly of string
 
 type lident = ident loced
-type mident = lident list * lident
+type mident = lident option * lident
 
 let pp_void _fmt _ = ()
 
@@ -49,7 +49,11 @@ let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
 let pp_mid fmt (id : mident) =
-  Format.fprintf fmt "%s" (unloc (snd id))
+  let pp_nm fmt = function
+    | None -> ()
+    | Some nm -> Format.fprintf fmt "%a::" pp_id nm
+  in
+  Format.fprintf fmt "%a%s" pp_nm (fst id) (unloc (snd id))
 
 let pp_name fmt = function
   | (None, id) -> Format.fprintf fmt "%s" (unloc id)

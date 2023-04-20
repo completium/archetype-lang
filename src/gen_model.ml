@@ -30,14 +30,9 @@ let emit_error (lc, error : Location.t * error_desc) =
 
 let bailout = fun () -> raise (Error.Stop 5)
 
-let to_mident ((nm, id) : A.longident) : M.mident =
-  M.mk_mident ~namespace:[nm] id
-
 let unloc_longident (lid : A.longident) : ident = unloc (snd lid)
 
 let longident_to_lident (lid : A.longident) : M.lident = snd lid
-
-let longident_to_mident (lid : A.longident) : M.mident = ([fst lid], snd lid)
 
 type env = {
   formula: bool;
@@ -50,6 +45,11 @@ let mk_env ?(formula=false) ?asset_name ?function_p () =
   { formula; asset_name; function_p }
 
 let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
+
+  let to_mident ((nm, id) : A.longident) : M.mident =
+    let namespace = if (String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm)) then None else Some nm in
+    M.mk_mident ?namespace id
+  in
 
   let vtyp_to_btyp = function
     | A.VTunit         -> M.Bunit
@@ -276,16 +276,18 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin
-          let record_name =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> M.unloc_mident name | _ -> assert false in
+          let record_name : M.mident =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> name | _ -> assert false in
+          let w_ast = match fst record_name with | None -> ast | Some id -> (let import =  Typing.Env.Import.get _tenv (unloc id) in Option.get import.id_ast)
+          in
           let ids, k =
             List.fold_left (fun accu (x : A.decl_) ->
                 match x with
-                | A.Drecord r when String.equal (unloc_longident r.name) record_name -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Record)
-                | A.Devent  r when String.equal (unloc_longident r.name) record_name -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Event)
-                | _ -> accu) ([], `None) ast.decls
+                | A.Drecord r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Record)
+                | A.Devent  r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Event)
+                | _ -> accu) ([], `None) w_ast.decls
           in
           if List.length ids <> List.length l
-          then (emit_error (pterm.loc, RecordNotFound record_name); bailout ());
+          then (emit_error (pterm.loc, RecordNotFound (M.unloc_mident record_name)); bailout ());
           match k with
           | `Record -> M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
           | `Event  -> M.Mlitevent  (List.map2 (fun x y -> x, f y) ids l)
@@ -1001,7 +1003,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     in
     let mk_asset an l : M.mterm = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
     let mp = match a.map_kind with | A.MKMap -> M.MKMap | A.MKBigMap -> M.MKBigMap | A.MKIterableBigMap -> M.MKIterableBigMap in
-    let r : M.asset = M.mk_asset (longident_to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (longident_to_mident a.name)) x) a.init) ~loc:a.loc in
+    let r : M.asset = M.mk_asset (to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (to_mident a.name)) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 
@@ -1040,7 +1042,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           let typ = Option.get (Option.map type_to_type x.typ) in
           M.mk_record_field (M.mk_mident x.name) typ ~loc:x.loc) r.fields
     in
-    M.mk_record (longident_to_mident r.name) ~fields:fs ~pos ~loc:r.loc
+    M.mk_record (to_mident r.name) ~fields:fs ~pos ~loc:r.loc
   in
 
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =
@@ -1505,14 +1507,14 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   in
 
   (* let process_import (i : A.import_struct) : M.import =
-    M.{
+     M.{
       name        = i.name;
       path        = i.path;
       kind_node   = (match i.kind_node with | A.INMichelson { ms_content } -> M.INMichelson { ms_content } | A.INArchetype -> M.INArchetype);
       views       = List.map (fun (x, (y, z)) -> (x, (type_to_type y, type_to_type z))) i.views;
       entrypoints = List.map (fun (x, y) -> (x, type_to_type y)) i.entrypoints;
-    }
-  in *)
+     }
+     in *)
 
   let process_decl_ (env : env) = function
     | A.Dvariable v -> process_var env v
@@ -1529,9 +1531,6 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let name = ast.name in
   let env = mk_env () in
-
-  (* let a = tenv.env_loaded in *)
-  (* List.iter (fun (x : A.import_struct) -> Format.printf "%a@\n" Printer_tools.pp_id x.name) ast.imports; *)
 
   let parameters = List.map (process_parameter env) ast.parameters in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in

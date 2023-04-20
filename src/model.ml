@@ -5,7 +5,7 @@ open Location
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
-type namespace = lident list
+type namespace = lident option
 [@@deriving show {with_path = false}]
 
 type path = namespace * lident
@@ -781,7 +781,7 @@ type model = {
 }
 [@@deriving show {with_path = false}]
 
-let mk_mident ?(namespace = []) id : mident =
+let mk_mident ?namespace id : mident =
   (namespace, id)
 
 let unloc_mident (id : mident) : ident =
@@ -1048,7 +1048,7 @@ let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
 let cmp_big_int (n1 : Core.big_int) (n2 : Core.big_int) : bool = Big_int.compare_big_int n1 n2 = 0
 let cmp_int (n1 : int) (n2 : int) : bool = n1 = n2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
-let cmp_namespace (n1 : namespace) (n2 : namespace) : bool = List.for_all2 cmp_lident n1 n2
+let cmp_namespace (n1 : namespace) (n2 : namespace) : bool = Option.cmp cmp_lident n1 n2
 let cmp_path (p1 : path) (p2 : path) : bool = cmp_namespace (fst p1) (fst p2) && cmp_lident (snd p1) (snd p2)
 let cmp_mident (i1 : mident) (i2 : mident) : bool = cmp_path i1 i2
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
