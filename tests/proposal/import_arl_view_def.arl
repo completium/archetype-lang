@@ -1,0 +1,5 @@
+archetype import_arl_view_def
+
+view my_view(s : string) : nat {
+  return length(s)
+}

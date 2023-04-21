@@ -1,0 +1,9 @@
+archetype import_arl_record_use
+
+import "tests/proposal/import_arl_view_def.arl"
+
+variable res : nat = 0
+
+entry exec() {
+  res := import_arl_view_def::my_view("mystr")
+}

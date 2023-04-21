@@ -1,0 +1,5 @@
+archetype import_arl_entrypoint_def
+
+entry callback(n : nat, e : contract<nat>) {
+  transfer 0tz to entry e(n * 3)
+}

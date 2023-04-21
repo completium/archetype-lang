@@ -1,0 +1,17 @@
+archetype import_arl_record_use_collide
+
+import "tests/proposal/import_arl_record_def.arl"
+
+record my_record {
+  x: string;
+  y: nat;
+  z: bytes
+}
+
+variable res_imported : option<import_arl_record_def::my_record> = none
+variable res_top : option<my_record> = none
+
+entry exec() {
+  res_imported := some(import_arl_record_def::{a = 2; b = "mystr"});
+  res_top := some({x = "mystr"; y = 2; z = 0x02})
+}

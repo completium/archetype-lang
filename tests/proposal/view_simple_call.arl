@@ -1,0 +1,11 @@
+archetype view_simple_call
+
+variable res : nat = 0
+
+view my_view(s : string) : nat {
+  return length(s)
+}
+
+entry exec() {
+  res := my_view("mystr")
+}

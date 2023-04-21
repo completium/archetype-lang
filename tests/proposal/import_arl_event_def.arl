@@ -1,0 +1,6 @@
+archetype import_arl_event_def
+
+event my_event {
+  a: nat;
+  b: string
+}

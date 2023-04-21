@@ -1,0 +1,14 @@
+archetype import_arl_record_use_collide
+
+import "tests/proposal/import_arl_event_def.arl"
+
+event my_event {
+  x: string;
+  y: nat;
+  z: bytes
+}
+
+entry exec() {
+  emit<import_arl_event_def::my_event>(import_arl_event_def::{a = 2; b = "mystr"});
+  emit<my_event>({x = "mystr"; y = 2; z = 0x02})
+}

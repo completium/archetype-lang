@@ -1,0 +1,23 @@
+archetype import_arl_record_use
+
+import "tests/proposal/import_arl_entrypoint_def.arl"
+
+variable res_imported : nat = 0
+variable res_top : nat = 0
+
+entry set_res_imported(n : nat) {
+  res_imported := n
+}
+
+entry set_res_top(n : nat) {
+  res_top := n
+}
+
+entry callback(n : nat, s : string, e : contract<nat>) {
+  transfer 0tz to entry e(n + length(s))
+}
+
+entry exec(a : address) {
+  transfer 0tz to entry import_arl_entrypoint_def(a).callback((2, self.set_res_imported));
+  transfer 0tz to entry self.callback(2, "mystr", self.set_res_top)
+}

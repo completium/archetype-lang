@@ -1,0 +1,13 @@
+archetype import_arl_record_use
+
+import "tests/proposal/import_arl_entrypoint_def.arl"
+
+variable res : nat = 0
+
+entry set_res(n : nat) {
+  res := n
+}
+
+entry exec(a : address) {
+  transfer 0tz to entry import_arl_entrypoint_def(a).callback((2, self.set_res))
+}

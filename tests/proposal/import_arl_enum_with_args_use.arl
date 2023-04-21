@@ -1,4 +1,4 @@
-archetype import_arl_enum_use
+archetype import_arl_enum_with_args_use
 
 import "tests/proposal/import_arl_enum_with_args_def.arl"
 
