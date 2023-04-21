@@ -13,7 +13,7 @@ variable res : nat = 0
 
 entry exec () {
   effect {
-    var a : view<my_asset> = ["id0"; "id2"];
+    var a : asset_view<my_asset> = ["id0"; "id2"];
     res := a.count();
   }
 }

@@ -7,10 +7,12 @@ asset my_asset {
 
 variable res_key : asset_key<my_asset> = 0
 variable res_value : asset_value<my_asset> = {v = ""}
+variable res_view : asset_view<my_asset> = []
 variable res_container : asset_container<my_asset> = []
 
 entry exec() {
   res_key := 2;
   res_value := {v = "mystr"};
+  res_view := [0; 1; 2];
   res_container.put(2, {v = "mystr"})
 }

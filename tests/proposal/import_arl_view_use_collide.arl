@@ -2,14 +2,14 @@ archetype import_arl_record_use
 
 import "tests/proposal/import_arl_view_def.arl"
 
-variable res_imported : nat = 0
-variable res_top : string = ""
+variable res_imported : option<nat> = none
+variable res_top : option<string> = ""
 
 view my_view(n : nat) : string {
   return nat_to_string(n)
 }
 
-entry exec() {
-  res_imported := import_arl_view_def::my_view("mystr");
-  res_top := my_view(2)
+entry exec(a : address) {
+  res_imported := import_arl_view_def(a).my_view("mystr");
+  res_top := self.my_view(2)
 }

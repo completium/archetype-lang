@@ -1,11 +1,11 @@
 archetype view_simple_call
 
-variable res : nat = 0
+variable res : option<nat> = none
 
-view my_view(s : string) : nat {
-  return length(s)
+view my_view(s : string, n : nat) : nat {
+  return (length(s) + n)
 }
 
 entry exec() {
-  res := my_view("mystr")
+  res := self.my_view("mystr", 5)
 }
