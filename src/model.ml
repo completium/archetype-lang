@@ -852,6 +852,13 @@ let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(decls = []) ?(func
 
 (* -------------------------------------------------------------------- *)
 
+let normalize_mident (nm, id : mident) : ident =
+  match nm with
+  | Some nm -> (unloc nm) ^ "::" ^ (unloc id)
+  | None -> unloc id
+
+(* -------------------------------------------------------------------- *)
+
 let mktype ?annot n : type_ = n, annot
 let get_ntype t : ntype = fst t
 let get_atype t : lident option = snd t

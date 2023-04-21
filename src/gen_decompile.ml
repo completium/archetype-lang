@@ -1770,7 +1770,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
-    | Mlistlength (_, c)                   -> A.eapp (A.Fident (dumloc "size")) [f c]
+    | Mlistlength (_, c)                   -> A.eapp (A.Fident (SINone, (dumloc "size"))) [f c]
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false
     | Mlisthead (_, _c, _a)                -> assert false
@@ -1787,7 +1787,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
+    | Mmapput (_, _, _, c, k, v)                  -> A.eapp (A.Fident (SINone, (dumloc "put"))) [f c; f k; f v]
     | Mmapremove (_, _, _, _c, _k)                -> assert false
     | Mmapupdate (_, _, _, _c, _k, _v)            -> assert false
     | Mmapget (_, _, _, _c, _k, _an)              -> assert false
@@ -1812,7 +1812,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mconcat (_x, _y)    -> assert false
     | Mconcatlist _x      -> assert false
     | Mslice (_x, _s, _e) -> assert false
-    | Mlength x           -> A.eapp (A.Fident (dumloc "length")) [f x]
+    | Mlength x           -> A.eapp (A.Fident (SINone, (dumloc "length"))) [f x]
     | Misnone _x          -> assert false
     | Missome _x          -> assert false
     | Minttonat _x        -> assert false
@@ -1905,7 +1905,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Menumval (id, args, _e)            -> begin
         match args with
         | [] -> A.eterm (snd id)
-        | _  -> A.eapp (A.Fident (snd id)) []
+        | _  -> A.eapp (A.Fident (SINone, (snd id))) []
       end
 
     (* rational *)

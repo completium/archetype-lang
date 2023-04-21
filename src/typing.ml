@@ -809,12 +809,12 @@ type error_desc =
   | MoreThanOneInitState               of ident list
   | MultipleAssetStateDeclaration
   | MultipleInitialMarker
-  | MultipleMatchingFunction           of ident * A.ptyp list * (A.ptyp list * A.ptyp) list
+  | MultipleMatchingFunction           of longident * A.ptyp list * (A.ptyp list * A.ptyp) list
   | MultipleMatchingOperator           of PT.operator * A.ptyp list * opsig list
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident * Location.t option
   | NoLetInInstruction
-  | NoMatchingFunction                 of ident * A.ptyp list
+  | NoMatchingFunction                 of longident * A.ptyp list
   | NoMatchingOperator                 of PT.operator * A.ptyp list
   | NonCodeLabel                       of ident
   | NonHomogeneousPattern              of ident
@@ -1142,11 +1142,11 @@ let pp_error_desc fmt e =
              Printer_ast.pp_ptyp sig_.osl_ret)) sigs
 
   | NoMatchingFunction (f, sig_) ->
-    pp "No matches for function %s(%a)" f
+    pp "No matches for function %a(%a)" pp_longident f
       (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
 
   | MultipleMatchingFunction (f, sig_, sigs) ->
-    pp "Multiple matches for operator %s(%a): %a" f
+    pp "Multiple matches for operator %a(%a): %a" pp_longident f
       (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
       (Printer_tools.pp_list ", " (fun fmt sig_ ->
            Format.fprintf fmt "(%a) -> %a"
@@ -3798,7 +3798,7 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
-    | Eapp (Fident {pldesc = "create_contract"}, [path; okh; amount; arg_storage]) -> begin
+    | Eapp (Fident (SINone, {pldesc = "create_contract"}), [path; okh; amount; arg_storage]) -> begin
         let okh = for_xexpr ~ety:(A.Toption A.vtkeyhash) env okh in
         let amount = for_xexpr ~ety:(A.vtcurrency) env amount in
 
@@ -3843,8 +3843,8 @@ let rec for_xexpr
           (A.Pcreatecontract ({ms_content = content }, okh, amount, arg_storage))
       end
 
-    | Eapp (Fident f, args) when Env.Function.exists env (Current, unloc f) ->
-      let fun_ = Option.get (Env.Function.lookup env (Current, unloc f)) in
+    | Eapp (Fident f, args) when Env.Function.exists env (unloc_nmid f) ->
+      let fun_ = Option.get (Env.Function.lookup env (unloc_nmid f)) in
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
       begin
@@ -3863,12 +3863,12 @@ let rec for_xexpr
       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
       let args = List.map  (fun x -> A.AExpr x) args in
 
-      mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, [], args))
+      mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid (snd f), [], args))
 
     (* FIXME:NM: WTF? *)
-    | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (uknm, unloc f)) ->
-      let decl = Option.get (Env.State.byctor env (uknm, unloc f)) in
-      let _, cty = Option.get (get_ctor (unloc f) decl.sd_ctors) in
+    | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (unloc_nmid f)) ->
+      let decl = Option.get (Env.State.byctor env (unloc_nmid f)) in
+      let _, cty = Option.get (get_ctor (unloc (snd f)) decl.sd_ctors) in
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
       let tyargs =
@@ -3882,7 +3882,7 @@ let rec for_xexpr
       let args = List.map  (fun x -> A.AExpr x) args in
 
       let typ = A.Tenum decl.sd_name in
-      mk_sp (Some typ) (A.Pcall (None, A.Cid f, [], args))
+      mk_sp (Some typ) (A.Pcall (None, A.Cid (snd f), [], args))
 
     | Eapp (Fident f, args) -> begin
         let args = List.map (for_xexpr env) args in
@@ -3892,8 +3892,8 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-        match unloc f with
-        | "sapling_empty_state" -> begin
+        match f with
+        | (SINone, {pldesc = "sapling_empty_state"}) -> begin
             match aty, args with
             | [A.Tbuiltin VTnat], [ { node = A.Plit {node = A.BVnat n; _} } as arg ] ->
               if (Big_int.lt_big_int n Big_int.zero_big_int) || (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
@@ -3904,22 +3904,22 @@ let rec for_xexpr
               Env.emit_error env (loc tope, InvalidSaplingEmptyStateArg);
               bailout ()
             | _ ->
-              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc_nmid f, aty));
               bailout ()
           end
 
-        | "sapling_verify_update" -> begin
+        | (SINone, {pldesc = "sapling_verify_update"}) -> begin
             match aty, args with
             | [A.Tsapling_transaction n1; A.Tsapling_state n2], [arg1; arg2] ->
               if n1 <> n2
               then (Env.emit_error env (loc tope, DifferentMemoSizeForSaplingVerifyUpdate(n1, n2)); bailout ());
               mk_sp (Some (A.Toption (A.Ttuple [A.vtbytes; A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [], [A.AExpr arg1; A.AExpr arg2]))
             | _ ->
-              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc_nmid f, aty));
               bailout ()
           end
         | _ -> begin
-            let cd = List.pmap (select_mop (unloc f) aty args) allops in
+            let cd = List.pmap (select_mop (unloc (snd f)) aty args) allops in
             let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
             let cd =
               let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
@@ -3927,11 +3927,11 @@ let rec for_xexpr
 
             match cd with
             | [] ->
-              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc_nmid f, aty));
               bailout ()
             | _::_::_ ->
               Env.emit_error env
-                (loc tope, MultipleMatchingFunction (unloc f, aty, List.map proj3_3 cd));
+                (loc tope, MultipleMatchingFunction (unloc_nmid f, aty, List.map proj3_3 cd));
               bailout ()
             | [cname, _, (_, rty)] ->
               let args = List.map (fun x -> A.AExpr x) args in
@@ -3942,39 +3942,39 @@ let rec for_xexpr
     | Eappt (Foperator _, _, _) -> assert false
 
     | Eappt (Fident id, ts, args) -> begin
-        match unloc id, ts, args with
-        | "address_to_contract", [t], [a] -> begin
+        match id, ts, args with
+        | (SINone, {pldesc = "address_to_contract"}), [t], [a] -> begin
             let ety = for_type env t in
             let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForAddressToContract); bailout() in
             let a = for_xexpr env ~ety:(A.vtaddress) a in
             mk_sp (Some (A.Toption (A.Tcontract ty))) (A.Pcall (None, A.Cconst Caddresstocontract, [ty], [AExpr a]))
           end
 
-        | "make_set", [t], [a] -> begin
+        | (SINone, {pldesc = "make_set"}), [t], [a] -> begin
             let ety = for_type env t in
             let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             for_xexpr env ~ety:(A.Tset ty) a
           end
-        | "make_list", [t], [a] -> begin
+        | (SINone, {pldesc = "make_list"}), [t], [a] -> begin
             let ety = for_type env t in
             let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             for_xexpr env ~ety:(A.Tlist ty) a
           end
-        | "make_map", [kt; vt], [a] -> begin
+        | (SINone, {pldesc = "make_map"}), [kt; vt], [a] -> begin
             let ekty = for_type env kt in
             let kty = match ekty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             let evty = for_type env vt in
             let vty = match evty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             for_xexpr env ~ety:(A.Tmap (kty, vty)) a
           end
-        | "make_big_map", [kt; vt], [a] -> begin
+        | (SINone, {pldesc = "make_big_map"}), [kt; vt], [a] -> begin
             let ekty = for_type env kt in
             let kty = match ekty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             let evty = for_type env vt in
             let vty = match evty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             for_xexpr env ~ety:(A.Tbig_map (kty, vty)) a
           end
-        | "make_asset", [ta], [k; v] -> begin
+        | (SINone, {pldesc = "make_asset"}), [ta], [k; v] -> begin
             let eta = for_type env ta in
             let asset =
               match eta with
@@ -3985,23 +3985,23 @@ let rec for_xexpr
             let vv = for_xexpr env v in
             mk_sp eta (A.Pcall (None, A.Cconst CmakeAsset, [Option.get eta], [AExpr vk; AExpr vv]))
           end
-        | "make_event", [ty], [id; v] -> begin
+        | (SINone, {pldesc = "make_event"}), [ty], [id; v] -> begin
             let ty = (match for_type env ty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMakeEvent); bailout()) in
             let vv = for_xexpr ~ety:ty env v in
             let id = require_literal_string id in
             mk_sp (Some A.Toperation) (A.Pcall (None, A.Cconst Cmakeevent, [ty], [AIdent id; AExpr vv]))
           end
-        | "global_constant", [ty], [v] -> begin
+        | (SINone, {pldesc = "global_constant"}), [ty], [v] -> begin
             let ty = (match for_type env ty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidArgForGlobalConstant); bailout()) in
             let v = for_xexpr env v in
             mk_sp (Some ty) (A.Pcall (None, A.Cconst Cglobalconstant, [ty], [AExpr v]))
           end
-        | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc id, [])); bailout ()
+        | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc_nmid id, [])); bailout ()
       end
 
     | Emethod (the, m, args) -> begin
         match unloc the, args with
-        | Eapp (Fident cn, [a]), [arg] when Option.is_some (Env.Import.lookup env (unloc cn)) -> begin
+        | Eapp (Fident (SINone, cn), [a]), [arg] when Option.is_some (Env.Import.lookup env (unloc cn)) -> begin
             let view_id = unloc m in
             let importdecl = Env.Import.get env (unloc cn) in
             let a = for_xexpr ~ety:A.vtaddress env a in
@@ -4802,7 +4802,7 @@ and for_gen_method_call mode env theloc (the, m, args)
             match unloc arg with
             | Eterm (SINone, f) ->
               (true, Some f)
-            | Eapp (Fident { pldesc = ("asc" | "desc") as order },
+            | Eapp (Fident (SINone, { pldesc = ("asc" | "desc") as order }),
                     [{pldesc = Eterm (SINone, f) }]) ->
               (order = "asc", Some f)
             | _ ->

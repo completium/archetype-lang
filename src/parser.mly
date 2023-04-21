@@ -877,11 +877,11 @@ simple_expr_r:
 
  | MAP LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Emap (x, id, e) }
 
- | id=ident a=app_args
-     { Eapp ( Fident id, a) }
+ | s=scope id=ident a=app_args
+     { Eapp (Fident (s, id), a) }
 
- | id=get_typed_id LESS ts=snl(COMMA, type_t) GREATER a=app_args
-     { Eappt ( Fident id, ts, a) }
+ | s=scope id=get_typed_id LESS ts=snl(COMMA, type_t) GREATER a=app_args
+     { Eappt ( Fident (s, id), ts, a) }
 
  | x=simple_expr DOT s=scope y=ident
      { Edot (x, (s, y)) }

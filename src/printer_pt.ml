@@ -122,6 +122,11 @@ let pp_id_scope fmt = function
   | SIParent -> Format.fprintf fmt "::"
   | SIId x -> Format.fprintf fmt "%a::" pp_id x
 
+let pp_lid fmt lid =
+  Format.fprintf fmt "%a%a"
+  pp_id_scope (fst lid)
+  pp_id (snd lid)
+
 let rec pp_type fmt (e, a) =
   let f fmt x = pp_type fmt x in
 
@@ -441,7 +446,7 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt (id, args) =
       Format.fprintf fmt "%a%a"
-        pp_id id
+        pp_lid id
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
@@ -454,7 +459,7 @@ let rec pp_expr outer pos fmt a =
   | Eappt (Fident id, ts, args) -> begin
       let pp fmt (id, args) =
         Format.fprintf fmt "%a%a%a"
-          pp_id id
+          pp_lid id
           (fun fmt ts ->
              match ts with
              | [] -> Format.fprintf fmt ""

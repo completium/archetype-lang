@@ -181,7 +181,7 @@ and or_ =
   | Oright of type_t * type_t option * expr
 
 and function_ =
-  | Fident of lident
+  | Fident of (id_scope * lident)
   | Foperator of operator loced
 
 and literal =
