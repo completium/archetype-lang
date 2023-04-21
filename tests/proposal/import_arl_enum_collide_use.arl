@@ -1,0 +1,16 @@
+archetype import_arl_enum_collide_use
+
+import "tests/proposal/import_arl_enum_def.arl"
+
+enum my_event =
+| X
+| Y
+| Z
+
+variable res_imported : option<import_arl_enum_def::my_event> = none
+variable res_top : option<my_event> = none
+
+entry exec() {
+  res_imported := some(import_arl_enum_def::A);
+  res_top := some(Z)
+}

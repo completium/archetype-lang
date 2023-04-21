@@ -1,0 +1,6 @@
+archetype import_arl_enum_with_args_def
+
+enum my_event =
+| A<nat>
+| B<string>
+| C
