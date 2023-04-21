@@ -257,7 +257,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         | Some ast -> begin
             let denum = List.fold_left (fun accu v ->
                 match v with
-                | A.Denum e when String.equal (match e.kind with | EKenum lid -> unloc_longident lid | _ -> "") (M.unloc_mident event_id) -> Some e
+                | A.Denum e when String.equal (match e.kind with | EKenum lid -> unloc_longident lid | EKstate _ -> "$state") (M.unloc_mident event_id) -> Some e
                 | _ -> accu
               ) None ast.decls in
             match denum with
