@@ -242,9 +242,9 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     match get_enum_type_opt a with
     | None -> false
     | Some lid -> begin
-        let mid = to_mident lid in
+        let event_id = to_mident lid in
         let oast =
-          match fst mid with
+          match fst event_id with
           | Some v -> begin
               let a = Typing.Env.Import.get _tenv (unloc v) in
               (match a.id_ast with
@@ -257,7 +257,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         | Some ast -> begin
             let denum = List.fold_left (fun accu v ->
                 match v with
-                | A.Denum e -> Some e
+                | A.Denum e when String.equal (match e.kind with | EKenum lid -> unloc_longident lid | _ -> "") (M.unloc_mident event_id) -> Some e
                 | _ -> accu
               ) None ast.decls in
             match denum with
