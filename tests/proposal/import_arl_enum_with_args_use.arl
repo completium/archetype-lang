@@ -2,8 +2,8 @@ archetype import_arl_enum_with_args_use
 
 import "tests/proposal/import_arl_enum_with_args_def.arl"
 
-variable v : option<import_arl_enum_with_args_def::my_event> = none
+variable res : option<import_arl_enum_with_args_def::my_event> = none
 
 entry exec() {
-  v := some(import_arl_enum_with_args_def::A(0))
+  res := some(import_arl_enum_with_args_def::A(0))
 }

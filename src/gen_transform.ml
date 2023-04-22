@@ -768,57 +768,6 @@ let remove_enum (model : model) : model =
     map_mterm_model aux model
   in
 
-  (* let process_asset_state (model : model) : model =
-    let get_state_mident an = mk_mident (dumloc ("state_" ^ an)) in
-
-    let map = ref MapString.empty in
-
-    let for_decl (d : decl_node) : decl_node =
-      let for_asset (a : asset) =
-        match a.state with
-        | Some id ->
-          begin
-            let enum    = Utils.get_enum model (unloc id) in
-            let name    = get_state_mident (unloc_mident a.name) in
-            let typ     = tenum (mk_mident id) in
-            let e_val   = enum.initial in
-            let default = mk_enum_value e_val id in
-
-            map := MapString.add (unloc_mident a.name) default !map;
-            let item = mk_asset_item name typ typ ~default:default in
-            let init_items = List.map (fun (x : mterm) ->
-                match x.node with
-                | Masset l -> {x with node = Masset(l @ [default]) }
-                | _ -> x) a.init in
-            { a with values = a.values @ [item]; state = None; init = init_items }
-          end
-        | None -> a
-      in
-      match d with
-      | Dasset a -> Dasset (for_asset a)
-      | _ -> d
-    in
-
-    let model = { model with decls = List.map for_decl model.decls} in
-
-    let rec aux ctx (mt : mterm) : mterm =
-      match mt.node, mt.type_ with
-      | Mvar (an, Vassetstate k), _ -> begin
-          let an = unloc_mident an in
-          let i = get_state_mident an in
-          mk_mterm (Mdotassetfield (mk_mident (dumloc an), k, i)) mt.type_
-        end
-
-      | Masset l, (Tasset an, _) when MapString.mem (unloc_mident an) !map ->
-        let default : mterm = MapString.find (unloc_mident an) !map in
-        let l = List.map (aux ctx) l in
-        {mt with node = Masset (l @ [default]) }
-
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
-  in *)
-
   let map =
     let mk_enum_info (e : enum) : enum_info =
       let without_args = List.for_all (fun (x : enum_item) -> List.is_empty x.args) e.values in
@@ -851,7 +800,7 @@ let remove_enum (model : model) : model =
         then
           begin
             List.fold_lefti (fun i accu (x : enum_item) ->
-                MapString.add (unloc_mident x.name) (fun _ -> mk_int i) accu)
+                MapString.add (normalize_mident (mk_mident ?namespace:(fst e.name) (snd x.name))) (fun _ -> mk_int i) accu)
               MapString.empty e.values
           end
         else begin
@@ -881,7 +830,7 @@ let remove_enum (model : model) : model =
                   let lt = mk_or l1 in
                   (fun xs -> fr l0 (mk_left (lt) (g xs)))
               in
-              MapString.add (unloc_mident x.name) f accu
+              MapString.add (normalize_mident x.name) f accu
             ) MapString.empty values
         end
       in
@@ -901,7 +850,7 @@ let remove_enum (model : model) : model =
                 let map : mterm MapString.t =
                   List.fold_lefti
                     (fun i accu (x : enum_item) ->
-                       MapString.add (unloc_mident x.name) (mk_int i) accu)
+                       MapString.add (normalize_mident x.name) (mk_int i) accu)
                     MapString.empty e.values
                 in
                 let ivar = mk_mident (dumloc "_tmp") in
@@ -916,7 +865,7 @@ let remove_enum (model : model) : model =
                   List.fold_left (fun accu (p, v: pattern * mterm) ->
                       match p.node with
                       | Pwild -> assert false
-                      | Pconst (id, _) -> mk_if (unloc_mident id) v accu)
+                      | Pconst (id, _) -> mk_if (normalize_mident id) v accu)
                     init lps
                 in
                 mk_letin ivar ev v
@@ -927,7 +876,7 @@ let remove_enum (model : model) : model =
           let seek_value (enum_item : enum_item) =
             let v = List.fold_lefti (fun idx accu (p, v : pattern * mterm)  ->
                 match p.node with
-                | Pconst (i, args) when String.equal (unloc_mident i) (unloc_mident enum_item.name) -> Some (args, v, idx)
+                | Pconst (i, args) when String.equal (normalize_mident i) (normalize_mident enum_item.name) -> Some (args, v, idx)
                 | _ -> accu) None ps
             in
             let id_var_or = mk_mident (dumloc ("_var_or")) in
@@ -976,19 +925,22 @@ let remove_enum (model : model) : model =
     List.fold_left (fun accu x ->
         match x with
         | Denum e -> begin
-            match unloc_mident e.name with
+            match normalize_mident e.name with
             | "state" -> List.fold_left (fun accu x -> MapString.add x (mk_enum_info e) accu) accu ["state"; "$state"]
-            | _       -> MapString.add (unloc_mident e.name) (mk_enum_info e) accu
+            | _       -> MapString.add (normalize_mident e.name) (mk_enum_info e) accu
           end
         | _ -> accu) MapString.empty model.decls
   in
 
-  let get_enum_id_opt t = match get_ntype t with | Tstate -> Some "$state" | Tenum eid -> Some (unloc_mident eid) | _ -> None in
+  let get_enum_id_opt t = match get_ntype t with | Tstate -> Some "$state" | Tenum eid -> Some (normalize_mident eid) | _ -> None in
   let get_enum_id t     = t |> get_enum_id_opt |> Option.get in
   let is_tenum t        = t |> get_enum_id_opt |> Option.is_some in
 
   let get_info eid =
-    if not (MapString.mem eid map) then (Format.eprintf "error get_info: %s@\n" eid; assert false);
+    if not (MapString.mem eid map) then (
+      Format.eprintf "error get_info: %s@\n" eid;
+      MapString.iter (fun x _ -> Format.eprintf "key: %s@\n"  x) map;
+      assert false);
     MapString.find eid map
   in
 
@@ -997,7 +949,7 @@ let remove_enum (model : model) : model =
       match get_ntype t with
       | Tstate -> tint
       | Tenum id -> begin
-          let info : enum_info = get_info (unloc_mident id) in
+          let info : enum_info = get_info (normalize_mident id) in
           info.type_
         end
       | _ -> map_type aux t
@@ -1021,8 +973,16 @@ let remove_enum (model : model) : model =
       | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, aux v)}
       | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
-          let info : enum_info = get_info (unloc_mident eid) in
-          let f = MapString.find (unloc_mident id) info.fitems in
+          let info : enum_info = get_info (normalize_mident eid) in
+          let f =
+            match MapString.find_opt (normalize_mident id) info.fitems with
+            | Some f -> f
+            | None -> begin
+                Format.eprintf "NotFound: %s@\n" (normalize_mident id);
+                MapString.iter (fun x _ -> Format.eprintf "key: %s@\n"  x) info.fitems;
+                assert false
+              end
+          in
           f args
         end
       | Mmatchwith     (e, ps) when is_tenum (e.type_) -> for_matchwith None e ps
@@ -1036,7 +996,7 @@ let remove_enum (model : model) : model =
     let lll = List.fold_left (fun accu x -> begin
           match x with
           | Denum e -> begin
-              let ename : string = unloc_mident e.name in
+              let ename : string = normalize_mident e.name in
               let te = for_type (tenum (e.name)) in
               ODEnum (mk_odel_enum ename te)::accu
             end

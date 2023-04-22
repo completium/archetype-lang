@@ -1,16 +1,16 @@
 archetype import_arl_enum_with_args_use_collide
 
-import "tests/proposal/import_arl_enum_def.arl"
+import "tests/proposal/import_arl_enum_with_args_def.arl"
 
 enum my_event =
 | X
 | Y<string>
 | Z<nat>
 
-variable res_imported : option<import_arl_enum_def::my_event> = none
+variable res_imported : option<import_arl_enum_with_args_def::my_event> = none
 variable res_top : option<my_event> = none
 
 entry exec() {
-  res_imported := some(import_arl_enum_def::A);
+  res_imported := some(import_arl_enum_with_args_def::B("mystr"));
   res_top := some(Z(2))
 }

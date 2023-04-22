@@ -46,8 +46,9 @@ let mk_env ?(formula=false) ?asset_name ?function_p () =
 
 let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
+  let get_namespace nm = if (String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm)) then None else Some nm in
   let to_mident ((nm, id) : A.longident) : M.mident =
-    let namespace = if (String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm)) then None else Some nm in
+    let namespace = get_namespace nm in
     M.mk_mident ?namespace id
   in
 
@@ -1028,7 +1029,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let enum_name =
       match e.kind with
       | EKenum id -> to_mident id
-      | EKstate namespace -> M.mk_mident ~namespace (dumloc "state")
+      | EKstate nm -> M.mk_mident ?namespace:(get_namespace nm) (dumloc "state")
     in
     let enum = M.mk_enum enum_name (M.mk_mident (Option.get initial)) ~values:values in
     M.Denum enum
