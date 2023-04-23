@@ -13,7 +13,7 @@ entry default(i : nat) {
 }
 */
 
-import "./dummy.arl" as dummy
+import "./dummy.arl"
 
 entry exec () {
   var okh : option<key_hash> = none;

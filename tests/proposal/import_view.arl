@@ -1,10 +1,10 @@
 archetype import_view
 
-import my_contract from "./tests/proposal/import_decl.arl"
+import "./import_decl.arl"
 
 variable res : nat = 0
 
 entry exec (a : address) {
-  const v : nat ?= my_contract(a).get() : "VIEW_ERROR";
+  const v : nat ?= import_decl(a).get() : "VIEW_ERROR";
   res := v
 }

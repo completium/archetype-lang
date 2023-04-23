@@ -1,6 +1,6 @@
 archetype import_arl_event_use
 
-import "tests/proposal/import_arl_event_def.arl"
+import "./import_arl_event_def.arl"
 
 entry exec() {
   emit<import_arl_event_def::my_event>(import_arl_event_def::{a = 2; b = "mystr"})

@@ -1,6 +1,6 @@
 archetype import_arl_record_use
 
-import "tests/proposal/import_arl_record_def.arl"
+import "./import_arl_record_def.arl"
 
 variable res : option<import_arl_record_def::my_record> = none
 

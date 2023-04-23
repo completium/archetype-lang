@@ -1,4 +1,4 @@
-archetype import_export
+archetype import_decl
 
 constant my_constant : nat = 2
 

@@ -1,9 +1,9 @@
 archetype a
 
-import aux from "./test/proposal/namespace_aux.arl"
+import "./namespace_aux.arl"
 
 entry exec() {
-  const a = aux::n;
-  const r = aux::{a = 0; b = "mystr"};
-  const f = r.aux::a
+  const a = namespace_aux::n;
+  const r = namespace_aux::{a = 0; b = "mystr"};
+  const f = r.namespace_aux::a
 }

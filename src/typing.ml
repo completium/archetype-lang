@@ -3822,10 +3822,11 @@ let rec for_xexpr
               | None -> Env.emit_error env (loc path, TODO) ; bailout ()
             end
           | {pldesc = PT.Eliteral(Lstring v) } -> begin
-              let ext = Filename.extension v in
+              let p = Env.Import.resolve_path env v in
+              let ext = Filename.extension p in
               match ext with
               | ".tz" -> begin
-                  match Micheline.parse v with
+                  match Micheline.parse p with
                   | Some v -> v
                   | None -> (Env.emit_error env (loc path, FileNotFound v); bailout ())
                 end
@@ -6786,7 +6787,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
     match id, ext with
     | Some id, ".tz" -> begin
-        match Micheline.parse (unloc path) with
+        match Micheline.parse (Env.Import.resolve_path env (unloc path)) with
         | Some content -> begin
             let views = Micheline.get_views content in
             match Micheline.get_entrypoints content with

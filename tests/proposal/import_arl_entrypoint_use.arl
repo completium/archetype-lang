@@ -1,6 +1,6 @@
 archetype import_arl_record_use
 
-import "tests/proposal/import_arl_entrypoint_def.arl"
+import "./import_arl_entrypoint_def.arl"
 
 variable res : nat = 0
 

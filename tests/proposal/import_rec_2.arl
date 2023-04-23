@@ -1,7 +1,7 @@
 archetype import_rec_2
 
-import "./tests/proposal/import_rec_0.arl"
-import "./tests/proposal/import_rec_1.arl"
+import "./import_rec_0.arl"
+import "./import_rec_1.arl"
 
 variable r : option<import_rec_1::my_record> = none
 

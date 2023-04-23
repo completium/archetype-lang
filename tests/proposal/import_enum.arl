@@ -1,9 +1,9 @@
 archetype import_enum
 
-import my_contract from "./tests/proposal/import_decl.arl"
+import "./import_decl.arl"
 
-variable res : my_contract::my_enum = my_contract::eFirst
+variable res : import_decl::my_enum = import_decl::eFirst
 
 entry exec () {
-  res := my_contract::eSecond
+  res := import_decl::eSecond
 }

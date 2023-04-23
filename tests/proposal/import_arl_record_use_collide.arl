@@ -1,6 +1,6 @@
 archetype import_arl_record_use_collide
 
-import "tests/proposal/import_arl_record_def.arl"
+import "./import_arl_record_def.arl"
 
 record my_record {
   x: string;

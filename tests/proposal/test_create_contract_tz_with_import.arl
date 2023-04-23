@@ -1,6 +1,6 @@
 archetype test_create_contract_tz_with_import
 
-import simple from "./tests/michelson/simple.tz"
+import simple from "../michelson/simple.tz"
 
 entry exec () {
   const delegate : option<key_hash> = none;

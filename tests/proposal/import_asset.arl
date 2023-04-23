@@ -1,9 +1,9 @@
 archetype import_asset
 
-import my_contract from "./tests/proposal/import_decl.arl"
+import "./import_decl.arl"
 
-variable res : asset_value<my_contract::my_asset> = my_contract::{x = ""; y = 0x; z = 0i}
+variable res : asset_value<import_decl::my_asset> = import_decl::{x = ""; y = 0x; z = 0i}
 
 entry exec () {
-  res := my_contract::{x = "test"; y = 0x02; z = 3i}
+  res := import_decl::{x = "test"; y = 0x02; z = 3i}
 }

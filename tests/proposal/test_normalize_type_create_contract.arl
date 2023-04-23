@@ -1,6 +1,6 @@
 archetype test_normalize_type_create_contract
 
-import aux from "./tests/michelson/test_normalize_type_create_contract_aux.tz"
+import aux from "../michelson/test_normalize_type_create_contract_aux.tz"
 
 record my_record {
   a: nat;

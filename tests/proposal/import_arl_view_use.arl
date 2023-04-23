@@ -1,6 +1,6 @@
 archetype import_arl_record_use
 
-import "tests/proposal/import_arl_view_def.arl"
+import "./import_arl_view_def.arl"
 
 variable res : option<nat> = none
 

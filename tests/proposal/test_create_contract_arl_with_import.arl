@@ -1,11 +1,11 @@
 archetype test_create_contract_tz_with_import
 
-import simple from "./tests/passed/simple_freeze.arl"
+import "./simple_freeze.arl"
 
 entry exec () {
   const delegate : option<key_hash> = none;
   const amount : tez = 0tz;
   const storage_init : nat = 0;
-  const op_addr : (operation * address) = create_contract(simple, delegate, amount, storage_init);
+  const op_addr : (operation * address) = create_contract(simple_freeze, delegate, amount, storage_init);
   operations := [op_addr[0]]
 }

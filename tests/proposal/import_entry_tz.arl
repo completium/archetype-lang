@@ -1,6 +1,6 @@
 archetype import_contract
 
-import contract_tz from "tests/michelson/simple_nat.tz"
+import contract_tz from "../michelson/simple_nat.tz"
 
 variable res : nat = 0
 

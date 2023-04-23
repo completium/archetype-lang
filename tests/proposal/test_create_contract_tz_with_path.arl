@@ -4,6 +4,6 @@ entry exec () {
   const delegate : option<key_hash> = none;
   const amount : tez = 0tz;
   const storage_init : nat = 0;
-  const op_addr : (operation * address) = create_contract("./tests/michelson/simple.tz", delegate, amount, storage_init);
+  const op_addr : (operation * address) = create_contract("../michelson/simple.tz", delegate, amount, storage_init);
   operations := [op_addr[0]]
 }

@@ -1,9 +1,9 @@
 archetype import_contract
 
-import my_contract from "./tests/proposal/import_decl.arl"
+import "./import_decl.arl"
 
 variable res : nat = 0
 
 entry exec () {
-  res := my_contract::my_constant
+  res := import_decl::my_constant
 }

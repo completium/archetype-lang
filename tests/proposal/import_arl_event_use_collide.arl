@@ -1,6 +1,6 @@
 archetype import_arl_record_use_collide
 
-import "tests/proposal/import_arl_event_def.arl"
+import "./import_arl_event_def.arl"
 
 event my_event {
   x: string;
