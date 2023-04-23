@@ -73,6 +73,7 @@ let opt_contract_interface = ref false
 let opt_contract_interface_michelson = ref false
 let opt_event_well_address : (string option) ref = ref (None : string option)
 let opt_g = ref false
+let opt_path = ref "."
 
 let opt_property_focused = ref ""
 

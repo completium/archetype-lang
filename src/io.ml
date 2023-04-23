@@ -198,8 +198,8 @@ let parse_archetype input =
   Error.resume_on_error ();
   let lexbuf =
     match input with
-    | FIChannel (name, inc) -> lexbuf_from_channel name inc
-    | FIString input -> lexbuf_from_string "" input
+    | FIChannel (path, inc) -> lexbuf_from_channel path inc
+    | FIString (path, input) -> lexbuf_from_string path input
   in
   parse main lexbuf
 
@@ -213,8 +213,8 @@ let parse_expr input =
   Error.resume_on_error ();
     let lexbuf =
     match input with
-    | FIChannel (name, inc) -> lexbuf_from_channel name inc
-    | FIString input -> lexbuf_from_string "" input
+    | FIChannel (path, inc) -> lexbuf_from_channel path inc
+    | FIString (path, input) -> lexbuf_from_string path input
   in
   let e = parse start_expr lexbuf in
   match !Error.errors with

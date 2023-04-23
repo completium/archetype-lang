@@ -15,8 +15,8 @@
 
 (* -------------------------------------------------------------------- *)
 type from_input =
-  | FIChannel of string * in_channel
-  | FIString  of string
+  | FIChannel of string * in_channel (* path * content*)
+  | FIString  of string * string     (* path * content*)
 
 (* -------------------------------------------------------------------- *)
 module Format = struct

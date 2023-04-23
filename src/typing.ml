@@ -1799,7 +1799,7 @@ module Env : sig
 
   type ecallback = error -> unit
 
-  val create       : name:A.lident -> ?cache:cache -> ecallback -> t
+  val create       : name:A.lident -> ?cache:cache -> ?path:string -> ecallback -> t
   val emit_error   : t -> error -> unit
   val name_free    : t -> ident -> [`Free | `Clash of Location.t option]
   val lookup_entry : t -> longident -> (A.lident * entry) option
@@ -1909,6 +1909,8 @@ module Env : sig
     val get_cache     : t -> cache
 
     val get_all : t -> (ident * t importdecl) list
+
+    val resolve_path : t -> string -> string
   end
 end = struct
   type ecallback = error -> unit
@@ -1953,6 +1955,7 @@ end = struct
     env_context  : assetdecl list;
     env_locals   : Sid.t;
     env_scopes   : Sid.t list;
+    env_path     : string;
   }
 
   and cache = (t importdecl) Mlib.t ref
@@ -1961,14 +1964,16 @@ end = struct
 
   let ctxtname = "the"
 
-  let create ~(name : A.lident) ?cache ecallback : t =
+  let create ~(name : A.lident) ?cache ?path ecallback : t =
     { env_error    = ecallback;
       env_bindings = Mid.empty;
       env_loaded   = Option.get_fdfl (fun () -> ref Mlib.empty) cache;
       env_name     = name;
       env_context  = [];
       env_locals   = Sid.empty;
-      env_scopes   = []; }
+      env_scopes   = [];
+      env_path     = Option.map_dfl (fun x -> x) "." path
+    }
 
   let emit_error (env : t) (e : error) =
     env.env_error e (* ; assert false *)
@@ -2401,6 +2406,14 @@ end = struct
     let get_all (env : t) =
       Mlib.bindings !(env.env_loaded)
       |> List.map (fun (_, v) -> (unloc v.id_name, v))
+
+    let resolve_path (env : t) (path : string) : string =
+      match env.env_path with
+      | "." -> path
+      | env_path -> begin
+          let dir = Filename.dirname env_path in
+          dir ^ "/./" ^ path
+        end
   end
 
 end
@@ -2539,14 +2552,14 @@ end
 
 let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
-let empty ?cache (nm : A.lident) : env =
+let empty ?cache ?path (nm : A.lident) : env =
   let cb (lc, error) =
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
   in
 
-  let env = Env.create ~name:nm ?cache cb in
+  let env = Env.create ~name:nm ?cache ?path cb in
 
   let env =
     List.fold_left
@@ -2568,9 +2581,6 @@ let empty ?cache (nm : A.lident) : env =
       env globals in
 
   env
-
-let empty0 : env =
-  empty (mkloc Location.dummy "<top>")
 
 let rec normalize_type (env : env) (ty : A.ptyp) : A.ptyp =
   let doit = normalize_type env in
@@ -6816,6 +6826,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
       end
 
     | None, ".arl" -> begin
+        let path = mkloc (loc path) (Env.Import.resolve_path env (unloc path)) in
         let stats =
           try
             let stats = Unix.stat (unloc path) in
@@ -6888,7 +6899,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
           match opt with
           | Some pt -> begin
-              let import = typing (empty ~cache:(Env.Import.get_cache env)) pt in
+              let import = typing (empty ~cache:(Env.Import.get_cache env) ~path:(unloc path)) pt in
               let id = Env.name (fst import) in
               let importdecl = make_importdecl_from_ast id import in
 

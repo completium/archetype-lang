@@ -198,6 +198,11 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
   Options.quiet := true;
   Error.errors := [];
   Error.warnings := [];
+  let path =
+    match input with
+    | FIChannel (path, _) -> path
+    | FIString (path, _) -> path
+  in
   match kind with
   | Outline -> (
       let pt = Io.parse_archetype input in
@@ -227,7 +232,7 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
           Pt_helper.check_json pt;
           if (List.is_empty !Error.errors)
           then
-            let res_ast = Typing.typing (fun _ -> Typing.empty0) pt in
+            let res_ast = Typing.typing (fun name -> Typing.empty ~path name) pt in
             if List.is_empty !Error.errors
             then
               let _ = res_ast
@@ -253,4 +258,4 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
     with
     | _ -> process_errors ()
 
-let process_from_string (kind : lsp_kind) input = process kind (FIString input)
+let process_from_string (kind : lsp_kind) path input = process kind (FIString (path, input))

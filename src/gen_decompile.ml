@@ -22,7 +22,7 @@ let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
         | "<stdin>" -> "noname"
         | _ -> filename |> Filename.basename |> Filename.chop_extension
       end
-    | FIString _ -> "noname"
+    | FIString (path, _) -> path
   in
   let env = mk_env ~name:name () in
 
@@ -71,7 +71,7 @@ let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
       let json =
         match input with
         | FIChannel (_, ic) -> from_channel ic
-        | FIString content -> from_string content
+        | FIString (_, content) -> from_string content
       in
       let code = json |> member "code" |> to_list in
       T.Oarray (List.map aux code)
@@ -79,7 +79,7 @@ let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
       let tokens =
         match input with
         | FIChannel (_, ic) -> Lexing.from_channel ic
-        | FIString content -> Lexing.from_string content
+        | FIString (_, content) -> Lexing.from_string content
       in
       Michelson_parser.main Michelson_lexer.token tokens
   in

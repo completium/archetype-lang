@@ -16,6 +16,11 @@ let post_model_error = 5
 let gen_output_error = 6
 let other_error      = 7
 
+let path_input_string p =
+  match p with
+  | Some v -> v
+  | _ -> !Options.opt_path
+
 let raise_if_error code f x =
   let res = f x in
   if Tools.List.is_not_empty !Error.errors then
@@ -202,21 +207,26 @@ let output (model : Model.model) : string =
       res
     end
 
-let parse input =
+let parse input : A.archetype * string =
+  let path : string =
+    match input with
+    | FIChannel (path, _) -> path
+    | FIString (path, _) -> path
+  in
   let pt = Io.parse_archetype input in
   Pt_helper.check_json pt;
   match !Error.errors with
-  | [] -> pt
+  | [] -> pt, path
   | (_, str)::_ ->
     Format.eprintf "%s" str;
     raise (Error.ParseError !Error.errors)
 
-let type_ (pt : ParseTree.archetype) : Typing.env * Ast.ast =
+let type_ ?path (pt : ParseTree.archetype) : Typing.env * Ast.ast =
   let init = match !Options.opt_init with
     | "" -> None
-    | x  -> Some (Io.parse_expr (FIString x))
+    | x  -> Some (Io.parse_expr (FIString ((Tools.Option.map_dfl (fun x -> x) "." path), x)))
   in
-  Typing.typing (fun name -> Typing.empty name) pt ?init
+  Typing.typing (fun name -> Typing.empty ?path name) pt ?init
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
@@ -304,11 +314,11 @@ let generate_target model =
 
 (* -------------------------------------------------------------------- *)
 
-let compile_model pt =
+let compile_model (pt, path) =
   let cont c a x = if c then (a x; raise Stop) else x in
   pt
   |> cont !Options.opt_extpt output_pt
-  |> raise_if_error type_error type_
+  |> raise_if_error type_error (type_ ~path)
   |> (fun c a x -> if c then (a (snd x); raise Stop) else x ) !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
   |> raise_if_error post_model_error check_partition_access
@@ -323,10 +333,10 @@ let compile_model pt =
   |> cont !Options.opt_mdl output_tmdl
 
 let parse input =
-  let cont c a x = if c then (a x; raise Stop) else x in
-  input
-  |> raise_if_error parse_error parse
-  |> cont !Options.opt_pt output_pt
+  let pt, path = input |> raise_if_error parse_error parse in
+  if !Options.opt_pt
+  then (output_pt pt; raise Stop)
+  else (pt, path)
 
 let compile input =
   input
@@ -354,7 +364,7 @@ let decompile input : string =
   |> to_archetype
   |> extract_pt
 
-let decompile_from_string (input : string) = decompile (FIString input)
+let decompile_from_string ?path (input : string) = decompile (FIString ((Tools.Option.map_dfl (fun x -> x) "." path), input))
 
 let decompile_from_path path =
   let inc = open_in path in
@@ -381,7 +391,7 @@ let process_expr ?tinput (input : string) : string =
         |> (fun x -> Format.asprintf "%a@." Printer_michelson.pp_type x)
         |> (fun x -> Some x)) tinput;
 
-  FIString input
+  FIString (path_input_string None, input)
   |> Io.parse_expr
   |> cont !Options.opt_pt output_expr_pt
   |> Gen_extra.to_model_expr
@@ -405,7 +415,7 @@ let process_expr ?tinput (input : string) : string =
 let process_expr_type_from_string ?(tinput : string option) (input : string) =
   let tinput =
     match tinput with
-    | Some v -> Some (FIString v)
+    | Some v -> Some (FIString (path_input_string None, v))
     | None -> None
   in
   process_expr input ?tinput
@@ -422,7 +432,7 @@ let process_expr_type_from_string ?(tinput : string option) (input : string) =
 (* -------------------------------------------------------------------- *)
 
 let show_entries (input : string) =
-  FIString input
+  FIString (path_input_string None, input)
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
@@ -532,7 +542,7 @@ let get_storage_values input : string =
   in
   Gen_extra.get_storage_values model
 
-let get_storage_values_from_string (input : string) : string = get_storage_values (FIString input)
+let get_storage_values_from_string (input : string) : string = get_storage_values (FIString (path_input_string None, input))
 
 (* -------------------------------------------------------------------- *)
 
@@ -550,7 +560,7 @@ let compile_gen input =
   | _, _, _, true -> show_contract_interface_michelson input
   | _       -> compile input
 
-let compile_from_string input = compile (FIString input)
+let compile_from_string input = compile (FIString (path_input_string None, input))
 
 let compile_from_path path =
   let inc = open_in path in

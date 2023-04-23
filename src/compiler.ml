@@ -68,6 +68,8 @@ let main () : unit =
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
       "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
+      "-p", Arg.String (fun s -> Options.opt_path := s), " Set path";
+      "--path", Arg.String (fun s -> Options.opt_path := s), " Same as -p";
       "-m", Arg.Set Options.opt_m, " Pretty print model tree";
       "--model", Arg.Set Options.opt_m, " Same as -m";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
@@ -145,7 +147,7 @@ let main () : unit =
       let filename, channel, dispose =
         match !ochannel with
         | Some c -> (!ofilename, c, true)
-        | _ -> ("<stdin>", stdin, false) in
+        | _ -> (path_input_string None, stdin, false) in
 
       try
         let input = FIChannel (filename, channel) in
