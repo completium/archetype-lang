@@ -1,0 +1,6 @@
+archetype import_arl_asset_def
+
+asset my_asset {
+  k : nat;
+  v : string;
+}
