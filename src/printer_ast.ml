@@ -889,7 +889,7 @@ let rec pp_instruction fmt (i : instruction) =
       (pp_with_paren pp) fmt tr
     | Iemit (e, v) ->
       let pp fmt (e, v) =
-        Format.fprintf fmt "emit<%a>(%a)" pp_id e pp_pterm v
+        Format.fprintf fmt "emit<%a>(%a)" pp_longident e pp_pterm v
       in
       (pp_with_paren pp) fmt (e, v)
     | Icall (meth, kind, args) ->

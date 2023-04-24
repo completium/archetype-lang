@@ -5460,7 +5460,7 @@ let rec for_instruction_r
 
       let idt, ety =
         match for_type env ty with
-        | Some ((A.Tevent (_, v)) as t) -> (v, t) (* FIXME:NM *)
+        | Some ((A.Tevent v) as t) -> (v, t)
         | _ ->
           Env.emit_error env (loc i, InvalidEventType);
           bailout ()

@@ -420,7 +420,7 @@ and instruction_node =
   | Iassign of (assignment_operator * type_ * lvalue * pterm * pterm option) (* $2 assignment_operator $3 [ : $4]*)
   | Irequire of (bool * pterm * pterm)                                       (* $1 ? require : failif *)
   | Itransfer of transfer_t
-  | Iemit of lident * pterm
+  | Iemit of longident * pterm
   | Icall of (pterm option * call_kind * pterm_arg list)
   | Ireturn of pterm
   | Ifail of pterm

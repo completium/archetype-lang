@@ -1167,7 +1167,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           in
           M.Mtransfer tr
         end
-      | A.Iemit (e, v) -> M.Memit (M.mk_mident e, f v)
+      | A.Iemit (e, v) -> M.Memit (to_mident e, f v)
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
