@@ -1,0 +1,30 @@
+archetype import_arl_enum_use_complete
+
+import "./import_arl_enum_def.arl"
+
+enum my_event =
+| X
+| Y
+| Z
+
+variable res_imported : option<import_arl_enum_def::my_event> = none
+variable res_top : option<my_event> = none
+
+entry exec() {
+  const r0 = import_arl_enum_def::A;
+  match import_arl_enum_def::B with
+  | A -> fail("error")
+  | B -> ()
+  | C -> fail("error")
+  end;
+
+  const r1 = Z;
+  match Y with
+  | X -> fail("error")
+  | Y -> ()
+  | Z -> fail("error")
+  end;
+
+  res_imported := some(r0);
+  res_top := some(r1)
+}

@@ -1,0 +1,27 @@
+archetype import_arl_record_use_complete
+
+import "./import_arl_record_def.arl"
+
+record my_record {
+  x: string;
+  y: nat;
+  z: bytes
+}
+
+variable res_imported : option<import_arl_record_def::my_record> = none
+variable res_top : option<my_record> = none
+
+entry exec() {
+  const r0 = import_arl_record_def::{a = 0; b = "mystr"};
+  do_require(r0.a = 0 and r0.b = "mystr", "error");
+  do_require({r0 with b = ""} = import_arl_record_def::{a = 0; b = ""}, "error");
+  r0.a := 2;
+
+  const r1 = {x = ""; y = 0; z = 0x};
+  do_require(r1.x = "" and r1.y = 0 and r1.z = 0x, "error");
+  do_require({r1 with z = 0x02} = {x = ""; y = 0; z = 0x02}, "error");
+  r1.z := 0x02;
+
+  res_imported := some(r0);
+  res_top := some(r1)
+}
