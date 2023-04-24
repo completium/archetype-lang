@@ -46,7 +46,7 @@ let is_ticket_type (model : M.model) ty =
     | M.Tticket _ -> true
     | M.Tcontract _ -> accu
     | M.Trecord id -> begin
-        let r = M.Utils.get_record model (M.unloc_mident id) in
+        let r = M.Utils.get_record model id in
         List.fold_left (fun accu (x : M.record_field) -> accu || aux accu (x.type_)) accu r.fields
       end
     | _ -> M.fold_typ aux accu ty
@@ -119,8 +119,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       end
   in
 
-  let process_record (f : M.model -> ident -> M.record) (id : M.lident)  =
-    let r = f model (unloc id) in
+  let process_record (f : M.model -> mident -> M.record) (id : M.mident)  =
+    let r = f model id in
     let lt = List.map (fun (x : M.record_field) ->
         match snd x.type_ with
         | Some _ -> x.type_
@@ -229,8 +229,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
            ] |> fun x -> x.node)
     end
   | Tor (l, r)                 -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
-  | Trecord id                 -> let t = process_record M.Utils.get_record (snd id) in T.mk_type ?annotation t.node
-  | Tevent id                  -> let t = process_record M.Utils.get_event (snd id) in T.mk_type ?annotation t.node
+  | Trecord id                 -> let t = process_record M.Utils.get_record id in T.mk_type ?annotation t.node
+  | Tevent id                  -> let t = process_record M.Utils.get_event id in T.mk_type ?annotation t.node
   | Tlambda (a, r)             -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
   | Tunit                      -> T.mk_type ?annotation (T.Tunit)
   | Toperation                 -> T.mk_type ?annotation (T.Toperation)
@@ -466,7 +466,7 @@ let to_ir (model : M.model) : T.ir =
     | Avarstore id  -> T.Iupdate (Uvar (M.unloc_mident id), op)
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
     | Arecord ({node = Mvar(id, _)}, rn, fn) -> begin
-        let l = Model.Utils.get_record_pos model (M.unloc_mident rn) (M.unloc_mident fn) in
+        let l = Model.Utils.get_record_pos model rn (M.unloc_mident fn) in
         T.Iupdate (Urec (M.unloc_mident id, l), op)
       end
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
@@ -519,7 +519,7 @@ let to_ir (model : M.model) : T.ir =
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
         | Trecord rn -> begin
-            let r = M.Utils.get_record model (M.unloc_mident rn) in
+            let r = M.Utils.get_record model rn in
             match r.pos with
             | Pnode [] -> to_one_data data
             | _ -> begin
@@ -611,7 +611,6 @@ let to_ir (model : M.model) : T.ir =
       let fn = M.unloc_mident fn in
       match M.get_ntype e.type_ with
       | M.Trecord rn -> begin
-          let rn = M.unloc_mident rn in
           let pos = M.Utils.get_record_pos model rn fn in
           List.fold_left (fun accu (i, s) -> access_tuple s i accu) (f e) pos
         end
@@ -666,7 +665,6 @@ let to_ir (model : M.model) : T.ir =
             let fn = M.unloc_mident id in
             match M.get_ntype x.type_ with
             | M.Trecord rn -> begin
-                let rn = M.unloc_mident rn in
                 let pos = M.Utils.get_record_pos model rn fn in
                 let path = List.map (fun (idx, length) -> T.{ai_index = idx; ai_length = length}) pos in
                 aux (path @ accu) x
@@ -741,7 +739,7 @@ let to_ir (model : M.model) : T.ir =
         let id = M.unloc_mident id in
         let rn =
           match M.get_ntype t with
-          | M.Trecord rn -> M.unloc_mident rn
+          | M.Trecord rn -> rn
           | _ -> assert false
         in
         let ru = make_ru rn (M.unloc_mident fn) v in
@@ -942,7 +940,7 @@ let to_ir (model : M.model) : T.ir =
             let ll = List.map (fun (_, x) -> f x) l in
             let mk_default _ = T.Rtuple ll in
             let doit f rn =
-              let r : M.record = f model (unloc rn) in
+              let r : M.record = f model rn in
               match r.pos with
               | Pnode [] -> mk_default ()
               | _ -> begin
@@ -963,8 +961,8 @@ let to_ir (model : M.model) : T.ir =
                 end
             in
             match M.get_ntype mtt.type_ with
-            | M.Trecord rn -> doit M.Utils.get_record (snd rn)
-            | M.Tevent  rn -> doit M.Utils.get_event  (snd rn)
+            | M.Trecord rn -> doit M.Utils.get_record rn
+            | M.Tevent  rn -> doit M.Utils.get_event  rn
             | _ -> mk_default ()
           in
           T.Irecord ri
@@ -1066,7 +1064,7 @@ let to_ir (model : M.model) : T.ir =
       let t = mtt.type_ in
       let rn =
         match M.get_ntype t with
-        | M.Trecord rn -> M.unloc_mident rn
+        | M.Trecord rn -> rn
         | _ -> assert false
       in
       let ru = List.fold_left (fun (ru : T.ruitem option) (fn, v) -> Some (make_ru ?ru rn fn v)) None l in

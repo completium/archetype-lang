@@ -13,5 +13,5 @@ variable res_top : option<my_record> = none
 
 entry exec() {
   res_imported := some(import_arl_record_def::{a = 2; b = "mystr"});
-  res_top := some({x = "mystr"; y = 2; z = 0x02})
+  res_top := some({x = "mystr1"; y = 3; z = 0x03})
 }

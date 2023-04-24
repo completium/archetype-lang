@@ -4000,12 +4000,12 @@ module Utils : sig
   val get_records                        : model -> record list
   val get_var                            : model -> ident -> var
   val get_var_opt                        : model -> ident -> var option
-  val get_enum                           : model -> ident -> enum
+  val get_enum                           : model -> mident -> enum
   val get_enum_opt                       : model -> ident -> enum option
   val get_enum_values                    : model -> ident -> ident list
   val get_asset                          : model -> ident -> asset
-  val get_record                         : model -> ident -> record
-  val get_event                          : model -> ident -> record
+  val get_record                         : model -> mident -> record
+  val get_event                          : model -> mident -> record
   val get_events                         : model -> record list
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * type_)
@@ -4031,7 +4031,7 @@ module Utils : sig
   val get_asset_partitions               : model -> ident -> (ident * ident) list
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
-  val get_record_pos                     : model -> ident -> ident -> (int * int) list
+  val get_record_pos                     : model -> mident -> ident -> (int * int) list
   val is_partition                       : model -> ident -> ident -> bool
 
 end = struct
@@ -4137,15 +4137,15 @@ end = struct
 
   let get_var      m id : var          = get_vars  m |> List.find     (fun (x : var)  -> cmp_ident id (unloc_mident x.name))
   let get_var_opt  m id : var option   = get_vars  m |> List.find_opt (fun (x : var)  -> cmp_ident id (unloc_mident x.name))
-  let get_enum     m id : enum         = get_enums m |> List.find     (fun (x : enum) -> cmp_ident id (unloc_mident x.name))
+  let get_enum     m id : enum         = get_enums m |> List.find     (fun (x : enum) -> cmp_mident id x.name)
   let get_enum_opt m id : enum option  = get_enums m |> List.find_opt (fun (x : enum) -> cmp_ident id (unloc_mident x.name))
   let get_enum_values m id : ident list  = get_enums m
                                            |> List.find (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
                                            |> fun e -> e.values
                                                        |> List.map (fun (v : enum_item) -> unloc_mident (v.name))
   let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc_mident x.name))
-  let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_ident id (unloc_mident x.name))
-  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_ident id (unloc_mident x.name))
+  let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_mident id x.name)
+  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_mident id x.name)
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
