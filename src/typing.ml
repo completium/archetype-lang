@@ -6613,7 +6613,7 @@ let records_of_rdecls rdecls =
 let variables_of_vdecls fdecls =
   let for1 (decl : vardecl) =
     A.{ decl =
-          A.{ name    = snd decl.vr_name; (* FIXME: namespace *)
+          A.{ name    = decl.vr_name;
               typ     = Some decl.vr_type;
               default = Option.fst decl.vr_def;
               shadow  = false;
@@ -6761,7 +6761,7 @@ let for_parameters ?init env params =
 
 let sort_decl refs l =
   let get_name = function
-    | A.Dvariable x -> unloc x.decl.name
+    | A.Dvariable x -> unloc_longident x.decl.name
     | A.Denum {kind = EKenum id}  -> unloc_longident id
     | A.Denum {kind = EKstate _ }  -> "_state"
     | A.Drecord x   -> unloc_longident x.name
@@ -6849,7 +6849,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
                   let args_to_type args =
                     let l =
                       List.fold_right
-                        (fun (x : A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> [])
+                        (fun (x : A.lident A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> [])
                         args []
                     in
                     match l with

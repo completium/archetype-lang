@@ -3998,8 +3998,8 @@ module Utils : sig
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
   val get_records                        : model -> record list
-  val get_var                            : model -> ident -> var
-  val get_var_opt                        : model -> ident -> var option
+  val get_var                            : model -> mident -> var
+  val get_var_opt                        : model -> mident -> var option
   val get_enum                           : model -> mident -> enum
   val get_enum_opt                       : model -> ident -> enum option
   val get_enum_values                    : model -> ident -> ident list
@@ -4135,8 +4135,8 @@ end = struct
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
   let get_events  m = m.decls |> List.filter is_event  |> List.map dest_event
 
-  let get_var      m id : var          = get_vars  m |> List.find     (fun (x : var)  -> cmp_ident id (unloc_mident x.name))
-  let get_var_opt  m id : var option   = get_vars  m |> List.find_opt (fun (x : var)  -> cmp_ident id (unloc_mident x.name))
+  let get_var      m id : var          = get_vars  m |> List.find     (fun (x : var)  -> cmp_mident id x.name)
+  let get_var_opt  m id : var option   = get_vars  m |> List.find_opt (fun (x : var)  -> cmp_mident id x.name)
   let get_enum     m id : enum         = get_enums m |> List.find     (fun (x : enum) -> cmp_mident id x.name)
   let get_enum_opt m id : enum option  = get_enums m |> List.find_opt (fun (x : enum) -> cmp_ident id (unloc_mident x.name))
   let get_enum_values m id : ident list  = get_enums m

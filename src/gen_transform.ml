@@ -1864,7 +1864,7 @@ let remove_storage_field_in_function (model : model) : model =
     let fs_name = unloc_mident fs.name in
 
     let is_not_constant (model : model) (id : mident) =
-      let ovar = Utils.get_var_opt model (unloc_mident id) in
+      let ovar = Utils.get_var_opt model id in
       let cst =
         match ovar with
         | Some dvar -> (match dvar.kind with | VKconstant -> true | _ -> false)
@@ -3883,7 +3883,7 @@ let remove_constant (model : model) : model =
   let for_mterm map _ (mt : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
-      | Mvar (id, _) when MapString.mem (unloc_mident id) map -> MapString.find (unloc_mident id) map
+      | Mvar (id, _) when MapString.mem (normalize_mident id) map -> MapString.find (normalize_mident id) map
       | _ -> map_mterm aux mt
     in
     aux mt
@@ -3893,12 +3893,12 @@ let remove_constant (model : model) : model =
 
   let map, decls = List.fold_left (fun (map, dns) dn ->
       match dn with
-      | Dvar dvar when ((function | VKconstant -> true | _ -> false) dvar.kind) && Option.is_some(dvar.default)-> (MapString.add (unloc_mident dvar.name) (Option.get dvar.default) map, dns)
+      | Dvar dvar when ((function | VKconstant -> true | _ -> false) dvar.kind) && Option.is_some(dvar.default)-> (MapString.add (normalize_mident dvar.name) (Option.get dvar.default) map, dns)
       | _ -> (map, dns @ [dn])) (map, []) model.decls in
 
   let map, storage = List.fold_left (fun (map, l) si ->
       match si.model_type with
-      | MTconst -> (MapString.add (unloc_mident si.id) si.default map, l)
+      | MTconst -> (MapString.add (normalize_mident si.id) si.default map, l)
       | _ -> (map, l @ [si])) (map, []) model.storage in
   { model with
     decls = decls;

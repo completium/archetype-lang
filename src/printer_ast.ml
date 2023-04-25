@@ -950,11 +950,11 @@ let pp_variable_kind fmt = function
 let pp_variable fmt (v : variable) =
   Format.fprintf fmt "%a %a : %a%a@\n"
     pp_variable_kind v.kind
-    pp_id v.decl.name
+    pp_longident v.decl.name
     pp_type (Option.get v.decl.typ)
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default
 
-let pp_field fmt (f : decl_gen) =
+let pp_field fmt (f : lident decl_gen) =
   Format.fprintf fmt "%a : %a%a;"
     pp_id f.name
     (pp_option pp_type) f.typ
@@ -1048,7 +1048,7 @@ let rec pp_sexpr fmt (s : sexpr) =
   in
   pp_struct_poly pp_node fmt s
 
-let pp_fun_ident_typ fmt (arg : decl_gen) =
+let pp_fun_ident_typ fmt (arg : lident decl_gen) =
   Format.fprintf fmt "%a : %a"
     pp_id arg.name
     pp_type (Option.get arg.typ)

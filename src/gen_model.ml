@@ -319,8 +319,8 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           let ids, k =
             List.fold_left (fun accu (x : A.decl_) ->
                 match x with
-                | A.Drecord r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Record)
-                | A.Devent  r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.decl_gen) -> unloc x.name) r.fields, `Event)
+                | A.Drecord r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields, `Record)
+                | A.Devent  r when String.equal (unloc_longident r.name) (M.unloc_mident record_name) -> (List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields, `Event)
                 | _ -> accu) ([], `None) w_ast.decls
           in
           if List.length ids <> List.length l
@@ -342,7 +342,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
       | A.Pvar ((_, { pldesc = "state" }))           -> M.Mvar (M.mk_mident (dumloc ""), Vstate)
       | A.Pvar (id) when is_param env (to_mident id) -> M.Mvar (to_mident id, Vparam)
-      | A.Pvar (id) when A.Utils.is_variable ast (longident_to_lident id)   -> M.Mvar (to_mident id, Vstorevar)
+      | A.Pvar (id) when A.Utils.is_variable ast id  -> M.Mvar (to_mident id, Vstorevar)
       | A.Pvar (id) when A.Utils.is_asset ast (longident_to_lident id)      -> M.Mvar (to_mident id, Vstorecol)
       | A.Pvar (id) when A.Utils.is_parameter ast (longident_to_lident id)  -> M.Mvar (to_mident id, Vparameter)
       | A.Pvar (id)                                   -> M.Mvar (to_mident id, Vlocal)
@@ -1016,7 +1016,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let process_var (env : env) (v : A.variable) : M.decl_node =
     let t : M.type_ = type_to_type (Option.get v.decl.typ) in
-    let var : M.var = M.mk_var (M.mk_mident v.decl.name) t t (to_variable_kind v.kind) ?default:(Option.map (to_mterm env) v.decl.default) ~loc:v.loc in
+    let var : M.var = M.mk_var (to_mident v.decl.name) t t (to_variable_kind v.kind) ?default:(Option.map (to_mterm env) v.decl.default) ~loc:v.loc in
     M.Dvar var
   in
 
@@ -1037,7 +1037,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let process_asset (env : env) (a : A.asset) : M.decl_node =
     let env = {env with asset_name = Some (unloc_longident a.name)} in
-    let values = List.map (fun (x : A.decl_gen) ->
+    let values = List.map (fun (x : A.lident A.decl_gen) ->
         let typ = Option.get (Option.map type_to_type x.typ) in
         let default = Option.map (to_mterm env) x.default in
         M.mk_asset_item (M.mk_mident x.name) typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
@@ -1079,7 +1079,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
     let pos = for_pos r.pos in
     let fs : M.record_field list =
-      List.map (fun (x : A.decl_gen) ->
+      List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.get (Option.map type_to_type x.typ) in
           M.mk_record_field (M.mk_mident x.name) typ ~loc:x.loc) r.fields
     in
@@ -1321,7 +1321,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let process_function (env : env) (function_ : A.function_) : M.function__ =
     let name  = M.mk_mident function_.name in
-    let args  = List.map (fun (x : A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
+    let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
     let env   = {env with function_p = Some (name, args); } in
     let body  = to_instruction env function_.body in
     let loc   = function_.loc in
@@ -1467,7 +1467,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     in
 
     let process_body_args env : M.argument list * M.mterm * env =
-      let args  = List.map (fun (x : A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
       let env   = {env with function_p = Some (M.mk_mident transaction.name, args); } in
       let empty : M.mterm = M.mk_mterm (M.Mseq []) M.tunit in
       match transaction.transition, transaction.effect with

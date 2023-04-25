@@ -450,7 +450,7 @@ let for_errors (model : M.model) : error_struct list =
     in
 
     match mt.node with
-    | Mvar (id, Vstorevar) -> (match seek_mterm_from_storevar (M.unloc_mident id) with | Some v -> f v | None -> None)
+    | Mvar (id, Vstorevar) -> (match seek_mterm_from_storevar id with | Some v -> f v | None -> None)
     | _ -> f mt
   in
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in

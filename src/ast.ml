@@ -14,6 +14,9 @@ type longident = namespace * lident
 let unloc_longident ((nm, id) : longident) =
   (unloc nm, unloc id)
 
+let cmp_longident ((nm1, id1) : longident) ((nm2, id2) : longident) =
+  String.equal (unloc nm1) (unloc nm2) && String.equal (unloc id1) (unloc id2)
+
 let pp_ident fmt i = Format.fprintf fmt "%s" i
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
@@ -437,8 +440,8 @@ and lvalue = [
   | `Tuple of pterm * int * int
 ]
 
-type decl_gen = {
-  name    : lident;
+type 'a decl_gen = {
+  name    : 'a;
   typ     : type_ option;
   default : pterm option;
   shadow  : bool;
@@ -462,7 +465,7 @@ type variable_kind =
 [@@deriving show {with_path = false}]
 
 type variable = {
-  decl : decl_gen; (* TODO *)
+  decl : longident decl_gen; (* TODO *)
   kind : variable_kind;
   loc  : Location.t [@opaque];
 }
@@ -506,7 +509,7 @@ type fun_kind =
 type function_ = {
   name          : lident;
   kind          : fun_kind;
-  args          : decl_gen list;
+  args          : lident decl_gen list;
   body          : instruction;
   return        : type_;
   loc           : Location.t [@opaque];
@@ -536,7 +539,7 @@ type transition = {
 
 type transaction = {
   name            : lident;
-  args            : decl_gen list;
+  args            : lident decl_gen list;
   sourcedby       : (rexpr * pterm option) option;
   calledby        : (rexpr * pterm option) option;
   state_is        : (lident * pterm option) option;
@@ -581,7 +584,7 @@ type map_kind =
 
 type asset = {
   name     : longident;
-  fields   : decl_gen list;
+  fields   : lident decl_gen list;
   keys     : lident list;   (* TODO: option ? *)
   sort     : lident list;
   map_kind : map_kind;
@@ -598,7 +601,7 @@ type position =
 
 type record = {
   name    : longident;
-  fields  : decl_gen list;
+  fields  : lident decl_gen list;
   pos     : position;
   loc     : Location.t [@opaque];
 }
@@ -752,15 +755,15 @@ let map_ptyp ft t =
 module Utils : sig
 
   val get_asset                 : ast -> lident -> asset
-  val get_asset_field           : ast -> (lident * lident ) -> decl_gen
+  val get_asset_field           : ast -> (lident * lident ) -> lident decl_gen
   val get_asset_key             : ast -> lident -> (lident * vtyp)
   val get_container_asset_field : ast -> (lident * lident ) -> container
   val get_named_field_list      : ast -> lident -> pterm list -> (lident * pterm) list
   val get_field_list            : ast -> lident -> lident list
-  val is_variable               : ast -> lident -> bool
+  val is_variable               : ast -> longident -> bool
   val is_asset                  : ast -> lident -> bool
   val is_parameter              : ast -> lident -> bool
-  val get_var_type              : ast -> lident -> type_
+  val get_var_type              : ast -> longident -> type_
 
 end = struct
   open Tools
@@ -793,9 +796,9 @@ end = struct
     | Some v -> v
     | _ -> emit_error (AssetNotFound (unloc asset_name))
 
-  let get_asset_field ast (asset_name, field_name) : decl_gen =
+  let get_asset_field ast (asset_name, field_name) : lident decl_gen =
     let asset = get_asset ast asset_name in
-    let res = List.fold_left (fun accu (x : decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
+    let res = List.fold_left (fun accu (x : lident decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
     match res with
     | Some v -> v
     | _ -> emit_error (AssetFieldNotFound (unloc asset_name, unloc field_name))
@@ -816,7 +819,7 @@ end = struct
 
   let get_field_list ast asset_name =
     let asset = get_asset ast asset_name in
-    List.map (fun (x : decl_gen) -> x.name) asset.fields
+    List.map (fun (x : lident decl_gen) -> x.name) asset.fields
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in
@@ -833,10 +836,10 @@ end = struct
         else accu
       ) None (get_assets ast)
 
-  let get_variable_opt ast ident : variable option =
+  let get_variable_opt ast (ident : longident) : variable option =
     List.fold_left (
       fun accu (x : variable) ->
-        if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
+        if cmp_longident x.decl.name ident
         then Some x
         else accu
     ) None (get_variables ast)
@@ -854,11 +857,11 @@ end = struct
   let is_parameter ast ident =
     List.exists (fun (x : parameter) -> String.equal (unloc ident) (unloc x.name)) ast.parameters
 
-  let get_var_type (ast : ast) (ident : lident) : type_ =
+  let get_var_type (ast : ast) (ident : longident) : type_ =
     let var : type_ option =
       List.fold_left (
         fun accu (x : variable) ->
-          if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
+          if cmp_longident x.decl.name ident
           then x.decl.typ
           else accu
       ) None (get_variables ast) in
