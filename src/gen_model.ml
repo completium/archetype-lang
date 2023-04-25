@@ -46,7 +46,8 @@ let mk_env ?(formula=false) ?asset_name ?function_p () =
 
 let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
-  let get_namespace nm = if (String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm)) then None else Some nm in
+  let is_current_namespace nm = String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm) in
+  let get_namespace nm = if is_current_namespace nm then None else Some nm in
   let to_mident ((nm, id) : A.longident) : M.mident =
     let namespace = get_namespace nm in
     M.mk_mident ?namespace id
@@ -1044,7 +1045,8 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     in
     let mk_asset an l : M.mterm = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
     let mp = match a.map_kind with | A.MKMap -> M.MKMap | A.MKBigMap -> M.MKBigMap | A.MKIterableBigMap -> M.MKIterableBigMap in
-    let r : M.asset = M.mk_asset (to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (to_mident a.name)) x) a.init) ~loc:a.loc in
+    let no_storage = not (is_current_namespace (fst a.name)) in
+    let r : M.asset = M.mk_asset (to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (to_mident a.name)) x) a.init) ~no_storage ~loc:a.loc in
     M.Dasset r
   in
 
@@ -1581,7 +1583,7 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | Some x -> begin
               let ds = x.decls |> List.filter (function
                   | A.Dvariable v -> (match v.kind with | A.VKconstant -> true | _ -> false)
-                  | A.Dasset    _ -> false
+                  | A.Dasset    _ -> true
                   | A.Drecord   _ -> true
                   | A.Denum     _ -> true
                   | A.Devent    _ -> true) in

@@ -1602,7 +1602,7 @@ let split_key_values (model : model) : model =
             | _ -> assert false
           in
           let asset_assets =
-            mk_storage_item (mk_mident (dumloc (asset_assets (unloc_mident an))))
+            mk_storage_item ~no_storage:x.no_storage (mk_mident (dumloc (asset_assets (unloc_mident an))))
               (MTasset (unloc_mident an))
               type_asset
               default
@@ -1658,6 +1658,7 @@ let remove_duplicate_key (model : model) : model =
               in
               let asset_assets =
                 mk_storage_item x.id
+                  ~no_storage:x.no_storage
                   (MTasset an)
                   type_asset
                   default

@@ -1277,10 +1277,9 @@ let to_ir (model : M.model) : T.ir =
 
   in
 
-  let storage_list = List.map (
+  let storage_list = model.storage |> List.filter (fun (x : M.storage_item) -> not x.no_storage) |> List.map (
       fun (si : M.storage_item) ->
         (M.unloc_mident si.id), to_type model ~annotation:(mk_fannot (M.unloc_mident si.id)) si.typ, to_data si.default)
-      model.storage
   in
 
   let storage_type, storage_data =

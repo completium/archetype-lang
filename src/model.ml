@@ -589,6 +589,7 @@ type storage_item = {
   const       : bool;
   ghost       : bool;
   default     : mterm; (* initial value *)
+  no_storage  : bool;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -642,6 +643,7 @@ type asset = {
   map_kind: map_kind;
   state: lident option;
   init: mterm list;
+  no_storage: bool;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -808,8 +810,8 @@ let mk_enum ?(values = []) name initial : enum =
 let mk_enum_item ?(args = []) name : enum_item =
   { name; args }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(init = []) ?(loc = Location.dummy) name : asset =
-  { name; values; sort; map_kind; state; keys; init; loc }
+let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(init = []) ?(loc = Location.dummy) ?(no_storage = false) name : asset =
+  { name; values; sort; map_kind; state; keys; init; no_storage; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : asset_item =
   { name; type_; original_type; default; shadow; loc }
@@ -820,8 +822,8 @@ let mk_record ?(fields = []) ?(pos = Pnode []) ?(loc = Location.dummy) name : re
 let mk_record_field ?(loc = Location.dummy) name type_ : record_field =
   { name; type_; loc }
 
-let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
-  { id; model_type; typ; const; ghost; default; loc }
+let mk_storage_item ?(const=false) ?(ghost = false) ?(no_storage = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
+  { id; model_type; typ; const; ghost; default; no_storage; loc }
 
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; loc }
@@ -3855,6 +3857,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         map_kind      = a.map_kind;
         state         = Option.map (h KIassetstate) a.state;
         init          = List.map for_mterm a.init;
+        no_storage    = a.no_storage;
         loc           = a.loc;
       }
     in
@@ -3896,6 +3899,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       const       = si.const;
       ghost       = si.ghost;
       default     = for_mterm si.default;
+      no_storage  = si.no_storage;
       loc         = si.loc;
     }
   in

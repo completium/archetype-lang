@@ -16,6 +16,7 @@ let generate_storage (model : model) : model =
     let asset_name = asset.name in
     let typ_ = tcollection asset_name in
     mk_storage_item
+      ~no_storage:asset.no_storage
       asset_name
       (MTasset (unloc_mident asset_name))
       typ_
