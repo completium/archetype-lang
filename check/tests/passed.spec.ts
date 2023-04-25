@@ -702,6 +702,10 @@ import * as greedy_and from '../bindings/passed/greedy_and'
 import * as greedy_or from '../bindings/passed/greedy_or'
 import * as implicit_cast_to_view from '../bindings/passed/implicit_cast_to_view'
 import * as implicit_the from '../bindings/passed/implicit_the'
+import * as import_arl_enum_def from '../bindings/passed/import_arl_enum_def'
+import * as import_arl_enum_use from '../bindings/passed/import_arl_enum_use'
+import * as import_arl_enum_use_collide from '../bindings/passed/import_arl_enum_use_collide'
+import * as import_arl_enum_use_complete from '../bindings/passed/import_arl_enum_use_complete'
 import * as init_lambda from '../bindings/passed/init_lambda'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
@@ -13253,6 +13257,54 @@ describe('passed', async () => {
     assert(res_after.length == 2)
     assert(res_after[0] == "id0")
     assert(res_after[1] == "id2")
+  })
+
+  it('import_arl_enum_def', async () => {
+    await import_arl_enum_def.import_arl_enum_def.deploy({ as: alice })
+  })
+
+  it('import_arl_enum_use', async () => {
+    await import_arl_enum_use.import_arl_enum_use.deploy({ as: alice })
+
+    const res_before = await import_arl_enum_use.import_arl_enum_use.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_enum_use.import_arl_enum_use.exec({ as: alice })
+
+    const res_after = await import_arl_enum_use.import_arl_enum_use.get_res()
+    assert(res_after.equals(Option.Some(new import_arl_enum_use.A())))
+  })
+
+  it('import_arl_enum_use_collide', async () => {
+    await import_arl_enum_use_collide.import_arl_enum_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_enum_use_collide.import_arl_enum_use_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_enum_use_collide.import_arl_enum_use_collide.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_enum_use_collide.import_arl_enum_use_collide.exec({ as: alice })
+
+    const res_imported_after = await import_arl_enum_use_collide.import_arl_enum_use_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(new import_arl_enum_use_collide.A())))
+    const res_top_after = await import_arl_enum_use_collide.import_arl_enum_use_collide.get_res_top()
+    assert(res_top_after.equals(Option.Some(new import_arl_enum_use_collide.Z())))
+  })
+
+  it('import_arl_enum_use_complete', async () => {
+    await import_arl_enum_use_complete.import_arl_enum_use_complete.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_enum_use_complete.import_arl_enum_use_complete.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_enum_use_complete.import_arl_enum_use_complete.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_enum_use_complete.import_arl_enum_use_complete.exec({ as: alice })
+
+    const res_imported_after = await import_arl_enum_use_complete.import_arl_enum_use_complete.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(new import_arl_enum_use_complete.A())))
+    const res_top_after = await import_arl_enum_use_complete.import_arl_enum_use_complete.get_res_top()
+    assert(res_top_after.equals(Option.Some(new import_arl_enum_use_complete.Z())))
   })
 
   it('init_lambda', async () => {

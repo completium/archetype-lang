@@ -2,13 +2,13 @@ archetype import_arl_enum_use_complete
 
 import "./import_arl_enum_def.arl"
 
-enum my_event =
+enum my_enum =
 | X
 | Y
 | Z
 
-variable res_imported : option<import_arl_enum_def::my_event> = none
-variable res_top : option<my_event> = none
+variable res_imported : option<import_arl_enum_def::my_enum> = none
+variable res_top : option<my_enum> = none
 
 entry exec() {
   const r0 = import_arl_enum_def::A;

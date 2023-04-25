@@ -2,7 +2,7 @@ archetype import_arl_enum_use
 
 import "./import_arl_enum_def.arl"
 
-variable res : option<import_arl_enum_def::my_event> = none
+variable res : option<import_arl_enum_def::my_enum> = none
 
 entry exec() {
   res := some(import_arl_enum_def::A)

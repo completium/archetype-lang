@@ -1,0 +1,43 @@
+{ storage (pair (option %res_imported int) (option %res_top int)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH int 0 ;
+         PUSH int 1 ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH string "error" ; FAILWITH }
+            { DUP ;
+              PUSH int 1 ;
+              COMPARE ;
+              EQ ;
+              IF {} { PUSH string "error" ; FAILWITH } } ;
+         DROP 1 ;
+         PUSH int 2 ;
+         PUSH int 1 ;
+         DUP ;
+         PUSH int 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH string "error" ; FAILWITH }
+            { DUP ;
+              PUSH int 1 ;
+              COMPARE ;
+              EQ ;
+              IF {} { PUSH string "error" ; FAILWITH } } ;
+         DROP 1 ;
+         DUP 2 ;
+         SOME ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP ;
+         SOME ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

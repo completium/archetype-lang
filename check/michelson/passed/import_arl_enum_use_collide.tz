@@ -1,0 +1,16 @@
+{ storage (pair (option %res_imported int) (option %res_top int)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH int 0 ;
+         SOME ;
+         SWAP ;
+         DROP 1 ;
+         PUSH int 2 ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

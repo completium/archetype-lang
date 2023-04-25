@@ -198,8 +198,8 @@ let mk_contract_interface name parameters types storage storage_type entrypoints
 
 let rec for_type (t : M.type_) : type_ =
   match M.get_ntype t with
-  | Tasset id                                   -> mk_type "asset"               (Some (M.unloc_mident id)) None    []
-  | Tenum id                                    -> mk_type "enum"                (Some (M.unloc_mident id)) None    []
+  | Tasset id                                   -> mk_type "asset"               (Some (M.printable_mident id)) None    []
+  | Tenum id                                    -> mk_type "enum"                (Some (M.printable_mident id)) None    []
   | Tstate                                      -> mk_type "state"                None                      None    []
   | Tbuiltin Bunit                              -> mk_type "unit"                 None                      None    []
   | Tbuiltin Bbool                              -> mk_type "bool"                 None                      None    []
@@ -223,13 +223,13 @@ let rec for_type (t : M.type_) : type_ =
   | Tbuiltin Bnever                             -> mk_type "never"                None                      None    []
   | Tbuiltin Bchest                             -> mk_type "chest"                None                      None    []
   | Tbuiltin Bchest_key                         -> mk_type "chest_key"            None                      None    []
-  | Tcontainer ((Tasset an, _), Collection)     -> mk_type "collection"          (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), Aggregate)      -> mk_type "aggregate"           (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), Partition)      -> mk_type "partition"           (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), AssetContainer) -> mk_type "asset_container"     (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), AssetKey)       -> mk_type "asset_key"           (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), AssetValue)     -> mk_type "asset_value"         (Some (M.unloc_mident an)) None    []
-  | Tcontainer ((Tasset an, _), View)           -> mk_type "asset_view"          (Some (M.unloc_mident an)) None    []
+  | Tcontainer ((Tasset an, _), Collection)     -> mk_type "collection"          (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), Aggregate)      -> mk_type "aggregate"           (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), Partition)      -> mk_type "partition"           (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), AssetContainer) -> mk_type "asset_container"     (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), AssetKey)       -> mk_type "asset_key"           (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), AssetValue)     -> mk_type "asset_value"         (Some (M.printable_mident an)) None    []
+  | Tcontainer ((Tasset an, _), View)           -> mk_type "asset_view"          (Some (M.printable_mident an)) None    []
   | Tcontainer (t, Collection)                  -> mk_type "collection"           None                      None    [for_type t]
   | Tcontainer (t, Aggregate)                   -> mk_type "aggregate"            None                      None    [for_type t]
   | Tcontainer (t, Partition)                   -> mk_type "partition"            None                      None    [for_type t]
@@ -245,8 +245,8 @@ let rec for_type (t : M.type_) : type_ =
   | Tbig_map (kt, vt)                           -> mk_type "big_map"              None                      None    [for_type kt; for_type vt]
   | Titerable_big_map (kt, vt)                  -> mk_type "iterable_big_map"     None                      None    [for_type kt; for_type vt]
   | Tor (lt, rt)                                -> mk_type "or"                   None                      None    [for_type lt; for_type rt]
-  | Trecord id                                  -> mk_type "record"              (Some (M.unloc_mident id)) None    []
-  | Tevent id                                   -> mk_type "event"               (Some (M.unloc_mident id)) None    []
+  | Trecord id                                  -> mk_type "record"              (Some (M.printable_mident id)) None    []
+  | Tevent id                                   -> mk_type "event"               (Some (M.printable_mident id)) None    []
   | Tlambda (at, rt)                            -> mk_type "lambda"               None                      None    [for_type at; for_type rt]
   | Tunit                                       -> mk_type "unit"                 None                      None    []
   | Toperation                                  -> mk_type "operation"            None                      None    []
@@ -332,7 +332,7 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
   let for_asset  (asset  : M.asset)  : decl_asset =
     let odasset : M.odel_asset = List.fold_left (fun accu x ->
         match x with
-        | M.ODAsset x when String.equal x.name (M.unloc_mident asset.name)-> Some x
+        | M.ODAsset x when M.cmp_mident x.name asset.name-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let key_type =
@@ -365,11 +365,11 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
   let for_enum (enum : M.enum) : decl_enum   =
     let odasset : M.odel_enum = List.fold_left (fun accu x ->
         match x with
-        | M.ODEnum x when String.equal x.name (M.unloc_mident enum.name)-> Some x
+        | M.ODEnum x when M.cmp_mident x.name enum.name-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let michelson_type = ft odasset.current_type in
-    mk_decl_enum (M.unloc_mident enum.name) (List.map for_enum_item enum.values) michelson_type
+    mk_decl_enum (M.printable_mident enum.name) (List.map for_enum_item enum.values) michelson_type
   in
 
   let for_record (record : M.record) : decl_record =

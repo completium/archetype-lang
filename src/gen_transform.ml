@@ -994,9 +994,8 @@ let remove_enum (model : model) : model =
     let lll = List.fold_left (fun accu x -> begin
           match x with
           | Denum e -> begin
-              let ename : string = normalize_mident e.name in
               let te = for_type (tenum (e.name)) in
-              ODEnum (mk_odel_enum ename te)::accu
+              ODEnum (mk_odel_enum e.name te)::accu
             end
           | _ -> accu
         end ) [] model.decls in
@@ -3761,7 +3760,7 @@ let remove_asset (model : model) : model =
   let add_extra_asset (map : ((bool * bool) * (type_ * type_)) MapString.t) (model : model) : model =
     let ft = to_type_remove_asset map in
     let assets = List.fold_right (fun x accu -> match x with | Dasset a -> a::accu | _ -> accu) model.decls [] in
-    let items = List.map (fun (x : asset) -> let an = x.name in ODAsset (mk_odel_asset (unloc_mident an) (ft (tassetcontainer an)) (ft (tassetkey an)) (ft (tassetvalue an)))) assets in
+    let items = List.map (fun (x : asset) -> let an = x.name in ODAsset (mk_odel_asset an (ft (tassetcontainer an)) (ft (tassetkey an)) (ft (tassetvalue an)))) assets in
     let original_decls = model.extra.original_decls @ items in
     { model with extra = { original_decls = original_decls } }
   in

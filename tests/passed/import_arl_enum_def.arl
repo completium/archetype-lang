@@ -1,6 +1,6 @@
 archetype import_arl_enum_def
 
-enum my_event =
+enum my_enum =
 | A
 | B
 | C

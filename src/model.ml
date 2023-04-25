@@ -14,8 +14,6 @@ type path = namespace * lident
 type mident = path
 [@@deriving show {with_path = false}]
 
-let string_to_mident ?(nm : string option = None) id : mident = (Option.map dumloc nm, dumloc id)
-
 type container =
   | Collection
   | Aggregate
@@ -743,7 +741,7 @@ type metadata_kind =
 [@@deriving show {with_path = false}]
 
 type odel_asset = {
-  name: ident;
+  name: mident;
   container_type: type_;
   key_type: type_;
   value_type: type_;
@@ -751,13 +749,13 @@ type odel_asset = {
 [@@deriving show {with_path = false}]
 
 type odel_record = {
-  name: ident;
+  name: mident;
   current_type: type_;
 }
 [@@deriving show {with_path = false}]
 
 type odel_enum = {
-  name: ident;
+  name: mident;
   current_type: type_;
 }
 [@@deriving show {with_path = false}]
@@ -857,10 +855,16 @@ let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(decls = []) ?(func
 
 (* -------------------------------------------------------------------- *)
 
-let normalize_mident (nm, id : mident) : ident =
+let gen_mident s (nm, id : mident) : ident =
   match nm with
-  | Some nm -> (unloc nm) ^ "::" ^ (unloc id)
+  | Some nm -> (unloc nm) ^ s ^ (unloc id)
   | None -> unloc id
+
+let normalize_mident = gen_mident "::"
+
+let printable_mident = gen_mident "__"
+
+let string_to_mident ?(nm : string option = None) id : mident = (Option.map dumloc nm, dumloc id)
 
 (* -------------------------------------------------------------------- *)
 
