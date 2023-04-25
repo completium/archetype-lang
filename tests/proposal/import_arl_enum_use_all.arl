@@ -1,0 +1,9 @@
+archetype import_arl_enum_use_all
+
+import "./import_arl_all_def.arl"
+
+variable res : import_arl_all_def::my_enum = import_arl_all_def::eFirst
+
+entry exec () {
+  res := import_arl_all_def::eSecond
+}

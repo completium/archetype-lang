@@ -1,0 +1,6 @@
+archetype import_arl_record_complex_0
+
+record rec {
+  a: nat;
+  b: string
+}

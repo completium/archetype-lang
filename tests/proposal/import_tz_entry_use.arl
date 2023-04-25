@@ -1,4 +1,4 @@
-archetype import_contract
+archetype import_tz_entry_use
 
 import contract_tz from "../michelson/simple_nat.tz"
 

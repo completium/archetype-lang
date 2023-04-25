@@ -1,0 +1,13 @@
+archetype import_arl_constant_use_collide
+
+import "./import_arl_constant_def.arl"
+
+constant my_constant : string = "mystr"
+
+variable res_imported : nat = 0
+variable res_top : string = ""
+
+entry exec() {
+  res_imported := import_arl_constant_def::my_constant;
+  res_top := my_constant
+}

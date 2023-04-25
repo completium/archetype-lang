@@ -1,0 +1,9 @@
+archetype import_contract
+
+import "./import_arl_all_def.arl"
+
+variable res : nat = 0
+
+entry exec () {
+  res := import_arl_all_def::my_constant
+}

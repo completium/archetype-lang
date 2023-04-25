@@ -1,0 +1,8 @@
+archetype import_arl_record_complex_1
+
+import "./import_arl_record_complex_0.arl"
+
+record my_record {
+  x: nat;
+  r: import_arl_record_complex_0::rec;
+}

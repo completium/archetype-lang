@@ -1,0 +1,23 @@
+archetype import_arl_transfer_use
+
+import "./import_arl_all_def.arl"
+
+variable res : nat = 0
+variable res_view : option<nat> = none
+
+entry exec (a : address) {
+  const n = 2;
+
+  var r = import_arl_all_def::{n = n; s = ""};
+  res := r.n;
+
+  // transfer 0tz to a call import_decl.e(n);
+
+
+  transfer 0tz to entry import_arl_all_def(a).e(n);
+
+  // const c : contract<nat> = import_arl_all_def(a).e;
+  // transfer 0tz to entry c(n);
+
+  res_view := import_arl_all_def(a).get(Unit);
+}

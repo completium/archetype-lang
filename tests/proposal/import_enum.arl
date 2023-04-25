@@ -1,9 +1,0 @@
-archetype import_enum
-
-import "./import_decl.arl"
-
-variable res : import_decl::my_enum = import_decl::eFirst
-
-entry exec () {
-  res := import_decl::eSecond
-}

@@ -1,0 +1,3 @@
+archetype import_arl_constant_def
+
+constant my_constant : nat = 2

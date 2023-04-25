@@ -1,0 +1,12 @@
+archetype import_entry
+
+import "./import_arl_all_def.arl"
+
+variable res : nat = 0
+
+variable myc : string = ""
+
+entry exec (a : address) {
+  const r : import_arl_all_def::my_record = import_arl_all_def::{ n= 0; s = ::myc };
+  transfer 0tz to entry import_arl_all_def(a).e2(r);
+}

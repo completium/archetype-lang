@@ -1,0 +1,14 @@
+archetype import_record
+
+import "./import_arl_all_def.arl"
+
+variable res : import_arl_all_def::my_record = import_arl_all_def::{ n = 0; s = ::myc }
+
+variable myc : string = ""
+
+variable foo : nat = 0
+
+entry exec () {
+  const r : import_arl_all_def::my_record = import_arl_all_def::{ n = foo; s = "mystr" };
+  res := r
+}

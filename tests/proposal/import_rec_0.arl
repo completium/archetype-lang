@@ -1,6 +1,0 @@
-archetype import_rec_0
-
-record rec {
-  a: nat;
-  b: string
-}

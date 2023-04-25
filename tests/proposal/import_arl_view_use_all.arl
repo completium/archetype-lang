@@ -1,0 +1,10 @@
+archetype import_arl_view_use_all
+
+import "./import_arl_all_def.arl"
+
+variable res : nat = 0
+
+entry exec (a : address) {
+  const v : nat ?= import_arl_all_def(a).get(Unit) : "VIEW_ERROR";
+  res := v
+}

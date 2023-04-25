@@ -1,0 +1,9 @@
+archetype import_arl_constant_use
+
+import "./import_arl_constant_def.arl"
+
+variable res : nat = 0
+
+entry exec() {
+  res := import_arl_constant_def::my_constant
+}

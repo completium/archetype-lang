@@ -1,0 +1,9 @@
+archetype import_asset
+
+import "./import_arl_all_def.arl"
+
+variable res : asset_value<import_arl_all_def::my_asset> = import_arl_all_def::{x = ""; y = 0x; z = 0i}
+
+entry exec () {
+  res := import_arl_all_def::{x = "test"; y = 0x02; z = 3i}
+}

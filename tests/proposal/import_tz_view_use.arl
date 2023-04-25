@@ -1,4 +1,4 @@
-archetype import_view_tz
+archetype import_tz_view_use
 
 import contract_tz from "../michelson/view.tz"
 

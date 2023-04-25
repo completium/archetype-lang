@@ -1,9 +1,0 @@
-archetype import_contract
-
-import "./import_decl.arl"
-
-variable res : nat = 0
-
-entry exec () {
-  res := import_decl::my_constant
-}

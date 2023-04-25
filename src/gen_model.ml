@@ -1574,19 +1574,20 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let env = mk_env () in
 
   let iasts = Typing.Env.Import.get_all _tenv in
-  let adecls = List.fold_right (fun (_, x : ident * 'b Typing.importdecl) accu -> begin
-        match x.id_ast with
-        | None -> accu
-        | Some x -> begin
-            let ds = x.decls |> List.filter (function
-                | A.Dvariable _ -> false
-                | A.Dasset    _ -> false
-                | A.Drecord   _ -> true
-                | A.Denum     _ -> true
-                | A.Devent    _ -> true) in
-            ds @ accu
-          end
-      end) iasts ast.decls
+  let adecls =
+    List.fold_right (fun (_, x : ident * 'b Typing.importdecl) accu -> begin
+          match x.id_ast with
+          | None -> accu
+          | Some x -> begin
+              let ds = x.decls |> List.filter (function
+                  | A.Dvariable v -> (match v.kind with | A.VKconstant -> true | _ -> false)
+                  | A.Dasset    _ -> false
+                  | A.Drecord   _ -> true
+                  | A.Denum     _ -> true
+                  | A.Devent    _ -> true) in
+              ds @ accu
+            end
+        end) iasts ast.decls
   in
 
   let parameters = List.map (process_parameter env) ast.parameters in
