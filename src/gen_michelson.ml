@@ -194,19 +194,19 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bchest_key    -> T.Tchest_key
     end
   | Tcontainer ((Tasset an, _), View) -> begin
-      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      let _, ty = M.Utils.get_asset_key model an in
       T.mk_type ?annotation (T.Tlist (to_type ty))
     end
   | Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> begin
-      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      let _, ty = M.Utils.get_asset_key model an in
       T.mk_type ?annotation (T.Tset (to_type ty))
     end
   | Tcontainer ((Tasset an, _), AssetKey) -> begin
-      let _, ty = M.Utils.get_asset_key model (M.unloc_mident an) in
+      let _, ty = M.Utils.get_asset_key model an in
       to_type ty
     end
   | Tcontainer ((Tasset an, _), AssetValue) -> begin
-      let ty = M.Utils.get_asset_value model (M.unloc_mident an) in
+      let ty = M.Utils.get_asset_value model an in
       to_type ty
     end
   | Tcontainer _               -> assert false

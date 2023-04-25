@@ -342,7 +342,7 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
       | []    -> assert false
       | [_]   -> ft odasset.key_type
       | ks    -> begin
-          let kts = List.map (fun x -> let _, ty, _ = M.Utils.get_asset_field model (M.unloc_mident an, x) in f ty ("%" ^ x)) ks in
+          let kts = List.map (fun x -> let _, ty, _ = M.Utils.get_asset_field model (an, x) in f ty ("%" ^ x)) ks in
           match List.rev kts with
           | [] -> assert false
           | f::t ->

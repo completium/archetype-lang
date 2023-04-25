@@ -14,6 +14,8 @@ type path = namespace * lident
 type mident = path
 [@@deriving show {with_path = false}]
 
+let string_to_mident ?(nm : string option = None) id : mident = (Option.map dumloc nm, dumloc id)
+
 type container =
   | Collection
   | Aggregate
@@ -589,6 +591,7 @@ type storage_item = {
   const       : bool;
   ghost       : bool;
   default     : mterm; (* initial value *)
+  namespace   : ident option;
   no_storage  : bool;
   loc         : Location.t [@opaque];
 }
@@ -822,8 +825,8 @@ let mk_record ?(fields = []) ?(pos = Pnode []) ?(loc = Location.dummy) name : re
 let mk_record_field ?(loc = Location.dummy) name type_ : record_field =
   { name; type_; loc }
 
-let mk_storage_item ?(const=false) ?(ghost = false) ?(no_storage = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
-  { id; model_type; typ; const; ghost; default; no_storage; loc }
+let mk_storage_item ?(const=false) ?(ghost = false) ?namespace ?(no_storage = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
+  { id; model_type; typ; const; ghost; default; namespace; no_storage; loc }
 
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; loc }
@@ -3900,6 +3903,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       ghost       = si.ghost;
       default     = for_mterm si.default;
       no_storage  = si.no_storage;
+      namespace   = si.namespace;
       loc         = si.loc;
     }
   in
@@ -4007,36 +4011,36 @@ module Utils : sig
   val get_enum                           : model -> mident -> enum
   val get_enum_opt                       : model -> ident -> enum option
   val get_enum_values                    : model -> ident -> ident list
-  val get_asset                          : model -> ident -> asset
+  val get_asset                          : model -> mident -> asset
   val get_record                         : model -> mident -> record
   val get_event                          : model -> mident -> record
   val get_events                         : model -> record list
-  val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
-  val get_asset_key                      : model -> ident -> (ident * type_)
-  val get_asset_value                    : model -> ident -> type_
-  val get_field_container                : model -> ident -> ident -> (ident * container)
+  val get_asset_field                    : model -> (mident * ident) -> (mident * type_ * mterm option)
+  val get_asset_key                      : model -> mident -> (ident * type_)
+  val get_asset_value                    : model -> mident -> type_
+  val get_field_container                : model -> mident -> ident -> (mident * container)
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
-  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * type_)
+  val get_container_asset_key            : model -> ident -> ident -> (mident * ident * type_)
   val is_asset                           : mterm -> bool
-  val get_key_pos                        : model -> ident -> int
+  val get_key_pos                        : model -> mident -> int
   val is_field_storage                   : model -> ident -> bool
   val type_to_asset                      : type_ -> ident
   val with_operations                    : model -> bool
   val cmp                                : mterm -> mterm -> int
   val eval                               : (ident * mterm) list -> mterm -> mterm
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
-  val is_asset_single_field              : model -> ident -> bool
-  val is_asset_map                       : model -> ident -> bool
-  val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
+  val is_asset_single_field              : model -> mident -> bool
+  val is_asset_map                       : model -> mident -> bool
+  val get_labeled_value_from             : model -> mident -> mterm list -> (ident * mterm) list
   val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
   val sort_api_storage                   : model -> bool -> api_storage list -> api_storage list
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
-  val get_asset_partitions               : model -> ident -> (ident * ident) list
+  val get_asset_partitions               : model -> mident -> (ident * ident) list
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
   val get_record_pos                     : model -> mident -> ident -> (int * int) list
-  val is_partition                       : model -> ident -> ident -> bool
+  val is_partition                       : model -> mident -> ident -> bool
 
 end = struct
 
@@ -4147,7 +4151,7 @@ end = struct
                                            |> List.find (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
                                            |> fun e -> e.values
                                                        |> List.map (fun (v : enum_item) -> unloc_mident (v.name))
-  let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc_mident x.name))
+  let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_mident id x.name)
   let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_mident id x.name)
   let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_mident id x.name)
 
@@ -4170,26 +4174,26 @@ end = struct
 
   let dest_container t =
     match get_ntype t with
-    | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> unloc_mident p
+    | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> p
     | _ -> assert false
 
-  let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
+  let get_asset_field (m : model) (asset_name, field_name : mident * ident) : mident * type_ * mterm option =
     try
       let asset = get_asset m asset_name in
       List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) field_name) asset.values
-      |> (fun (x : asset_item) -> unloc_mident x.name, x.type_, x.default)
+      |> (fun (x : asset_item) -> x.name, x.type_, x.default)
     with
-    | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
+    | Not_found -> emit_error (AssetFieldNotFound (unloc_mident asset_name, field_name))
 
-  let get_asset_keys (m : model) (asset_name : ident) : (ident * type_) list =
+  let get_asset_keys (m : model) (asset_name : mident) : (ident * type_) list =
     try
       let asset = get_asset m asset_name in
       let key_ids = asset.keys in
       List.map (fun key_id -> key_id, (get_asset_field m (asset_name, key_id)|> fun (_, x, _) -> x)) key_ids
     with
-    | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
+    | Not_found -> emit_error (AssetKeyTypeNotFound (unloc_mident asset_name))
 
-  let get_asset_values (m : model) (asset_name : ident) : (ident * type_) list =
+  let get_asset_values (m : model) (asset_name : mident) : (ident * type_) list =
     try
       let asset : asset = get_asset m asset_name in
       List.fold_right(fun (x : asset_item) accu ->
@@ -4198,36 +4202,36 @@ end = struct
           else (unloc_mident x.name, x.type_)::accu)
         asset.values []
     with
-    | Not_found -> emit_error (AssetValueTypeNotFound (asset_name))
+    | Not_found -> emit_error (AssetValueTypeNotFound (unloc_mident asset_name))
 
-  let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
+  let get_asset_key (m : model) (asset_name : mident) : (ident * type_) =
     match get_asset_keys m asset_name with
-    | []  -> emit_error (EmptyAssetKeys (asset_name))
+    | []  -> emit_error (EmptyAssetKeys (unloc_mident asset_name))
     | [x] -> x
-    | _ -> emit_error (SeveralAssetKeys (asset_name))
+    | _ -> emit_error (SeveralAssetKeys (unloc_mident asset_name))
 
-  let get_asset_value (m : model) (asset_name : ident) : type_ =
+  let get_asset_value (m : model) (asset_name : mident) : type_ =
     match get_asset_keys m asset_name with
     | []  -> tunit
     | [x] -> snd x
     | l -> ttuple (List.map (fun x -> snd x) l)
 
-  let get_field_container model asset_name field_name : ident * container =
+  let get_field_container model asset_name field_name : mident * container =
     let seek_original_type () : type_ =
       try
         let asset = get_asset model asset_name in
         List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) field_name) asset.values
         |> (fun (x : asset_item) -> x.original_type)
       with
-      | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
+      | Not_found -> emit_error (AssetFieldNotFound (unloc_mident asset_name, field_name))
     in
     let ot = seek_original_type () in
     match get_ntype ot with
-    | Tcontainer ((Tasset an, _), c) -> (unloc_mident an, c)
+    | Tcontainer ((Tasset an, _), c) -> (an, c)
     | _ -> assert false
 
   (* returns : asset name, key name, key type *)
-  let get_container_asset_key model asset field : (ident * ident * type_) =
+  let get_container_asset_key model asset field : (mident * ident * type_) =
     let containers = get_containers model in
     let rec rec_get = function
       | (r,i,t) :: _tl when String.equal r asset &&
@@ -4262,9 +4266,9 @@ end = struct
     | Masset _ -> true
     | _ -> false
 
-  let get_key_pos (m : model) (n : ident) : int =
+  let get_key_pos (m : model) (n : mident) : int =
     get_assets m |> List.fold_left (fun acc (info : asset) ->
-        if String.equal n (unloc_mident info.name) then
+        if cmp_mident n info.name then
           let (k,_) = get_asset_key m n in
           (List.fold_left (fun acc (i : asset_item) ->
                if String.equal (unloc_mident i.name) k then
@@ -4728,13 +4732,13 @@ end = struct
       | _ -> fold_term aux accu t in
     aux accu mt
 
-  let is_asset_single_field (model : model) (an : ident) : bool =
+  let is_asset_single_field (model : model) (an : mident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
 
-  let is_asset_map (model : model) (an : ident) : bool =
+  let is_asset_map (model : model) (an : mident) : bool =
     get_asset model an |> fun x -> match x.map_kind with | MKMap -> true | _ -> false
 
-  let get_labeled_value_from (model : model) (an : ident) (values : mterm list) : (ident * mterm) list =
+  let get_labeled_value_from (model : model) (an : mident) (values : mterm list) : (ident * mterm) list =
     let asset = get_asset model an in
     List.map2 (fun (x : asset_item) (y : mterm) -> unloc_mident x.name, y) asset.values values
 
@@ -4854,9 +4858,8 @@ end = struct
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with
     | {node = (Masset l); type_ = (Tasset an, _) } ->
-      let an = unloc_mident an in
       let asset : asset = get_asset model an in
-      let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
+      let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys (unloc_mident an)) in
       let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc_mident ai.name, x)) asset.values l in
       List.find (fun (id, _) -> (String.equal asset_key id)) assoc_fields |> snd
     | _ -> raise Not_found

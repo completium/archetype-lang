@@ -17,6 +17,7 @@ let generate_storage (model : model) : model =
     let typ_ = tcollection asset_name in
     mk_storage_item
       ~no_storage:asset.no_storage
+      ?namespace:(asset.name |> fst |> Option.map Location.unloc)
       asset_name
       (MTasset (unloc_mident asset_name))
       typ_
