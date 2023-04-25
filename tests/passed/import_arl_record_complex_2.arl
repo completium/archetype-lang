@@ -1,0 +1,10 @@
+archetype import_arl_record_complex_2
+
+import "./import_arl_record_complex_0.arl"
+import "./import_arl_record_complex_1.arl"
+
+variable res : option<import_arl_record_complex_1::my_record> = none
+
+entry exec () {
+  res := some(import_arl_record_complex_1::{ x = 0; r = import_arl_record_complex_0::{a = 2; b = "mystring"} });
+}

@@ -1,0 +1,15 @@
+{ storage (pair (pair %res (nat %n) (string %s)) (string %myc) (nat %foo)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         PUSH string "mystr" ;
+         DUP 4 ;
+         PAIR ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

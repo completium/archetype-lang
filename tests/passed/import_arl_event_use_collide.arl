@@ -1,4 +1,4 @@
-archetype import_arl_record_use_collide
+archetype import_arl_event_use_collide
 
 import "./import_arl_event_def.arl"
 

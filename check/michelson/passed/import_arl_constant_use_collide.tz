@@ -1,0 +1,14 @@
+{ storage (pair (nat %res_imported) (string %res_top)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         SWAP ;
+         DROP 1 ;
+         PUSH string "mystr" ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

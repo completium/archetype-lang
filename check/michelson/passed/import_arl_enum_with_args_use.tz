@@ -1,0 +1,10 @@
+{ storage (option (or (nat %A) (or (string %B) (unit %C)))) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 0 ;
+         LEFT (or string unit) ;
+         SOME ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

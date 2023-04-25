@@ -359,7 +359,7 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
       | _ -> ft ct
     in
     let value_type     = ft odasset.value_type in
-    mk_decl_asset (M.unloc_mident asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
+    mk_decl_asset (M.printable_mident asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
   in
 
   let for_enum (enum : M.enum) : decl_enum   =
@@ -374,12 +374,12 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
 
   let for_record (record : M.record) : decl_record =
     let type_michelson = to_michelson_type model (M.trecord record.name) in
-    mk_decl_record (M.unloc_mident record.name) (List.map for_record_field record.fields) type_michelson
+    mk_decl_record (M.printable_mident record.name) (List.map for_record_field record.fields) type_michelson
   in
 
   let for_event  (event  : M.record) : decl_event =
     let type_michelson = to_michelson_type model (M.tevent event.name) in
-    mk_decl_event  (M.unloc_mident event.name)  (List.map for_record_field event.fields) type_michelson
+    mk_decl_event  (M.printable_mident event.name)  (List.map for_record_field event.fields) type_michelson
   in
 
   match d with

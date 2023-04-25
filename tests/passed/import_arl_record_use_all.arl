@@ -1,4 +1,4 @@
-archetype import_record
+archetype import_arl_record_use_all
 
 import "./import_arl_all_def.arl"
 

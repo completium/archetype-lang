@@ -1,0 +1,11 @@
+{ storage (option (pair (nat %a) (string %b))) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH string "mystr" ;
+         PUSH nat 2 ;
+         PAIR ;
+         SOME ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

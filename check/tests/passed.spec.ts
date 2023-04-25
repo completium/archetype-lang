@@ -702,10 +702,31 @@ import * as greedy_and from '../bindings/passed/greedy_and'
 import * as greedy_or from '../bindings/passed/greedy_or'
 import * as implicit_cast_to_view from '../bindings/passed/implicit_cast_to_view'
 import * as implicit_the from '../bindings/passed/implicit_the'
+import * as import_arl_all_def from '../bindings/passed/import_arl_all_def'
+import * as import_arl_constant_def from '../bindings/passed/import_arl_constant_def'
+import * as import_arl_constant_use from '../bindings/passed/import_arl_constant_use'
+import * as import_arl_constant_use_all from '../bindings/passed/import_arl_constant_use_all'
+import * as import_arl_constant_use_collide from '../bindings/passed/import_arl_constant_use_collide'
 import * as import_arl_enum_def from '../bindings/passed/import_arl_enum_def'
 import * as import_arl_enum_use from '../bindings/passed/import_arl_enum_use'
+import * as import_arl_enum_use_all from '../bindings/passed/import_arl_enum_use_all'
 import * as import_arl_enum_use_collide from '../bindings/passed/import_arl_enum_use_collide'
 import * as import_arl_enum_use_complete from '../bindings/passed/import_arl_enum_use_complete'
+import * as import_arl_enum_with_args_def from '../bindings/passed/import_arl_enum_with_args_def'
+import * as import_arl_enum_with_args_use from '../bindings/passed/import_arl_enum_with_args_use'
+import * as import_arl_enum_with_args_use_collide from '../bindings/passed/import_arl_enum_with_args_use_collide'
+import * as import_arl_enum_with_args_use_complete from '../bindings/passed/import_arl_enum_with_args_use_complete'
+import * as import_arl_event_def from '../bindings/passed/import_arl_event_def'
+import * as import_arl_event_use from '../bindings/passed/import_arl_event_use'
+import * as import_arl_event_use_collide from '../bindings/passed/import_arl_event_use_collide'
+import * as import_arl_record_complex_0 from '../bindings/passed/import_arl_record_complex_0'
+import * as import_arl_record_complex_1 from '../bindings/passed/import_arl_record_complex_1'
+import * as import_arl_record_complex_2 from '../bindings/passed/import_arl_record_complex_2'
+import * as import_arl_record_def from '../bindings/passed/import_arl_record_def'
+import * as import_arl_record_use from '../bindings/passed/import_arl_record_use'
+import * as import_arl_record_use_all from '../bindings/passed/import_arl_record_use_all'
+import * as import_arl_record_use_collide from '../bindings/passed/import_arl_record_use_collide'
+import * as import_arl_record_use_complete from '../bindings/passed/import_arl_record_use_complete'
 import * as init_lambda from '../bindings/passed/init_lambda'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
@@ -13259,6 +13280,54 @@ describe('passed', async () => {
     assert(res_after[1] == "id2")
   })
 
+  it('import_arl_all_def', async () => {
+    await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
+  })
+
+  it('import_arl_constant_def', async () => {
+    await import_arl_constant_def.import_arl_constant_def.deploy({ as: alice })
+  })
+
+  it('import_arl_constant_use', async () => {
+    await import_arl_constant_use.import_arl_constant_use.deploy({ as: alice })
+
+    const res_before = await import_arl_constant_use.import_arl_constant_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_constant_use.import_arl_constant_use.exec({ as: alice })
+
+    const res_after = await import_arl_constant_use.import_arl_constant_use.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('import_arl_constant_use_all', async () => {
+    await import_arl_constant_use_all.import_arl_constant_use_all.deploy({ as: alice })
+
+    const res_before = await import_arl_constant_use_all.import_arl_constant_use_all.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_constant_use_all.import_arl_constant_use_all.exec({ as: alice })
+
+    const res_after = await import_arl_constant_use_all.import_arl_constant_use_all.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('import_arl_constant_use_collide', async () => {
+    await import_arl_constant_use_collide.import_arl_constant_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_constant_use_collide.import_arl_constant_use_collide.get_res_imported()
+    assert(res_imported_before.equals(new Nat(0)))
+    const res_imported_top = await import_arl_constant_use_collide.import_arl_constant_use_collide.get_res_top()
+    assert(res_imported_top == "")
+
+    await import_arl_constant_use_collide.import_arl_constant_use_collide.exec({ as: alice })
+
+    const res_imported_after = await import_arl_constant_use_collide.import_arl_constant_use_collide.get_res_imported()
+    assert(res_imported_after.equals(new Nat(2)))
+    const res_top_after = await import_arl_constant_use_collide.import_arl_constant_use_collide.get_res_top()
+    assert(res_top_after == "mystr")
+  })
+
   it('import_arl_enum_def', async () => {
     await import_arl_enum_def.import_arl_enum_def.deploy({ as: alice })
   })
@@ -13273,6 +13342,18 @@ describe('passed', async () => {
 
     const res_after = await import_arl_enum_use.import_arl_enum_use.get_res()
     assert(res_after.equals(Option.Some(new import_arl_enum_use.A())))
+  })
+
+  it('import_arl_enum_use_all', async () => {
+    await import_arl_enum_use_all.import_arl_enum_use_all.deploy({ as: alice })
+
+    const res_before = await import_arl_enum_use_all.import_arl_enum_use_all.get_res()
+    assert(res_before.equals(new import_arl_enum_use_all.eFirst()))
+
+    await import_arl_enum_use_all.import_arl_enum_use_all.exec({ as: alice })
+
+    const res_after = await import_arl_enum_use_all.import_arl_enum_use_all.get_res()
+    assert(res_after.equals(new import_arl_enum_use_all.eSecond()))
   })
 
   it('import_arl_enum_use_collide', async () => {
@@ -13305,6 +13386,163 @@ describe('passed', async () => {
     assert(res_imported_after.equals(Option.Some(new import_arl_enum_use_complete.A())))
     const res_top_after = await import_arl_enum_use_complete.import_arl_enum_use_complete.get_res_top()
     assert(res_top_after.equals(Option.Some(new import_arl_enum_use_complete.Z())))
+  })
+
+  it('import_arl_enum_with_args_def', async () => {
+    await import_arl_enum_with_args_def.import_arl_enum_with_args_def.deploy({ as: alice })
+  })
+
+  it('import_arl_enum_with_args_use', async () => {
+    await import_arl_enum_with_args_use.import_arl_enum_with_args_use.deploy({ as: alice })
+
+    const res_before = await import_arl_enum_with_args_use.import_arl_enum_with_args_use.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_enum_with_args_use.import_arl_enum_with_args_use.exec({ as: alice })
+
+    const res_after = await import_arl_enum_with_args_use.import_arl_enum_with_args_use.get_res()
+    assert(res_after.equals(Option.Some<import_arl_enum_with_args_use.import_arl_enum_with_args_def__my_enum>(new import_arl_enum_with_args_use.A(new Nat(0)))))
+  })
+
+  it('import_arl_enum_with_args_use_collide', async () => {
+    await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.exec({ as: alice })
+
+    const res_imported_after = await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some<import_arl_enum_with_args_use_collide.import_arl_enum_with_args_def__my_enum>(new import_arl_enum_with_args_use_collide.B("mystr"))))
+    const res_top_after = await import_arl_enum_with_args_use_collide.import_arl_enum_with_args_use_collide.get_res_top()
+    assert(res_top_after.equals(Option.Some<import_arl_enum_with_args_use_collide.my_enum>(new import_arl_enum_with_args_use_collide.Z(new Nat(2)))))
+  })
+
+  it('import_arl_enum_with_args_use_complete', async () => {
+    await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.exec({ as: alice })
+
+    const res_imported_after = await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.get_res_imported()
+    assert(res_imported_after.equals(Option.Some<import_arl_enum_with_args_use_complete.import_arl_enum_with_args_def__my_enum>(new import_arl_enum_with_args_use_complete.A(new Nat(2)))))
+    const res_top_after = await import_arl_enum_with_args_use_complete.import_arl_enum_with_args_use_complete.get_res_top()
+    assert(res_top_after.equals(Option.Some<import_arl_enum_with_args_use_complete.my_enum>(new import_arl_enum_with_args_use_complete.Z(new Nat(2)))))
+  })
+
+  it('import_arl_event_def', async () => {
+    await import_arl_event_def.import_arl_event_def.deploy({ as: alice })
+  })
+
+  it('import_arl_event_use', async () => {
+    await import_arl_event_use.import_arl_event_use.deploy({ as: alice })
+
+    const ret = await import_arl_event_use.import_arl_event_use.exec({ as: alice });
+    assert(ret.events.length == 1)
+    assert(JSON.stringify(ret.events[0].payload) == '{"prim":"Pair","args":[{"int":"2"},{"string":"mystr"}]}')
+  })
+
+  it('import_arl_event_use_collide', async () => {
+    await import_arl_event_use_collide.import_arl_event_use_collide.deploy({ as: alice })
+
+    const ret = await import_arl_event_use_collide.import_arl_event_use_collide.exec({ as: alice });
+    assert(ret.events.length == 2)
+    assert(JSON.stringify(ret.events[0].payload) == '{"prim":"Pair","args":[{"int":"2"},{"string":"mystr"}]}')
+    assert(JSON.stringify(ret.events[1].payload) == '{"prim":"Pair","args":[{"string":"mystr"},{"prim":"Pair","args":[{"int":"2"},{"bytes":"02"}]}]}')
+  })
+
+  it('import_arl_record_complex_0', async () => {
+    await import_arl_record_complex_0.import_arl_record_complex_0.deploy({ as: alice })
+  })
+
+  it('import_arl_record_complex_1', async () => {
+    await import_arl_record_complex_1.import_arl_record_complex_1.deploy({ as: alice })
+  })
+
+  it('import_arl_record_complex_2', async () => {
+    await import_arl_record_complex_2.import_arl_record_complex_2.deploy({ as: alice })
+
+    const res_before = await import_arl_record_complex_2.import_arl_record_complex_2.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_record_complex_2.import_arl_record_complex_2.exec({ as: alice })
+
+    const res_after = await import_arl_record_complex_2.import_arl_record_complex_2.get_res()
+    assert(res_after.equals(Option.Some(new import_arl_record_complex_2.import_arl_record_complex_1__my_record(new Nat(0), new import_arl_record_complex_2.import_arl_record_complex_0__rec(new Nat(2), "mystring")))))
+  })
+
+  it('import_arl_record_def', async () => {
+    await import_arl_record_def.import_arl_record_def.deploy({ as: alice })
+  })
+
+  it('import_arl_record_use', async () => {
+    await import_arl_record_use.import_arl_record_use.deploy({ as: alice })
+
+    const res_before = await import_arl_record_use.import_arl_record_use.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_record_use.import_arl_record_use.exec({ as: alice })
+
+    const res_after = await import_arl_record_use.import_arl_record_use.get_res()
+    assert(res_after.equals(Option.Some(new import_arl_record_use.import_arl_record_def__my_record(new Nat(2), "mystr"))))
+  })
+
+  it('import_arl_record_use_all', async () => {
+    await import_arl_record_use_all.import_arl_record_use_all.deploy({ as: alice })
+
+    const res_before = await import_arl_record_use_all.import_arl_record_use_all.get_res()
+    assert(res_before.equals(new import_arl_record_use_all.import_arl_all_def__my_record(new Nat(0), "")))
+    const myc_before = await import_arl_record_use_all.import_arl_record_use_all.get_myc()
+    assert(myc_before == "")
+    const foo_before = await import_arl_record_use_all.import_arl_record_use_all.get_foo()
+    assert(foo_before.equals(new Nat(0)))
+
+    await import_arl_record_use_all.import_arl_record_use_all.exec({ as: alice })
+
+    const res_after = await import_arl_record_use_all.import_arl_record_use_all.get_res()
+    assert(res_after.equals(new import_arl_record_use_all.import_arl_all_def__my_record(new Nat(0), "mystr")))
+    const myc_after = await import_arl_record_use_all.import_arl_record_use_all.get_myc()
+    assert(myc_after == "")
+    const foo_after = await import_arl_record_use_all.import_arl_record_use_all.get_foo()
+    assert(foo_after.equals(new Nat(0)))
+  })
+
+  it('import_arl_record_use_collide', async () => {
+    await import_arl_record_use_collide.import_arl_record_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_record_use_collide.import_arl_record_use_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_record_use_collide.import_arl_record_use_collide.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_record_use_collide.import_arl_record_use_collide.exec({ as: alice })
+
+    const res_imported_after = await import_arl_record_use_collide.import_arl_record_use_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(new import_arl_record_use_collide.import_arl_record_def__my_record(new Nat(2), "mystr"))))
+    const res_top_after = await import_arl_record_use_collide.import_arl_record_use_collide.get_res_top()
+    assert(res_top_after.equals(Option.Some(new import_arl_record_use_collide.my_record("mystr1", new Nat(3), new Bytes("03")))))
+  })
+
+  it('import_arl_record_use_complete', async () => {
+    await import_arl_record_use_complete.import_arl_record_use_complete.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_record_use_complete.import_arl_record_use_complete.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_imported_top = await import_arl_record_use_complete.import_arl_record_use_complete.get_res_top()
+    assert(res_imported_top.equals(Option.None()))
+
+    await import_arl_record_use_complete.import_arl_record_use_complete.exec({ as: alice })
+
+    const res_imported_after = await import_arl_record_use_complete.import_arl_record_use_complete.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(new import_arl_record_use_complete.import_arl_record_def__my_record(new Nat(2), "mystr"))))
+    const res_top_after = await import_arl_record_use_complete.import_arl_record_use_complete.get_res_top()
+    assert(res_top_after.equals(Option.Some(new import_arl_record_use_complete.my_record("", new Nat(0), new Bytes("02")))))
   })
 
   it('init_lambda', async () => {

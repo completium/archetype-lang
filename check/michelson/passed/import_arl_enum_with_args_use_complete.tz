@@ -1,0 +1,36 @@
+{ storage
+    (pair (option %res_imported (or (nat %A) (or (string %B) (unit %C))))
+          (option %res_top (or (unit %X) (or (string %Y) (nat %Z))))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH nat 2 ;
+         LEFT (or string unit) ;
+         PUSH string "mystring" ;
+         LEFT unit ;
+         RIGHT nat ;
+         IF_LEFT
+           { PUSH string "error" ; FAILWITH }
+           { DUP ; IF_LEFT { DROP 1 } { PUSH string "error" ; FAILWITH } ; DROP 1 } ;
+         PUSH nat 2 ;
+         RIGHT string ;
+         RIGHT unit ;
+         PUSH string "mystr" ;
+         LEFT nat ;
+         RIGHT unit ;
+         IF_LEFT
+           { PUSH string "error" ; FAILWITH }
+           { DUP ; IF_LEFT { DROP 1 } { PUSH string "error" ; FAILWITH } ; DROP 1 } ;
+         DUP 2 ;
+         SOME ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP ;
+         SOME ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }
