@@ -577,7 +577,7 @@ and detach_kind = mterm detach_kind_gen
 type model_type =
   | MTvar
   | MTconst
-  | MTasset of ident
+  | MTasset of mident
   | MTstate
   | MTenum of ident
 [@@deriving show {with_path = false}]

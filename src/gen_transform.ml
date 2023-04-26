@@ -1587,7 +1587,6 @@ let split_key_values (model : model) : model =
     List.fold_right (fun x accu ->
         match x.model_type with
         | MTasset an ->
-          let an = string_to_mident an in
           let asset = Utils.get_asset model an in
           let _k, t = Utils.get_asset_key model an in
           let type_asset = (match asset.map_kind with | MKIterableBigMap -> titerable_big_map | MKBigMap -> tbig_map | MKMap -> tmap) t (tasset an) in
@@ -1600,7 +1599,7 @@ let split_key_values (model : model) : model =
             mk_storage_item
               ~no_storage:x.no_storage an
               ?namespace:x.namespace
-              (MTasset (unloc_mident an))
+              (MTasset an)
               type_asset
               default
               ~loc:x.loc
@@ -1642,7 +1641,6 @@ let remove_duplicate_key (model : model) : model =
     List.fold_right (fun x accu ->
         match x.model_type with
         | MTasset an ->
-          let an = string_to_mident an in
           if Utils.is_asset_single_field model an && Utils.is_asset_map model an
           then
             begin
@@ -1657,7 +1655,7 @@ let remove_duplicate_key (model : model) : model =
                 mk_storage_item x.id
                   ~no_storage:x.no_storage
                   ?namespace:x.namespace
-                  (MTasset (unloc_mident an))
+                  (MTasset an)
                   type_asset
                   default
                   ~loc:x.loc
@@ -2005,7 +2003,6 @@ let remove_asset (model : model) : model =
       in
       match x.model_type, get_ntype x.typ with
       | MTasset an, ((Tmap (k, (Tasset _, _)) | Tbig_map (k, (Tasset _, _)) | Titerable_big_map (k, (Tasset _, _))) as mmap) -> begin
-          let an = mk_mident ?namespace:(Option.map dumloc x.namespace) (dumloc an) in
           let mkmm = match mmap with | Tmap _ -> tmap | Tbig_map _ -> tbig_map | Titerable_big_map _ -> titerable_big_map | _ -> assert false in
           let ts, fields, is_single_record = for_type an in
           let type_ = mkmm k ts in
@@ -2014,7 +2011,6 @@ let remove_asset (model : model) : model =
           { x with typ = type_; default = default; }, d, MapString.add (normalize_mident an) ((true, is_single_record), (type_, ts)) map
         end
       | MTasset an, (Tset st) -> begin
-          let an = mk_mident ?namespace:(Option.map dumloc x.namespace) (dumloc an) in
           x, [], MapString.add (normalize_mident an) ((false, false), (tset st, tunit)) map
         end
       | _ -> x, [], map

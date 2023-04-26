@@ -19,7 +19,7 @@ let generate_storage (model : model) : model =
       ~no_storage:asset.no_storage
       ?namespace:(asset.name |> fst |> Option.map Location.unloc)
       asset_name
-      (MTasset (unloc_mident asset_name))
+      (MTasset asset_name)
       typ_
       (mk_mterm (Massets asset.init) typ_)
   in
