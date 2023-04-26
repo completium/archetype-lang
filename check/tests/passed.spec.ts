@@ -703,6 +703,7 @@ import * as greedy_or from '../bindings/passed/greedy_or'
 import * as implicit_cast_to_view from '../bindings/passed/implicit_cast_to_view'
 import * as implicit_the from '../bindings/passed/implicit_the'
 import * as import_arl_all_def from '../bindings/passed/import_arl_all_def'
+import * as import_arl_asset_use_all from '../bindings/passed/import_arl_asset_use_all'
 import * as import_arl_constant_def from '../bindings/passed/import_arl_constant_def'
 import * as import_arl_constant_use from '../bindings/passed/import_arl_constant_use'
 import * as import_arl_constant_use_all from '../bindings/passed/import_arl_constant_use_all'
@@ -13293,6 +13294,20 @@ describe('passed', async () => {
 
   it('import_arl_all_def', async () => {
     await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
+  })
+
+  it('import_arl_asset_use_all', async () => {
+    await import_arl_asset_use_all.import_arl_asset_use_all.deploy({ as: alice })
+
+    const r = new import_arl_asset_use_all.import_arl_all_def__my_asset_value("mystr", new Bytes("02"), new Int(3));
+
+    const res_before = await import_arl_asset_use_all.import_arl_asset_use_all.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_asset_use_all.import_arl_asset_use_all.exec(r, { as: alice })
+
+    const res_after = await import_arl_asset_use_all.import_arl_asset_use_all.get_res()
+    assert(res_after.equals(Option.Some(r)))
   })
 
   it('import_arl_constant_def', async () => {

@@ -1,4 +1,4 @@
-{ storage unit ;
+{ storage (map nat (pair (string %x) (bytes %y) (int %z))) ;
   parameter
     (or (nat %e)
         (pair %e2 (pair %r (nat %n) (string %s)) (contract %c (pair (nat %n) (string %s))))) ;

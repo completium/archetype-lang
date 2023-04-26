@@ -7,12 +7,12 @@ record my_record {
   s : string;
 }
 
-// asset my_asset {
-//   k : nat;
-//   x : string;
-//   y : bytes;
-//   z : int;
-// }
+asset my_asset {
+  k : nat;
+  x : string;
+  y : bytes;
+  z : int;
+}
 
 enum my_enum =
 | eFirst

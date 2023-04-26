@@ -1,0 +1,10 @@
+{ storage (option (pair (string %x) (bytes %y) (int %z))) ;
+  parameter (pair %exec (string %x) (bytes %y) (int %z)) ;
+  code { UNPAIR ;
+         DUP ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

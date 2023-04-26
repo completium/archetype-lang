@@ -66,6 +66,36 @@ export const my_record_mich_type: att.MichelineType = att.pair_array_to_mich_typ
     att.prim_annot_to_mich_type("nat", ["%n"]),
     att.prim_annot_to_mich_type("string", ["%s"])
 ], []);
+export const my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export class my_asset_value implements att.ArchetypeType {
+    constructor(public x: string, public y: att.Bytes, public z: att.Int) { }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    to_mich(): att.Micheline {
+        return att.pair_to_mich([att.string_to_mich(this.x), this.y.to_mich(), this.z.to_mich()]);
+    }
+    equals(v: my_asset_value): boolean {
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): my_asset_value {
+        return new my_asset_value(att.mich_to_string((input as att.Mpair).args[0]), att.Bytes.from_mich((input as att.Mpair).args[1]), att.Int.from_mich((input as att.Mpair).args[2]));
+    }
+}
+export const my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
+    att.prim_annot_to_mich_type("string", ["%x"]),
+    att.prim_annot_to_mich_type("bytes", ["%y"]),
+    att.prim_annot_to_mich_type("int", ["%z"])
+], []);
+export type my_asset_container = Array<[
+    att.Nat,
+    my_asset_value
+]>;
+export const my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("nat", []), att.pair_array_to_mich_type([
+    att.prim_annot_to_mich_type("string", ["%x"]),
+    att.prim_annot_to_mich_type("bytes", ["%y"]),
+    att.prim_annot_to_mich_type("int", ["%z"])
+], []), []);
 const e_arg_to_mich = (i: att.Nat): att.Micheline => {
     return i.to_mich();
 }
@@ -127,6 +157,13 @@ export class Import_arl_all_def {
         if (this.address != undefined) {
             const mich = await ex.exec_view(this.get_address(), "get", view_get_arg_to_mich(), params);
             return mich.value ? att.Nat.from_mich(mich.value) : undefined;
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_my_asset(): Promise<my_asset_container> {
+        if (this.address != undefined) {
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_map(storage, (x, y) => [att.Nat.from_mich(x), my_asset_value.from_mich(y)]);
         }
         throw new Error("Contract not initialised");
     }

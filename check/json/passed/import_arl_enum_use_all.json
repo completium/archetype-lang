@@ -2,7 +2,190 @@
   "name": "import_arl_enum_use_all",
   "parameters": [],
   "types": {
-    "assets": [],
+    "assets": [
+      {
+        "name": "import_arl_all_def__my_asset",
+        "container_kind": "map",
+        "fields": [
+          {
+            "name": "k",
+            "type": {
+              "node": "nat",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": true
+          },
+          {
+            "name": "x",
+            "type": {
+              "node": "string",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "y",
+            "type": {
+              "node": "bytes",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          },
+          {
+            "name": "z",
+            "type": {
+              "node": "int",
+              "name": null,
+              "int_value": null,
+              "args": []
+            },
+            "is_key": false
+          }
+        ],
+        "container_type_michelson": {
+          "prim": "map",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "nat",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "pair",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [
+                {
+                  "prim": "string",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%x"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "bytes",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%y"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                },
+                {
+                  "prim": "int",
+                  "int": null,
+                  "bytes": null,
+                  "string": null,
+                  "args": [],
+                  "annots": [
+                    "%z"
+                  ],
+                  "array": [],
+                  "var_id": null,
+                  "var_type": null
+                }
+              ],
+              "annots": [],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "key_type_michelson": {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        "value_type_michelson": {
+          "prim": "pair",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [
+            {
+              "prim": "string",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%x"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "bytes",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%y"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            },
+            {
+              "prim": "int",
+              "int": null,
+              "bytes": null,
+              "string": null,
+              "args": [],
+              "annots": [
+                "%z"
+              ],
+              "array": [],
+              "var_id": null,
+              "var_type": null
+            }
+          ],
+          "annots": [],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      }
+    ],
     "enums": [
       {
         "name": "import_arl_all_def__my_enum",

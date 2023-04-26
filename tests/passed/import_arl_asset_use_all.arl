@@ -1,0 +1,9 @@
+archetype import_arl_asset_use_all
+
+import "./import_arl_all_def.arl"
+
+variable res : option<asset_value<import_arl_all_def::my_asset>> = none
+
+entry exec (r : asset_value<import_arl_all_def::my_asset>) {
+  res := some(r)
+}

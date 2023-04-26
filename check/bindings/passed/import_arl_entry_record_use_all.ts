@@ -66,6 +66,36 @@ export const import_arl_all_def__my_record_mich_type: att.MichelineType = att.pa
     att.prim_annot_to_mich_type("nat", ["%n"]),
     att.prim_annot_to_mich_type("string", ["%s"])
 ], []);
+export const import_arl_all_def__my_asset_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
+export class import_arl_all_def__my_asset_value implements att.ArchetypeType {
+    constructor(public x: string, public y: att.Bytes, public z: att.Int) { }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    to_mich(): att.Micheline {
+        return att.pair_to_mich([att.string_to_mich(this.x), this.y.to_mich(), this.z.to_mich()]);
+    }
+    equals(v: import_arl_all_def__my_asset_value): boolean {
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): import_arl_all_def__my_asset_value {
+        return new import_arl_all_def__my_asset_value(att.mich_to_string((input as att.Mpair).args[0]), att.Bytes.from_mich((input as att.Mpair).args[1]), att.Int.from_mich((input as att.Mpair).args[2]));
+    }
+}
+export const import_arl_all_def__my_asset_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
+    att.prim_annot_to_mich_type("string", ["%x"]),
+    att.prim_annot_to_mich_type("bytes", ["%y"]),
+    att.prim_annot_to_mich_type("int", ["%z"])
+], []);
+export type import_arl_all_def__my_asset_container = Array<[
+    att.Nat,
+    import_arl_all_def__my_asset_value
+]>;
+export const import_arl_all_def__my_asset_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("nat", []), att.pair_array_to_mich_type([
+    att.prim_annot_to_mich_type("string", ["%x"]),
+    att.prim_annot_to_mich_type("bytes", ["%y"]),
+    att.prim_annot_to_mich_type("int", ["%z"])
+], []), []);
 const set_res_arg_to_mich = (r: import_arl_all_def__my_record): att.Micheline => {
     return r.to_mich();
 }

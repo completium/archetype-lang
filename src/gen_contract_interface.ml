@@ -399,6 +399,7 @@ let for_decl_node (d : M.decl_node) accu : decl_storage list =
   match d with
   | Dvar var     -> (for_var var)::accu
   | Denum _      -> accu
+  | Dasset asset when asset.no_storage -> accu
   | Dasset asset -> (for_asset asset)::accu
   | Drecord _    -> accu
   | Devent _     -> accu
