@@ -1,0 +1,44 @@
+{ storage (pair (nat %res) (string %myc)) ;
+  parameter (or (pair %set_res (nat %n) (string %s)) (address %exec)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         IF_LEFT
+           { DUP ;
+             GET 1 ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             PAIR ;
+             SWAP ;
+             PAIR }
+           { DUP 3 ;
+             PUSH nat 0 ;
+             PAIR ;
+             NIL operation ;
+             NIL operation ;
+             DUP 7 ;
+             ITER { CONS } ;
+             DUP 4 ;
+             CONTRACT %e2 (pair (pair nat string) (contract (pair nat string))) ;
+             IF_NONE
+               { PUSH string "e2" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             SELF_ADDRESS ;
+             CONTRACT %set_res (pair nat string) ;
+             IF_NONE
+               { PUSH string "set_res" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             DUP 6 ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 4 ; DROP 1 } ;
+             DUG 4 ;
+             DROP 2 ;
+             PAIR ;
+             SWAP ;
+             PAIR } } }

@@ -1,0 +1,24 @@
+{ storage unit ;
+  parameter (pair %callback (nat %n) (contract %e nat)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         NIL operation ;
+         NIL operation ;
+         DUP 6 ;
+         ITER { CONS } ;
+         DUP 3 ;
+         PUSH mutez 0 ;
+         PUSH nat 3 ;
+         DUP 7 ;
+         MUL ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
+         SWAP ;
+         PAIR } }

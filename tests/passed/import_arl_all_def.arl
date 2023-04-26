@@ -23,8 +23,8 @@ entry e(i : nat) {
 
 }
 
-entry e2(r : my_record) {
-
+entry e2(r : my_record, c : contract<my_record>) {
+  transfer 0tz to entry c({r with n = 2})
 }
 
 view get() : nat {

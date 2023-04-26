@@ -4,11 +4,14 @@ import contract_tz from "../michelson/simple_nat.tz"
 
 variable res : nat = 0
 
-entry exec () {
-  const a = caller;
-  const n = 2;
-  transfer 0tz to entry contract_tz(a).exec(n);
+entry exec(n : nat) {
+  res := n
+}
 
-  // const c : contract<nat> = import_decl(a).e;
+entry e () {
+  const n = 2;
+  transfer 0tz to entry contract_tz(self_address).exec(n);
+
+  // const c : contract<nat> = contract_tz(a).e;
   // transfer 0tz to entry c(n);
 }

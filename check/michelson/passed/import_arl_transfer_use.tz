@@ -1,0 +1,39 @@
+{ storage (pair (nat %res) (option %res_view nat)) ;
+  parameter (address %exec) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         PUSH nat 2 ;
+         PUSH string "" ;
+         DUP 2 ;
+         PAIR ;
+         DUP ;
+         GET 1 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         NIL operation ;
+         NIL operation ;
+         DUP 8 ;
+         ITER { CONS } ;
+         DUP 5 ;
+         CONTRACT %e nat ;
+         IF_NONE
+           { PUSH string "e" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         PUSH mutez 0 ;
+         DUP 6 ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DUP 3 ;
+         PUSH unit Unit ;
+         VIEW "get" nat ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 3 ;
+         PAIR ;
+         SWAP ;
+         PAIR } }

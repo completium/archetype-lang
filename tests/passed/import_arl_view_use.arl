@@ -1,4 +1,4 @@
-archetype import_arl_record_use
+archetype import_arl_view_use
 
 import "./import_arl_view_def.arl"
 

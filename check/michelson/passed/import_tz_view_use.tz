@@ -1,0 +1,14 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         SELF_ADDRESS ;
+         PUSH unit Unit ;
+         VIEW "getN" nat ;
+         IF_NONE { PUSH string "VIEW_ERROR" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } ;
+  view "getN" unit nat { DROP 1 ; UNIT ; PUSH nat 2 ; SWAP ; DROP 1 } }

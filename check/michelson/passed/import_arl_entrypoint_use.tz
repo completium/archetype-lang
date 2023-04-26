@@ -1,0 +1,32 @@
+{ storage nat ;
+  parameter (or (nat %set_res) (address %exec)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         IF_LEFT
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; SWAP ; PAIR }
+           { NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             CONTRACT %callback (pair nat (contract nat)) ;
+             IF_NONE
+               { PUSH string "callback" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             SELF_ADDRESS ;
+             CONTRACT %set_res nat ;
+             IF_NONE
+               { PUSH string "set_res" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH nat 2 ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             SWAP ;
+             PAIR } } }

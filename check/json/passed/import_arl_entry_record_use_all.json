@@ -1,11 +1,11 @@
 {
-  "name": "import_arl_all_def",
+  "name": "import_arl_entry_record_use_all",
   "parameters": [],
   "types": {
     "assets": [],
     "enums": [
       {
-        "name": "my_enum",
+        "name": "import_arl_all_def__my_enum",
         "constructors": [
           {
             "name": "eFirst",
@@ -35,7 +35,7 @@
     ],
     "records": [
       {
-        "name": "my_record",
+        "name": "import_arl_all_def__my_record",
         "fields": [
           {
             "name": "n",
@@ -98,14 +98,62 @@
     ],
     "events": []
   },
-  "storage": [],
+  "storage": [
+    {
+      "name": "res",
+      "type": {
+        "node": "nat",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    },
+    {
+      "name": "myc",
+      "type": {
+        "node": "string",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
   "storage_type": {
     "value": {
-      "prim": "unit",
+      "prim": "pair",
       "int": null,
       "bytes": null,
       "string": null,
-      "args": [],
+      "args": [
+        {
+          "prim": "nat",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%res"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        },
+        {
+          "prim": "string",
+          "int": null,
+          "bytes": null,
+          "string": null,
+          "args": [],
+          "annots": [
+            "%myc"
+          ],
+          "array": [],
+          "var_id": null,
+          "var_type": null
+        }
+      ],
       "annots": [],
       "array": [],
       "var_id": null,
@@ -115,13 +163,13 @@
   },
   "entrypoints": [
     {
-      "name": "e",
+      "name": "set_res",
       "args": [
         {
-          "name": "i",
+          "name": "r",
           "type": {
-            "node": "nat",
-            "name": null,
+            "node": "record",
+            "name": "import_arl_all_def__my_record",
             "int_value": null,
             "args": []
           }
@@ -129,62 +177,21 @@
       ]
     },
     {
-      "name": "e2",
+      "name": "exec",
       "args": [
         {
-          "name": "r",
+          "name": "a",
           "type": {
-            "node": "record",
-            "name": "my_record",
-            "int_value": null,
-            "args": []
-          }
-        },
-        {
-          "name": "c",
-          "type": {
-            "node": "contract",
+            "node": "address",
             "name": null,
             "int_value": null,
-            "args": [
-              {
-                "node": "record",
-                "name": "my_record",
-                "int_value": null,
-                "args": []
-              }
-            ]
+            "args": []
           }
         }
       ]
     }
   ],
   "getters": [],
-  "views": [
-    {
-      "name": "get",
-      "args": [],
-      "return": {
-        "node": "nat",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "return_michelson": {
-        "value": {
-          "prim": "nat",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        "is_storable": true
-      }
-    }
-  ],
+  "views": [],
   "errors": []
 }

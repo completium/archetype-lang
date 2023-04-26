@@ -1,9 +1,9 @@
-archetype import_arl_record_use
+archetype import_arl_view_use_collide
 
 import "./import_arl_view_def.arl"
 
 variable res_imported : option<nat> = none
-variable res_top : option<string> = ""
+variable res_top : option<string> = none
 
 view my_view(n : nat) : string {
   return nat_to_string(n)
@@ -11,5 +11,5 @@ view my_view(n : nat) : string {
 
 entry exec(a : address) {
   res_imported := import_arl_view_def(a).my_view("mystr");
-  res_top := self.my_view(2)
+  // res_top := self.my_view(2)
 }

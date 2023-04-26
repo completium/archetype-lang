@@ -1,0 +1,13 @@
+{ storage nat ;
+  parameter (address %exec) ;
+  code { UNPAIR ;
+         DUP ;
+         PUSH unit Unit ;
+         VIEW "get" nat ;
+         IF_NONE { PUSH string "VIEW_ERROR" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,11 @@
+{ storage (option nat) ;
+  parameter (address %exec) ;
+  code { UNPAIR ;
+         DUP ;
+         PUSH string "mystr" ;
+         VIEW "my_view" nat ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

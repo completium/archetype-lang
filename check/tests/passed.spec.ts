@@ -707,6 +707,10 @@ import * as import_arl_constant_def from '../bindings/passed/import_arl_constant
 import * as import_arl_constant_use from '../bindings/passed/import_arl_constant_use'
 import * as import_arl_constant_use_all from '../bindings/passed/import_arl_constant_use_all'
 import * as import_arl_constant_use_collide from '../bindings/passed/import_arl_constant_use_collide'
+import * as import_arl_entry_record_use_all from '../bindings/passed/import_arl_entry_record_use_all'
+import * as import_arl_entrypoint_def from '../bindings/passed/import_arl_entrypoint_def'
+import * as import_arl_entrypoint_use from '../bindings/passed/import_arl_entrypoint_use'
+import * as import_arl_entrypoint_use_collide from '../bindings/passed/import_arl_entrypoint_use_collide'
 import * as import_arl_enum_def from '../bindings/passed/import_arl_enum_def'
 import * as import_arl_enum_use from '../bindings/passed/import_arl_enum_use'
 import * as import_arl_enum_use_all from '../bindings/passed/import_arl_enum_use_all'
@@ -727,6 +731,13 @@ import * as import_arl_record_use from '../bindings/passed/import_arl_record_use
 import * as import_arl_record_use_all from '../bindings/passed/import_arl_record_use_all'
 import * as import_arl_record_use_collide from '../bindings/passed/import_arl_record_use_collide'
 import * as import_arl_record_use_complete from '../bindings/passed/import_arl_record_use_complete'
+import * as import_arl_transfer_use from '../bindings/passed/import_arl_transfer_use'
+import * as import_arl_view_def from '../bindings/passed/import_arl_view_def'
+import * as import_arl_view_use from '../bindings/passed/import_arl_view_use'
+import * as import_arl_view_use_all from '../bindings/passed/import_arl_view_use_all'
+import * as import_arl_view_use_collide from '../bindings/passed/import_arl_view_use_collide'
+import * as import_tz_entry_use from '../bindings/passed/import_tz_entry_use'
+import * as import_tz_view_use from '../bindings/passed/import_tz_view_use'
 import * as init_lambda from '../bindings/passed/init_lambda'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
@@ -13328,6 +13339,57 @@ describe('passed', async () => {
     assert(res_top_after == "mystr")
   })
 
+  it('import_arl_entry_record_use_all', async () => {
+    await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
+    await import_arl_entry_record_use_all.import_arl_entry_record_use_all.deploy({ as: alice })
+
+    const res_before = await import_arl_entry_record_use_all.import_arl_entry_record_use_all.get_res()
+    assert(res_before.equals(new Nat(0)))
+    const myc_before = await import_arl_entry_record_use_all.import_arl_entry_record_use_all.get_myc()
+    assert(myc_before == "")
+
+    await import_arl_entry_record_use_all.import_arl_entry_record_use_all.exec(import_arl_all_def.import_arl_all_def.get_address(), { as: alice })
+
+    const res_after = await import_arl_entry_record_use_all.import_arl_entry_record_use_all.get_res()
+    assert(res_after.equals(new Nat(2)))
+    const myc_after = await import_arl_entry_record_use_all.import_arl_entry_record_use_all.get_myc()
+    assert(myc_after == "")
+  })
+
+  it('import_arl_entrypoint_def', async () => {
+    await import_arl_entrypoint_def.import_arl_entrypoint_def.deploy({ as: alice })
+  })
+
+  it('import_arl_entrypoint_use', async () => {
+    await import_arl_entrypoint_def.import_arl_entrypoint_def.deploy({ as: alice })
+    await import_arl_entrypoint_use.import_arl_entrypoint_use.deploy({ as: alice })
+
+    const res_before = await import_arl_entrypoint_use.import_arl_entrypoint_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_entrypoint_use.import_arl_entrypoint_use.exec(import_arl_entrypoint_def.import_arl_entrypoint_def.get_address(), { as: alice })
+
+    const res_after = await import_arl_entrypoint_use.import_arl_entrypoint_use.get_res()
+    assert(res_after.equals(new Nat(6)))
+  })
+
+  it('import_arl_entrypoint_use_collide', async () => {
+    await import_arl_entrypoint_def.import_arl_entrypoint_def.deploy({ as: alice })
+    await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.get_res_imported()
+    assert(res_imported_before.equals(new Nat(0)))
+    const res_top_before = await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.get_res_top()
+    assert(res_top_before.equals(new Nat(0)))
+
+    await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.exec(import_arl_entrypoint_def.import_arl_entrypoint_def.get_address(), { as: alice })
+
+    const res_imported_after = await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.get_res_imported()
+    assert(res_imported_after.equals(new Nat(6)))
+    const res_top_after = await import_arl_entrypoint_use_collide.import_arl_entrypoint_use_collide.get_res_top()
+    assert(res_top_after.equals(new Nat(7)))
+  })
+
   it('import_arl_enum_def', async () => {
     await import_arl_enum_def.import_arl_enum_def.deploy({ as: alice })
   })
@@ -13543,6 +13605,94 @@ describe('passed', async () => {
     assert(res_imported_after.equals(Option.Some(new import_arl_record_use_complete.import_arl_record_def__my_record(new Nat(2), "mystr"))))
     const res_top_after = await import_arl_record_use_complete.import_arl_record_use_complete.get_res_top()
     assert(res_top_after.equals(Option.Some(new import_arl_record_use_complete.my_record("", new Nat(0), new Bytes("02")))))
+  })
+
+  it('import_arl_transfer_use', async () => {
+    await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
+    await import_arl_transfer_use.import_arl_transfer_use.deploy({ as: alice })
+
+    const res_before = await import_arl_transfer_use.import_arl_transfer_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+    const res_view_before = await import_arl_transfer_use.import_arl_transfer_use.get_res_view()
+    assert(res_view_before.equals(Option.None()))
+
+    await import_arl_transfer_use.import_arl_transfer_use.exec(import_arl_all_def.import_arl_all_def.get_address(), { as: alice })
+
+    const res_after = await import_arl_transfer_use.import_arl_transfer_use.get_res()
+    assert(res_after.equals(new Nat(2)))
+    const res_view_after = await import_arl_transfer_use.import_arl_transfer_use.get_res_view()
+    assert(res_view_after.equals(Option.Some(new Nat(2))))
+  })
+
+  it('import_arl_view_def', async () => {
+    await import_arl_view_def.import_arl_view_def.deploy({ as: alice })
+  })
+
+  it('import_arl_view_use', async () => {
+    await import_arl_view_def.import_arl_view_def.deploy({ as: alice })
+    await import_arl_view_use.import_arl_view_use.deploy({ as: alice })
+
+    const res_before = await import_arl_view_use.import_arl_view_use.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_view_use.import_arl_view_use.exec(import_arl_view_def.import_arl_view_def.get_address(), { as: alice })
+
+    const res_after = await import_arl_view_use.import_arl_view_use.get_res()
+    assert(res_after.equals(Option.Some(new Nat(5))))
+  })
+
+  it('import_arl_view_use_all', async () => {
+    await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
+    await import_arl_view_use_all.import_arl_view_use_all.deploy({ as: alice })
+
+    const res_before = await import_arl_view_use_all.import_arl_view_use_all.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_view_use_all.import_arl_view_use_all.exec(import_arl_all_def.import_arl_all_def.get_address(), { as: alice })
+
+    const res_after = await import_arl_view_use_all.import_arl_view_use_all.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('import_arl_view_use_collide', async () => {
+    await import_arl_view_def.import_arl_view_def.deploy({ as: alice })
+    await import_arl_view_use_collide.import_arl_view_use_collide.deploy({ as: alice })
+
+    const res_imported_before = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_top_before = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_top()
+    assert(res_top_before.equals(Option.None()))
+
+    await import_arl_view_use_collide.import_arl_view_use_collide.exec(import_arl_view_def.import_arl_view_def.get_address(), { as: alice })
+
+    const res_imported_after = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(new Nat(5))))
+    const res_top_after = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_top()
+    assert(res_top_after.equals(Option.None()))
+  })
+
+  it('import_tz_entry_use', async () => {
+    await import_tz_entry_use.import_tz_entry_use.deploy({ as: alice })
+
+    const res_before = await import_tz_entry_use.import_tz_entry_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_tz_entry_use.import_tz_entry_use.e({ as: alice })
+
+    const res_after = await import_tz_entry_use.import_tz_entry_use.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('import_tz_view_use', async () => {
+    await import_tz_view_use.import_tz_view_use.deploy({ as: alice })
+
+    const res_before = await import_tz_view_use.import_tz_view_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_tz_view_use.import_tz_view_use.exec({ as: alice })
+
+    const res_after = await import_tz_view_use.import_tz_view_use.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('init_lambda', async () => {

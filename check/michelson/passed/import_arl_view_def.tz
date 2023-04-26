@@ -1,0 +1,7 @@
+{ storage unit ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } ;
+  view "my_view"
+       string
+       nat
+       { CAR ; UNIT ; DUP 2 ; SIZE ; SWAP ; DROP 1 ; DIP 1 { DROP 1 } } }

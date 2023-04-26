@@ -1,7 +1,30 @@
 { storage unit ;
-  parameter (or (nat %e) (pair %e2 (nat %n) (string %s))) ;
-  code { UNPAIR ;
+  parameter
+    (or (nat %e)
+        (pair %e2 (pair %r (nat %n) (string %s)) (contract %c (pair (nat %n) (string %s))))) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
          IF_LEFT
-           { DROP 1 ; NIL operation ; PAIR }
-           { DROP 1 ; NIL operation ; PAIR } } ;
+           { DROP 1 ; SWAP ; PAIR }
+           { UNPAIR ;
+             SWAP ;
+             NIL operation ;
+             NIL operation ;
+             DUP 6 ;
+             ITER { CONS } ;
+             DUP 3 ;
+             PUSH mutez 0 ;
+             DUP 6 ;
+             CDR ;
+             PUSH nat 2 ;
+             PAIR ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 2 ;
+             SWAP ;
+             PAIR } } ;
   view "get" unit nat { DROP 1 ; UNIT ; PUSH nat 2 ; SWAP ; DROP 1 } }
