@@ -1,4 +1,4 @@
-archetype import_arl_asset_value_use_arg
+archetype import_arl_asset_view_use_arg
 
 import "./import_arl_asset_def.arl"
 

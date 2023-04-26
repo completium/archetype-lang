@@ -1,9 +1,0 @@
-archetype import_arl_asset_container_use_arg
-
-import "./import_arl_asset_def.arl"
-
-variable res : option<asset_container<import_arl_asset_def::my_asset>> = none
-
-entry exec(i : asset_container<import_arl_asset_def::my_asset>) {
-  res := some(i)
-}

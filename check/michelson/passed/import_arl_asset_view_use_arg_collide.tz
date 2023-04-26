@@ -1,0 +1,24 @@
+{ storage
+    (pair (map %my_asset bytes (pair (bool %v) (int %k)))
+          (option %res_imported (list nat))
+          (option %res_top (list bytes))) ;
+  parameter (or (list %exec_imported nat) (list %exec_top bytes)) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         IF_LEFT
+           { DUP ;
+             SOME ;
+             DIP 1 { DIG 2 ; DROP 1 } ;
+             DUG 2 ;
+             DROP 1 ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR }
+           { DUP ;
+             SOME ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 1 ;
+             PAIR 3 ;
+             NIL operation ;
+             PAIR } } }

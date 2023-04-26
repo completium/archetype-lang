@@ -703,7 +703,16 @@ import * as greedy_or from '../bindings/passed/greedy_or'
 import * as implicit_cast_to_view from '../bindings/passed/implicit_cast_to_view'
 import * as implicit_the from '../bindings/passed/implicit_the'
 import * as import_arl_all_def from '../bindings/passed/import_arl_all_def'
+import * as import_arl_asset_container_use_arg from '../bindings/passed/import_arl_asset_container_use_arg'
+import * as import_arl_asset_container_use_arg_collide from '../bindings/passed/import_arl_asset_container_use_arg_collide'
+import * as import_arl_asset_def from '../bindings/passed/import_arl_asset_def'
+import * as import_arl_asset_key_use_arg from '../bindings/passed/import_arl_asset_key_use_arg'
+import * as import_arl_asset_key_use_arg_collide from '../bindings/passed/import_arl_asset_key_use_arg_collide'
 import * as import_arl_asset_use_all from '../bindings/passed/import_arl_asset_use_all'
+import * as import_arl_asset_value_use_arg from '../bindings/passed/import_arl_asset_value_use_arg'
+import * as import_arl_asset_value_use_arg_collide from '../bindings/passed/import_arl_asset_value_use_arg_collide'
+import * as import_arl_asset_view_use_arg from '../bindings/passed/import_arl_asset_view_use_arg'
+import * as import_arl_asset_view_use_arg_collide from '../bindings/passed/import_arl_asset_view_use_arg_collide'
 import * as import_arl_constant_def from '../bindings/passed/import_arl_constant_def'
 import * as import_arl_constant_use from '../bindings/passed/import_arl_constant_use'
 import * as import_arl_constant_use_all from '../bindings/passed/import_arl_constant_use_all'
@@ -13296,6 +13305,39 @@ describe('passed', async () => {
     await import_arl_all_def.import_arl_all_def.deploy({ as: alice })
   })
 
+  it('import_arl_asset_container_use_arg', async () => {
+    await import_arl_asset_container_use_arg.import_arl_asset_container_use_arg.deploy({ as: alice })
+    // TODO: import
+  })
+
+  it('import_arl_asset_container_use_arg_collide', async () => {
+    await import_arl_asset_container_use_arg_collide.import_arl_asset_container_use_arg_collide.deploy({ as: alice })
+    // TODO: import
+  })
+
+  it('import_arl_asset_def', async () => {
+    await import_arl_asset_def.import_arl_asset_def.deploy({ as: alice })
+  })
+
+  it('import_arl_asset_key_use_arg', async () => {
+    await import_arl_asset_key_use_arg.import_arl_asset_key_use_arg.deploy({ as: alice })
+
+    const r = new Nat(2)
+
+    const res_before = await import_arl_asset_key_use_arg.import_arl_asset_key_use_arg.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_asset_key_use_arg.import_arl_asset_key_use_arg.exec(r, { as: alice })
+
+    const res_after = await import_arl_asset_key_use_arg.import_arl_asset_key_use_arg.get_res()
+    assert(res_after.equals(Option.Some(r)))
+  })
+
+  it('import_arl_asset_key_use_arg_collide', async () => {
+    await import_arl_asset_key_use_arg_collide.import_arl_asset_key_use_arg_collide.deploy({ as: alice })
+    // TODO: import
+  })
+
   it('import_arl_asset_use_all', async () => {
     await import_arl_asset_use_all.import_arl_asset_use_all.deploy({ as: alice })
 
@@ -13308,6 +13350,86 @@ describe('passed', async () => {
 
     const res_after = await import_arl_asset_use_all.import_arl_asset_use_all.get_res()
     assert(res_after.equals(Option.Some(r)))
+  })
+
+  it('import_arl_asset_value_use_arg', async () => {
+    await import_arl_asset_value_use_arg.import_arl_asset_value_use_arg.deploy({ as: alice })
+
+    const r = "mystr";
+
+    const res_before = await import_arl_asset_value_use_arg.import_arl_asset_value_use_arg.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_asset_value_use_arg.import_arl_asset_value_use_arg.exec(r, { as: alice })
+
+    const res_after = await import_arl_asset_value_use_arg.import_arl_asset_value_use_arg.get_res()
+    assert(res_after.equals(Option.Some<string>(r)))
+  })
+
+  it('import_arl_asset_value_use_arg_collide', async () => {
+    await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.deploy({ as: alice })
+
+    const r = "mystr";
+    const q = new import_arl_asset_value_use_arg_collide.my_asset_value(true, new Int(0));
+
+    const res_imported_before = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_top_before = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_top()
+    assert(res_top_before.equals(Option.None()))
+
+    await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.exec_imported(r, { as: alice })
+
+    const res_imported_0 = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_imported()
+    assert(res_imported_0.equals(Option.Some<string>(r)))
+    const res_top_0 = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_top()
+    assert(res_top_0.equals(Option.None()))
+
+    await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.exec_top(q, { as: alice })
+
+    const res_imported_after = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some<string>(r)))
+    const res_top_after = await import_arl_asset_value_use_arg_collide.import_arl_asset_value_use_arg_collide.get_res_top()
+    assert(res_top_after.equals(Option.Some(q)))
+  })
+
+  it('import_arl_asset_view_use_arg', async () => {
+    await import_arl_asset_view_use_arg.import_arl_asset_view_use_arg.deploy({ as: alice })
+
+    const vs: Array<Nat> = [new Nat(0), new Nat(1), new Nat(2)]
+
+    const res_before = await import_arl_asset_view_use_arg.import_arl_asset_view_use_arg.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await import_arl_asset_view_use_arg.import_arl_asset_view_use_arg.exec(vs, { as: alice })
+
+    const res_after = await import_arl_asset_view_use_arg.import_arl_asset_view_use_arg.get_res()
+    assert(res_after.equals(Option.Some(vs)))
+  })
+
+  it('import_arl_asset_view_use_arg_collide', async () => {
+    await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.deploy({ as: alice })
+
+    const vs: Array<Nat> = [new Nat(0), new Nat(1), new Nat(2)]
+    const ws: Array<Bytes> = [new Bytes("00"), new Bytes("01"), new Bytes("02")]
+
+    const res_imported_before = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_imported()
+    assert(res_imported_before.equals(Option.None()))
+    const res_top_before = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_top()
+    assert(res_top_before.equals(Option.None()))
+
+    await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.exec_imported(vs, { as: alice })
+
+    const res_imported_0 = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_imported()
+    assert(res_imported_0.equals(Option.Some(vs)))
+    const res_top_0 = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_top()
+    assert(res_top_0.equals(Option.None()))
+
+    await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.exec_top(ws, { as: alice })
+
+    const res_imported_after = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_imported()
+    assert(res_imported_after.equals(Option.Some(vs)))
+    const res_top_after = await import_arl_asset_view_use_arg_collide.import_arl_asset_view_use_arg_collide.get_res_top()
+    assert(res_top_after.equals(Option.Some(ws)))
   })
 
   it('import_arl_constant_def', async () => {

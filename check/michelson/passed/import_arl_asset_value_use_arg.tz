@@ -1,0 +1,10 @@
+{ storage (option string) ;
+  parameter (string %exec) ;
+  code { UNPAIR ;
+         DUP ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }
