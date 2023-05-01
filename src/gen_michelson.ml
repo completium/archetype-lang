@@ -851,7 +851,12 @@ let to_ir (model : M.model) : T.ir =
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
     | Mmakeevent (t, id, a)          -> T.Iunop (Uemit (to_type model t, Some (M.unloc_mident id)), f a)
-    | Mcreatecontract (ms, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract ms.ms_content, f d, f a, f si))
+    | Mcreatecontract (cc, d, a) -> begin
+      match cc with
+      | CCTz (tz, arg) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract tz.ms_content, f d, f a, f arg))
+      | _ -> assert false
+    end
+
 
 
     (* literals *)

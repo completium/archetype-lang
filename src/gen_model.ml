@@ -448,16 +448,13 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         end
 
       | A.Pcreatecontract (okh, amount, cct) -> begin
-        match cct with
-        | A.CCTz (ms, arg_storage) ->
-          let to_michelson_struct (ms : A.michelson_struct) =
-            M.{
-                ms_content = ms.ms_content
-            }
+          let cc =
+            match cct with
+            | A.CCTz (ms, arg_storage) -> M.CCTz ({ ms_content = ms.ms_content }, f arg_storage)
+            | A.CCArl (id, args) -> M.CCArl (id, List.map (fun (id, v) -> (id, f v)) args)
           in
-          M.Mcreatecontract (to_michelson_struct ms, f okh, f amount, f arg_storage)
-        | A.CCArl _ -> assert false
-      end
+          M.Mcreatecontract (cc, f okh, f amount)
+        end
       | A.Ptz_expr s -> M.Mtz_expr s
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)

@@ -224,7 +224,7 @@ type 'term mterm_node  =
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
   | Mmakeevent        of type_ * mident * 'term    (* type * id * arg *)
-  | Mcreatecontract   of michelson_struct * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
+  | Mcreatecontract   of create_contract_type * 'term * 'term  (* value * option key_hash * amount *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -572,6 +572,11 @@ and letin_value = mterm letin_value_gen
 [@@deriving show {with_path = false}]
 
 and detach_kind = mterm detach_kind_gen
+[@@deriving show {with_path = false}]
+
+and create_contract_type =
+  | CCTz  of michelson_struct * mterm      (* tz * init storage *)
+  | CCArl of ident * (ident * mterm) list  (* arl ident * arg [ident * value] *)
 [@@deriving show {with_path = false}]
 
 type model_type =
@@ -1223,6 +1228,12 @@ let cmp_mterm_node
   let cmp_michelson_struct (lhs : michelson_struct) (rhs : michelson_struct) : bool =
     lhs = rhs
   in
+  let cmp_create_contract_type (lhs : create_contract_type) (rhs : create_contract_type) : bool =
+    match lhs, rhs with
+    | CCTz (tz1, arg1), CCTz (tz2, arg2) -> cmp_michelson_struct tz1 tz2 && cmp arg1 arg2
+    | CCArl (id1, args1), CCArl (id2, args2) -> cmp_ident id1 id2 && List.for_all2 (fun (id1, v1) (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2) args1 args2
+    | _ -> false
+  in
   let cmp_letin_value (lhs : letin_value) (rhs : letin_value) : bool =
     match lhs, rhs with
     | LVsimple v1, LVsimple v2 -> cmp v1 v2
@@ -1271,7 +1282,7 @@ let cmp_mterm_node
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
     | Mmakeevent (t1, id1, a1), Mmakeevent (t2, id2, a2)                               -> cmp_type t1 t2 && cmp_mident id1 id2 && cmp a1 a2
-    | Mcreatecontract (ms1, d1, a1, si1), Mcreatecontract (ms2, d2, a2, si2)           -> cmp_michelson_struct ms1 ms2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
+    | Mcreatecontract (cc1, d1, a1), Mcreatecontract (cc2, d2, a2)                     -> cmp_create_contract_type cc1 cc2 && cmp d1 d2 && cmp a1 a2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1694,6 +1705,10 @@ let map_detach_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
   | DK_option (ty, id)-> DK_option (ft ty, fi id)
   | DK_map (ty, id, k)-> DK_map (ft ty, fi id, f k)
 
+let map_create_contract_type f (fi : ident -> ident) = function
+  | CCTz (tz, arg) -> CCTz (tz, f arg)
+  | CCArl (id, args) -> CCArl (fi id, List.map (fun (id, arg) -> (fi id, f arg)) args)
+
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, (match a with | LVsimple a -> LVsimple (f a) | LVreplace (id, k, fa) -> LVreplace (g id, k, f fa)), Option.map ft t, f b, Option.map f o)
@@ -1729,7 +1744,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
   | Mmakeevent (t, id, a)          -> Mmakeevent (ft t, g id, f a)
-  | Mcreatecontract (ms, d, a, si) -> Mcreatecontract (ms, f d, f a, f si)
+  | Mcreatecontract (cc, d, a)     -> Mcreatecontract (map_create_contract_type f fi cc, f d, f a)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -2103,7 +2118,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
   | Mmakeevent (_, _, a)                  -> f accu a
-  | Mcreatecontract (_, d, a, si)         -> f (f (f accu d) a) si
+  | Mcreatecontract (cc, d, a)            -> (let naccu = List.fold_left (fun accu x -> f accu x) accu (match cc with | CCArl (_,args) -> List.map snd args | CCTz _ -> []) in f (f naccu d) a)
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2616,11 +2631,22 @@ let fold_map_term
     let ae, aa = f accu a in
     g (Mmakeevent (t, id, ae)), aa
 
-  | Mcreatecontract (ms, d, a, si) ->
-    let de, da = f accu d in
+  | Mcreatecontract (cc, d, a) ->
+    let cce, cca = (
+      match cc with
+      | CCArl (id, args) -> begin
+          let args, accu = List.fold_left
+              (fun (pterms, accu) (id, x) ->
+                 let p, accu = f accu x in
+                 pterms @ [(id, p)], accu) ([], accu) args
+          in
+          CCArl (id, args), accu
+        end
+      | CCTz _ -> (cc, accu))
+    in
+    let de, da = f cca d in
     let ae, aa = f da a in
-    let sie, sia = f aa si in
-    g (Mcreatecontract (ms, de, ae, sie)), sia
+    g (Mcreatecontract (cce, de, ae)), aa
 
   (* literals *)
 

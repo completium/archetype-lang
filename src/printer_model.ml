@@ -413,11 +413,18 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid id
         f a
 
-    | Mcreatecontract (_ms, d, a, si) ->
-      Format.fprintf fmt "make_contract(%a, %a, %a)"
+    | Mcreatecontract (cc, d, a) ->
+      let pp_create_contract fmt = function
+        | CCTz (_, arg) -> Format.fprintf fmt "Tz(%a)" f arg
+        | CCArl (id, args) ->
+          Format.fprintf fmt "Arl(%a, [%a])"
+            pp_ident id
+            (pp_list ";" (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_ident id f v)) args
+      in
+      Format.fprintf fmt "create_contract(%a, %a, %a)"
+        pp_create_contract cc
         f d
         f a
-        f si
 
     (* literals *)
 
