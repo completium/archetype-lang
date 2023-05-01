@@ -447,14 +447,17 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | _ -> assert false
         end
 
-      | A.Pcreatecontract (ms, okh, amount, arg_storage) ->
-        let to_michelson_struct (ms : A.michelson_struct) =
-          M.{
-            ms_content = ms.ms_content
-          }
-        in
-        M.Mcreatecontract (to_michelson_struct ms, f okh, f amount, f arg_storage)
-
+      | A.Pcreatecontract (okh, amount, cct) -> begin
+        match cct with
+        | A.CCTz (ms, arg_storage) ->
+          let to_michelson_struct (ms : A.michelson_struct) =
+            M.{
+                ms_content = ms.ms_content
+            }
+          in
+          M.Mcreatecontract (to_michelson_struct ms, f okh, f amount, f arg_storage)
+        | A.CCArl _ -> assert false
+      end
       | A.Ptz_expr s -> M.Mtz_expr s
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)

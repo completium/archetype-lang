@@ -641,14 +641,22 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (c, a, b)
 
-    | Pcreatecontract (ms, okh, amount, arg_storage) ->
-      let pp fmt (_ms, okh, amount, arg_storage) =
-        Format.fprintf fmt "create_contract(%a, %a, %a)"
-          pp_pterm okh
-          pp_pterm amount
-          pp_pterm arg_storage
+    | Pcreatecontract (okh, amount, cct) ->
+      let pp fmt (okh, amount, cct) =
+        match cct with
+        | CCTz (_, arg_storage) ->
+          Format.fprintf fmt "create_contract(%a, %a, %a)"
+            pp_pterm okh
+            pp_pterm amount
+            pp_pterm arg_storage
+        | CCArl (name, args) ->
+          Format.fprintf fmt "create_contract(%a, %a, Arl(%a, [%a]))"
+            pp_pterm okh
+            pp_pterm amount
+            pp_ident name
+            (pp_list ";" (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_ident id pp_pterm v)) args
       in
-      (pp_no_paren pp) fmt (ms, okh, amount, arg_storage)
+      (pp_no_paren pp) fmt (okh, amount, cct)
 
     | Ptz_expr v ->
       let pp fmt v =

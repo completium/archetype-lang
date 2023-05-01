@@ -372,7 +372,7 @@ and pterm_node  =
   | Pcast of type_ * type_ * pterm
   | Pself of lident
   | Pternary of pterm * pterm * pterm
-  | Pcreatecontract of michelson_struct * pterm * pterm * pterm
+  | Pcreatecontract of pterm * pterm * create_contract_type
   | Ptz_expr of string
 [@@deriving show {with_path = false}]
 
@@ -382,6 +382,11 @@ and pterm_arg =
   | AEffect  of (lident * operator * pterm) list
   | ASorting of bool * lident
   | AIdent   of lident
+[@@deriving show {with_path = false}]
+
+and create_contract_type =
+  | CCTz  of michelson_struct * pterm
+  | CCArl of ident * (ident * pterm) list
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)

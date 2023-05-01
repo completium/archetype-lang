@@ -4,6 +4,6 @@ entry exec () {
   const delegate : option<key_hash> = none;
   const amount : tez = 0tz;
   const storage_init : nat = 0;
-  const op_addr : (operation * address) = create_contract("./simple.arl", delegate, amount);
+  const op_addr : (operation * address) = create_contract("./simple_param.arl", delegate, amount, {n = 2});
   operations := [op_addr[0]]
 }

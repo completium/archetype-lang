@@ -3138,6 +3138,12 @@ type pattern = [
   | `Or     of A.ptyp * A.ptyp
 ]
 
+let parse_archetype filename =
+  try
+    filename |> Core.with_open_in (fun channel ->
+        Some (Io.parse_archetype (Core.FIChannel (filename, channel))))
+  with Sys_error _ -> None
+
 (* -------------------------------------------------------------------- *)
 let rec for_xexpr
     (mode : emode_t) ?autoview ?(capture = capture0)
@@ -3808,18 +3814,56 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
-    | Eapp (Fident (SINone, {pldesc = "create_contract"}), [path; okh; amount; arg_storage]) -> begin
+    | Eapp (Fident (SINone, {pldesc = "create_contract"}), args) -> begin
+        let path, okh, amount, args =
+          match args with
+          | [path; okh; amount; args] -> path, okh, amount, Some args
+          | [path; okh; amount] -> path, okh, amount, None
+          | _ -> (Env.emit_error env (Location.mergeall (List.map loc args), InvalidNumberOfArguments(3, List.length args)) ; bailout ())
+        in
+
         let okh = for_xexpr ~ety:(A.Toption A.vtkeyhash) env okh in
         let amount = for_xexpr ~ety:(A.vtcurrency) env amount in
 
-        let content =
+        let process = function
+          | `Tz content -> begin
+              let storage_type =
+                match Micheline.get_storage_type content with
+                | Some v -> v
+                | None -> (Env.emit_error env (loc path, InvalidTzFile) ; bailout ())
+              in
+
+              let arg_storage =
+                match args with
+                | Some v -> v
+                | None -> assert false
+              in
+
+              let arg_storage = for_xexpr env arg_storage in
+
+              let from_type : A.ptyp = normalize_type env (Option.get arg_storage.type_) in
+              let to_type : A.ptyp = normalize_type env storage_type in
+
+              if not (Type.compatible ~autoview:false ~for_eq:false ~from_:from_type ~to_:to_type)
+              then Env.emit_error env (arg_storage.loc, InvalidStorageType(from_type, to_type));
+
+              A.CCTz ({ms_content = content}, arg_storage)
+            end
+          | `Arl v -> begin
+              let ast : A.ast = v in
+              A.CCArl ((unloc ast.name), [])
+            end
+        in
+
+        let create_contract_type =
           match path with
           | {pldesc = PT.Eterm (_, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
               (* FIXME: error if the namespace is not empty *)
               let importdecl = Env.Import.get env (unloc id) in
-              match importdecl.id_content with
-              | Some v -> v
-              | None -> Env.emit_error env (loc path, TODO) ; bailout ()
+              match importdecl.id_content, importdecl.id_ast with
+              | Some v, _ -> process (`Tz v)
+              | _, Some v -> process (`Arl v)
+              | None, None -> Env.emit_error env (loc path, TODO) ; bailout ()
             end
           | {pldesc = PT.Eliteral(Lstring v) } -> begin
               let p = Env.Import.resolve_path env v in
@@ -3827,7 +3871,7 @@ let rec for_xexpr
               match ext with
               | ".tz" -> begin
                   match Micheline.parse p with
-                  | Some v -> v
+                  | Some v -> process (`Tz v)
                   | None -> (Env.emit_error env (loc path, FileNotFound v); bailout ())
                 end
               | _ -> Env.emit_error env (loc path, UnknownCreateContractExtension ext) ; bailout ()
@@ -3835,23 +3879,9 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (loc path, InvalidContractValueForCreateContract) ; bailout ())
         in
 
-        let storage_type =
-          match Micheline.get_storage_type content with
-          | Some v -> v
-          | None -> (Env.emit_error env (loc path, InvalidTzFile) ; bailout ())
-        in
-
-        let arg_storage = for_xexpr env arg_storage in
-
-        let from_type : A.ptyp = normalize_type env (Option.get arg_storage.type_) in
-        let to_type : A.ptyp = normalize_type env storage_type in
-
-        if not (Type.compatible ~autoview:false ~for_eq:false ~from_:from_type ~to_:to_type)
-        then Env.emit_error env (arg_storage.loc, InvalidStorageType(from_type, to_type));
-
         mk_sp
           (Some (A.Ttuple [A.Toperation; A.vtaddress]))
-          (A.Pcreatecontract ({ms_content = content }, okh, amount, arg_storage))
+          (A.Pcreatecontract (okh, amount, create_contract_type))
       end
 
     | Eapp (Fident f, args) when Env.Function.exists env (unloc_nmid f) ->
@@ -6891,12 +6921,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
           in
 
-          let opt =
-            let filename = unloc path in
-            try
-              filename |> Core.with_open_in (fun channel ->
-                  Some (Io.parse_archetype (Core.FIChannel (filename, channel))))
-            with Sys_error _ -> None in
+          let opt = parse_archetype (unloc path) in
 
           match opt with
           | Some pt -> begin
