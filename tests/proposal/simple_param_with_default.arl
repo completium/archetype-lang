@@ -1,4 +1,4 @@
-archetype simple_param(res : nat, str : string = "mystr")
+archetype simple_param_with_default(res : nat, str : string = "mystr")
 
 entry exec(n : nat) {
   res := n

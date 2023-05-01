@@ -785,6 +785,7 @@ type model = {
   storage       : storage;
   functions     : function__ list;
   extra         : extra;
+  cc_models     : model list;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -855,8 +856,8 @@ let mk_odel_enum name current_type : odel_enum =
 let mk_extra ?(original_decls = []) () : extra =
   { original_decls }
 
-let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
-  { name; parameters; metadata; api_items; storage; decls; functions; extra; loc }
+let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(extra = mk_extra ()) ?(cc_models = []) ?(loc = Location.dummy) name : model =
+  { name; parameters; metadata; api_items; storage; decls; functions; extra; cc_models; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -2118,7 +2119,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
   | Mmakeevent (_, _, a)                  -> f accu a
-  | Mcreatecontract (cc, d, a)            -> (let naccu = List.fold_left (fun accu x -> f accu x) accu (match cc with | CCArl (_,args) -> List.map snd args | CCTz _ -> []) in f (f naccu d) a)
+  | Mcreatecontract (cc, d, a)            -> (let naccu = List.fold_left (fun accu x -> f accu x) accu (match cc with | CCArl (_,args) -> List.map snd args | CCTz (_, si) -> [si]) in f (f naccu d) a)
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2642,7 +2643,7 @@ let fold_map_term
           in
           CCArl (id, args), accu
         end
-      | CCTz _ -> (cc, accu))
+      | CCTz (tz, si) -> let sie, sia = f accu si in (CCTz (tz, sie), sia))
     in
     let de, da = f cca d in
     let ae, aa = f da a in
@@ -3972,6 +3973,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     storage       = List.map for_storage_item model.storage;
     functions     = List.map for_function__ model.functions;
     extra         = model.extra;
+    cc_models     = model.cc_models;
     loc           = model.loc;
   }
 

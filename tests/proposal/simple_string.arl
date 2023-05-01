@@ -1,0 +1,7 @@
+archetype simple_string
+
+variable res : string = ""
+
+entry exec(s : string) {
+  res := s
+}

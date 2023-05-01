@@ -672,6 +672,7 @@ let toption t     = mk_type (Toption t)
 let tcontract t   = mk_type (Tcontract t)
 let tkey_hash     = mk_type (Tkey_hash)
 let tticket t     = mk_type (Tticket t)
+let tnever        = mk_type (Tnever)
 
 (* -------------------------------------------------------------------- *)
 
@@ -1482,6 +1483,7 @@ module Utils : sig
   val data_to_micheline : data -> obj_micheline
   val type_to_micheline : type_-> obj_micheline
   val code_to_micheline : code -> obj_micheline
+  val michelson_to_obj_micheline : michelson -> obj_micheline
   val to_micheline : michelson -> data -> micheline
   val is_storable : type_ -> bool
 
@@ -1856,6 +1858,14 @@ end = struct
       ret;
       body
     ] "view"
+
+  let michelson_to_obj_micheline (michelson : michelson) :  obj_micheline =
+    let storage   = type_to_micheline michelson.storage in
+    let parameter = type_to_micheline michelson.parameter in
+    let code      = code_to_micheline michelson.code in
+    let views     = List.map view_to_micheline michelson.views in
+    let f tag x   = Oprim (mk_prim ~args:[x] tag) in
+    Oarray ([f "storage" storage; f "parameter" parameter; f "code" code] @ (List.map (f "view") views))
 
   let to_micheline (m : michelson) (s : data) : micheline =
     let storage   = type_to_micheline m.storage in

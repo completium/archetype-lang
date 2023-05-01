@@ -44,7 +44,7 @@ type env = {
 let mk_env ?(formula=false) ?asset_name ?function_p () =
   { formula; asset_name; function_p }
 
-let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
+let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let is_current_namespace nm = String.equal "" (unloc nm) || String.equal (unloc ast.name) (unloc nm) in
   let get_namespace nm = if is_current_namespace nm then None else Some nm in
@@ -1592,9 +1592,25 @@ let to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         end) iasts ast.decls
   in
 
+  let extract_cc_models (model : M.model) =
+    let rec aux ctx accu (mt : M.mterm) : M.model list =
+      match mt.node with
+      | M.Mcreatecontract (CCArl(id, _), _, _) -> begin
+        let a = Typing.Env.Import.get _tenv id in
+        let ast = Option.get a.id_ast in
+        let m = to_model (_tenv, ast) in
+        m::accu
+      end
+      | _ -> M.fold_term (aux ctx) accu mt
+    in
+    M.fold_model aux model []
+  in
+
   let parameters = List.map (process_parameter env) ast.parameters in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) adecls in
   let functions = List.map (process_fun_ env) ast.funs in
+  let model = M.mk_model ~parameters ?metadata ~decls ~functions ~loc:ast.loc name in
 
-  M.mk_model ~parameters ?metadata ~decls ~functions ~loc:ast.loc name
+  let cc_models = extract_cc_models model in
+  {model with cc_models = cc_models }

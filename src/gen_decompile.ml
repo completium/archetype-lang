@@ -1236,6 +1236,42 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tchest                 -> M.tchest
   | Tchest_key             -> M.tchest_key
 
+let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
+  let f = data_to_mterm ?omap_var in
+  let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+  match d with
+  | Dint v when is_nat t -> M.mk_bnat v
+  | Dint    v        -> M.mk_bint v
+  | Dstring v        -> M.mk_string v
+  | Dbytes  v        -> M.mk_bytes v
+  | Dunit            -> M.unit
+  | Dtrue            -> M.mtrue
+  | Dfalse           -> M.mfalse
+  | Dpair   l        -> M.mk_pair (List.map f l)
+  | Dleft    d       -> begin
+      let tl, tr = (match t with
+          | Some { node = Tor (tl, tr) } -> tl, tr
+          | _ -> T.tnever, T.tnever)
+      in
+      M.mk_left (ttype_to_mtype tr) (f ~t:tl d)
+    end
+  | Dright d          -> begin
+      let tl, tr = (match t with
+          | Some { node = Tor (tl, tr) } -> tl, tr
+          | _ -> T.tnever, T.tnever)
+      in
+      M.mk_right (ttype_to_mtype tl) (f ~t:tr d)
+    end
+  | Dsome   _d       -> assert false
+  | Dnone            -> assert false
+  | Dlist  _l        -> assert false
+  | Delt _           -> assert false
+  | Dvar (id, _, _)  -> (match omap_var with Some map_var -> map_var id | None -> assert false)
+  | DIrCode _        -> assert false
+  | Dcode _          -> assert false
+  | Dlambda_rec _    -> assert false
+  | Dconstant _      -> assert false
+
 module Decomp_model : sig
   val decompile : T.dprogram * env -> M.model * env
 end = struct
@@ -1244,37 +1280,6 @@ end = struct
   open Model
 
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
-
-  let rec for_data ?t (d : T.data) : M.mterm =
-    let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
-    match d with
-    | Dint v when is_nat t -> M.mk_bnat v
-    | Dint    v        -> mk_bint v
-    | Dstring v        -> mk_string v
-    | Dbytes  v        -> mk_bytes v
-    | Dunit            -> unit
-    | Dtrue            -> mtrue
-    | Dfalse           -> mfalse
-    | Dpair   l        -> mk_pair (List.map for_data l)
-    | Dleft    d       -> begin
-        match t with
-        | Some { node = Tor (tl, tr) } -> mk_left (for_type tr) (for_data ~t:tl d)
-        | _ -> assert false
-      end
-    | Dright d          -> begin
-        match t with
-        | Some { node = Tor (tl, tr) } -> mk_right (for_type tl) (for_data ~t:tr d)
-        | _ -> assert false
-      end
-    | Dsome   _d       -> assert false
-    | Dnone            -> assert false
-    | Dlist  _l        -> assert false
-    | Delt _           -> assert false
-    | Dvar _           -> assert false
-    | DIrCode _        -> assert false
-    | Dcode _          -> assert false
-    | Dlambda_rec _    -> assert false
-    | Dconstant _      -> assert false
 
   let get_storage_list tstorage =
     let rec aux (x : T.type_) =
@@ -1317,7 +1322,7 @@ end = struct
       let mk_map = MKMap in
       match e.node with
       | Dvar v          -> mk_mvar (M.mk_mident (dumloc (for_dvar v))) tunit
-      | Ddata (t, d)    -> for_data ~t d
+      | Ddata (t, d)    -> data_to_mterm ~t d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
       | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
@@ -1452,7 +1457,7 @@ end = struct
       List.mapi (fun n (_id, t) ->
           (* let id = if String.length id > 0 then String.sub id 1 (String.length id - 1) else id in *)
           let id = Format.asprintf "sto_%d" (n + 1)  in
-          M.mk_storage_item (M.mk_mident (dumloc id)) MTvar (for_type t) (for_data ~t:t (get_default_value t))
+          M.mk_storage_item (M.mk_mident (dumloc id)) MTvar (for_type t) (data_to_mterm ~t:t (get_default_value t))
         ) storage_list
     in
     let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in

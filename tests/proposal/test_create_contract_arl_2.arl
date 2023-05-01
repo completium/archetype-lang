@@ -1,0 +1,10 @@
+archetype test_create_contract_arl_2
+
+import "./simple_string.arl"
+
+entry exec () {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const op_addr : (operation * address) = create_contract(simple_string, delegate, amount);
+  operations := [op_addr[0]]
+}

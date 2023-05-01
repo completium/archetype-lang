@@ -237,9 +237,26 @@ let print_debug b id  (f : M.model -> M.model) (model : M.model) : M.model =
   if b then (Format.printf "BEGIN TRANSFORMATION: %s@\n" id; output_model model; Format.printf "END TRANSFORMATION: %s@\n" id);
   model
 
-let toolchain ?(debug=false) model =
+let rec toolchain ?(debug=false) model =
+  let process_create_contract (model : Model.model) : Model.model =
+    let rec aux (mt : Model.mterm) : Model.mterm =
+      match mt.node with
+      | Mcreatecontract (Model.CCArl(id, args), okh, am) -> begin
+          let cc_model = List.find (fun (x : Model.model) -> String.equal id (Location.unloc x.name)) model.cc_models in
+          let low_cc_model = toolchain cc_model in
+          let ir = low_cc_model |> Gen_michelson.to_ir in
+          let michelson = ir |> Gen_michelson.to_michelson in
+          let storage_data = Gen_decompile.data_to_mterm ~omap_var:(fun id -> List.assoc id args) ir.storage_data in
+          let ms_content = Michelson.Utils.michelson_to_obj_micheline michelson in
+          Model.mk_mterm (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
+        end
+      | _ -> Model.map_mterm aux mt
+    in
+    Model.map_model (fun _ x -> x) (fun x -> x) aux model
+  in
   let f = print_debug debug in
   model
+  |> f "process_create_contract" process_create_contract
   |> f "process_fail" process_fail
   |> f "remove_import_mterm" remove_import_mterm
   |> f "getter_to_entry" (getter_to_entry ~extra:true)

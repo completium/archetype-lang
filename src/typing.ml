@@ -3814,12 +3814,12 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
-    | Eapp (Fident (SINone, {pldesc = "create_contract"}), args) -> begin
+    | Eapp (Fident (SINone, {pldesc = "create_contract"}), iargs) -> begin
         let path, okh, amount, args =
-          match args with
+          match iargs with
           | [path; okh; amount; args] -> path, okh, amount, Some args
           | [path; okh; amount] -> path, okh, amount, None
-          | _ -> (Env.emit_error env (Location.mergeall (List.map loc args), InvalidNumberOfArguments(3, List.length args)) ; bailout ())
+          | _ -> (Env.emit_error env (Location.mergeall (List.map loc iargs), InvalidNumberOfArguments(3, List.length iargs)) ; bailout ())
         in
 
         let okh = for_xexpr ~ety:(A.Toption A.vtkeyhash) env okh in
@@ -3836,7 +3836,7 @@ let rec for_xexpr
               let arg_storage =
                 match args with
                 | Some v -> v
-                | None -> assert false
+                | None -> (Env.emit_error env (Location.mergeall (List.map loc iargs), InvalidNumberOfArguments(4, List.length iargs)) ; bailout ())
               in
 
               let arg_storage = for_xexpr env arg_storage in
