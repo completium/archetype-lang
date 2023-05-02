@@ -921,6 +921,9 @@ import * as simple_multi_entry2 from '../bindings/passed/simple_multi_entry2'
 import * as simple_multi_entry3 from '../bindings/passed/simple_multi_entry3'
 import * as simple_op_add from '../bindings/passed/simple_op_add'
 import * as simple_op_uminus from '../bindings/passed/simple_op_uminus'
+import * as simple_param from '../bindings/passed/simple_param'
+import * as simple_param_const from '../bindings/passed/simple_param_const'
+import * as simple_param_with_default from '../bindings/passed/simple_param_with_default'
 import * as simple_record_assign from '../bindings/passed/simple_record_assign'
 import * as simple_record_assign1 from '../bindings/passed/simple_record_assign1'
 import * as simple_record_assign2 from '../bindings/passed/simple_record_assign2'
@@ -931,6 +934,7 @@ import * as simple_sequence from '../bindings/passed/simple_sequence'
 import * as simple_sequence_with_arg from '../bindings/passed/simple_sequence_with_arg'
 import * as simple_sequence_with_arg2 from '../bindings/passed/simple_sequence_with_arg2'
 import * as simple_sequence_with_arg_var from '../bindings/passed/simple_sequence_with_arg_var'
+import * as simple_string from '../bindings/passed/simple_string'
 import * as simple_while from '../bindings/passed/simple_while'
 import * as simple_with_arg_view from '../bindings/passed/simple_with_arg_view'
 import * as simple_with_type_annot from '../bindings/passed/simple_with_type_annot'
@@ -1042,7 +1046,14 @@ import * as test_conditions from '../bindings/passed/test_conditions'
 import * as test_contains_get from '../bindings/passed/test_contains_get'
 import * as test_contract from '../bindings/passed/test_contract'
 import * as test_contract_self from '../bindings/passed/test_contract_self'
+import * as test_create_contract_arl from '../bindings/passed/test_create_contract_arl'
+import * as test_create_contract_arl_string from '../bindings/passed/test_create_contract_arl_string'
+import * as test_create_contract_arl_with_param from '../bindings/passed/test_create_contract_arl_with_param'
+import * as test_create_contract_arl_with_param_const from '../bindings/passed/test_create_contract_arl_with_param_const'
+import * as test_create_contract_arl_with_param_with_default from '../bindings/passed/test_create_contract_arl_with_param_with_default'
 import * as test_create_contract_bytes from '../bindings/passed/test_create_contract_bytes'
+import * as test_create_contract_tz_with_import from '../bindings/passed/test_create_contract_tz_with_import'
+import * as test_create_contract_tz_with_path from '../bindings/passed/test_create_contract_tz_with_path'
 import * as test_fget from '../bindings/passed/test_fget'
 import * as test_for_list_alt from '../bindings/passed/test_for_list_alt'
 import * as test_fun0 from '../bindings/passed/test_fun0'
@@ -16816,6 +16827,46 @@ describe('passed', async () => {
     assert(res_after.equals(new Int(-1)))
   })
 
+  it('simple_param', async () => {
+    await simple_param.simple_param.deploy(new Nat(0), { as: alice })
+
+    const res_before = await simple_param.simple_param.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_param.simple_param.exec(new Nat(2), { as: alice })
+
+    const res_after = await simple_param.simple_param.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('simple_param_const', async () => {
+    await simple_param_const.simple_param_const.deploy(new Nat(2), { as: alice })
+
+    const res_before = await simple_param_const.simple_param_const.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await simple_param_const.simple_param_const.exec({ as: alice })
+
+    const res_after = await simple_param_const.simple_param_const.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('simple_param_with_default', async () => {
+    await simple_param_with_default.simple_param_with_default.deploy(new Nat(0), "", { as: alice })
+    // TODO
+    const res_before = await simple_param_with_default.simple_param_with_default.get_res()
+    assert(res_before.equals(new Nat(0)))
+    const str_before = await simple_param_with_default.simple_param_with_default.get_str()
+    assert(str_before == "")
+
+    await simple_param_with_default.simple_param_with_default.exec(new Nat(2), { as: alice })
+
+    const res_after = await simple_param_with_default.simple_param_with_default.get_res()
+    assert(res_after.equals(new Nat(2)))
+    const str_after = await simple_param_with_default.simple_param_with_default.get_str()
+    assert(str_after == "")
+  })
+
   it('simple_record_assign', async () => {
     await simple_record_assign.simple_record_assign.deploy({ as: alice })
 
@@ -16957,6 +17008,18 @@ describe('passed', async () => {
     assert(str_after == "mystring")
     const n_after = await simple_sequence_with_arg_var.simple_sequence_with_arg_var.get_n()
     assert(n_after.equals(new Nat(7)))
+  })
+
+  it('simple_string', async () => {
+    await simple_string.simple_string.deploy({ as: alice })
+
+    const res_before = await simple_string.simple_string.get_res()
+    assert(res_before == "")
+
+    await simple_string.simple_string.exec("mystr", { as: alice })
+
+    const res_after = await simple_string.simple_string.get_res()
+    assert(res_after == "mystr")
   })
 
   it('simple_while', async () => {
@@ -20610,9 +20673,52 @@ describe('passed', async () => {
     assert(res_after.equals(new Nat(3)))
   })
 
+  it('test_create_contract_arl', async () => {
+    await test_create_contract_arl.test_create_contract_arl.deploy({ as: alice })
+
+    await test_create_contract_arl.test_create_contract_arl.exec({ as: alice })
+  })
+
+  it('test_create_contract_arl_string', async () => {
+    await test_create_contract_arl_string.test_create_contract_arl_string.deploy({ as: alice })
+
+    await test_create_contract_arl_string.test_create_contract_arl_string.exec({ as: alice })
+  })
+
+  it('test_create_contract_arl_with_param', async () => {
+    await test_create_contract_arl_with_param.test_create_contract_arl_with_param.deploy({ as: alice })
+
+    await test_create_contract_arl_with_param.test_create_contract_arl_with_param.exec({ as: alice })
+  })
+
+  it('test_create_contract_arl_with_param_const', async () => {
+    await test_create_contract_arl_with_param_const.test_create_contract_arl_with_param_const.deploy({ as: alice })
+
+    await test_create_contract_arl_with_param_const.test_create_contract_arl_with_param_const.exec({ as: alice })
+  })
+
+  it('test_create_contract_arl_with_param_with_default', async () => {
+    await test_create_contract_arl_with_param_with_default.test_create_contract_arl_with_param_with_default.deploy({ as: alice })
+
+    await test_create_contract_arl_with_param_with_default.test_create_contract_arl_with_param_with_default.exec({ as: alice })
+  })
+
   it('test_create_contract_bytes', async () => {
     await test_create_contract_bytes.test_create_contract_bytes.deploy({ as: alice })
+
     await test_create_contract_bytes.test_create_contract_bytes.exec({ as: alice })
+  })
+
+  it('test_create_contract_tz_with_import', async () => {
+    await test_create_contract_tz_with_import.test_create_contract_tz_with_import.deploy({ as: alice })
+
+    await test_create_contract_tz_with_import.test_create_contract_tz_with_import.exec({ as: alice })
+  })
+
+  it('test_create_contract_tz_with_path', async () => {
+    await test_create_contract_tz_with_path.test_create_contract_tz_with_path.deploy({ as: alice })
+
+    await test_create_contract_tz_with_path.test_create_contract_tz_with_path.exec({ as: alice })
   })
 
   it('test_fget', async () => {

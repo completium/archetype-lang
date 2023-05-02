@@ -1803,10 +1803,11 @@ let pp_decl fmt = function
   | Devent r -> pp_record fmt r
 
 let pp_storage_item fmt (si : storage_item) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a : %a%a (no_storage: %b)"
     pp_mid si.id
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
+    si.no_storage
 
 let pp_storage fmt (s : storage) =
   match s with

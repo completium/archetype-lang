@@ -243,10 +243,13 @@ let rec toolchain ?(debug=false) model =
       match mt.node with
       | Mcreatecontract (Model.CCArl(id, args), okh, am) -> begin
           let cc_model = List.find (fun (x : Model.model) -> String.equal id (Location.unloc x.name)) model.cc_models in
-          let low_cc_model = toolchain cc_model in
+          let low_cc_model = toolchain (process_metadata cc_model)  in
           let ir = low_cc_model |> Gen_michelson.to_ir in
           let michelson = ir |> Gen_michelson.to_michelson in
-          let storage_data = Gen_decompile.data_to_mterm ~omap_var:(fun id -> List.assoc id args) ir.storage_data in
+          (* let storage_data = M.unit in *)
+          let storage_data = low_cc_model.storage |> List.filter (fun (x : M.storage_item) -> not x.no_storage) |> List.map (fun (x : M.storage_item) ->
+              match List.assoc_opt (M.unloc_mident x.id) args with | Some v -> v | None -> x.default
+            ) |> M.mk_pair in
           let ms_content = Michelson.Utils.michelson_to_obj_micheline michelson in
           Model.mk_mterm (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
         end

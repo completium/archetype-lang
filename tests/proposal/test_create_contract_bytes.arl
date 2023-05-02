@@ -1,9 +1,0 @@
-archetype test_create_contract
-
-entry exec () {
-  const delegate : option<key_hash> = none;
-  const amount : tez = 0tz;
-  const storage_init : bytes = 0x00;
-  const op_addr : (operation * address) = create_contract("../michelson/bytes.tz", delegate, amount, storage_init);
-  operations := [op_addr[0]]
-}

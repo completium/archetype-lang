@@ -1,0 +1,10 @@
+archetype create_contract_arl_with_param_unknown_field
+
+import "../passed/simple_param.arl"
+
+entry exec () {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const op_addr : (operation * address) = create_contract(simple_param, delegate, amount, {res = 0; a = 0});
+  operations := [op_addr[0]]
+}

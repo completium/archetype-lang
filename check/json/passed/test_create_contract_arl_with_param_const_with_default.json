@@ -1,0 +1,34 @@
+{
+  "name": "test_create_contract_arl_with_param_const_with_default",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": []
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

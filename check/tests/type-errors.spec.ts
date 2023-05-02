@@ -105,6 +105,34 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/contract_unknown_self_entry.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('create_contract_arl_with_param_anonymous_field', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_anonymous_field.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_bad_storage_lit', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_bad_storage_lit.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_bad_type', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_bad_type.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_duplicated_field', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_duplicated_field.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_missing_field', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_missing_field.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_no_param', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_no_param.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('create_contract_arl_with_param_unknown_field', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_unknown_field.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('dec_lit_error', async () => {
     const stat = compile("../tests/type-errors/dec_lit_error.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

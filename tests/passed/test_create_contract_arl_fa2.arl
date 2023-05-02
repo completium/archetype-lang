@@ -1,0 +1,10 @@
+archetype test_create_contract_arl_string
+
+import "../contracts/fa2/fa2_nft.arl"
+
+entry exec (owner : address, permits : address) {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const op_addr : (operation * address) = create_contract(fa2_nft, delegate, amount, {owner = owner; permits = permits});
+  operations := [op_addr[0]]
+}

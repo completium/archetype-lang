@@ -697,6 +697,12 @@ type error_desc =
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
+  | CreateContractStorageDuplicatedField of ident
+  | CreateContractStorageInvalidArgType
+  | CreateContractStorageInvalidAssignOperator
+  | CreateContractStorageInvalidField
+  | CreateContractStorageMissingField of ident
+  | CreateContractStorageUnknownField of ident
   | DetachInvalidExprFrom
   | DetachInvalidType                       of ident
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
@@ -949,7 +955,13 @@ let pp_error_desc fmt e =
   | CannotUseInstrWithSideEffectInView -> pp "Cannot use instruction with side effect in view"
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
-  | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
+  | ContractInvariantInLocalSpec               -> pp "Contract invariants at local levl are forbidden"
+  | CreateContractStorageDuplicatedField i     -> pp "Duplicated field for create contract storage: %a" pp_ident i
+  | CreateContractStorageInvalidArgType        -> pp "Invalid argument for `create_contract' storage, must be a record"
+  | CreateContractStorageInvalidAssignOperator -> pp "Invalid assign operator for for `create_contract' storage record"
+  | CreateContractStorageInvalidField          -> pp "Invalid field for create contract storage, must be not anonymous"
+  | CreateContractStorageMissingField i        -> pp "Missing field for create contract storage: %a" pp_ident i
+  | CreateContractStorageUnknownField i        -> pp "Unknown field for create contract storage: %a" pp_ident i
   | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
@@ -3851,7 +3863,47 @@ let rec for_xexpr
             end
           | `Arl v -> begin
               let ast : A.ast = v in
-              A.CCArl ((unloc ast.name), [])
+              let arg_values : (ident * PT.expr) list =
+                match args with
+                | None -> []
+                | Some {pldesc=Erecord (_, fields)} -> begin
+                    List.iter (fun (ol, v) -> begin
+                          match ol with
+                          | Some (op, id) -> begin
+                              (match op with
+                               | PT.ValueAssign -> ()
+                               | _ -> Env.emit_error env (Location.mergeall [loc v; loc id], CreateContractStorageInvalidAssignOperator));
+                              if Option.is_none (List.find_opt (fun x -> String.equal x (unloc id)) (List.map (fun (x : A.parameter) -> unloc x.name) ast.parameters))
+                              then Env.emit_error env (loc id, CreateContractStorageUnknownField (unloc id))
+                            end
+                          | None -> Env.emit_error env (loc v, CreateContractStorageInvalidField)
+                        end ) fields;
+                    let _ = List.fold_left (fun accu (ol, _) ->
+                        let id = ol |> Option.get |> snd in
+                        if List.mem (unloc id) accu
+                        then (Env.emit_error env (loc id, CreateContractStorageDuplicatedField (unloc id)));
+                        (unloc id)::accu
+                      ) [] fields in
+                    List.map (fun (ol, v) -> (ol |> Option.get |> snd |> unloc, v)) fields
+                  end
+                | Some v -> (Env.emit_error env (loc v, CreateContractStorageInvalidArgType); bailout())
+              in
+              let fetch_arg_value id = List.find_opt (fun (x, _) -> String.equal (unloc id) x) arg_values in
+              let vs = List.map (fun (p : A.parameter) ->
+                  let v : A.pterm =
+                    match fetch_arg_value p.name, p.default with
+                    | Some (_, e), None -> let v = for_xexpr env ~ety:p.typ e in v
+                    | None, Some v -> v
+                    | _ -> begin
+                        let loc = match args with | Some v -> loc v | None -> Location.mergeall (List.map loc iargs) in
+                        Env.emit_error env (loc, CreateContractStorageMissingField (unloc p.name));
+                        dummy None
+                      end
+                  in
+                  (unloc p.name, v)
+                ) ast.parameters
+              in
+              A.CCArl ((unloc ast.name), vs)
             end
         in
 

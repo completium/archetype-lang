@@ -1,4 +1,4 @@
-archetype test_create_contract_arl_2
+archetype test_create_contract_arl_string
 
 import "./simple_string.arl"
 

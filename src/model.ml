@@ -4183,9 +4183,9 @@ end = struct
                                            |> List.find (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
                                            |> fun e -> e.values
                                                        |> List.map (fun (v : enum_item) -> unloc_mident (v.name))
-  let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_mident id x.name)
-  let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_mident id x.name)
-  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_mident id x.name)
+  let get_asset  m id : asset = get_assets m |> List.find_opt (fun (x : asset) -> cmp_mident id x.name) |> (fun x -> match x with | Some v -> v | None -> Format.eprintf "get_enum NotFound: %s@\n" (normalize_mident id); assert false)
+  let get_record m id : record = get_records m |> List.find_opt (fun (x : record) -> cmp_mident id x.name) |> (fun x -> match x with | Some v -> v | None -> Format.eprintf "get_record NotFound: %s@\n" (normalize_mident id); assert false)
+  let get_event  m id : record = get_events m |> List.find_opt (fun (x : record) -> cmp_mident id x.name) |> (fun x -> match x with | Some v -> v | None -> Format.eprintf "get_enum NotFound: %s@\n" (normalize_mident id); assert false)
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
