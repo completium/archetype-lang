@@ -1,20 +1,13 @@
 { storage unit ;
-  parameter
-    (pair %exec
-       (address %initial_holder)
-       (pair (nat %total_supply) (bytes %metadata_coin))) ;
+  parameter (unit %exec) ;
   code { NIL operation ;
          SWAP ;
-         UNPAIR ;
-         UNPAIR ;
-         SWAP ;
-         UNPAIR ;
-         SWAP ;
+         CDR ;
          NONE key_hash ;
          PUSH mutez 0 ;
          EMPTY_BIG_MAP nat (pair (nat %token_id) (map %token_info string bytes)) ;
          EMPTY_MAP string bytes ;
-         DUP 5 ;
+         PUSH bytes 0x ;
          SOME ;
          PUSH string "" ;
          UPDATE ;
@@ -25,15 +18,15 @@
          UPDATE ;
          EMPTY_BIG_MAP address (pair (nat %tokens) (map %allowance address nat)) ;
          EMPTY_MAP address nat ;
-         DUP 7 ;
+         PUSH nat 1000000 ;
          PAIR ;
          SOME ;
-         DUP 8 ;
+         PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
          UPDATE ;
          PAIR ;
          EMPTY_BIG_MAP nat (pair (nat %token_id) (map %token_info string bytes)) ;
          EMPTY_MAP string bytes ;
-         DUP 6 ;
+         PUSH bytes 0x ;
          SOME ;
          PUSH string "" ;
          UPDATE ;
@@ -45,10 +38,10 @@
          PAIR ;
          EMPTY_BIG_MAP address (pair (nat %tokens) (map %allowance address nat)) ;
          EMPTY_MAP address nat ;
-         DUP 7 ;
+         PUSH nat 1000000 ;
          PAIR ;
          SOME ;
-         DUP 8 ;
+         PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
          UPDATE ;
          PAIR ;
          DUP 2 ;
@@ -133,7 +126,7 @@
                                 ITER { CONS } ;
                                 DUP 3 ;
                                 AMOUNT ;
-                                PUSH nat const_total_supply__ ;
+                                PUSH nat 1000000 ;
                                 TRANSFER_TOKENS ;
                                 CONS ;
                                 ITER { CONS } ;
@@ -145,7 +138,7 @@
                                 PAIR }
                               { UNPAIR ;
                                 SWAP ;
-                                PUSH address const_initial_holder__ ;
+                                PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
                                 SENDER ;
                                 COMPARE ;
                                 EQ ;
@@ -386,8 +379,8 @@
          DUP 2 ;
          GET 1 ;
          CONS ;
-         DIP 1 { DIG 7 ; DROP 1 } ;
-         DUG 7 ;
-         DROP 6 ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 3 ;
          SWAP ;
          PAIR } }

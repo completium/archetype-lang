@@ -117,6 +117,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/create_contract_arl_with_param_bad_type.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('create_contract_arl_with_param_const_no_lit', async () => {
+    const stat = compile("../tests/type-errors/create_contract_arl_with_param_const_no_lit.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('create_contract_arl_with_param_duplicated_field', async () => {
     const stat = compile("../tests/type-errors/create_contract_arl_with_param_duplicated_field.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

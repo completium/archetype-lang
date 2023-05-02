@@ -70,12 +70,8 @@ export const fa1_2__token_metadata_container_mich_type: att.MichelineType = att.
     att.prim_annot_to_mich_type("nat", ["%token_id"]),
     att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", []), ["%token_info"])
 ], []), []);
-const exec_arg_to_mich = (initial_holder: att.Address, total_supply: att.Nat, metadata_coin: att.Bytes): att.Micheline => {
-    return att.pair_to_mich([
-        initial_holder.to_mich(),
-        total_supply.to_mich(),
-        metadata_coin.to_mich()
-    ]);
+const exec_arg_to_mich = (): att.Micheline => {
+    return att.unit_mich;
 }
 export class Test_create_contract_arl_fa1 {
     address: string | undefined;
@@ -98,15 +94,15 @@ export class Test_create_contract_arl_fa1 {
         const address = (await ex.deploy("../tests/passed/test_create_contract_arl_fa1.arl", {}, params)).address;
         this.address = address;
     }
-    async exec(initial_holder: att.Address, total_supply: att.Nat, metadata_coin: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async exec(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "exec", exec_arg_to_mich(initial_holder, total_supply, metadata_coin), params);
+            return await ex.call(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_exec_param(initial_holder: att.Address, total_supply: att.Nat, metadata_coin: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_exec_param(params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(initial_holder, total_supply, metadata_coin), params);
+            return await ex.get_call_param(this.address, "exec", exec_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }

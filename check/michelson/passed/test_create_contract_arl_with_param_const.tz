@@ -11,7 +11,7 @@
          CREATE_CONTRACT
            { storage nat ;
              parameter (unit %exec) ;
-             code { CDR ; PUSH nat const_n__ ; SWAP ; DROP 1 ; NIL operation ; PAIR } } ;
+             code { CDR ; PUSH nat 2 ; SWAP ; DROP 1 ; NIL operation ; PAIR } } ;
          PAIR ;
          NIL operation ;
          DUP 2 ;

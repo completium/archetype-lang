@@ -436,35 +436,7 @@
   "entrypoints": [
     {
       "name": "exec",
-      "args": [
-        {
-          "name": "initial_holder",
-          "type": {
-            "node": "address",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        },
-        {
-          "name": "total_supply",
-          "type": {
-            "node": "nat",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        },
-        {
-          "name": "metadata_coin",
-          "type": {
-            "node": "bytes",
-            "name": null,
-            "int_value": null,
-            "args": []
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "getters": [],
