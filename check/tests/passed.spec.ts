@@ -1047,6 +1047,8 @@ import * as test_contains_get from '../bindings/passed/test_contains_get'
 import * as test_contract from '../bindings/passed/test_contract'
 import * as test_contract_self from '../bindings/passed/test_contract_self'
 import * as test_create_contract_arl from '../bindings/passed/test_create_contract_arl'
+import * as test_create_contract_arl_fa1 from '../bindings/passed/test_create_contract_arl_fa1'
+import * as test_create_contract_arl_fa2 from '../bindings/passed/test_create_contract_arl_fa2'
 import * as test_create_contract_arl_string from '../bindings/passed/test_create_contract_arl_string'
 import * as test_create_contract_arl_with_param from '../bindings/passed/test_create_contract_arl_with_param'
 import * as test_create_contract_arl_with_param_const from '../bindings/passed/test_create_contract_arl_with_param_const'
@@ -20677,6 +20679,14 @@ describe('passed', async () => {
     await test_create_contract_arl.test_create_contract_arl.deploy({ as: alice })
 
     await test_create_contract_arl.test_create_contract_arl.exec({ as: alice })
+  })
+
+  it('test_create_contract_arl_fa1', async () => {
+    await test_create_contract_arl_fa1.test_create_contract_arl_fa1.deploy({ as: alice })
+  })
+
+  it('test_create_contract_arl_fa2', async () => {
+    await test_create_contract_arl_fa2.test_create_contract_arl_fa2.deploy({ as: alice })
   })
 
   it('test_create_contract_arl_string', async () => {

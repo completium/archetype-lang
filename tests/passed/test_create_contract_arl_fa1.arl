@@ -1,0 +1,14 @@
+archetype test_create_contract_arl_fa1
+
+import "../contracts/fa1.2/fa1_2.arl"
+
+entry exec (initial_holder : address, total_supply : nat, metadata_coin : bytes) {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const op_addr : (operation * address) = create_contract(fa1_2, delegate, amount, {
+    initial_holder = initial_holder;
+    total_supply = total_supply;
+    metadata_coin = metadata_coin
+  });
+  operations := [op_addr[0]]
+}

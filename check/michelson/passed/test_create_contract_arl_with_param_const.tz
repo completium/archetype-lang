@@ -5,7 +5,7 @@
          CDR ;
          NONE key_hash ;
          PUSH mutez 0 ;
-         PUSH int 0 ;
+         PUSH nat 0 ;
          DUP 2 ;
          DUP 4 ;
          CREATE_CONTRACT
