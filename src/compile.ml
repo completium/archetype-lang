@@ -243,6 +243,16 @@ let rec toolchain ?(debug=false) model =
       match mt.node with
       | Mcreatecontract (Model.CCArl(id, args), okh, am) -> begin
           let cc_model = List.find (fun (x : Model.model) -> String.equal id (Location.unloc x.name)) model.cc_models in
+          let cc_model = {cc_model with parameters = List.map (fun (p : M.parameter) ->
+              if p.const
+              then begin
+                let ov : M.mterm option = List.assoc_opt (M.unloc_mident p.name) args in
+                match ov with
+                | Some v -> {p with value = Some v}
+                | None -> p
+              end
+              else p
+            ) cc_model.parameters } in
           let low_cc_model = toolchain (process_metadata cc_model)  in
           let ir = low_cc_model |> Gen_michelson.to_ir in
           let michelson = ir |> Gen_michelson.to_michelson in

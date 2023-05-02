@@ -1,0 +1,10 @@
+archetype create_contract_arl_with_param_const_no_lit
+
+import "../passed/simple_param_const.arl"
+
+entry exec (k : nat) {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const op_addr : (operation * address) = create_contract(simple_param_const, delegate, amount, {n = k});
+  operations := [op_addr[0]]
+}

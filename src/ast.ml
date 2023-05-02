@@ -769,6 +769,7 @@ module Utils : sig
   val is_asset                  : ast -> lident -> bool
   val is_parameter              : ast -> lident -> bool
   val get_var_type              : ast -> longident -> type_
+  val is_literal                : pterm -> bool
 
 end = struct
   open Tools
@@ -873,5 +874,44 @@ end = struct
     match var with
     | Some v -> v
     | None -> emit_error VariableNotFound
+
+  let rec is_literal (p : pterm) : bool =
+    match p.node with
+    | Pif _ -> false
+    | Pmatchwith _ -> false
+    | Pmatchoption _ -> false
+    | Pmatchor _ -> false
+    | Pmatchlist _ -> false
+    | Pfold _ -> false
+    | Pmap _ -> false
+    | Pcall _ -> false
+    | Plogical _ -> false
+    | Pnot p -> is_literal p
+    | Pmulticomp _ -> false
+    | Pcomp _ -> false
+    | Parith _ -> false
+    | Puarith _ -> false
+    | Precord ps -> List.for_all is_literal ps
+    | Precupdate _ -> false
+    | Pletin _ -> false
+    | Pdeclvar _ -> false
+    | Pvar _ -> false
+    | Parray ps -> List.for_all is_literal ps
+    | Plit _ -> true
+    | Pdot _ -> false
+    | Pquestiondot _ -> false
+    | Pconst _ -> false
+    | Ptuple ps -> List.for_all is_literal ps
+    | Ptupleaccess _ -> false
+    | Pnone -> true
+    | Psome p -> is_literal p
+    | Pleft (_, p) -> is_literal p
+    | Pright (_, p) -> is_literal p
+    | Plambda _ -> false
+    | Pcast _ -> false
+    | Pself _ -> false
+    | Pternary _ -> false
+    | Pcreatecontract _ -> false
+    | Ptz_expr _ -> true
 
 end

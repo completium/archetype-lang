@@ -702,6 +702,7 @@ type error_desc =
   | CreateContractStorageInvalidAssignOperator
   | CreateContractStorageInvalidField
   | CreateContractStorageMissingField of ident
+  | CreateContractStorageRequireLitValueForConst of ident
   | CreateContractStorageUnknownField of ident
   | DetachInvalidExprFrom
   | DetachInvalidType                       of ident
@@ -961,6 +962,7 @@ let pp_error_desc fmt e =
   | CreateContractStorageInvalidAssignOperator -> pp "Invalid assign operator for for `create_contract' storage record"
   | CreateContractStorageInvalidField          -> pp "Invalid field for create contract storage, must be not anonymous"
   | CreateContractStorageMissingField i        -> pp "Missing field for create contract storage: %a" pp_ident i
+  | CreateContractStorageRequireLitValueForConst i -> pp "Require literal value for constant parameter: %a" pp_ident i
   | CreateContractStorageUnknownField i        -> pp "Unknown field for create contract storage: %a" pp_ident i
   | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
@@ -3892,7 +3894,12 @@ let rec for_xexpr
               let vs = List.map (fun (p : A.parameter) ->
                   let v : A.pterm =
                     match fetch_arg_value p.name, p.default with
-                    | Some (_, e), None -> let v = for_xexpr env ~ety:p.typ e in v
+                    | Some (_, e), None -> begin
+                        let v = for_xexpr env ~ety:p.typ e in
+                        if p.const && (not (A.Utils.is_literal v))
+                        then (Env.emit_error env (v.loc, CreateContractStorageRequireLitValueForConst (unloc p.name)));
+                        v
+                      end
                     | None, Some v -> v
                     | _ -> begin
                         let loc = match args with | Some v -> loc v | None -> Location.mergeall (List.map loc iargs) in
