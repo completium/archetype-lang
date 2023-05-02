@@ -1865,7 +1865,7 @@ end = struct
     let code      = code_to_micheline michelson.code in
     let views     = List.map view_to_micheline michelson.views in
     let f tag x   = Oprim (mk_prim ~args:[x] tag) in
-    Oarray ([f "storage" storage; f "parameter" parameter; f "code" code] @ (List.map (f "view") views))
+    Oarray ([f "storage" storage; f "parameter" parameter; f "code" code] @ views)
 
   let to_micheline (m : michelson) (s : data) : micheline =
     let storage   = type_to_micheline m.storage in

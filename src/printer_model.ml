@@ -598,8 +598,9 @@ let pp_mterm fmt (mt : mterm) =
         | MKBigMap -> "big_map"
         | MKIterableBigMap -> "iterable_big_map"
       in
-      Format.fprintf fmt "%s(%a)"
+      Format.fprintf fmt "%s%a(%a)"
         (str_map_kind k)
+        (fun fmt ty -> match get_ntype ty with | Tmap(k, v) | Tbig_map(k, v) | Titerable_big_map(k, v) -> Format.fprintf fmt "<%a, %a>" pp_type k pp_type v| _ -> ()) mtt.type_
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                           f k
                           f v)) l

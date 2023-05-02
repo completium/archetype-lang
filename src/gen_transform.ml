@@ -2007,6 +2007,7 @@ let remove_asset (model : model) : model =
           let ts, fields, is_single_record = for_type an in
           let type_ = mkmm k ts in
           let default = map_storage_mterm x.default in
+          let default = {default with type_ = type_} in
           let d = match fields with | [] | [_] -> [] | _ -> [Drecord (mk_record an ~fields:(List.map (fun (id, t) -> mk_record_field (mk_mident (dumloc id)) t) fields) )] in
           { x with typ = type_; default = default; }, d, MapString.add (normalize_mident an) ((true, is_single_record), (type_, ts)) map
         end

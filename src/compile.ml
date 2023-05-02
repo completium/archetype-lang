@@ -246,9 +246,24 @@ let rec toolchain ?(debug=false) model =
           let low_cc_model = toolchain (process_metadata cc_model)  in
           let ir = low_cc_model |> Gen_michelson.to_ir in
           let michelson = ir |> Gen_michelson.to_michelson in
-          (* let storage_data = M.unit in *)
           let storage_data = low_cc_model.storage |> List.filter (fun (x : M.storage_item) -> not x.no_storage) |> List.map (fun (x : M.storage_item) ->
-              match List.assoc_opt (M.unloc_mident x.id) args with | Some v -> v | None -> x.default
+              let v : M.mterm = match List.assoc_opt (M.unloc_mident x.id) args with | Some v -> v | None -> x.default in
+              let aux (mt : M.mterm) : M.mterm =
+                let rec ft (ty : M.type_) : M.type_ =
+                  let process_id mid = M.mk_mident ~namespace:(cc_model.name) (snd mid) in
+                  let is_empty_nm mid = Option.is_none (fst mid) in
+                  (match M.get_ntype ty with
+                   | M.Tasset mid when is_empty_nm mid -> (M.Tasset (process_id mid), snd ty)
+                   | M.Tenum mid when is_empty_nm mid -> (M.Tenum (process_id mid), snd ty)
+                   | M.Trecord mid when is_empty_nm mid -> (M.Trecord (process_id mid), snd ty)
+                   | M.Tevent mid when is_empty_nm mid -> (M.Tevent (process_id mid), snd ty)
+                   | _ -> M.map_type ft ty)
+                in
+                M.map_mterm ~ft aux mt
+              in
+              let v = aux v in
+              (* Format.eprintf "storage: %s: %a@\n" (M.unloc_mident x.id) Printer_model.pp_mterm v; *)
+              v
             ) |> M.mk_pair in
           let ms_content = Michelson.Utils.michelson_to_obj_micheline michelson in
           Model.mk_mterm (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
