@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - Global constants
-  - add `is_implicit_address` function
+  - Add `is_implicit_address` function
+  - Add `create_contract` function from arl source
+  - Add `import` declaration from arl and tz source
 
 ### Removed
   - BREAKING: Formal verification
