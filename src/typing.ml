@@ -3881,12 +3881,14 @@ let rec for_xexpr
                           | None -> Env.emit_error env (loc v, CreateContractStorageInvalidField)
                         end ) fields;
                     let _ = List.fold_left (fun accu (ol, _) ->
-                        let id = ol |> Option.get |> snd in
-                        if List.mem (unloc id) accu
-                        then (Env.emit_error env (loc id, CreateContractStorageDuplicatedField (unloc id)));
-                        (unloc id)::accu
+                        match ol with
+                        | Some (_, id) ->
+                          if List.mem (unloc id) accu
+                          then (Env.emit_error env (loc id, CreateContractStorageDuplicatedField (unloc id)));
+                          (unloc id)::accu
+                        | None -> accu
                       ) [] fields in
-                    List.map (fun (ol, v) -> (ol |> Option.get |> snd |> unloc, v)) fields
+                    fields |> List.filter (fun (ol, _) -> Option.is_some ol)|> List.map (fun (ol, v) -> (ol |> Option.get |> snd |> unloc, v))
                   end
                 | Some v -> (Env.emit_error env (loc v, CreateContractStorageInvalidArgType); bailout())
               in
