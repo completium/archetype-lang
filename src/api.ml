@@ -139,6 +139,7 @@ let _ =
       end
       method lsp k p i = begin
         let kind = get_lsp_kind k in
+        let p = Js.to_string p in
         doit (Lsp.process_from_string kind p) i
       end
       val version = Js.string Options.version
