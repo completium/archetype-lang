@@ -957,13 +957,13 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec               -> pp "Contract invariants at local levl are forbidden"
-  | CreateContractStorageDuplicatedField i     -> pp "Duplicated field for create contract storage: %a" pp_ident i
+  | CreateContractStorageDuplicatedField i     -> pp "Duplicated field for `create_contract` storage: %a" pp_ident i
   | CreateContractStorageInvalidArgType        -> pp "Invalid argument for `create_contract' storage, must be a record"
   | CreateContractStorageInvalidAssignOperator -> pp "Invalid assign operator for for `create_contract' storage record"
-  | CreateContractStorageInvalidField          -> pp "Invalid field for create contract storage, must be not anonymous"
-  | CreateContractStorageMissingField i        -> pp "Missing field for create contract storage: %a" pp_ident i
+  | CreateContractStorageInvalidField          -> pp "Invalid field for `create_contract` storage, must be not anonymous"
+  | CreateContractStorageMissingField i        -> pp "Missing field for `create_contract` storage: %a" pp_ident i
   | CreateContractStorageRequireLitValueForConst i -> pp "Require literal value for constant parameter: %a" pp_ident i
-  | CreateContractStorageUnknownField i        -> pp "Unknown field for create contract storage: %a" pp_ident i
+  | CreateContractStorageUnknownField i        -> pp "Unknown field for `create_contract` storage: %a" pp_ident i
   | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
