@@ -1912,7 +1912,7 @@ module Env : sig
   end
 
   module Import : sig
-    type key = int * int
+    type key = string
 
     val lookup  : t -> ident -> t importdecl option
     val get     : t -> ident -> t importdecl
@@ -1936,7 +1936,7 @@ end = struct
   type asset  = [`Pre of A.lident | `Full of assetdecl ]
 
   module Mlib = Map.Make(struct
-      type t = int * int
+      type t = string
 
       let equal = Stdlib.(=)
       let compare = Stdlib.compare
@@ -2395,7 +2395,7 @@ end = struct
   end
 
   module Import = struct
-    type key   = int * int
+    type key   = string
 
     let proj = function `Import x -> Some x | _ -> None
 
@@ -6921,8 +6921,11 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
         let path = mkloc (loc path) (Env.Import.resolve_path env (unloc path)) in
         let stats =
           try
-            let stats = Unix.stat (unloc path) in
-            (Some (stats.st_dev, stats.st_ino))
+            (* let stats = Unix.stat (unloc path) in *)
+            (* (Some (stats.st_dev, stats.st_ino)) *)
+            (* Missing primitives: unix_stat in js_of_ocaml *)
+            let key = Filename.basename (unloc path) in
+            Some (key)
           with Unix.Unix_error _ -> None in
 
         let cached = stats |> Option.bind (Env.Import.get_in_cache env) in
