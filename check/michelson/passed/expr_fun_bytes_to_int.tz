@@ -1,0 +1,10 @@
+{ storage int ;
+  parameter (bytes %exec) ;
+  code { UNPAIR ;
+         DUP ;
+         INT ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

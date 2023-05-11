@@ -292,6 +292,7 @@ import * as exec_letin from '../bindings/passed/exec_letin'
 import * as expr_access_asset_field from '../bindings/passed/expr_access_asset_field'
 import * as expr_arith_3wc_nat_nat from '../bindings/passed/expr_arith_3wc_nat_nat'
 import * as expr_arith_and_bool_bool from '../bindings/passed/expr_arith_and_bool_bool'
+import * as expr_arith_and_bytes_bytes from '../bindings/passed/expr_arith_and_bytes_bytes'
 import * as expr_arith_and_int_nat from '../bindings/passed/expr_arith_and_int_nat'
 import * as expr_arith_and_nat_nat from '../bindings/passed/expr_arith_and_nat_nat'
 import * as expr_arith_div_dur_dur from '../bindings/passed/expr_arith_div_dur_dur'
@@ -320,7 +321,9 @@ import * as expr_arith_ediv_nat_int from '../bindings/passed/expr_arith_ediv_nat
 import * as expr_arith_ediv_nat_nat from '../bindings/passed/expr_arith_ediv_nat_nat'
 import * as expr_arith_ediv_tez_nat from '../bindings/passed/expr_arith_ediv_tez_nat'
 import * as expr_arith_ediv_tez_tez from '../bindings/passed/expr_arith_ediv_tez_tez'
+import * as expr_arith_lsl_bytes_nat from '../bindings/passed/expr_arith_lsl_bytes_nat'
 import * as expr_arith_lsl_nat_nat from '../bindings/passed/expr_arith_lsl_nat_nat'
+import * as expr_arith_lsr_bytes_nat from '../bindings/passed/expr_arith_lsr_bytes_nat'
 import * as expr_arith_lsr_nat_nat from '../bindings/passed/expr_arith_lsr_nat_nat'
 import * as expr_arith_minus_date_date from '../bindings/passed/expr_arith_minus_date_date'
 import * as expr_arith_minus_date_date_neg from '../bindings/passed/expr_arith_minus_date_date_neg'
@@ -358,9 +361,11 @@ import * as expr_arith_mult_rat_rat from '../bindings/passed/expr_arith_mult_rat
 import * as expr_arith_mult_rat_tez from '../bindings/passed/expr_arith_mult_rat_tez'
 import * as expr_arith_mult_tez_nat from '../bindings/passed/expr_arith_mult_tez_nat'
 import * as expr_arith_not_bool from '../bindings/passed/expr_arith_not_bool'
+import * as expr_arith_not_bytes from '../bindings/passed/expr_arith_not_bytes'
 import * as expr_arith_not_int from '../bindings/passed/expr_arith_not_int'
 import * as expr_arith_not_nat from '../bindings/passed/expr_arith_not_nat'
 import * as expr_arith_or_bool_bool from '../bindings/passed/expr_arith_or_bool_bool'
+import * as expr_arith_or_bytes_bytes from '../bindings/passed/expr_arith_or_bytes_bytes'
 import * as expr_arith_or_nat_nat from '../bindings/passed/expr_arith_or_nat_nat'
 import * as expr_arith_plus_date_dur from '../bindings/passed/expr_arith_plus_date_dur'
 import * as expr_arith_plus_dur_date from '../bindings/passed/expr_arith_plus_dur_date'
@@ -379,6 +384,7 @@ import * as expr_arith_plus_tez_tez from '../bindings/passed/expr_arith_plus_tez
 import * as expr_arith_uminus_int from '../bindings/passed/expr_arith_uminus_int'
 import * as expr_arith_uminus_rat from '../bindings/passed/expr_arith_uminus_rat'
 import * as expr_arith_xor_bool_bool from '../bindings/passed/expr_arith_xor_bool_bool'
+import * as expr_arith_xor_bytes_bytes from '../bindings/passed/expr_arith_xor_bytes_bytes'
 import * as expr_arith_xor_nat_nat from '../bindings/passed/expr_arith_xor_nat_nat'
 import * as expr_cmp_eq_addr_addr from '../bindings/passed/expr_cmp_eq_addr_addr'
 import * as expr_cmp_eq_bool_bool from '../bindings/passed/expr_cmp_eq_bool_bool'
@@ -500,6 +506,7 @@ import * as expr_fun_abs_nat from '../bindings/passed/expr_fun_abs_nat'
 import * as expr_fun_abs_rat from '../bindings/passed/expr_fun_abs_rat'
 import * as expr_fun_address_to_contract from '../bindings/passed/expr_fun_address_to_contract'
 import * as expr_fun_address_to_contract_unit from '../bindings/passed/expr_fun_address_to_contract_unit'
+import * as expr_fun_bytes_to_int from '../bindings/passed/expr_fun_bytes_to_int'
 import * as expr_fun_bytes_to_nat from '../bindings/passed/expr_fun_bytes_to_nat'
 import * as expr_fun_ceil from '../bindings/passed/expr_fun_ceil'
 import * as expr_fun_concat_byt from '../bindings/passed/expr_fun_concat_byt'
@@ -509,6 +516,7 @@ import * as expr_fun_concat_str from '../bindings/passed/expr_fun_concat_str'
 import * as expr_fun_floor from '../bindings/passed/expr_fun_floor'
 import * as expr_fun_get_denominator from '../bindings/passed/expr_fun_get_denominator'
 import * as expr_fun_get_numerator from '../bindings/passed/expr_fun_get_numerator'
+import * as expr_fun_int_to_bytes from '../bindings/passed/expr_fun_int_to_bytes'
 import * as expr_fun_int_to_nat from '../bindings/passed/expr_fun_int_to_nat'
 import * as expr_fun_key_hash_to_contract from '../bindings/passed/expr_fun_key_hash_to_contract'
 import * as expr_fun_length_bytes from '../bindings/passed/expr_fun_length_bytes'
@@ -7220,6 +7228,19 @@ describe('passed', async () => {
     assert(res_after == true)
   })
 
+  it('expr_arith_and_bytes_bytes', async () => {
+    await expr_arith_and_bytes_bytes.expr_arith_and_bytes_bytes.deploy({ as: alice })
+
+    const res_before = await expr_arith_and_bytes_bytes.expr_arith_and_bytes_bytes.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_and_bytes_bytes.expr_arith_and_bytes_bytes.exec({ as: alice })
+
+    const res_after = await expr_arith_and_bytes_bytes.expr_arith_and_bytes_bytes.get_res()
+    assert(res_after.equals(new Bytes("01")))
+
+  })
+
   it('expr_arith_and_int_nat', async () => {
     await expr_arith_and_int_nat.expr_arith_and_int_nat.deploy({ as: alice })
 
@@ -7556,6 +7577,18 @@ describe('passed', async () => {
     assert(res_after.equals(new Int(1000000)))
   })
 
+  it('expr_arith_lsl_bytes_nat', async () => {
+    await expr_arith_lsl_bytes_nat.expr_arith_lsl_bytes_nat.deploy({ as: alice })
+
+    const res_before = await expr_arith_lsl_bytes_nat.expr_arith_lsl_bytes_nat.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_lsl_bytes_nat.expr_arith_lsl_bytes_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_lsl_bytes_nat.expr_arith_lsl_bytes_nat.get_res()
+    assert(res_after.equals(new Bytes("0008")))
+  })
+
   it('expr_arith_lsl_nat_nat', async () => {
     await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.deploy({ as: alice })
 
@@ -7566,6 +7599,18 @@ describe('passed', async () => {
 
     const res_after = await expr_arith_lsl_nat_nat.expr_arith_lsl_nat_nat.get_res()
     assert(res_after.equals(new Nat(8)))
+  })
+
+  it('expr_arith_lsr_bytes_nat', async () => {
+    await expr_arith_lsr_bytes_nat.expr_arith_lsr_bytes_nat.deploy({ as: alice })
+
+    const res_before = await expr_arith_lsr_bytes_nat.expr_arith_lsr_bytes_nat.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_lsr_bytes_nat.expr_arith_lsr_bytes_nat.exec({ as: alice })
+
+    const res_after = await expr_arith_lsr_bytes_nat.expr_arith_lsr_bytes_nat.get_res()
+    assert(res_after.equals(new Bytes("02")))
   })
 
   it('expr_arith_lsr_nat_nat', async () => {
@@ -8012,6 +8057,18 @@ describe('passed', async () => {
     assert(res_after == true)
   })
 
+  it('expr_arith_not_bytes', async () => {
+    await expr_arith_not_bytes.expr_arith_not_bytes.deploy({ as: alice })
+
+    const res_before = await expr_arith_not_bytes.expr_arith_not_bytes.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_not_bytes.expr_arith_not_bytes.exec({ as: alice })
+
+    const res_after = await expr_arith_not_bytes.expr_arith_not_bytes.get_res()
+    assert(res_after.equals(new Bytes("fe")))
+  })
+
   it('expr_arith_not_int', async () => {
     await expr_arith_not_int.expr_arith_not_int.deploy({ as: alice })
 
@@ -8046,6 +8103,18 @@ describe('passed', async () => {
 
     const res_after = await expr_arith_or_bool_bool.expr_arith_or_bool_bool.get_res()
     assert(res_after == true)
+  })
+
+  it('expr_arith_or_bytes_bytes', async () => {
+    await expr_arith_or_bytes_bytes.expr_arith_or_bytes_bytes.deploy({ as: alice })
+
+    const res_before = await expr_arith_or_bytes_bytes.expr_arith_or_bytes_bytes.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_or_bytes_bytes.expr_arith_or_bytes_bytes.exec({ as: alice })
+
+    const res_after = await expr_arith_or_bytes_bytes.expr_arith_or_bytes_bytes.get_res()
+    assert(res_after.equals(new Bytes("03")))
   })
 
   it('expr_arith_or_nat_nat', async () => {
@@ -8262,6 +8331,18 @@ describe('passed', async () => {
 
     const res_after = await expr_arith_xor_bool_bool.expr_arith_xor_bool_bool.get_res()
     assert(res_after == true)
+  })
+
+  it('expr_arith_xor_bytes_bytes', async () => {
+    await expr_arith_xor_bytes_bytes.expr_arith_xor_bytes_bytes.deploy({ as: alice })
+
+    const res_before = await expr_arith_xor_bytes_bytes.expr_arith_xor_bytes_bytes.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_arith_xor_bytes_bytes.expr_arith_xor_bytes_bytes.exec({ as: alice })
+
+    const res_after = await expr_arith_xor_bytes_bytes.expr_arith_xor_bytes_bytes.get_res()
+    assert(res_after.equals(new Bytes("02")))
   })
 
   it('expr_arith_xor_nat_nat', async () => {
@@ -9712,6 +9793,18 @@ describe('passed', async () => {
     await expr_fun_address_to_contract_unit.expr_fun_address_to_contract_unit.exec(alice.get_address(), { as: alice })
   })
 
+  it('expr_fun_bytes_to_int', async () => {
+    await expr_fun_bytes_to_int.expr_fun_bytes_to_int.deploy({ as: alice })
+
+    const res_before = await expr_fun_bytes_to_int.expr_fun_bytes_to_int.get_res()
+    assert(res_before.equals(new Int(0)))
+
+    await expr_fun_bytes_to_int.expr_fun_bytes_to_int.exec(new Bytes("02"), { as: alice })
+
+    const res_after = await expr_fun_bytes_to_int.expr_fun_bytes_to_int.get_res()
+    assert(res_after.equals(new Int(2)))
+  })
+
   it('expr_fun_bytes_to_nat', async () => {
     await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.deploy({ as: alice })
     const res_init = await expr_fun_bytes_to_nat.expr_fun_bytes_to_nat.get_res();
@@ -9831,6 +9924,18 @@ describe('passed', async () => {
     await expr_fun_get_numerator.expr_fun_get_numerator.exec(v, { as: alice })
     const res_after = await expr_fun_get_numerator.expr_fun_get_numerator.get_res();
     assert(res_after.equals(new Int(1)), "Invalid Value")
+  })
+
+  it('expr_fun_int_to_bytes', async () => {
+    await expr_fun_int_to_bytes.expr_fun_int_to_bytes.deploy({ as: alice })
+
+    const res_before = await expr_fun_int_to_bytes.expr_fun_int_to_bytes.get_res()
+    assert(res_before.equals(new Bytes("")))
+
+    await expr_fun_int_to_bytes.expr_fun_int_to_bytes.exec(new Int(2), { as: alice })
+
+    const res_after = await expr_fun_int_to_bytes.expr_fun_int_to_bytes.get_res()
+    assert(res_after.equals(new Bytes("02")))
   })
 
   it('expr_fun_int_to_nat', async () => {

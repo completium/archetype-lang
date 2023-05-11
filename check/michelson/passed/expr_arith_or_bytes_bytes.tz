@@ -1,0 +1,10 @@
+{ storage bytes ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH bytes 0x02 ;
+         PUSH bytes 0x01 ;
+         OR ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }
