@@ -1066,11 +1066,15 @@ let pp_fun_args fmt args =
     (pp_list " " pp_fun_ident_typ) args
 
 let pp_function fmt (f : function_) =
+  let pp_returned_fun_type fmt = function
+    | Void -> Format.fprintf fmt "void"
+    | Typed ty -> pp_type fmt ty
+  in
   Format.fprintf fmt "%s %a%a : %a =@\n  @[%a@]@\n"
     (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview vv -> ((match vv with | VVonchain -> "onchain" | VVoffchain -> "offchain" | VVonoffchain -> "offchain onchain") ^ " view"))
     pp_id f.name
     pp_fun_args f.args
-    pp_type f.return
+    pp_returned_fun_type f.return
     pp_instruction f.body
 
 let pp_otherwise fmt o = pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" pp_pterm x) fmt o

@@ -683,7 +683,6 @@ type error_desc =
   | CannotAssignConstVar               of ident
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
-  | CannotAssignStorageVariableInFunction of ident
   | CannotAssignStorageVariableInView  of ident
   | CannotCallFunctionInView
   | CannotCaptureVariables
@@ -724,6 +723,9 @@ type error_desc =
   | FileNotFound                       of ident
   | ForeignState                       of ident option * ident option
   | FormulaExpected
+  | FunctionNotFound                   of ident
+  | FunctionInvalidInstructionVoid
+  | FunctionInvalidTypeVoid
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
@@ -943,7 +945,6 @@ let pp_error_desc fmt e =
   | CannotAssignConstVar x             -> pp "Cannot assign to `%s' because it is a constant" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
-  | CannotAssignStorageVariableInFunction x -> pp "Cannot assign storage variable `%s' in function" x
   | CannotAssignStorageVariableInView x -> pp "Cannot assign storage variable `%s' in view" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
   | CannotCallFunctionInView           -> pp "Cannot call function in view"
@@ -985,6 +986,9 @@ let pp_error_desc fmt e =
   | FileNotFound i                     -> pp "File not found: %s" i
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
+  | FunctionNotFound id                -> pp "Function `%s' is not found" id
+  | FunctionInvalidInstructionVoid     -> pp "Invalid function, instruction used in instruction must be void (without returned value)"
+  | FunctionInvalidTypeVoid            -> pp "Invalid type, function is void"
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
@@ -1681,8 +1685,9 @@ type fundecl = {
   fs_name  : A.lident;
   fs_kind  : A.fun_kind;
   fs_args  : (A.lident * A.ptyp) list;
-  fs_retty : A.ptyp;
+  fs_retty : A.returned_fun_type;
   fs_body  : A.instruction;
+  fs_storage_usage : A.storage_usage;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -3965,7 +3970,13 @@ let rec for_xexpr
       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
       let args = List.map  (fun x -> A.AExpr x) args in
 
-      mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid (snd f), [], args))
+      let rty =
+      match fun_.fs_retty with
+      | Void -> (Env.emit_error env (loc tope, FunctionInvalidTypeVoid); A.vtunit)
+      | Typed ty -> ty
+      in
+
+      mk_sp (Some rty) (A.Pcall (None, A.Cid (snd f), [], args))
 
     (* FIXME:NM: WTF? *)
     | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (unloc_nmid f)) ->
@@ -5184,11 +5195,9 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
 
       | Some (`Global vd) ->
         begin match vd.vr_kind, kind, vd.vr_core with
-          | `Variable, `Entry, _
+          | `Variable, (`Entry | `Function), _
           | _, _, Some (A.Coperations | A.Cmetadata) ->
             ()
-          | `Variable, `Function, _ ->
-            Env.emit_error env (loc e, CannotAssignStorageVariableInFunction (unloc x));
           | `Variable, `View, _ ->
             Env.emit_error env (loc e, CannotAssignStorageVariableInView (unloc x));
           | _, _, _ ->
@@ -5776,6 +5785,30 @@ let rec for_instruction_r
 
       env, mki (A.Ideclvaropt (x, v, fa, c))
 
+    | Eapp (Fident (SINone, fn), args) -> begin
+        let lid : longident = (Current, unloc fn) in
+        let opt_f_info = Env.Function.lookup env lid in
+
+        if (Option.is_none opt_f_info)
+        then Env.emit_error env (loc fn, FunctionNotFound (unloc fn));
+
+        let f_info = Option.get opt_f_info in
+
+        begin
+          match f_info.fs_retty with
+          | Void -> ()
+          | Typed _ -> Env.emit_error env (loc fn, FunctionInvalidInstructionVoid)
+        end;
+
+        if (List.length f_info.fs_args <> List.length args)
+        then Env.emit_error env (loc fn, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+
+        let tys = List.map snd f_info.fs_args in
+
+        let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
+        env, mki (A.Icall (None, Cid fn, args))
+      end
+
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
       bailout ()
@@ -5853,16 +5886,18 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let rty = Option.bind (for_type env) fdecl.ret_t in
       let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
       let env, body = for_instruction ~ret:rty place env fdecl.body in
+      let storage_usage = A.SUpure in
 
-      if Option.is_some rty && not (List.exists Option.is_none args) then
+      if not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
           let to_visibility = function | PT.VVonchain | PT.VVnone -> A.VVonchain | PT.VVoffchain -> A.VVoffchain | PT.VVonoffchain -> A.VVonoffchain in
           (env, Some {
               fs_name  = fdecl.name;
               fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview (to_visibility fdecl.view_visibility) else FKfunction;
               fs_args  = List.pmap id args;
-              fs_retty = Option.get rty;
-              fs_body  = body; })
+              fs_retty = (match rty with | Some ty -> Typed ty | None -> Void);
+              fs_body  = body;
+              fs_storage_usage = storage_usage })
         else (env, None)
       else (env, None))
 
@@ -6726,6 +6761,7 @@ let functions_of_fdecls fdecls =
         args          = args;
         body          = decl.fs_body;
         return        = decl.fs_retty;
+        storage_usage = decl.fs_storage_usage;
         loc           = loc decl.fs_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
@@ -6955,7 +6991,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
                   match v with
                   | A.Ffunction fs -> begin
                       let name = unloc fs.name in
-                      let rt = fs.return in
+                      let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                       match fs.kind with
                       | FKfunction -> (accu_entrypoints, accu_views)
                       | FKgetter -> begin

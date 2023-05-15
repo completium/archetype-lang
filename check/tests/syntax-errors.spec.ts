@@ -21,6 +21,10 @@ describe('syntax-errors', async () => {
     const stat = compile("../tests/syntax-errors/empty_effect.arl")
     assert(stat.status == 1, "Invalid status code, actual: " + stat.status + ", expected: 1")
   })
+  it('large_message_error', async () => {
+    const stat = compile("../tests/syntax-errors/large_message_error.arl")
+    assert(stat.status == 1, "Invalid status code, actual: " + stat.status + ", expected: 1")
+  })
   it('simple_error', async () => {
     const stat = compile("../tests/syntax-errors/simple_error.arl")
     assert(stat.status == 1, "Invalid status code, actual: " + stat.status + ", expected: 1")

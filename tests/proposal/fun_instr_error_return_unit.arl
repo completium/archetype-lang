@@ -1,0 +1,12 @@
+archetype fun_instr_error_return_unit
+
+variable res : nat = 0
+
+function f() : unit {
+  res := 2;
+  return Unit
+}
+
+entry exec() {
+  f()
+}

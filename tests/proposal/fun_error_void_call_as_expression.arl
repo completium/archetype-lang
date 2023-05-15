@@ -1,0 +1,11 @@
+archetype fun_error_void_call_as_expression
+
+variable res : nat = 0
+
+function f() {
+  ()
+}
+
+entry exec() {
+  const n = f()
+}

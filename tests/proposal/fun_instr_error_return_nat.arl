@@ -1,4 +1,4 @@
-archetype fun_instr_nat
+archetype fun_instr_error_return_nat
 
 variable res : nat = 0
 

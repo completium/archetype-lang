@@ -1,4 +1,4 @@
-archetype fun_instr_unit
+archetype fun_instr_error_invalid_number_args
 
 variable res : nat = 0
 
@@ -7,5 +7,5 @@ function f() {
 }
 
 entry exec() {
-  f()
+  f(1)
 }

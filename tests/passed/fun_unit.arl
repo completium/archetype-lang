@@ -1,0 +1,11 @@
+archetype fun_unit
+
+variable u : unit = Unit
+
+function f () : unit {
+  return Unit
+}
+
+entry exec () {
+  u := f()
+}

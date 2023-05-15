@@ -702,6 +702,7 @@ import * as fail_while from '../bindings/passed/fail_while'
 import * as fail_with_tuple_lit from '../bindings/passed/fail_with_tuple_lit'
 import * as fold_reverse from '../bindings/passed/fold_reverse'
 import * as fun from '../bindings/passed/fun'
+import * as fun_unit from '../bindings/passed/fun_unit'
 import * as function_with_nat_to_string from '../bindings/passed/function_with_nat_to_string'
 import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
 import * as get_in_require_failif from '../bindings/passed/get_in_require_failif'
@@ -13325,6 +13326,18 @@ describe('passed', async () => {
 
     const res_after = await fun.fun.get_res()
     assert(res_after.equals(new Int(1)))
+  })
+
+  it('fun_unit', async () => {
+    await fun_unit.fun_unit.deploy({ as: alice })
+
+    const u_before = await fun_unit.fun_unit.get_u()
+    assert(u_before.equals(new Unit()))
+
+    await fun_unit.fun_unit.exec({ as: alice })
+
+    const u_after = await fun_unit.fun_unit.get_u()
+    assert(u_after.equals(new Unit()))
   })
 
   it('function_with_nat_to_string', async () => {

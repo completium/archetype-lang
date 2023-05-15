@@ -264,7 +264,7 @@ type const =
 
 type ('node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : type_ option;            (* type of object *)
+  type_ : type_ option;           (* type of object *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -511,12 +511,25 @@ type fun_kind =
   | FKview of view_visibility
 [@@deriving show {with_path = false}]
 
+
+type returned_fun_type =
+  | Typed of ptyp
+  | Void
+[@@deriving show {with_path = false}]
+
+type storage_usage =
+| SUpure
+| SUread
+| SUwrite
+[@@deriving show {with_path = false}]
+
 type function_ = {
   name          : lident;
   kind          : fun_kind;
   args          : lident decl_gen list;
   body          : instruction;
-  return        : type_;
+  return        : returned_fun_type;
+  storage_usage : storage_usage;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -703,8 +716,8 @@ let mk_label_term ?label ?error ?(loc = Location.dummy) term =
 let mk_variable ?(loc = Location.dummy) decl kind =
   { decl; kind; loc }
 
-let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return =
-  { name; kind; args; body; return; loc }
+let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return storage_usage =
+  { name; kind; args; body; return; storage_usage; loc }
 
 let mk_transition ?(trs = []) from =
   { from; trs }
@@ -756,6 +769,9 @@ let map_ptyp ft t =
   | Tticket t                  -> Tticket (ft t)
   | Tsapling_state n           -> Tsapling_state n
   | Tsapling_transaction n     -> Tsapling_transaction n
+
+
+let vunit = mk_sp ~type_:vtunit BVunit
 
 module Utils : sig
 

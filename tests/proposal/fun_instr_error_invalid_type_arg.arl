@@ -1,0 +1,11 @@
+archetype fun_instr_error_invalid_type_arg
+
+variable res : nat = 0
+
+function f(n : nat) {
+  res := 2
+}
+
+entry exec() {
+  f("mystr")
+}

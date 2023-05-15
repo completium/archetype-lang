@@ -1,0 +1,11 @@
+archetype fun_instr_unit
+
+variable res : nat = 0
+
+function f(s : string, n : nat) {
+  res := length(s) + n
+}
+
+entry exec() {
+  f("mystr", 2)
+}

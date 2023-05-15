@@ -1327,7 +1327,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let env   = {env with function_p = Some (name, args); } in
     let body  = to_instruction env function_.body in
     let loc   = function_.loc in
-    let ret   = type_to_type function_.return in
+    let ret   = type_to_type (match function_.return with | A.Typed ty ->  ty | A.Void -> A.vtunit) in
     let to_vv = function | A.VVonchain -> M.VVonchain | A.VVoffchain -> M.VVoffchain | A.VVonoffchain -> M.VVonoffchain in
     let f     = match function_.kind with
       | FKfunction -> (fun x -> M.Function (x, ret))
