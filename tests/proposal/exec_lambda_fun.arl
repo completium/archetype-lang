@@ -1,0 +1,13 @@
+archetype exec_lambda_fun
+
+variable res : nat = 0
+
+function f(i : nat) : nat {
+  var r : nat = 0;
+  r += i;
+  return r
+}
+
+entry exec() {
+  res := exec_lambda(f, 2)
+}

@@ -1,0 +1,5 @@
+archetype large_message_error
+
+entry exec (op : operation) {
+  transfer op at
+}

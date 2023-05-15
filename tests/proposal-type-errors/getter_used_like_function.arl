@@ -1,0 +1,9 @@
+archetype getter_used_like_function
+
+getter my_getter() : nat {
+  return 0
+}
+
+entry exec () {
+  const r = my_getter();
+}

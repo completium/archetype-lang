@@ -1,0 +1,11 @@
+archetype fun_pure_entry
+
+variable res : nat = 0
+
+function f() : nat {
+  return 2
+}
+
+entry exec() {
+  res := f()
+}

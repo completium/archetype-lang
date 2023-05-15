@@ -1,16 +1,11 @@
-archetype fun_unit
+archetype fun_instr_unit
 
 variable res : nat = 0
 
 function f() : unit {
-  res := 3
-}
-
-function g() {
   res := 2
 }
 
 entry exec() {
-  f();
-  g()
+  f()
 }

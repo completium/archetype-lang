@@ -1,0 +1,11 @@
+archetype fun_view_pure
+
+variable res : nat = 0
+
+function f() : nat {
+  return 2
+}
+
+view my_view() : nat {
+  return (f())
+}
