@@ -1429,21 +1429,18 @@ let replace_date_duration_by_timestamp (model : model) : model =
   { model with
     decls     = model.decls     |> process_decls;
     functions = model.functions |> List.map (fun f ->
-        {f with
-         node = (
-           let process_fs (fs : function_struct) =
-             {fs with
-              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
-              body = fs.body |> process_mterm;
-             }
-           in
-           match f.node with
-           | Function (fs, ret) -> Function (process_fs fs, (match ret with | Typed ty -> Typed (process_type ty) | Void -> Void))
-           | Getter (fs, ret)   -> Getter   (process_fs fs, process_type ret)
-           | View (fs, ret, vv) -> View     (process_fs fs, process_type ret, vv)
-           | Entry fs           -> Entry    (process_fs fs)
-         );
-        })
+        let process_fs (fs : function_struct) =
+          {fs with
+           args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
+           body = fs.body |> process_mterm;
+          }
+        in
+        match f with
+        | Function (fs, ret) -> Function (process_fs fs, (match ret with | Typed ty -> Typed (process_type ty) | Void -> Void))
+        | Getter (fs, ret)   -> Getter   (process_fs fs, process_type ret)
+        | View (fs, ret, vv) -> View     (process_fs fs, process_type ret, vv)
+        | Entry fs           -> Entry    (process_fs fs)
+      )
   }
   |> update_nat_int_rat
 
@@ -1915,7 +1912,7 @@ let remove_storage_field_in_function (model : model) : model =
     | _ -> map_mterm (apply_args map) mt
   in
 
-  let for_function__ map (f__ : function__) : function__ * mterm list MapString.t =
+  let for_function__ map (fun_mode : function_node) : function_node * mterm list MapString.t =
     let for_function_node map (fn : function_node) : function_node * mterm list MapString.t =
       let for_function_struct map (fs : function_struct) : function_struct * mterm list MapString.t =
         let nbody, (nargs, nmap) = extract_storage_var map fs in
@@ -1931,10 +1928,7 @@ let remove_storage_field_in_function (model : model) : model =
       | Function (fs, t) -> let nfs, nmap = for_function_struct map fs in Function (nfs, t), nmap
       | _ -> fn, map
     in
-    let nnode, nmap = for_function_node map f__.node in
-    { f__ with
-      node = nnode;
-    }, nmap
+    for_function_node map fun_mode
   in
   let funs, map = List.fold_left (fun (fs, map) f -> let n, nmap = for_function__ map f in (fs @ [n], nmap)) ([], MapString.empty) model.functions in
   map_model (fun _ -> id) id (apply_args map) { model with functions = funs; }
@@ -3921,39 +3915,34 @@ let eval_storage (model : model) : model =
   }
 
 let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : model =
-  let for_function__ (f__ : function__) : function__ =
-    let for_function_node (fn : function_node) : function_node =
-      let for_function_struct (t : type_) (fs : function_struct) : function_struct =
-        let process () =
-          let icallback = mk_mident (dumloc ((if no_underscore then "" else "_") ^ "cb" )) in
-          let tcallback = mktype (Tcontract t) ~annot:(dumloc "%callback") in
-          let vcallback = mk_pvar icallback tcallback in
-          let rec aux (mt : mterm) : mterm =
-            match mt.node with
-            | Mreturn x -> mk_mterm (Mtransfer(TKentry(mtransferred, vcallback, x))) tunit
-            | _ -> map_mterm aux mt
-          in
-          (icallback, tcallback, None), aux fs.body
+  let for_function_node (fn : function_node) : function_node =
+    let for_function_struct (t : type_) (fs : function_struct) : function_struct =
+      let process () =
+        let icallback = mk_mident (dumloc ((if no_underscore then "" else "_") ^ "cb" )) in
+        let tcallback = mktype (Tcontract t) ~annot:(dumloc "%callback") in
+        let vcallback = mk_pvar icallback tcallback in
+        let rec aux (mt : mterm) : mterm =
+          match mt.node with
+          | Mreturn x -> mk_mterm (Mtransfer(TKentry(mtransferred, vcallback, x))) tunit
+          | _ -> map_mterm aux mt
         in
-        let arg, body = process () in
-        let args, eargs = if extra then fs.args, [arg] else fs.args @ [arg], [] in
-        {
-          fs with
-          args  = args;
-          eargs = eargs;
-          body  = body;
-        }
+        (icallback, tcallback, None), aux fs.body
       in
-      match fn with
-      | Getter(fs, t) -> Entry (for_function_struct t fs)
-      | _ -> fn
+      let arg, body = process () in
+      let args, eargs = if extra then fs.args, [arg] else fs.args @ [arg], [] in
+      {
+        fs with
+        args  = args;
+        eargs = eargs;
+        body  = body;
+      }
     in
-    { f__ with
-      node = for_function_node f__.node;
-    }
+    match fn with
+    | Getter(fs, t) -> Entry (for_function_struct t fs)
+    | _ -> fn
   in
   { model with
-    functions = List.map for_function__ model.functions;
+    functions = List.map for_function_node model.functions;
   }
 
 let process_metadata (model : model) : model =
@@ -3970,7 +3959,7 @@ let process_metadata (model : model) : model =
     in
     let with_offchain_view model =
       let is_offchain = function | VVoffchain | VVonoffchain -> true | VVonchain -> false in
-      List.exists (fun f -> match f.node with | View (_, _, vv) -> is_offchain vv | _ -> false) model.functions
+      List.exists (fun f -> match f with | View (_, _, vv) -> is_offchain vv | _ -> false) model.functions
     in
     with_offchain_view model || fold_model aux model false
   in
@@ -4182,50 +4171,40 @@ let fill_stovars (model : model) : model =
     | View     (fs, t, vv) -> View     (for_function_struct fs, t, vv)
     | Entry     fs         -> Entry    (for_function_struct fs)
   in
-  let for_functions (functions_ : function__) =
-    {
-      node = for_function_node functions_.node
-    }
-  in
   {
     model with
-    functions = List.map for_functions model.functions
+    functions = List.map for_function_node model.functions
   }
 
 let patch_fa2 (model : model) : model =
-  let for_function__ (f__ : function__) : function__ =
-    let for_function_node (fn : function_node) : function_node =
-      let for_fs (fs : function_struct) : function_struct =
-        let args =
-          match unloc_mident fs.name with
-          | s when String.equal s "update_operators" -> begin
-              match fs.args with
-              | [(arga, argt, argd)] -> begin
-                  match argt with
-                  | Tlist (Tor ((c, _), (d, _)), x), z ->
-                    [(arga, (Tlist (Tor ((c, Some (dumloc "%add_operator")), (d, Some (dumloc "%remove_operator"))), x), z), argd)]
-                  | _ -> fs.args
-                end;
-              | _ -> fs.args
+  let for_function_node (fn : function_node) : function_node =
+    let for_fs (fs : function_struct) : function_struct =
+      let args =
+        match unloc_mident fs.name with
+        | s when String.equal s "update_operators" -> begin
+            match fs.args with
+            | [(arga, argt, argd)] -> begin
+                match argt with
+                | Tlist (Tor ((c, _), (d, _)), x), z ->
+                  [(arga, (Tlist (Tor ((c, Some (dumloc "%add_operator")), (d, Some (dumloc "%remove_operator"))), x), z), argd)]
+                | _ -> fs.args
+              end;
+            | _ -> fs.args
 
-            end
-          | _ -> fs.args
-        in
-        {
-          fs with
-          args  = args;
-        }
+          end
+        | _ -> fs.args
       in
-      match fn with
-      | Entry(fs) -> Entry (for_fs fs)
-      | _ -> fn
+      {
+        fs with
+        args  = args;
+      }
     in
-    { f__ with
-      node = for_function_node f__.node;
-    }
+    match fn with
+    | Entry(fs) -> Entry (for_fs fs)
+    | _ -> fn
   in
   { model with
-    functions = List.map for_function__ model.functions;
+    functions = List.map for_function_node model.functions;
   }
 
 let remove_iterable_big_map (model : model) : model =
@@ -4610,9 +4589,9 @@ let process_arith_container (model : model) =
   map_mterm_model aux model
 
 let check_unused_variables (model : model) =
-  let for_function (f : function__) =
+  let for_function (fun_mode : function_node) =
     let fs =
-      match f.node with
+      match fun_mode with
       | Function (fs, _)    -> fs
       | Getter   (fs, _)    -> fs
       | View     (fs, _, _) -> fs
@@ -4670,3 +4649,6 @@ let process_fail (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let process_inline_function (model : model) =
+  model

@@ -1314,14 +1314,11 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     M.mk_mterm node M.tunit ~loc:instr.loc
   in
 
-  let process_fun_gen name args (body : M.mterm) loc f : M.function__ =
-    let node = f (M.mk_function_struct name body
-                    ~args:args
-                    ~loc:loc) in
-    M.mk_function node
+  let process_fun_gen name args (body : M.mterm) loc f : M.function_node =
+    f (M.mk_function_struct name body ~args:args ~loc:loc)
   in
 
-  let process_function (env : env) (function_ : A.function_) : M.function__ =
+  let process_function (env : env) (function_ : A.function_) : M.function_node =
     let name  = M.mk_mident function_.name in
     let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
     let env   = {env with function_p = Some (name, args); } in
@@ -1350,7 +1347,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     M.mk_mterm (M.Mseq (l1 @ l2)) M.tunit
   in
 
-  let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
+  let process_transaction (env : env) (transaction : A.transaction) : M.function_node =
     let process_calledby env (body : M.mterm) : M.mterm =
       let process_cb ((caller, fa) : M.mterm * M.fail_type) (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =

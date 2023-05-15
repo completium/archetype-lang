@@ -305,10 +305,6 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_fun_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('invalid_instruction_fun_assign', async () => {
-    const stat = compile("../tests/type-errors/invalid_instruction_fun_assign.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('invalid_instruction_fun_container_instr', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_fun_container_instr.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -431,14 +427,6 @@ describe('type-errors', async () => {
   })
   it('no_result_in_prog', async () => {
     const stat = compile("../tests/type-errors/no_result_in_prog.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_side_effect_in_function1', async () => {
-    const stat = compile("../tests/type-errors/no_side_effect_in_function1.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_side_effect_in_function3', async () => {
-    const stat = compile("../tests/type-errors/no_side_effect_in_function3.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_update_asset_key', async () => {

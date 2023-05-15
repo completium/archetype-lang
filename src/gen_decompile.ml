@@ -1449,7 +1449,7 @@ end = struct
 
   let decompile (dprogram, env : dprogram * env) =
     let code = for_code dprogram.code in
-    let functions = [mk_function (Entry (mk_function_struct (M.mk_mident (dumloc "default")) code ~args:[M.mk_mident (dumloc "arg"), for_type dprogram.parameter, None])) ] in
+    let functions = [Entry (mk_function_struct (M.mk_mident (dumloc "default")) code ~args:[M.mk_mident (dumloc "arg"), for_type dprogram.parameter, None])] in
 
     let storage_list = get_storage_list dprogram.storage in
 
@@ -1942,8 +1942,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | _ -> assert false
   in
 
-  let for_fun (f : M.function__) : A.declaration =
-    match f.node with
+  let for_fun (f : M.function_node) : A.declaration =
+    match f with
     | Function (_fs, _t) -> assert false
     | Getter (_fs, _t) -> assert false
     | View (_fs, _t, _vv) -> assert false

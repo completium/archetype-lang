@@ -483,9 +483,9 @@ let model_to_contract_interface (model : M.model) (low_model : M.model) (tz : T.
   let types = for_decl_type model low_model model.decls in
   let storage = for_storage model po in
   let storage_type = tz_type_to_type_micheline tz.storage in
-  let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
-  let getters = List.map (for_getter model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
-  let views = List.map (for_view model) (List.fold_right (fun (x : M.function__) accu -> match x.node with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
+  let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
+  let getters = List.map (for_getter model) (List.fold_right (fun (x : M.function_node) accu -> match x with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
+  let views = List.map (for_view model) (List.fold_right (fun (x : M.function_node) accu -> match x with | View (fs, r, (VVonchain | VVonoffchain)) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = for_errors model in
   mk_contract_interface (unloc model.name) parameters types storage storage_type entrypoints getters views errors
 

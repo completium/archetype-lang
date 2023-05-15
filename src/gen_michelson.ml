@@ -1374,8 +1374,8 @@ let to_ir (model : M.model) : T.ir =
 
     let is_onchain_view vv = match vv with  | M.VVonchain  | M.VVonoffchain -> true | _ -> false in
     let is_offchain_view vv = match vv with | M.VVoffchain | M.VVonoffchain -> true | _ -> false in
-    List.fold_left (fun (funs, entries, views, offchain_views) (x : M.function__) ->
-        match x.node with
+    List.fold_left (fun (funs, entries, views, offchain_views) (x : M.function_node) ->
+        match x with
         | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views, offchain_views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
         | Function (_, Void) -> emit_error (UnsupportedTerm ("Void function"))

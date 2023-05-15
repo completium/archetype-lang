@@ -722,11 +722,6 @@ type signature = {
 }
 [@@deriving show {with_path = false}]
 
-type function__ = {
-  node:  function_node;
-}
-[@@deriving show {with_path = false}]
-
 type decl_node =
   | Dvar    of var
   | Denum   of enum
@@ -788,7 +783,7 @@ type model = {
   api_items     : api_storage list;
   decls         : decl_node list;
   storage       : storage;
-  functions     : function__ list;
+  functions     : function_node list;
   extra         : extra;
   cc_models     : model list;
   loc           : Location.t [@opaque];
@@ -839,9 +834,6 @@ let mk_storage_item ?(const=false) ?(ghost = false) ?namespace ?(no_storage = fa
 
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; loc }
-
-let mk_function node : function__ =
-  { node }
 
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret }
@@ -2021,14 +2013,12 @@ let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model :
     let body = f ctx fs.body in
     { fs with body = body }
   in
-  let map_function (ctx : 't ctx_model_gen) (fun_ : function__) : function__ = (
-    let node = match fun_.node with
+  let map_function (ctx : 't ctx_model_gen) (fun_node : function_node) : function_node = (
+    match fun_node with
       | Function (fs, ret)     -> Function (map_function_struct ctx fs, ret)
       | Getter   (fs, ret)     -> Getter   (map_function_struct ctx fs, ret)
       | View     (fs, ret, vv) -> View     (map_function_struct ctx fs, ret, vv)
       | Entry     fs           -> Entry    (map_function_struct ctx fs)
-    in
-    { fun_ with node = node}
   ) in
 
   let ctx = mk_ctx_model custom in
@@ -3714,8 +3704,8 @@ let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : '
     | _ -> accu
   ) in
 
-  let fold_entry (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (a : function__) (accu : 'a) : 'a = (
-    match a.node with
+  let fold_entry (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (a : function_node) (accu : 'a) : 'a = (
+    match a with
     | Function (fs, _)
     | Getter (fs, _)
     | View (fs, _, _)
@@ -3943,31 +3933,26 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       loc         = si.loc;
     }
   in
-  let for_function__ (f__ : function__) : function__ =
-    let for_function_node (fn : function_node) : function_node =
-      let for_function_struct (fs : function_struct) : function_struct =
-        let for_argument (arg : argument) : argument =
-          let a, b, c = arg in
-          g KIargument a, for_type b, Option.map for_mterm c
-        in
-        {
-          name  = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | View _ -> KIview | Entry _ -> KIentry) fs.name;
-          args  = List.map for_argument fs.args;
-          eargs = List.map for_argument fs.eargs;
-          stovars = fs.stovars;
-          body  = for_mterm fs.body;
-          loc   = fs.loc;
-        }
+  let for_function_node (fn : function_node) : function_node =
+    let for_function_struct (fs : function_struct) : function_struct =
+      let for_argument (arg : argument) : argument =
+        let a, b, c = arg in
+        g KIargument a, for_type b, Option.map for_mterm c
       in
-      match fn with
-      | Function (fs, t)     -> Function (for_function_struct fs, (match t with | Typed t -> Typed (for_type t) | Void -> Void))
-      | Getter   (fs, t)     -> Getter   (for_function_struct fs, for_type t)
-      | View     (fs, t, vv) -> View     (for_function_struct fs, for_type t, vv)
-      | Entry     fs         -> Entry    (for_function_struct fs)
+      {
+        name  = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | View _ -> KIview | Entry _ -> KIentry) fs.name;
+        args  = List.map for_argument fs.args;
+        eargs = List.map for_argument fs.eargs;
+        stovars = fs.stovars;
+        body  = for_mterm fs.body;
+        loc   = fs.loc;
+      }
     in
-    {
-      node = for_function_node f__.node
-    }
+    match fn with
+    | Function (fs, t)     -> Function (for_function_struct fs, (match t with | Typed t -> Typed (for_type t) | Void -> Void))
+    | Getter   (fs, t)     -> Getter   (for_function_struct fs, for_type t)
+    | View     (fs, t, vv) -> View     (for_function_struct fs, for_type t, vv)
+    | Entry     fs         -> Entry    (for_function_struct fs)
   in
   {
     name          = h KIarchetype model.name;
@@ -3976,7 +3961,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     api_items     = List.map for_api_item  model.api_items;
     decls         = List.map for_decl_node model.decls;
     storage       = List.map for_storage_item model.storage;
-    functions     = List.map for_function__ model.functions;
+    functions     = List.map for_function_node model.functions;
     extra         = model.extra;
     cc_models     = model.cc_models;
     loc           = model.loc;
@@ -4108,20 +4093,20 @@ end = struct
 
   let lident_to_string lident = Location.unloc lident
 
-  let is_entry (f : function__) : bool =
+  let is_entry (f : function_node) : bool =
     match f with
-    | { node = Entry _ } -> true
-    | _                            -> false
+    | Entry _ -> true
+    | _       -> false
 
-  let is_function (f : function__) : bool =
+  let is_function (f : function_node) : bool =
     match f with
-    | { node = Function _ } -> true
-    | _                                -> false
+    | Function _ -> true
+    | _          -> false
 
-  let get_entry (f : function__) : function_struct =
+  let get_entry (f : function_node) : function_struct =
     match f with
-    | { node = Entry s } -> s
-    | _                  -> assert false
+    | Entry s -> s
+    | _       -> assert false
 
   let type_to_asset t =
     match get_ntype t with
@@ -4905,7 +4890,7 @@ end = struct
 
   let get_function (model : model) (id : ident) : function_struct =
     model.functions
-    |> List.map (fun x -> match x.node with | Function (fs, _) | Getter (fs, _) | View (fs, _, _) | Entry fs -> fs)
+    |> List.map (fun x -> match x with | Function (fs, _) | Getter (fs, _) | View (fs, _, _) | Entry fs -> fs)
     |> List.find (fun (x : function_struct) -> String.equal (unloc_mident x.name) id)
 
   let get_asset_partitions (model : model) asset_name : (ident * ident) list =
@@ -4917,7 +4902,7 @@ end = struct
       ) [] asset.values
 
   let get_fss (model : model) : function_struct list =
-    List.map (fun (x) -> match x.node with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> fs) model.functions
+    List.map (fun (x) -> match x with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> fs) model.functions
 
   let get_fs (model : model) (id : ident) : function_struct =
     List.find (fun (x : function_struct) -> String.equal id (unloc_mident x.name)) (get_fss model)

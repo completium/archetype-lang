@@ -6,7 +6,7 @@ open Location
 let build_entries (model : model) : model =
   let p : (type_ * mterm) option =
     match model.functions with
-    | [{node = Entry {args = [(_, pty, _)]; body = code}}] -> Some (pty, code)
+    | [Entry {args = [(_, pty, _)]; body = code}] -> Some (pty, code)
     | _ -> None
   in
   let rec split (code : mterm) : (mterm * mterm) option = match code.node with | Mseq [a] -> split a | Minstrmatchor (_a, _b, c, _d, e) -> Some (c, e) | _ -> None in
@@ -28,7 +28,7 @@ let build_entries (model : model) : model =
       let l = process p in
       let ps = List.mapi (fun k (name, pty, code) ->
           let name = match name with | Some x -> x | None -> mk_mident (dumloc (Format.asprintf "entry_%i" k)) in
-          mk_function (Entry (mk_function_struct ~args:(process_arg pty) name code))
+          Entry (mk_function_struct ~args:(process_arg pty) name code)
         ) l in
       { model with functions = ps }) model p
 

@@ -286,6 +286,7 @@ let rec toolchain ?(debug=false) model =
   model
   |> f "process_create_contract" process_create_contract
   |> f "process_fail" process_fail
+  |> f "process_inline_function" process_inline_function
   |> f "remove_import_mterm" remove_import_mterm
   |> f "getter_to_entry" (getter_to_entry ~extra:true)
   |> f "process_parameter" process_parameter

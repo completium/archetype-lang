@@ -20,7 +20,7 @@ let emit_error (desc : error_desc) =
 (* -------------------------------------------------------------------------- *)
 
 type env = {
-  f: function__ option;
+  f: function_node option;
   update_preds: (ident * assignment_operator * mterm) list list;
   select_preds: mterm list;
   sum_preds: mterm list;

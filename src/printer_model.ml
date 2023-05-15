@@ -1825,7 +1825,7 @@ let pp_argument fmt ((id, t, dv) : argument) =
 
 let pp_function fmt f =
   let vv_to_str = function | VVonchain -> ""  | VVoffchain -> "offchain "  | VVonoffchain -> "onoffchain " in
-  let k, fs, ret = match f.node with
+  let k, fs, ret = match f with
     | Entry f         -> "entry",    f, None
     | Getter (f, a)   -> "getter",   f, Some a
     | View (f, a, vv) -> (vv_to_str vv ^ "view"), f, Some a

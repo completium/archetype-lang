@@ -691,7 +691,6 @@ type error_desc =
   | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
   | CannotUpdatePKey
-  | CannotUseInstrWithSideEffectInFunction
   | CannotUseInstrWithSideEffectInView
   | CollectionExpected
   | ContainerOfNonAsset
@@ -953,7 +952,6 @@ let pp_error_desc fmt e =
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
-  | CannotUseInstrWithSideEffectInFunction -> pp "Cannot use instruction with side effect in function"
   | CannotUseInstrWithSideEffectInView -> pp "Cannot use instruction with side effect in view"
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
@@ -5299,8 +5297,8 @@ let rec for_instruction_r
           begin
             match kind with
             | `Entry -> ()
-            | `Function -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInFunction);
-            | `View -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInView);
+            | `Function -> ()
+            | `View -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInView)
             | `Init -> ()
           end
         in
