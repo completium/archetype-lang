@@ -4651,4 +4651,49 @@ let process_fail (model : model) =
   map_mterm_model aux model
 
 let process_inline_function (model : model) =
-  model
+  let is_inline_function (fun_node : function_node) : bool =
+    match fun_node with
+    | Function(_, Void) -> true
+    | _ -> false
+  in
+
+  let inline_functions : (mident * function_struct) list =
+    model.functions
+    |> List.filter is_inline_function
+    |> List.map (function | Function (fs, _) -> fs | _ -> assert false)
+    |> List.map (fun (fs : function_struct) -> (fs.name, fs))
+  in
+
+  let is_inlined id = inline_functions |> List.find_opt (fun x -> cmp_mident (fst x) id) |> Option.is_some in
+  let get_inlined_function id = inline_functions |> List.find (fun x -> cmp_mident (fst x) id) |> snd in
+
+  let apply (args : (ident * type_ * mterm) list) (body : mterm) : mterm =
+    let cmp_id x y = String.equal (unloc_mident x) y in
+    let is_arg (id : mident) = List.find_opt (fun (x, _, _) -> cmp_id id x) args |> Option.is_some in
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mvar (id, Vparam) when is_arg id -> {
+        mt with
+        node = Mvar (id, Vlocal)
+      }
+      | _ -> map_mterm aux mt
+    in
+    let vars : mterm list = List.map (fun (id, ty, v) -> mk_mterm (Mdeclvar ([mk_mident (dumloc id)], Some ty, v, true)) tunit) args in
+    seq (vars @ [aux body])
+  in
+
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mapp (id, args) when is_inlined id ->
+      let fun_node = get_inlined_function id in
+      if List.length fun_node.args <> List.length args
+      then assert false;
+      let f_args = List.map2 (fun (x, ty, _) y -> (unloc_mident x, ty, y)) fun_node.args args in
+      apply f_args fun_node.body
+    | _ -> map_mterm (aux ctx) mt
+  in
+  let model = map_mterm_model aux model in
+  {
+    model with
+    functions = List.filter (fun x -> not (is_inline_function x)) model.functions
+  }
