@@ -1438,7 +1438,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
              }
            in
            match f.node with
-           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
+           | Function (fs, ret) -> Function (process_fs fs, (match ret with | Typed ty -> Typed (process_type ty) | Void -> Void))
            | Getter (fs, ret)   -> Getter   (process_fs fs, process_type ret)
            | View (fs, ret, vv) -> View     (process_fs fs, process_type ret, vv)
            | Entry fs           -> Entry    (process_fs fs)

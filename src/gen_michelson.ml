@@ -1378,7 +1378,8 @@ let to_ir (model : M.model) : T.ir =
         match x.node with
         | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views, offchain_views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views, offchain_views
+        | Function (_, Void) -> emit_error (UnsupportedTerm ("Void function"))
+        | Function (fs, Typed ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views, offchain_views
         | View (fs, ret, vv) -> (funs, entries,
                                  (views @ (if is_onchain_view  vv then [for_fs_fun env fs ret ~view:true ] else [])),
                                  (offchain_views @ (if is_offchain_view vv then [for_fs_fun env fs ret ~view:true ] else [])))

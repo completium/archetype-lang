@@ -1944,7 +1944,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   let for_fun (f : M.function__) : A.declaration =
     match f.node with
-    | Function (_fs, _t)
+    | Function (_fs, _t) -> assert false
     | Getter (_fs, _t) -> assert false
     | View (_fs, _t, _vv) -> assert false
     | Entry fs -> begin

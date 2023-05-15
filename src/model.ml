@@ -703,8 +703,13 @@ type view_visibility =
   | VVonoffchain
 [@@deriving show {with_path = false}]
 
+type returned_fun_type =
+  | Typed of type_
+  | Void
+[@@deriving show {with_path = false}]
+
 type function_node =
-  | Function           of function_struct * type_ (* fun * return type *)
+  | Function           of function_struct * returned_fun_type (* fun * return type *)
   | Getter             of function_struct * type_
   | View               of function_struct * type_ * view_visibility
   | Entry              of function_struct
@@ -3955,7 +3960,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         }
       in
       match fn with
-      | Function (fs, t)     -> Function (for_function_struct fs, for_type t)
+      | Function (fs, t)     -> Function (for_function_struct fs, (match t with | Typed t -> Typed (for_type t) | Void -> Void))
       | Getter   (fs, t)     -> Getter   (for_function_struct fs, for_type t)
       | View     (fs, t, vv) -> View     (for_function_struct fs, for_type t, vv)
       | Entry     fs         -> Entry    (for_function_struct fs)

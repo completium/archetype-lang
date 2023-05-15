@@ -1,4 +1,4 @@
-archetype fun_instr_unit
+archetype fun_instr_unit_arg
 
 variable res : nat = 0
 

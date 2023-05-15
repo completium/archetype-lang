@@ -1829,7 +1829,7 @@ let pp_function fmt f =
     | Entry f         -> "entry",    f, None
     | Getter (f, a)   -> "getter",   f, Some a
     | View (f, a, vv) -> (vv_to_str vv ^ "view"), f, Some a
-    | Function (f, a) -> "function", f, Some a
+    | Function (f, rty) -> "function", f, (match rty with | Typed ty -> Some ty | Void -> None)
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a@]@\n}@\n"
     pp_str k
