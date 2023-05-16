@@ -1,0 +1,14 @@
+archetype fun_error_view_write_with_transfer
+
+variable res : nat = 0
+
+function f() : nat {
+  const wallet : contract<unit> = caller;
+  const op : operation = make_operation(1tz, wallet, Unit);
+  transfer op;
+  return 0
+}
+
+view my_view() : nat {
+  return f()
+}

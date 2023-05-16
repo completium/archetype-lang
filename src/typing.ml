@@ -725,6 +725,7 @@ type error_desc =
   | FunctionNotFound                   of ident
   | FunctionInvalidInstructionVoid
   | FunctionInvalidTypeVoid
+  | FunctionNoReturn
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
@@ -987,6 +988,7 @@ let pp_error_desc fmt e =
   | FunctionNotFound id                -> pp "Function `%s' is not found" id
   | FunctionInvalidInstructionVoid     -> pp "Invalid function, instruction used in instruction must be void (without returned value)"
   | FunctionInvalidTypeVoid            -> pp "Invalid type, function is void"
+  | FunctionNoReturn                   -> pp "Invalid function, no return instruction found"
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
@@ -1934,6 +1936,9 @@ module Env : sig
     val get : t -> A.storage_usage
     val set : t -> A.storage_usage -> t
     val update : t -> A.storage_usage -> t
+
+    val with_return : t -> bool
+    val set_return : t -> bool -> t
   end
 
 end = struct
@@ -1981,6 +1986,7 @@ end = struct
     env_scopes   : Sid.t list;
     env_path     : string;
     env_su       : A.storage_usage;
+    env_with_ret : bool;
   }
 
   and cache = (t importdecl) Mlib.t ref
@@ -1999,6 +2005,7 @@ end = struct
       env_scopes   = [];
       env_path     = Option.map_dfl (fun x -> x) "." path;
       env_su       = A.SUpure;
+      env_with_ret = false;
     }
 
   let emit_error (env : t) (e : error) =
@@ -2461,6 +2468,12 @@ end = struct
       if (lvl_env < lvl_su)
       then set env su
       else env
+
+    let with_return (env : t) : bool =
+      env.env_with_ret
+
+    let set_return (env : t) (v : bool) : t =
+      {env with env_with_ret = v}
 
   end
 end
@@ -5555,7 +5568,9 @@ let rec for_instruction_r
           let e  = for_expr kind env ~ety:A.Toperation e in
           A.TToperation (e)
 
-      in env, mki (Itransfer tr)
+      in
+      let env = Env.StorageUsage.update env A.SUwrite in
+      env, mki (Itransfer tr)
 
     | Edetach (id, v, f) -> begin
         let _ = check_and_emit_name_free env id in
@@ -5770,6 +5785,7 @@ let rec for_instruction_r
     | Ereturn re ->
       if Option.is_none ret then
         Env.emit_error env (loc re, ReturnInVoidContext);
+      let env = Env.StorageUsage.set_return env true in
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
     | Evar (x, ty, v, c) ->
@@ -5915,8 +5931,12 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let rty = Option.bind (for_type env) fdecl.ret_t in
       let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
       let env = Env.StorageUsage.set env A.SUpure in
+      let env = Env.StorageUsage.set_return env false in
       let env, body = for_instruction ~ret:rty place env fdecl.body in
       let storage_usage = Env.StorageUsage.get env in
+
+      if not (Env.StorageUsage.with_return env) && Option.is_some rty
+      then (Env.emit_error env (loc fdecl.name, FunctionNoReturn));
 
       if not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then

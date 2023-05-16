@@ -1,6 +1,6 @@
-archetype fun_pure_entry
+archetype fun_entry_read
 
-variable res : nat = 0
+variable res : nat = 1
 
 function f() : nat {
   return (res + 2)

@@ -693,6 +693,7 @@ type function_struct = {
   eargs: argument list;
   stovars: ident list;
   body:  mterm;
+  side_effect: bool;
   loc :  Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -832,8 +833,8 @@ let mk_record_field ?(loc = Location.dummy) name type_ : record_field =
 let mk_storage_item ?(const=false) ?(ghost = false) ?namespace ?(no_storage = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
   { id; model_type; typ; const; ghost; default; namespace; no_storage; loc }
 
-let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
-  { name; args; eargs; stovars; body; loc }
+let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(side_effect = false) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; eargs; stovars; body; side_effect; loc }
 
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret }
@@ -1990,6 +1991,7 @@ let map_mterm
 
 type 't ctx_model_gen = {
   formula: bool;
+  fun_node : function_node option;
   fs : function_struct option;
   label: mident option;
   spec_id : mident option;
@@ -1999,8 +2001,8 @@ type 't ctx_model_gen = {
 
 type ctx_model = unit ctx_model_gen
 
-let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id custom : 't ctx_model_gen =
-  { formula; fs; label; spec_id; invariant_id; custom}
+let mk_ctx_model ?(formula = false) ?fun_node ?fs ?label ?spec_id ?invariant_id custom : 't ctx_model_gen =
+  { formula; fun_node; fs; label; spec_id; invariant_id; custom}
 
 let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let map_storage_item (ctx : 't ctx_model_gen) (si : storage_item) : storage_item = (
@@ -2014,6 +2016,7 @@ let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model :
     { fs with body = body }
   in
   let map_function (ctx : 't ctx_model_gen) (fun_node : function_node) : function_node = (
+    let ctx = {ctx with fun_node = Some fun_node} in
     match fun_node with
       | Function (fs, ret)     -> Function (map_function_struct ctx fs, ret)
       | Getter   (fs, ret)     -> Getter   (map_function_struct ctx fs, ret)
@@ -3945,6 +3948,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         eargs = List.map for_argument fs.eargs;
         stovars = fs.stovars;
         body  = for_mterm fs.body;
+        side_effect = fs.side_effect;
         loc   = fs.loc;
       }
     in

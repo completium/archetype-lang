@@ -1,4 +1,4 @@
-archetype fun_pure_entry
+archetype fun_entry_pure
 
 variable res : nat = 0
 

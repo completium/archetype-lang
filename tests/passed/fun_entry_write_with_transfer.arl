@@ -1,0 +1,14 @@
+archetype fun_entry_write_with_transfer
+
+variable res : nat = 0
+
+function f(a : address) : nat {
+  const wallet : contract<unit> = a;
+  const op : operation = make_operation(1tz, wallet, Unit);
+  transfer op;
+  return 2
+}
+
+entry exec(a : address) {
+  res := f(a)
+}

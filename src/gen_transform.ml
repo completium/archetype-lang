@@ -4653,19 +4653,32 @@ let process_fail (model : model) =
 let process_inline_function (model : model) =
   let is_inline_function (fun_node : function_node) : bool =
     match fun_node with
-    | Function(_, Void) -> true
+    | Function ({side_effect = true; _}, _)
+    | Function (_, Void) -> true
     | _ -> false
   in
 
-  let inline_functions : (mident * function_struct) list =
-    model.functions
-    |> List.filter is_inline_function
-    |> List.map (function | Function (fs, _) -> fs | _ -> assert false)
-    |> List.map (fun (fs : function_struct) -> (fs.name, fs))
+  let is_view (fun_node : function_node option) = match fun_node with | Some (View _) -> true | _ -> false in
+
+  let get_function_opt id : function_node option =
+    List.find_opt (function | Function ({name = fid}, _) when cmp_mident id fid -> true | _ -> false) model.functions
   in
 
-  let is_inlined id = inline_functions |> List.find_opt (fun x -> cmp_mident (fst x) id) |> Option.is_some in
-  let get_inlined_function id = inline_functions |> List.find (fun x -> cmp_mident (fst x) id) |> snd in
+  let get_fs id : function_struct =
+    get_function_opt id |> Option.get |> (function | Function (fs, _) -> fs | _ -> assert false)
+  in
+
+  let is_app_must_be_inlined ctx id =
+    if is_view ctx.fun_node
+    then true
+    else begin
+      match get_function_opt id with
+      | None -> false (* Not Found*)
+      | Some fun_node -> begin
+          is_inline_function fun_node
+        end
+    end
+  in
 
   let apply (args : (ident * type_ * mterm) list) (body : mterm) : mterm =
     let cmp_id x y = String.equal (unloc_mident x) y in
@@ -4673,9 +4686,10 @@ let process_inline_function (model : model) =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
       | Mvar (id, Vparam) when is_arg id -> {
-        mt with
-        node = Mvar (id, Vlocal)
-      }
+          mt with
+          node = Mvar (id, Vlocal)
+        }
+      | Mreturn x -> x
       | _ -> map_mterm aux mt
     in
     let vars : mterm list = List.map (fun (id, ty, v) -> mk_mterm (Mdeclvar ([mk_mident (dumloc id)], Some ty, v, true)) tunit) args in
@@ -4684,12 +4698,13 @@ let process_inline_function (model : model) =
 
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Mapp (id, args) when is_inlined id ->
-      let fun_node = get_inlined_function id in
-      if List.length fun_node.args <> List.length args
+    | Mapp (id, args) when is_app_must_be_inlined ctx id ->
+      let args = List.map (aux ctx) args in
+      let fun_struct = get_fs id in
+      if List.length fun_struct.args <> List.length args
       then assert false;
-      let f_args = List.map2 (fun (x, ty, _) y -> (unloc_mident x, ty, y)) fun_node.args args in
-      apply f_args fun_node.body
+      let f_args = List.map2 (fun (x, ty, _) y -> (unloc_mident x, ty, y)) fun_struct.args args in
+      apply f_args fun_struct.body
     | _ -> map_mterm (aux ctx) mt
   in
   let model = map_mterm_model aux model in

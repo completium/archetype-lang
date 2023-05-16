@@ -301,6 +301,42 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/for_ident_simple_map.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('fun_error_unit', async () => {
+    const stat = compile("../tests/type-errors/fun_error_unit.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_error_view_write', async () => {
+    const stat = compile("../tests/type-errors/fun_error_view_write.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_error_view_write_with_transfer', async () => {
+    const stat = compile("../tests/type-errors/fun_error_view_write_with_transfer.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_error_void_call_as_expression', async () => {
+    const stat = compile("../tests/type-errors/fun_error_void_call_as_expression.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_instr_error_invalid_number_args', async () => {
+    const stat = compile("../tests/type-errors/fun_instr_error_invalid_number_args.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_instr_error_invalid_type_arg', async () => {
+    const stat = compile("../tests/type-errors/fun_instr_error_invalid_type_arg.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_instr_error_not_found', async () => {
+    const stat = compile("../tests/type-errors/fun_instr_error_not_found.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_instr_error_return_nat', async () => {
+    const stat = compile("../tests/type-errors/fun_instr_error_return_nat.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('fun_instr_error_return_unit', async () => {
+    const stat = compile("../tests/type-errors/fun_instr_error_return_unit.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

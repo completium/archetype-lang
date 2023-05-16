@@ -1,10 +1,10 @@
-archetype fun_pure_entry
+archetype fun_entry_write
 
 variable res : nat = 0
 
 function f() : nat {
   res := 2;
-  return 0
+  return (res + 1)
 }
 
 entry exec() {

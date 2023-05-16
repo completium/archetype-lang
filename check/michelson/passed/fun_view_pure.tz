@@ -1,0 +1,12 @@
+{ storage nat ;
+  parameter unit ;
+  code { LAMBDA
+           unit
+           nat
+           { PUSH unit Unit ; PUSH nat 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
+         SWAP ;
+         CDR ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } ;
+  view "my_view" unit nat { DROP 1 ; UNIT ; PUSH nat 2 ; SWAP ; DROP 1 } }

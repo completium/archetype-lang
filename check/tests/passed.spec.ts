@@ -702,7 +702,16 @@ import * as fail_while from '../bindings/passed/fail_while'
 import * as fail_with_tuple_lit from '../bindings/passed/fail_with_tuple_lit'
 import * as fold_reverse from '../bindings/passed/fold_reverse'
 import * as fun from '../bindings/passed/fun'
+import * as fun_entry_pure from '../bindings/passed/fun_entry_pure'
+import * as fun_entry_read from '../bindings/passed/fun_entry_read'
+import * as fun_entry_write from '../bindings/passed/fun_entry_write'
+import * as fun_entry_write_with_transfer from '../bindings/passed/fun_entry_write_with_transfer'
+import * as fun_instr_unit from '../bindings/passed/fun_instr_unit'
+import * as fun_instr_unit_arg from '../bindings/passed/fun_instr_unit_arg'
+import * as fun_instr_unit_arg_side_effect from '../bindings/passed/fun_instr_unit_arg_side_effect'
 import * as fun_unit from '../bindings/passed/fun_unit'
+import * as fun_view_pure from '../bindings/passed/fun_view_pure'
+import * as fun_view_read from '../bindings/passed/fun_view_read'
 import * as function_with_nat_to_string from '../bindings/passed/function_with_nat_to_string'
 import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
 import * as get_in_require_failif from '../bindings/passed/get_in_require_failif'
@@ -13329,6 +13338,93 @@ describe('passed', async () => {
     assert(res_after.equals(new Int(1)))
   })
 
+  it('fun_entry_pure', async () => {
+    await fun_entry_pure.fun_entry_pure.deploy({ as: alice })
+
+    const res_before = await fun_entry_pure.fun_entry_pure.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_entry_pure.fun_entry_pure.exec({ as: alice })
+
+    const res_after = await fun_entry_pure.fun_entry_pure.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('fun_entry_read', async () => {
+    await fun_entry_read.fun_entry_read.deploy({ as: alice })
+
+    const res_before = await fun_entry_read.fun_entry_read.get_res()
+    assert(res_before.equals(new Nat(1)))
+
+    await fun_entry_read.fun_entry_read.exec({ as: alice })
+
+    const res_after = await fun_entry_read.fun_entry_read.get_res()
+    assert(res_after.equals(new Nat(3)))
+  })
+
+  it('fun_entry_write', async () => {
+    await fun_entry_write.fun_entry_write.deploy({ as: alice })
+
+    const res_before = await fun_entry_write.fun_entry_write.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_entry_write.fun_entry_write.exec({ as: alice })
+
+    const res_after = await fun_entry_write.fun_entry_write.get_res()
+    assert(res_after.equals(new Nat(3)))
+  })
+
+  it('fun_entry_write_with_transfer', async () => {
+    await fun_entry_write_with_transfer.fun_entry_write_with_transfer.deploy({ as: alice, amount: new Tez(1) })
+
+    const alice_balance_before = await alice.get_balance()
+    const res_before = await fun_entry_write_with_transfer.fun_entry_write_with_transfer.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_entry_write_with_transfer.fun_entry_write_with_transfer.exec(alice.get_address(), { as: bob })
+
+    const alice_balance_after = await alice.get_balance()
+    const res_after = await fun_entry_write_with_transfer.fun_entry_write_with_transfer.get_res()
+    assert(res_after.equals(new Nat(2)))
+    assert(alice_balance_before.plus(new Tez(1)).equals(alice_balance_after))
+  })
+
+  it('fun_instr_unit', async () => {
+    await fun_instr_unit.fun_instr_unit.deploy({ as: alice })
+
+    const res_before = await fun_instr_unit.fun_instr_unit.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_instr_unit.fun_instr_unit.exec({ as: alice })
+
+    const res_after = await fun_instr_unit.fun_instr_unit.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('fun_instr_unit_arg', async () => {
+    await fun_instr_unit_arg.fun_instr_unit_arg.deploy({ as: alice })
+
+    const res_before = await fun_instr_unit_arg.fun_instr_unit_arg.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_instr_unit_arg.fun_instr_unit_arg.exec({ as: alice })
+
+    const res_after = await fun_instr_unit_arg.fun_instr_unit_arg.get_res()
+    assert(res_after.equals(new Nat(7)))
+  })
+
+  it('fun_instr_unit_arg_side_effect', async () => {
+    await fun_instr_unit_arg_side_effect.fun_instr_unit_arg_side_effect.deploy({ as: alice })
+
+    const res_before = await fun_instr_unit_arg_side_effect.fun_instr_unit_arg_side_effect.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await fun_instr_unit_arg_side_effect.fun_instr_unit_arg_side_effect.exec({ as: alice })
+
+    const res_after = await fun_instr_unit_arg_side_effect.fun_instr_unit_arg_side_effect.get_res()
+    assert(res_after.equals(new Nat(5)))
+  })
+
   it('fun_unit', async () => {
     await fun_unit.fun_unit.deploy({ as: alice })
 
@@ -13339,6 +13435,20 @@ describe('passed', async () => {
 
     const u_after = await fun_unit.fun_unit.get_u()
     assert(u_after.equals(new Unit()))
+  })
+
+  it('fun_view_pure', async () => {
+    await fun_view_pure.fun_view_pure.deploy({ as: alice })
+
+    const res = await fun_view_pure.fun_view_pure.view_my_view({as: alice});
+    assert(res && res.equals(new Nat(2)))
+  })
+
+  it('fun_view_read', async () => {
+    await fun_view_read.fun_view_read.deploy({ as: alice })
+
+    const res = await fun_view_read.fun_view_read.view_my_view({as: alice});
+    assert(res && res.equals(new Nat(3)))
   })
 
   it('function_with_nat_to_string', async () => {

@@ -1314,8 +1314,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     M.mk_mterm node M.tunit ~loc:instr.loc
   in
 
-  let process_fun_gen name args (body : M.mterm) loc f : M.function_node =
-    f (M.mk_function_struct name body ~args:args ~loc:loc)
+  let process_fun_gen name args side_effect (body : M.mterm) loc f : M.function_node =
+    f (M.mk_function_struct name body ~side_effect:side_effect ~args:args ~loc:loc)
   in
 
   let process_function (env : env) (function_ : A.function_) : M.function_node =
@@ -1326,12 +1326,13 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let loc   = function_.loc in
     let get_ret_type rty = type_to_type (match rty with | A.Typed ty ->  ty | A.Void -> A.vtunit) in
     let to_vv = function | A.VVonchain -> M.VVonchain | A.VVoffchain -> M.VVoffchain | A.VVonoffchain -> M.VVonoffchain in
+    let side_effect = match function_.storage_usage with | A.SUpure -> false | A.SUread -> false | A.SUwrite -> true in
     let f     = match function_.kind with
       | FKfunction -> (fun x -> M.Function (x, (match function_.return with | A.Typed ty -> M.Typed (type_to_type ty) | A.Void -> M.Void)))
       | FKgetter   -> (fun x -> M.Getter (x, get_ret_type function_.return))
       | FKview vv  -> (fun x -> M.View (x, get_ret_type function_.return, to_vv vv))
     in
-    process_fun_gen name args body loc f
+    process_fun_gen name args side_effect body loc f
   in
 
   let add_seq (s1 : M.mterm) (s2 : M.mterm) =
@@ -1530,9 +1531,10 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       |> process_state_is env
       |> process_calledby env
     in
+    let side_effect = false in
     let loc   = transaction.loc in
 
-    process_fun_gen (M.mk_mident transaction.name) args body loc (fun x -> M.Entry x)
+    process_fun_gen (M.mk_mident transaction.name) args side_effect body loc (fun x -> M.Entry x)
   in
 
   let process_parameter env (p : A.parameter) : M.parameter =

@@ -1,10 +1,9 @@
 archetype fun_view_read
 
-variable res : nat = 0
+variable res : nat = 3
 
 function f() : nat {
-  res := 2;
-  return 0
+  return res
 }
 
 view my_view() : nat {
