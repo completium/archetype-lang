@@ -684,7 +684,7 @@ type error_desc =
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
   | CannotAssignStorageVariableInView  of ident
-  | CannotCallFunctionInView
+  | CannotCallSideEffectFunctionInView
   | CannotCaptureVariables
   | CannotEffectConstVar
   | CannotInfer
@@ -946,7 +946,7 @@ let pp_error_desc fmt e =
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
   | CannotAssignStorageVariableInView x -> pp "Cannot assign storage variable `%s' in view" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
-  | CannotCallFunctionInView           -> pp "Cannot call function in view"
+  | CannotCallSideEffectFunctionInView -> pp "Cannot call side effect function in view"
   | CannotEffectConstVar               -> pp "Cannot apply an effect on constant variable"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
@@ -1929,6 +1929,13 @@ module Env : sig
 
     val resolve_path : t -> string -> string
   end
+
+  module StorageUsage : sig
+    val get : t -> A.storage_usage
+    val set : t -> A.storage_usage -> t
+    val update : t -> A.storage_usage -> t
+  end
+
 end = struct
   type ecallback = error -> unit
 
@@ -1973,6 +1980,7 @@ end = struct
     env_locals   : Sid.t;
     env_scopes   : Sid.t list;
     env_path     : string;
+    env_su       : A.storage_usage;
   }
 
   and cache = (t importdecl) Mlib.t ref
@@ -1989,7 +1997,8 @@ end = struct
       env_context  = [];
       env_locals   = Sid.empty;
       env_scopes   = [];
-      env_path     = Option.map_dfl (fun x -> x) "." path
+      env_path     = Option.map_dfl (fun x -> x) "." path;
+      env_su       = A.SUpure;
     }
 
   let emit_error (env : t) (e : error) =
@@ -2433,6 +2442,27 @@ end = struct
         end
   end
 
+  module StorageUsage = struct
+    let get_level (su : A.storage_usage) =
+      match su with
+      | SUpure -> 0
+      | SUread -> 1
+      | SUwrite -> 2
+
+    let get (env : t) : A.storage_usage =
+      env.env_su
+
+    let set (env : t) (su : A.storage_usage) : t =
+      {env with env_su = su}
+
+    let update (env : t) (su : A.storage_usage) : t =
+      let lvl_env = get_level env.env_su in
+      let lvl_su = get_level su in
+      if (lvl_env < lvl_su)
+      then set env su
+      else env
+
+  end
 end
 
 type env = Env.t
@@ -3953,8 +3983,8 @@ let rec for_xexpr
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
       begin
-        match mode.em_kind with
-        | `View -> Env.emit_error env (loc tope, CannotCallFunctionInView)
+        match mode.em_kind, fun_.fs_storage_usage with
+        | `View, A.SUwrite -> Env.emit_error env (loc tope, CannotCallSideEffectFunctionInView)
         | _ -> ()
       end;
 
@@ -3969,9 +3999,9 @@ let rec for_xexpr
       let args = List.map  (fun x -> A.AExpr x) args in
 
       let rty =
-      match fun_.fs_retty with
-      | Void -> (Env.emit_error env (loc tope, FunctionInvalidTypeVoid); A.vtunit)
-      | Typed ty -> ty
+        match fun_.fs_retty with
+        | Void -> (Env.emit_error env (loc tope, FunctionInvalidTypeVoid); A.vtunit)
+        | Typed ty -> ty
       in
 
       mk_sp (Some rty) (A.Pcall (None, A.Cid (snd f), [], args))
@@ -5169,7 +5199,7 @@ let for_args_decl ?can_asset (env : env) (xs : PT.args) =
   List.fold_left_map (for_arg_decl ?can_asset) env xs
 
 (* -------------------------------------------------------------------- *)
-let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
+let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : env * (A.lvalue * A.ptyp) option =
   match unloc e with
   | Eterm (SINone, x) -> begin
       match Option.snd (Env.lookup_entry env (Current, unloc x)) with
@@ -5177,18 +5207,18 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
           match kind with
           | `LoopIndex ->
             Env.emit_error env (loc e, CannotAssignLoopIndex (unloc x));
-            None
+            env, None
           | `Argument ->
             Env.emit_error env (loc e, CannotAssignArgument (unloc x));
-            None
+            env, None
           | `Pattern ->
             Env.emit_error env (loc e, CannotAssignPatternVariable (unloc x));
-            None
+            env, None
           | `Const ->
             Env.emit_error env (loc e, CannotAssignConstVar (unloc x));
-            None
+            env, None
           | `Standard ->
-            Some (`Var x, xty)
+            env, Some (`Var x, xty)
         end
 
       | Some (`Global vd) ->
@@ -5201,28 +5231,29 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
           | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
-        Some (`Var x, vd.vr_type)
+        let env = Env.StorageUsage.update env A.SUwrite in
+        env, Some (`Var x, vd.vr_type)
 
       | _ ->
         Env.emit_error env (loc e, UnknownLocalOrVariable (mknm (None, unloc x)));
-        None
+        env, None
     end
 
   | Edot ({pldesc = Esqapp ({pldesc = Eterm (SINone, asset)}, key)}, (SINone, x)) -> begin (* FIXME: namespace *)
       let asset = as_full (Option.get (Env.Asset.lookup env (Current, unloc asset))) in
       if List.exists (fun f -> unloc f = unloc x) asset.as_pk then begin
         Env.emit_error env (loc x, CannotUpdatePKey);
-        None
+        env, None
       end else begin
         match get_field (unloc x) asset with
         | None ->
           let err = UnknownField (Env.relative env asset.as_name, unloc x) in
-          Env.emit_error env (loc x, err); None
+          Env.emit_error env (loc x, err); env, None
 
         | Some { fd_type = fty } ->
           let ktype = asset.as_pkty in
           let key = for_expr ~ety:ktype kind env key in
-          Some (`Field (asset.as_name, key, x), fty)
+          env, Some (`Field (asset.as_name, key, x), fty)
       end
     end
 
@@ -5236,17 +5267,17 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
 
           match field with
           | None ->
-            Env.emit_error env (loc x, UnknownFieldName (unloc x)); None
+            Env.emit_error env (loc x, UnknownFieldName (unloc x)); env, None
 
           | Some field ->
-            Some (`Field (record.rd_name, tg, x), field.rfd_type)
+            env, Some (`Field (record.rd_name, tg, x), field.rfd_type)
         end
 
       | Some _ ->
-        Env.emit_error env (loc ptg, RecordExpected); None
+        Env.emit_error env (loc ptg, RecordExpected); env, None
 
       | None ->
-        None
+        env, None
     end
   | Esqapp (e, pk) -> begin
       let ee = for_expr kind env e in
@@ -5266,12 +5297,12 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) op
           in
           let l = List.length lt in
           let fty = List.nth lt i in
-          Some (`Tuple (ee, i, l), fty)
+          env, Some (`Tuple (ee, i, l), fty)
         end
-      | _ -> Env.emit_error env (loc e, InvalidTypeForTuple); None
+      | _ -> Env.emit_error env (loc e, InvalidTypeForTuple); env, None
     end
   | _ ->
-    Env.emit_error env (loc e, InvalidLValue); None
+    Env.emit_error env (loc e, InvalidLValue); env, None
 
 (* -------------------------------------------------------------------- *)
 let rec for_instruction_r
@@ -5377,7 +5408,7 @@ let rec for_instruction_r
       env, mkseq i1 i2
 
     | Eassign (op, plv, pe) -> begin
-        let lv = for_lvalue kind env plv in
+        let env, lv = for_lvalue kind env plv in
         let x, t  = Option.get_dfl
             (`Var (mkloc (loc plv) "<error>"), A.vtunit)
             (Option.map id lv) in
@@ -5397,7 +5428,7 @@ let rec for_instruction_r
       end
 
     | Eassignopt (plv, pe, fa) -> begin
-        let lv = for_lvalue kind env plv in
+        let env, lv = for_lvalue kind env plv in
         let x, t  = Option.get_dfl
             (`Var (mkloc (loc plv) "<error>"), A.vtunit)
             (Option.map id lv) in
@@ -5883,8 +5914,9 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let env, args = for_args_decl env fdecl.args in
       let rty = Option.bind (for_type env) fdecl.ret_t in
       let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
+      let env = Env.StorageUsage.set env A.SUpure in
       let env, body = for_instruction ~ret:rty place env fdecl.body in
-      let storage_usage = A.SUpure in
+      let storage_usage = Env.StorageUsage.get env in
 
       if not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then

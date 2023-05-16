@@ -7,5 +7,5 @@ function f() : nat {
 }
 
 view my_view() : nat {
-  return (f())
+  return f()
 }
