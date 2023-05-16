@@ -943,6 +943,11 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_no_paren pp) fmt (id, dk, ty, f)
 
+    | Imicheline micheline -> begin
+        let printable_micheline : Micheline_printer.node = Micheline_tools.obj_to_micheline micheline in
+        Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
+      end
+
   in
   pp_instruction_poly pp_node fmt i
 

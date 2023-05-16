@@ -832,6 +832,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
     | Mdetach _  -> emit_error (UnsupportedTerm ("Mdetach"))
+    | Mmicheline micheline  -> T.Imicheline micheline
 
     (* entrypoint *)
 
@@ -2447,6 +2448,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           T.cseq [v; T.cread_ticket; T.cswap; T.cdrop 1], inc_env env
         end
     end
+
+  | Imicheline micheline -> T.ccustom micheline, env
 
 and process_data (d : T.data) : T.data =
   let rec aux (d : T.data) : T.data =

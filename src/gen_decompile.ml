@@ -1595,6 +1595,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mtransfer _tr      -> assert false
     | Memit (_, _)       -> assert false
     | Mdetach (_, _, _, _)  -> assert false
+    | Mmicheline _       -> assert false
 
 
     (* entrypoint *)

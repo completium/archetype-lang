@@ -1387,6 +1387,10 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | CDR_N _ -> assert false (* TODO *)
 
+  (* Custom *)
+
+  | CUSTOM _ -> assert false
+
     (* Unused? *)
   | RENAME                   -> assert false
 

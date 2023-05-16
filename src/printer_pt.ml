@@ -801,6 +801,10 @@ let rec pp_expr outer pos fmt a =
 
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
+  | Emicheline micheline -> begin
+    let printable_micheline : Micheline_printer.node = Micheline_tools.pt_to_micheline micheline in
+    Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
+  end
 
 and pp_else fmt (e : expr option) =
   match e with

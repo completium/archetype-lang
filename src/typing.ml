@@ -4533,6 +4533,7 @@ let rec for_xexpr
     | Etransfer  _
     | Edetach    _
     | Eemit      _
+    | Emicheline _
     | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
@@ -5861,6 +5862,11 @@ let rec for_instruction_r
             env, mki (A.Icall (None, Cid fn, args))
           end
         end
+      end
+
+    | Emicheline micheline -> begin
+        let obj_mich = Micheline_tools.pt_to_obj micheline in
+        env, mki (A.Imicheline obj_mich)
       end
 
     | _ ->

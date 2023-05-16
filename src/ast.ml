@@ -434,6 +434,7 @@ and instruction_node =
   | Ifail of pterm
   | Ifailsome of pterm
   | Idetach of lident * detach_kind * type_ * pterm
+  | Imicheline of Michelson.obj_micheline
 [@@deriving show {with_path = false}]
 
 and for_ident = FIsimple of lident | FIdouble of lident * lident

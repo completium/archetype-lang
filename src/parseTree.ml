@@ -113,6 +113,13 @@ and transfer_t =
   | TTself      of expr * lident * expr list
   | TToperation of expr
 
+and micheline_t =
+  | MIstring of string
+  | MIint    of Core.big_int
+  | MIbytes  of string
+  | MIprim   of string * micheline_t list * string list
+  | MIseq    of micheline_t list
+
 and expr_unloc =
   | Eterm          of (id_scope * lident)
   | Eliteral       of literal
@@ -160,6 +167,7 @@ and expr_unloc =
   | Enothing
   | Eunit
   | Etz_expr       of string
+  | Emicheline     of micheline_t
   | Einvalid
 
 and branch = (pattern list * expr)

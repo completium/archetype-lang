@@ -105,6 +105,7 @@
 %token MAKE_LIST
 %token MAKE_MAP
 %token MAKE_SET
+%token MICHELSON
 %token MAP
 %token MATCH
 %token MINUS
@@ -176,6 +177,7 @@
 %token INVALID_DECL
 %token INVALID_EFFECT
 
+%token <string> ANNOTATION
 %token <string> IDENT
 %token <string> PIDENT
 %token <string> STRING
@@ -979,6 +981,9 @@ simple_expr_r:
  | x=TZ_EXPR
      { Etz_expr x }
 
+ | MICHELSON x=mich_sequence
+     { Emicheline x }
+
  | INVALID_EXPR
      { Einvalid }
 
@@ -1062,3 +1067,52 @@ recupdate_item:
 
 %inline prefix(P, X):
 | P x=X { x }
+
+%inline mich_annot:
+| x=ANNOTATION { x }
+
+%inline mich_annots:
+| xs=mich_annot* { xs }
+
+%inline mich_seq:
+| xs=snl(SEMI_COLON, mich_node) { xs }
+
+%inline mich_sequence:
+| LBRACE RBRACE  { MIseq [] }
+| xs=braced(mich_seq) { MIseq xs }
+
+%inline mich_integer:
+| n=NUMBERNAT { MIint n }
+
+%inline mich_string:
+| s=STRING { MIstring s }
+
+%inline mich_bytes:
+| b=BYTES { MIbytes b }
+
+%inline mich_prim:
+| p=IDENT a=mich_annots { MIprim (p, [], a) }
+
+%inline mich_arguments:
+| xs=mich_argument+ { xs }
+
+%inline mich_prim_app:
+| p=IDENT a=mich_annots args=mich_arguments { MIprim (p, args, a) }
+
+mich_node:
+| x=mich_integer     { x }
+| x=mich_string      { x }
+| x=mich_bytes       { x }
+| x=mich_prim        { x }
+| x=mich_prim_app    { x }
+| x=mich_sequence    { x }
+| x=paren(mich_node) { x }
+
+mich_argument:
+| x=mich_integer         { x }
+| x=mich_string          { x }
+| x=mich_bytes           { x }
+| x=mich_prim            { x }
+| x=paren(mich_prim_app) { x }
+| x=mich_sequence        { x }
+| x=paren(mich_argument) { x }

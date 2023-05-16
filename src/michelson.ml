@@ -214,6 +214,8 @@ and code_node =
   (* Macro *)
   | CAR_N              of int
   | CDR_N              of int
+  (* Custom *)
+  | CUSTOM             of obj_micheline
 [@@deriving show {with_path = false}]
 
 and code = { node : code_node; type_: (type_ list) option ref; }
@@ -409,6 +411,7 @@ and instruction =
   | Iwildcard    of type_ * ident
   | Ireplace     of ident * ident * klv * instruction
   | Ireadticket  of instruction
+  | Imicheline   of obj_micheline
 [@@deriving show {with_path = false}]
 
 and ritem =
@@ -844,6 +847,8 @@ let ccreate_contract c            = mk_code (CREATE_CONTRACT c)
 (* Macro *)
 let ccarn                      k  = mk_code (CAR_N k)
 let ccdrn                      k  = mk_code (CDR_N k)
+(* Custom *)
+let ccustom m                     = mk_code (CUSTOM m)
 
 (* -------------------------------------------------------------------- *)
 
@@ -1117,6 +1122,8 @@ let cmp_code (lhs : code) (rhs : code) =
     (* Macro *)
     | CAR_N n1, CAR_N n2                             -> n1 = n2
     | CDR_N n1, CDR_N n2                             -> n1 = n2
+    (* Custom *)
+    | CUSTOM m1, CUSTOM m2                           -> m1 = m2
     | _ -> false
   in
   f lhs rhs
@@ -1354,6 +1361,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     (* Macro *)
     | CAR_N n                  -> CAR_N n
     | CDR_N n                  -> CDR_N n
+    (* Custom *)
+    | CUSTOM v                 -> CUSTOM v
   in
   let type_ = Option.map (List.map ft) !(x.type_) in
   mk_code ?type_ node
@@ -1841,6 +1850,8 @@ end = struct
     (* Macro *)
     | CAR_N n                  -> mk ~args:[mk_int n] "CAR"
     | CDR_N n                  -> mk ~args:[mk_int n] "CDR"
+    (* Custom *)
+    | CUSTOM m                 -> m
 
   let view_to_micheline (view : view_struct) : obj_micheline =
 

@@ -215,6 +215,7 @@ type 'term mterm_node  =
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
   | Mdetach           of mident * 'term detach_kind_gen * type_ * 'term
+  | Mmicheline        of Michelson.obj_micheline
   (* entrypoint *)
   | Mgetentrypoint    of type_ * mident * 'term                 (* type * address * string *)
   | Mcallview         of type_ * 'term * mident * 'term         (* type * address * string * argument *)
@@ -1227,6 +1228,9 @@ let cmp_mterm_node
   let cmp_michelson_struct (lhs : michelson_struct) (rhs : michelson_struct) : bool =
     lhs = rhs
   in
+  let cmp_obj_micheline (lhs : Michelson.obj_micheline) (rhs : Michelson.obj_micheline) : bool =
+    lhs = rhs
+  in
   let cmp_create_contract_type (lhs : create_contract_type) (rhs : create_contract_type) : bool =
     match lhs, rhs with
     | CCTz (tz1, arg1), CCTz (tz2, arg2) -> cmp_michelson_struct tz1 tz2 && cmp arg1 arg2
@@ -1272,6 +1276,7 @@ let cmp_mterm_node
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     | Mdetach (id1, dk1, ty1, f1), Mdetach (id2, dk2, ty2, f2)                         -> cmpi id1 id2 && cmp_detach_kind dk1 dk2 && cmp_type ty1 ty2 && cmp f1 f2
+    | Mmicheline m1, Mmicheline m2                                                     -> cmp_obj_micheline m1 m2
     (* entrypoint *)
     | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
@@ -1734,6 +1739,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
   | Mdetach (id, dk, ty, fa)       -> Mdetach (g id, map_detach_kind fi ft f dk, ft ty, f fa)
+  | Mmicheline m                   -> Mmicheline m
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -2018,10 +2024,10 @@ let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model :
   let map_function (ctx : 't ctx_model_gen) (fun_node : function_node) : function_node = (
     let ctx = {ctx with fun_node = Some fun_node} in
     match fun_node with
-      | Function (fs, ret)     -> Function (map_function_struct ctx fs, ret)
-      | Getter   (fs, ret)     -> Getter   (map_function_struct ctx fs, ret)
-      | View     (fs, ret, vv) -> View     (map_function_struct ctx fs, ret, vv)
-      | Entry     fs           -> Entry    (map_function_struct ctx fs)
+    | Function (fs, ret)     -> Function (map_function_struct ctx fs, ret)
+    | Getter   (fs, ret)     -> Getter   (map_function_struct ctx fs, ret)
+    | View     (fs, ret, vv) -> View     (map_function_struct ctx fs, ret, vv)
+    | Entry     fs           -> Entry    (map_function_struct ctx fs)
   ) in
 
   let ctx = mk_ctx_model custom in
@@ -2108,6 +2114,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
   | Mdetach (_, dk, _, x)                 -> f (fold_detach_kind f accu dk) x
+  | Mmicheline _                          -> accu
   (* entrypoint *)
   | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
@@ -2594,6 +2601,8 @@ let fold_map_term
     let fae, faa = f dka fa in
     g (Mdetach (id, dke, ty, fae)), faa
 
+  | Mmicheline m ->
+    g (Mmicheline m), accu
 
   (* entrypoint *)
 

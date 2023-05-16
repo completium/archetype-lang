@@ -272,8 +272,13 @@ and pp_code fmt (i : code) =
   | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
   | OPEN_CHEST               -> pp "OPEN_CHEST"
   (* Macro *)
-  | CAR_N n                    -> pp "CAR%a" pp_arg2 n
-  | CDR_N n                    -> pp "CDR%a" pp_arg n
+  | CAR_N n                  -> pp "CAR%a" pp_arg2 n
+  | CDR_N n                  -> pp "CDR%a" pp_arg n
+  (* Macro *)
+  | CUSTOM micheline         -> begin
+      let printable_micheline : Micheline_printer.node = Micheline_tools.obj_to_micheline micheline in
+      Micheline_printer.print_expr fmt printable_micheline
+    end
 (*
 let pp_simple_code fmt c =
   let pp s = Format.fprintf fmt s in
@@ -648,6 +653,10 @@ let rec pp_instruction fmt (i : instruction) =
   | Iwildcard (_, id)       -> pp "$$%s$$" id
   | Ireplace (id, v, _, fa) -> Format.fprintf fmt "replace %s, %s : %a" id v f fa
   | Ireadticket (x)         -> pp "read_ticket(%a)" f x
+  | Imicheline micheline    -> begin
+      let printable_micheline : Micheline_printer.node = Micheline_tools.obj_to_micheline micheline in
+      pp "micheline @[%a@]" Micheline_printer.print_expr printable_micheline
+    end
 
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l

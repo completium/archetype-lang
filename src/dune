@@ -17,7 +17,7 @@
   model gen_model gen_transform mtools
   printer_model gen_storage gen_api_storage
   printer_model_tools
-  micheline micheline_printer
+  micheline micheline_printer micheline_tools
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_extra mtyping

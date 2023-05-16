@@ -369,6 +369,11 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid id
         f fa
 
+    | Mmicheline micheline -> begin
+        let printable_micheline : Micheline_printer.node = Micheline_tools.obj_to_micheline micheline in
+        Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
+      end
+
     (* entrypoint *)
 
     | Mgetentrypoint (t, a, s) ->

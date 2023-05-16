@@ -1180,6 +1180,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         in
         M.Mdetach (M.mk_mident id, to_dk dk, type_to_type ty, f fa)
 
+      | A.Imicheline micheline -> M.Mmicheline micheline
+
       | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 
       | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
