@@ -1,0 +1,23 @@
+{ storage unit ;
+  parameter (contract %test (ticket unit)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         NIL (ticket unit) ;
+         ITER { DUP 2 ;
+                PUSH mutez 0 ;
+                DIG 2 ;
+                TRANSFER_TOKENS ;
+                NIL operation ;
+                NIL operation ;
+                DUP 6 ;
+                ITER { CONS } ;
+                DUP 3 ;
+                CONS ;
+                ITER { CONS } ;
+                DIP 1 { DIG 3 ; DROP 1 } ;
+                DUG 3 ;
+                DROP 1 } ;
+         DROP 1 ;
+         SWAP ;
+         PAIR } }

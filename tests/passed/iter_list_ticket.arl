@@ -1,0 +1,11 @@
+archetype iter_list_ticket
+
+entry test(wallet : contract<ticket<unit>>) {
+  effect {
+    const my_list : list<ticket<unit>> = [];
+    for element in my_list do
+      const op = make_operation(0tz, wallet, element);
+      transfer op
+    done
+  }
+}

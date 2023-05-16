@@ -1,0 +1,58 @@
+{
+  "name": "iter_list_ticket",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "test",
+      "args": [
+        {
+          "name": "wallet",
+          "type": {
+            "node": "contract",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "ticket",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "unit",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

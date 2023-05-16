@@ -1,0 +1,16 @@
+archetype fun_instr_unit_arg_side_effect
+
+variable res : nat = 0
+
+function g() : nat {
+  res += 1;
+  return 2
+}
+
+function f(a : nat) {
+  res += a + a
+}
+
+entry exec() {
+  f(g())
+}

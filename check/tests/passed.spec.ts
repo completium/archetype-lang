@@ -772,6 +772,7 @@ import * as instr_set_update_remove from '../bindings/passed/instr_set_update_re
 import * as int_to_date from '../bindings/passed/int_to_date'
 import * as invariants_on_states from '../bindings/passed/invariants_on_states'
 import * as invariants_on_variable from '../bindings/passed/invariants_on_variable'
+import * as iter_list_ticket from '../bindings/passed/iter_list_ticket'
 import * as iterable_big_map_assign from '../bindings/passed/iterable_big_map_assign'
 import * as iterable_big_map_contains from '../bindings/passed/iterable_big_map_contains'
 import * as iterable_big_map_for from '../bindings/passed/iterable_big_map_for'
@@ -14186,6 +14187,11 @@ describe('passed', async () => {
 
     const v_after = await invariants_on_variable.invariants_on_variable.get_v()
     assert(v_after.equals(new Int(1)))
+  })
+
+  it('iter_list_ticket', async () => {
+    await iter_list_ticket.iter_list_ticket.deploy({ as: alice })
+    // TODO
   })
 
   it('iterable_big_map_assign', async () => {

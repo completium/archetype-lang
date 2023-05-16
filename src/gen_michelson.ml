@@ -2158,16 +2158,16 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       | [id] -> begin
           let nenv = dec_env env in
           let env_body = add_var_env nenv id in
-          let b, _ = fe env_body b in
-          let _, si = get_pos_stack_item env_body id in
+          let b, env_body2 = fe env_body b in
+          let _, si = get_pos_stack_item env_body2 id in
           T.cseq T.[c; citer ([b] @ (if si.populated then [cdrop 1] else []))], nenv
         end
       | [k; v] -> begin
           let nenv = dec_env env in
           let env_body = add_var_env (add_var_env nenv v) k in
-          let b, _ = fe env_body b in
-          let _, si_k = get_pos_stack_item env_body k in
-          let _, si_v = get_pos_stack_item env_body v in
+          let b, env_body2 = fe env_body b in
+          let _, si_k = get_pos_stack_item env_body2 k in
+          let _, si_v = get_pos_stack_item env_body2 v in
           T.cseq T.[c; citer ([cunpair; b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
         end
       | _ -> assert false
