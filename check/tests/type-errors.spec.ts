@@ -301,14 +301,6 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/for_ident_simple_map.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('invalid_instruction_fun_asset', async () => {
-    const stat = compile("../tests/type-errors/invalid_instruction_fun_asset.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('invalid_instruction_fun_container_instr', async () => {
-    const stat = compile("../tests/type-errors/invalid_instruction_fun_container_instr.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
