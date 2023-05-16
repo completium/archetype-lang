@@ -57,6 +57,10 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/invalid_contract_type_storable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('invalid_instruction_view_fun', async () => {
+    const stat = compile("../tests/proposal-type-errors/invalid_instruction_view_fun.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_rational_literal', async () => {
     const stat = compile("../tests/proposal-type-errors/invalid_rational_literal.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

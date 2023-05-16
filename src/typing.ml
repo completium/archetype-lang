@@ -5835,23 +5835,32 @@ let rec for_instruction_r
         let opt_f_info = Env.Function.lookup env lid in
 
         if (Option.is_none opt_f_info)
-        then Env.emit_error env (loc fn, FunctionNotFound (unloc fn));
+        then begin
+          Env.emit_error env (loc fn, FunctionNotFound (unloc fn));
+          env, mki (Iseq [])
+        end
+        else begin
 
-        let f_info = Option.get opt_f_info in
+          let f_info = Option.get opt_f_info in
 
-        begin
-          match f_info.fs_retty with
-          | Void -> ()
-          | Typed _ -> Env.emit_error env (loc fn, FunctionInvalidInstructionVoid)
-        end;
+          begin
+            match f_info.fs_retty with
+            | Void -> ()
+            | Typed _ -> Env.emit_error env (loc fn, FunctionInvalidInstructionVoid)
+          end;
 
-        if (List.length f_info.fs_args <> List.length args)
-        then Env.emit_error env (loc fn, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+          if (List.length f_info.fs_args <> List.length args)
+          then begin
+            Env.emit_error env (loc fn, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+            env, mki (Iseq [])
+          end
+          else begin
+            let tys = List.map snd f_info.fs_args in
 
-        let tys = List.map snd f_info.fs_args in
-
-        let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
-        env, mki (A.Icall (None, Cid fn, args))
+            let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
+            env, mki (A.Icall (None, Cid fn, args))
+          end
+        end
       end
 
     | _ ->
