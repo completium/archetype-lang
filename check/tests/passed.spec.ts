@@ -767,6 +767,7 @@ import * as import_arl_view_use_collide from '../bindings/passed/import_arl_view
 import * as import_tz_entry_use from '../bindings/passed/import_tz_entry_use'
 import * as import_tz_view_use from '../bindings/passed/import_tz_view_use'
 import * as init_lambda from '../bindings/passed/init_lambda'
+import * as inline_michelson from '../bindings/passed/inline_michelson'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
 import * as instr_map_remove from '../bindings/passed/instr_map_remove'
@@ -14084,6 +14085,12 @@ describe('passed', async () => {
 
     const res_after = await init_lambda.init_lambda.get_res()
     assert(res_after.equals(new Int(2)))
+  })
+
+  it('inline_michelson', async () => {
+    await inline_michelson.inline_michelson.deploy({ as: alice })
+
+    await inline_michelson.inline_michelson.exec({ as: alice })
   })
 
   it('instr_list_prepend', async () => {

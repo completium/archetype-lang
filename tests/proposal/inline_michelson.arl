@@ -1,5 +1,0 @@
-archetype inline_michelson
-
-entry exec () {
-   michelson { PUSH nat 0; PUSH nat 1; DROP 2 }
-}

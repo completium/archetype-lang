@@ -1,0 +1,6 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         { PUSH nat 0 ; PUSH @var nat 1 ; DROP 2 } ;
+         NIL operation ;
+         PAIR } }

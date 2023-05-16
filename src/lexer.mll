@@ -157,7 +157,7 @@ let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3' | '4')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 let tz_expr  = "expr" ['0'-'9' 'a'-'z' 'A'-'Z']+
-let annot    = ['@' ':' '$' '&' '%' '!' '?'] (['_' '0'-'9' 'a'-'z' 'A'-'Z' '.' '%' '@'])*
+let annot    = ['@' ':' '$' '&' '%' '!' '?'] (['_' '0'-'9' 'a'-'z' 'A'-'Z' '%' '@'])+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -190,7 +190,6 @@ rule token = parse
   | date as d             { DATE (d) }
   | bytes as v            { BYTES (String.sub v 2 ((String.length v) - 2)) }
   | percent as v          { PERCENT_LIT (String.sub v 0 ((String.length v) - 1)) }
-  | annot as s            { ANNOTATION (s)}
 
   | "//"                  { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
@@ -239,6 +238,7 @@ rule token = parse
   | "?:="                 { QUESTIONCOLONEQUAL }
   | "?is"                 { QUESTIONIS }
   | eof                   { EOF }
+  | annot as s            { ANNOTATION (s)}
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)
     }

@@ -1070,6 +1070,8 @@ recupdate_item:
 
 %inline mich_annot:
 | x=ANNOTATION { x }
+| x=ADDRESS { ("@" ^ x) }
+| x=PIDENT { ("%" ^ x) }
 
 %inline mich_annots:
 | xs=mich_annot* { xs }
