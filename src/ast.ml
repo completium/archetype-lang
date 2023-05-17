@@ -369,6 +369,7 @@ and pterm_node  =
   | Pleft of type_ * pterm
   | Pright of type_ * pterm
   | Plambda of type_ * lident * type_ * pterm
+  | Plambda_michelson of type_ * type_ * Michelson.obj_micheline
   | Pcast of type_ * type_ * pterm
   | Pself of lident
   | Pternary of pterm * pterm * pterm
@@ -925,6 +926,7 @@ end = struct
     | Pleft (_, p) -> is_literal p
     | Pright (_, p) -> is_literal p
     | Plambda _ -> false
+    | Plambda_michelson _ -> true
     | Pcast _ -> false
     | Pself _ -> false
     | Pternary _ -> false

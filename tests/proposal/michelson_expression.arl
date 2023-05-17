@@ -1,0 +1,9 @@
+archetype michelson_expression
+
+variable res : string = ""
+
+entry exec () {
+  const a = 1;
+  const b = 2;
+  res := michelson<string> { ADD } (a, b);
+}

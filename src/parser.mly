@@ -89,6 +89,7 @@
 %token ITER
 %token ITERABLE_BIG_MAP
 %token LAMBDA
+%token LAMBDA_MICHELSON
 %token LBRACE
 %token LBRACKET
 %token LEFT
@@ -953,6 +954,9 @@ simple_expr_r:
 
  | LAMBDA LPAREN id=ident IMPLY e=expr RPAREN
      { Elambda (None, id, None, e) }
+
+ | LAMBDA_MICHELSON LESS it=type_t COMMA rt=type_t GREATER LPAREN body=mich_sequence RPAREN
+     { Elambda_michelson (it, rt, body) }
 
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }

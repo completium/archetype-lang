@@ -1,0 +1,12 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         LAMBDA string nat { SIZE } ;
+         DUP ;
+         PUSH string "mystr" ;
+         EXEC ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

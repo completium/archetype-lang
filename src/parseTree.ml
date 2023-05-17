@@ -168,6 +168,7 @@ and expr_unloc =
   | Eunit
   | Etz_expr       of string
   | Emicheline     of micheline_t
+  | Elambda_michelson of type_t * type_t * micheline_t
   | Einvalid
 
 and branch = (pattern list * expr)

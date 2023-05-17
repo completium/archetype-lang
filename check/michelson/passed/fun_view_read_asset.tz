@@ -1,0 +1,35 @@
+{ storage (map nat string) ;
+  parameter unit ;
+  code { LAMBDA
+           (map nat string)
+           string
+           { PUSH unit Unit ;
+             DUP 2 ;
+             PUSH nat 0 ;
+             GET ;
+             IF_NONE
+               { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             SWAP ;
+             DROP 1 ;
+             SWAP ;
+             DROP 1 } ;
+         SWAP ;
+         CDR ;
+         NIL operation ;
+         PAIR ;
+         DIP 1 { DROP 1 } } ;
+  view "v"
+       unit
+       string
+       { CDR ;
+         UNIT ;
+         DUP 2 ;
+         PUSH nat 0 ;
+         GET ;
+         IF_NONE
+           { PUSH string "my_asset" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 1 } } }

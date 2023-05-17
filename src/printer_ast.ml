@@ -607,6 +607,15 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (rt, id, at, e)
 
+    | Plambda_michelson (it, rt, body) ->
+      let pp fmt (it, rt, body) =
+        Format.fprintf fmt "lambda_michelson<%a, %a>(@[%a@])"
+          pp_type it
+          pp_type rt
+          Micheline_printer.print_expr (Micheline_tools.obj_to_micheline body)
+      in
+      (pp_no_paren pp) fmt (it, rt, body)
+
     | Pnone -> pp_str fmt "none"
 
     | Psome a ->

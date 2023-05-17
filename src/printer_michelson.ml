@@ -528,6 +528,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Iloopleft (l, _, b)        -> pp "@[loop_left (%a) do@\n  @[%a@]@\ndone@]" f l f b
   | Ilambda (rt, id, at, e)    -> pp "lambda<%a>((%s : %a) -> %a)" pp_type rt id pp_type at f e
+  | Ilambda_michelson (it, rt, body) -> pp "lambda_michelson<%a, %a>(@[%a@])" pp_type it pp_type rt Micheline_printer.print_expr (Micheline_tools.obj_to_micheline body)
   | Izop op -> begin
       match op with
       | Znow                -> pp "now"

@@ -1674,6 +1674,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlitrecord _l   -> assert false
     | Mlitevent  _l   -> assert false
     | Mlambda (_rt, _id, _at, _e) -> assert false
+    | Mlambda_michelson (_it, _rt, _body) -> assert false
 
     (* access *)
 

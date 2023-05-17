@@ -853,10 +853,10 @@ let to_ir (model : M.model) : T.ir =
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
     | Mmakeevent (t, id, a)          -> T.Iunop (Uemit (to_type model t, Some (M.unloc_mident id)), f a)
     | Mcreatecontract (cc, d, a) -> begin
-      match cc with
-      | CCTz (tz, arg) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract tz.ms_content, f d, f a, f arg))
-      | _ -> assert false
-    end
+        match cc with
+        | CCTz (tz, arg) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract tz.ms_content, f d, f a, f arg))
+        | _ -> assert false
+      end
 
 
 
@@ -974,6 +974,7 @@ let to_ir (model : M.model) : T.ir =
           T.Irecord ri
       end
     | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, M.unloc_mident id, ft at, f e)
+    | Mlambda_michelson (it, rt, body) -> T.Ilambda_michelson (ft it, ft rt, body)
 
     (* access *)
 
@@ -2187,6 +2188,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let nenv = rm_var_env env id in
 
       T.clambda (rt, at, ([e] @ rm)), nenv
+    end
+
+  | Ilambda_michelson (it, rt, body) -> begin
+      let body = T.remove_seq_obj_micheline body in
+      T.clambda (it, rt, (List.map T.ccustom body)), inc_env env
     end
 
   | Izop op -> begin

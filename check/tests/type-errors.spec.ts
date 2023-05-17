@@ -337,6 +337,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/fun_instr_error_return_unit.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('fun_view_error', async () => {
+    const stat = compile("../tests/type-errors/fun_view_error.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

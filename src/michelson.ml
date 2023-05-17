@@ -392,6 +392,7 @@ and instruction =
   | Iiter        of ident list * instruction * instruction
   | Iloopleft    of instruction * ident * instruction
   | Ilambda      of type_ * ident * type_ * instruction
+  | Ilambda_michelson of type_ * type_ * obj_micheline
   | Izop         of z_operator
   | Iunop        of un_operator * instruction
   | Ibinop       of bin_operator * instruction * instruction
@@ -2018,3 +2019,7 @@ let to_tz_micheline (input : obj_micheline) : tz_micheline =
 let micheline_to_tz_micheline (input : micheline) : tz_micheline =
   let obj : obj_micheline = Oarray (input.code @ input.views) in
   to_tz_micheline obj
+
+let remove_seq_obj_micheline = function
+  | Oarray v -> v
+  | v -> [v]

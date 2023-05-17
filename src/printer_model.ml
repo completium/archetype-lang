@@ -632,6 +632,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (rt, id, at, e)
 
+    | Mlambda_michelson (it, rt, body) ->
+      let pp fmt (it, rt, body) =
+        Format.fprintf fmt "lambda_michelson<%a, %a>(@[%a@])"
+          pp_type it
+          pp_type rt
+          Micheline_printer.print_expr (Micheline_tools.obj_to_micheline body)
+      in
+      pp fmt (it, rt, body)
 
     (* access *)
 

@@ -1,4 +1,4 @@
-archetype inline_michelson
+archetype michelson_instruction
 
 entry exec () {
   michelson { PUSH nat 0; PUSH @var nat 1; DROP 2 }

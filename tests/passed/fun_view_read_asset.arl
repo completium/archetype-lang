@@ -1,0 +1,16 @@
+archetype fun_view_read_asset
+
+asset my_asset {
+  a : nat;
+  b : string;
+} initialized with {
+  {0; "mystr"}
+}
+
+function f() : string {
+  return my_asset[0].b
+}
+
+view v () : string {
+  return f()
+}

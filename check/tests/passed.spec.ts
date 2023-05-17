@@ -712,6 +712,7 @@ import * as fun_instr_unit_arg_side_effect from '../bindings/passed/fun_instr_un
 import * as fun_unit from '../bindings/passed/fun_unit'
 import * as fun_view_pure from '../bindings/passed/fun_view_pure'
 import * as fun_view_read from '../bindings/passed/fun_view_read'
+import * as fun_view_read_asset from '../bindings/passed/fun_view_read_asset'
 import * as function_with_nat_to_string from '../bindings/passed/function_with_nat_to_string'
 import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
 import * as get_in_require_failif from '../bindings/passed/get_in_require_failif'
@@ -767,7 +768,6 @@ import * as import_arl_view_use_collide from '../bindings/passed/import_arl_view
 import * as import_tz_entry_use from '../bindings/passed/import_tz_entry_use'
 import * as import_tz_view_use from '../bindings/passed/import_tz_view_use'
 import * as init_lambda from '../bindings/passed/init_lambda'
-import * as inline_michelson from '../bindings/passed/inline_michelson'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
 import * as instr_map_remove from '../bindings/passed/instr_map_remove'
@@ -824,6 +824,8 @@ import * as map_asset from '../bindings/passed/map_asset'
 import * as match_entrypoint from '../bindings/passed/match_entrypoint'
 import * as max_tez from '../bindings/passed/max_tez'
 import * as method_in_dorequire_or_dofailif from '../bindings/passed/method_in_dorequire_or_dofailif'
+import * as michelson_instruction from '../bindings/passed/michelson_instruction'
+import * as michelson_lambda from '../bindings/passed/michelson_lambda'
 import * as miles_with_expiration_spec from '../bindings/passed/miles_with_expiration_spec'
 import * as mod_rat from '../bindings/passed/mod_rat'
 import * as multi_e from '../bindings/passed/multi_e'
@@ -13441,15 +13443,22 @@ describe('passed', async () => {
   it('fun_view_pure', async () => {
     await fun_view_pure.fun_view_pure.deploy({ as: alice })
 
-    const res = await fun_view_pure.fun_view_pure.view_my_view({as: alice});
+    const res = await fun_view_pure.fun_view_pure.view_my_view({ as: alice });
     assert(res && res.equals(new Nat(2)))
   })
 
   it('fun_view_read', async () => {
     await fun_view_read.fun_view_read.deploy({ as: alice })
 
-    const res = await fun_view_read.fun_view_read.view_my_view({as: alice});
+    const res = await fun_view_read.fun_view_read.view_my_view({ as: alice });
     assert(res && res.equals(new Nat(3)))
+  })
+
+  it('fun_view_read_asset', async () => {
+    await fun_view_read_asset.fun_view_read_asset.deploy({ as: alice })
+
+    const res = await fun_view_read_asset.fun_view_read_asset.view_v({ as: alice });
+    assert(res == "mystr")
   })
 
   it('function_with_nat_to_string', async () => {
@@ -14087,12 +14096,6 @@ describe('passed', async () => {
     assert(res_after.equals(new Int(2)))
   })
 
-  it('inline_michelson', async () => {
-    await inline_michelson.inline_michelson.deploy({ as: alice })
-
-    await inline_michelson.inline_michelson.exec({ as: alice })
-  })
-
   it('instr_list_prepend', async () => {
     await instr_list_prepend.instr_list_prepend.deploy({ as: alice })
 
@@ -14308,7 +14311,6 @@ describe('passed', async () => {
 
   it('iter_list_ticket', async () => {
     await iter_list_ticket.iter_list_ticket.deploy({ as: alice })
-    // TODO
   })
 
   it('iterable_big_map_assign', async () => {
@@ -14915,6 +14917,24 @@ describe('passed', async () => {
     assert(my_asset_after[1][1].equals(new Nat(1)))
     assert(my_asset_after[2][0] == "id2")
     assert(my_asset_after[2][1].equals(new Nat(2)))
+  })
+
+  it('michelson_instruction', async () => {
+    await michelson_instruction.michelson_instruction.deploy({ as: alice })
+
+    await michelson_instruction.michelson_instruction.exec({ as: alice })
+  })
+
+  it('michelson_lambda', async () => {
+    await michelson_lambda.michelson_lambda.deploy({ as: alice })
+
+    const res_before = await michelson_lambda.michelson_lambda.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await michelson_lambda.michelson_lambda.exec({ as: alice })
+
+    const res_after = await michelson_lambda.michelson_lambda.get_res()
+    assert(res_after.equals(new Nat(5)))
   })
 
   it('miles_with_expiration_spec', async () => {

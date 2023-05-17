@@ -71,6 +71,7 @@
       "iter"                , ITER                ;
       "iterable_big_map"    , ITERABLE_BIG_MAP    ;
       "lambda"              , LAMBDA              ;
+      "lambda_michelson"    , LAMBDA_MICHELSON    ;
       "left"                , LEFT                ;
       "let"                 , LET                 ;
       "list"                , LIST                ;

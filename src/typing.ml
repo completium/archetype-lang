@@ -4340,6 +4340,12 @@ let rec for_xexpr
           (A.Plambda (Option.get_dfl A.vtunit at, pid, Option.get_dfl A.vtunit rt, e))
       end
 
+    | Elambda_michelson (it, rt, body) -> begin
+      let it = for_type_exn env it in
+      let rt = for_type_exn env rt in
+      let body = Micheline_tools.pt_to_obj body in
+      mk_sp (Some (A.Tlambda (it, rt))) (A.Plambda_michelson (it, rt, body))
+    end
     | Ematchwith (e, bs) -> begin
         match for_gen_matchwith mode capture env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
@@ -5359,6 +5365,7 @@ let rec for_instruction_r
               let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               check_side_effect();
+              let env = Env.StorageUsage.update env A.SUwrite in
               begin
                 match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->

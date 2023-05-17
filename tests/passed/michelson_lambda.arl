@@ -1,0 +1,8 @@
+archetype michelson_lambda
+
+variable res : nat = 0
+
+entry exec () {
+  const f : lambda<string, nat> = lambda_michelson<string, nat>({SIZE});
+  res := exec_lambda(f, "mystr")
+}

@@ -124,8 +124,8 @@ let pp_id_scope fmt = function
 
 let pp_lid fmt lid =
   Format.fprintf fmt "%a%a"
-  pp_id_scope (fst lid)
-  pp_id (snd lid)
+    pp_id_scope (fst lid)
+    pp_id (snd lid)
 
 let rec pp_type fmt (e, a) =
   let f fmt x = pp_type fmt x in
@@ -497,7 +497,7 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt tr
 
   | Edetach (id, x, f) ->
-      Format.fprintf fmt "detach %a as %a : %a" pp_simple_expr x pp_id id pp_simple_expr f
+    Format.fprintf fmt "detach %a as %a : %a" pp_simple_expr x pp_id id pp_simple_expr f
 
   | Edorequire (x, y) ->
 
@@ -802,9 +802,17 @@ let rec pp_expr outer pos fmt a =
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
   | Emicheline micheline -> begin
-    let printable_micheline : Micheline_printer.node = Micheline_tools.pt_to_micheline micheline in
-    Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
-  end
+      let printable_micheline : Micheline_printer.node = Micheline_tools.pt_to_micheline micheline in
+      Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
+    end
+
+  | Elambda_michelson (it, rt, body) -> begin
+      let printable_micheline : Micheline_printer.node = Micheline_tools.pt_to_micheline body in
+      Format.fprintf fmt "lambda_michelson<%a, %a>(@[%a@])"
+        pp_type it
+        pp_type rt
+        Micheline_printer.print_expr printable_micheline
+    end
 
 and pp_else fmt (e : expr option) =
   match e with

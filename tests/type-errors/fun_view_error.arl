@@ -1,0 +1,16 @@
+archetype fun_view_error
+
+asset my_asset {
+  a : nat;
+  b : string;
+}
+
+function f() : unit {
+  my_asset.add({1; "abc"});
+  return Unit
+}
+
+view v () {
+  const u = f();
+  do_require(u = Unit, "ERROR")
+}
