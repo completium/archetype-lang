@@ -375,6 +375,7 @@ and pterm_node  =
   | Pternary of pterm * pterm * pterm
   | Pcreatecontract of pterm * pterm * create_contract_type
   | Ptz_expr of string
+  | Pmicheline_expr of type_ * Michelson.obj_micheline * pterm list
 [@@deriving show {with_path = false}]
 
 and pterm_arg =
@@ -932,5 +933,6 @@ end = struct
     | Pternary _ -> false
     | Pcreatecontract _ -> false
     | Ptz_expr _ -> true
+    | Pmicheline_expr _ -> false
 
 end

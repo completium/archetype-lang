@@ -584,6 +584,13 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (rt, id, at, e)
 
+  | Elambda_michelson (it, rt, body) -> begin
+      Format.fprintf fmt "lambda_michelson<%a, %a>(@[%a@])"
+        pp_type it
+        pp_type rt
+        Micheline_printer.print_expr (Micheline_tools.pt_to_micheline body)
+    end
+
   | Eassign (op, lhs, rhs) ->
 
     let prec = get_prec_from_assignment_operator op in
@@ -806,12 +813,11 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "michelson @[%a@]" Micheline_printer.print_expr printable_micheline
     end
 
-  | Elambda_michelson (it, rt, body) -> begin
-      let printable_micheline : Micheline_printer.node = Micheline_tools.pt_to_micheline body in
-      Format.fprintf fmt "lambda_michelson<%a, %a>(@[%a@])"
-        pp_type it
-        pp_type rt
-        Micheline_printer.print_expr printable_micheline
+  | Emicheline_expr (t, m, a) -> begin
+      Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
+        pp_type t
+        Micheline_printer.print_expr (Micheline_tools.pt_to_micheline m)
+        (pp_list "; " pp_simple_expr) a
     end
 
 and pp_else fmt (e : expr option) =

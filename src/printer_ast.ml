@@ -672,6 +672,16 @@ let rec pp_pterm fmt (pterm : pterm) =
         Format.pp_print_string fmt v
       in
       (pp_no_paren pp) fmt v
+
+    | Pmicheline_expr (t, m, a) -> begin
+        let pp fmt (t, m, a) =
+          Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
+          pp_type t
+          Micheline_printer.print_expr (Micheline_tools.obj_to_micheline m)
+          (pp_list "; " pp_pterm) a
+        in
+        (pp_no_paren pp) fmt (t, m, a)
+      end
   in
   pp_struct_poly pp_node fmt pterm
 

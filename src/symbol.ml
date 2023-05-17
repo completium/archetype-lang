@@ -364,6 +364,7 @@ let string_of_symbol = function
   | X (N N_snl_SEMI_COLON_mich_node_) -> "a list of mich node"
   | X (N N_snl_SEMI_COLON_field_) -> "a non empty list of field"
   | X (N N_snl_SEMI_COLON_cf_) -> "a non empty list of constant"
+  | X (N N_snl_SEMI_COLON_simple_expr_) -> "a non list of simple expression"
   | X (N N_snl_COMMA_type_t_) -> "a non empty list of type"
   | X (N N_snl_COMMA_simple_expr_) -> ""
   | X (N N_snl_COMMA_parameter_) -> "a non empty list of parameter"

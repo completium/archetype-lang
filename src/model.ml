@@ -279,6 +279,7 @@ type 'term mterm_node  =
   | Mlitevent         of (ident * 'term) list
   | Mlambda           of type_ * mident * type_ * 'term
   | Mlambda_michelson of type_ * type_ * Michelson.obj_micheline
+  | Mmicheline_expr   of type_ * Michelson.obj_micheline * 'term list
   (* access *)
   | Mdot              of 'term * mident
   | Mdotassetfield    of mident * 'term * mident
@@ -1341,6 +1342,7 @@ let cmp_mterm_node
     | Mlitevent l1, Mlitevent l2                                                       -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlambda (rt1, id1, at1, e1), Mlambda (rt2, id2, at2, e2)                         -> cmp_type rt1 rt2 && cmpi id1 id2 && cmp_type at1 at2 && cmp e1 e2
     | Mlambda_michelson (it1, rt1, body1), Mlambda_michelson (it2, rt2, body2)         -> cmp_type it1 it2 && cmp_type rt1 rt2 && cmp_obj_micheline body1 body2
+    | Mmicheline_expr (t1, m1, a1), Mmicheline_expr (t2, m2, a2)                       -> cmp_type t1 t2 && cmp_obj_micheline m1 m2 && List.for_all2 cmp a1 a2
     (* access *)
     | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
     | Mdotassetfield (an1, k1, fn1), Mdotassetfield (an2, k2, fn2)                     -> cmpi an1 an2 && cmp k1 k2 && cmpi fn1 fn2
@@ -1805,6 +1807,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitevent l                    -> Mlitevent (List.map ((fun (x, y) -> (x, f y))) l)
   | Mlambda (rt, id, at, e)        -> Mlambda (ft rt, g id, ft at, f e)
   | Mlambda_michelson (it, rt, body) -> Mlambda_michelson (ft it, ft rt, body)
+  | Mmicheline_expr (t, m, a)      -> Mmicheline_expr (ft t, m, List.map f a)
   (* access *)
   | Mdot (e, i)                    -> Mdot (f e, g i)
   | Mdotassetfield (an, k, fn)     -> Mdotassetfield (g an, f k, g fn)
@@ -2181,6 +2184,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mlitevent l                           -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   | Mlambda (_, _, _, e)                  -> f accu e
   | Mlambda_michelson (_, _, _)           -> accu
+  | Mmicheline_expr (_, _, a)             -> List.fold_left (fun accu x -> f accu x) accu a
   (* access *)
   | Mdot (e, _)                           -> f accu e
   | Mdotassetfield (_, k, _)              -> f accu k
@@ -2879,6 +2883,16 @@ let fold_map_term
 
   | Mlambda_michelson (it, rt, body) ->
     g (Mlambda_michelson (it, rt, body)), accu
+
+  | Mmicheline_expr (t, m, a) ->
+    let ae, aa =
+      List.fold_left
+        (fun (pterms, accu) v ->
+           let vn, accu = f accu v in
+           pterms @ [vn], accu) ([], accu) a
+    in
+    g (Mmicheline_expr (t, m, ae)), aa
+
 
   (* dot *)
 

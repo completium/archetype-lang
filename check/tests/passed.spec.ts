@@ -824,6 +824,7 @@ import * as map_asset from '../bindings/passed/map_asset'
 import * as match_entrypoint from '../bindings/passed/match_entrypoint'
 import * as max_tez from '../bindings/passed/max_tez'
 import * as method_in_dorequire_or_dofailif from '../bindings/passed/method_in_dorequire_or_dofailif'
+import * as michelson_expression from '../bindings/passed/michelson_expression'
 import * as michelson_instruction from '../bindings/passed/michelson_instruction'
 import * as michelson_lambda from '../bindings/passed/michelson_lambda'
 import * as miles_with_expiration_spec from '../bindings/passed/miles_with_expiration_spec'
@@ -14917,6 +14918,18 @@ describe('passed', async () => {
     assert(my_asset_after[1][1].equals(new Nat(1)))
     assert(my_asset_after[2][0] == "id2")
     assert(my_asset_after[2][1].equals(new Nat(2)))
+  })
+
+  it('michelson_expression', async () => {
+    await michelson_expression.michelson_expression.deploy({ as: alice })
+
+    const res_before = await michelson_expression.michelson_expression.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await michelson_expression.michelson_expression.exec({ as: alice })
+
+    const res_after = await michelson_expression.michelson_expression.get_res()
+    assert(res_after.equals(new Nat(3)))
   })
 
   it('michelson_instruction', async () => {

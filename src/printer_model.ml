@@ -641,6 +641,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (it, rt, body)
 
+    | Mmicheline_expr (t, m, a) ->
+      let pp fmt (t, m, a) =
+        Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
+          pp_type t
+          Micheline_printer.print_expr (Micheline_tools.obj_to_micheline m)
+          (pp_list "; " f) a
+      in
+      pp fmt (t, m, a)
+
     (* access *)
 
     | Mdot (e, i) ->

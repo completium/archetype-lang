@@ -413,6 +413,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Pright (t, x)                        -> M.Mright (type_to_type t, f x)
       | A.Plambda (rt, id, at, e)              -> M.Mlambda (type_to_type rt, M.mk_mident id, type_to_type at, f e)
       | A.Plambda_michelson (it, rt, body)     -> M.Mlambda_michelson (type_to_type it, type_to_type rt, body)
+      | A.Pmicheline_expr (t, m, a)            -> M.Mmicheline_expr (type_to_type t, m, List.map f a)
       | A.Pcast (src, dst, v)                  -> begin
           let v = f v in
           match src, dst, v with

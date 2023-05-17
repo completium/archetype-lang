@@ -157,6 +157,7 @@ and expr_unloc =
   | Eoption        of option_
   | Eor            of or_
   | Elambda        of type_t option * lident * type_t option * expr
+  | Elambda_michelson of type_t * type_t * micheline_t
   | Eentrypoint    of type_t * expr * expr * expr option
   | Ecallview      of type_t * expr * expr * expr
   | Eunpack        of type_t * expr
@@ -168,7 +169,7 @@ and expr_unloc =
   | Eunit
   | Etz_expr       of string
   | Emicheline     of micheline_t
-  | Elambda_michelson of type_t * type_t * micheline_t
+  | Emicheline_expr of type_t * micheline_t * expr list
   | Einvalid
 
 and branch = (pattern list * expr)

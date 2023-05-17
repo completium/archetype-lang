@@ -1,9 +1,9 @@
 archetype michelson_expression
 
-variable res : string = ""
+variable res : nat = 0
 
 entry exec () {
   const a = 1;
   const b = 2;
-  res := michelson<string> { ADD } (a, b);
+  res := michelson<nat> { ADD } [a; b]
 }

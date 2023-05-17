@@ -832,7 +832,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
     | Mdetach _  -> emit_error (UnsupportedTerm ("Mdetach"))
-    | Mmicheline micheline  -> T.Imicheline micheline
+    | Mmicheline micheline  -> T.Imicheline (micheline, [], [])
 
     (* entrypoint *)
 
@@ -975,6 +975,7 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, M.unloc_mident id, ft at, f e)
     | Mlambda_michelson (it, rt, body) -> T.Ilambda_michelson (ft it, ft rt, body)
+    | Mmicheline_expr (t, m, a) -> T.Imicheline (m, [ft t], List.map f a)
 
     (* access *)
 
@@ -2455,7 +2456,15 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         end
     end
 
-  | Imicheline micheline -> T.ccustom micheline, env
+  | Imicheline (micheline, ts, args) -> begin
+      let env, l = List.fold_left (fun (env, accu) x -> begin
+        let x, env = fe env x in
+        (env, accu @ [x])
+      end) (env, []) args in
+      let env = List.fold_left (fun env _x -> dec_env env) env args in
+      let env = List.fold_left (fun env _x -> inc_env env) env ts in
+      T.cseq (l @ (List.map T.ccustom (T.remove_seq_obj_micheline micheline))), env
+    end
 
 and process_data (d : T.data) : T.data =
   let rec aux (d : T.data) : T.data =

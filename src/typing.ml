@@ -4341,11 +4341,11 @@ let rec for_xexpr
       end
 
     | Elambda_michelson (it, rt, body) -> begin
-      let it = for_type_exn env it in
-      let rt = for_type_exn env rt in
-      let body = Micheline_tools.pt_to_obj body in
-      mk_sp (Some (A.Tlambda (it, rt))) (A.Plambda_michelson (it, rt, body))
-    end
+        let it = for_type_exn env it in
+        let rt = for_type_exn env rt in
+        let body = Micheline_tools.pt_to_obj body in
+        mk_sp (Some (A.Tlambda (it, rt))) (A.Plambda_michelson (it, rt, body))
+      end
     | Ematchwith (e, bs) -> begin
         match for_gen_matchwith mode capture env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
@@ -4521,6 +4521,12 @@ let rec for_xexpr
         mk_sp
           (Some rt)
           (A.Pcall (None, A.Cconst CcallView, [ty], [AIdent id; AExpr a; AExpr c]))
+      end
+    | Emicheline_expr (t, m, a) -> begin
+        let t = for_type_exn env t in
+        let m = Micheline_tools.pt_to_obj m in
+        let a = List.map (for_xexpr env) a in
+        mk_sp (Some t) (A.Pmicheline_expr (t, m, a))
       end
     | Evar       _
     | Evaropt    _

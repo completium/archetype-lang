@@ -412,7 +412,7 @@ and instruction =
   | Iwildcard    of type_ * ident
   | Ireplace     of ident * ident * klv * instruction
   | Ireadticket  of instruction
-  | Imicheline   of obj_micheline
+  | Imicheline   of obj_micheline * type_ list * instruction list
 [@@deriving show {with_path = false}]
 
 and ritem =
