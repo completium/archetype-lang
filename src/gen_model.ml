@@ -1330,7 +1330,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let loc   = function_.loc in
     let get_ret_type rty = type_to_type (match rty with | A.Typed ty ->  ty | A.Void -> A.vtunit) in
     let to_vv = function | A.VVonchain -> M.VVonchain | A.VVoffchain -> M.VVoffchain | A.VVonoffchain -> M.VVonoffchain in
-    let side_effect = match function_.storage_usage with | A.SUpure -> false | A.SUread -> false | A.SUwrite -> true in
+    let side_effect = function_.side_effect in
     let f     = match function_.kind with
       | FKfunction -> (fun x -> M.Function (x, (match function_.return with | A.Typed ty -> M.Typed (type_to_type ty) | A.Void -> M.Void)))
       | FKgetter   -> (fun x -> M.Getter (x, get_ret_type function_.return))

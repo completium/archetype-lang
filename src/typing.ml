@@ -1687,7 +1687,7 @@ type fundecl = {
   fs_args  : (A.lident * A.ptyp) list;
   fs_retty : A.returned_fun_type;
   fs_body  : A.instruction;
-  fs_storage_usage : A.storage_usage;
+  fs_side_effect : bool;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1932,10 +1932,9 @@ module Env : sig
     val resolve_path : t -> string -> string
   end
 
-  module StorageUsage : sig
-    val get : t -> A.storage_usage
-    val set : t -> A.storage_usage -> t
-    val update : t -> A.storage_usage -> t
+  module FunctionProperties : sig
+    val with_side_effect : t -> bool
+    val set_side_effect : t -> bool -> t
 
     val with_return : t -> bool
     val set_return : t -> bool -> t
@@ -1977,16 +1976,16 @@ end = struct
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
   and t = {
-    env_error    : ecallback;
-    env_bindings : components;
-    env_loaded   : (t importdecl) Mlib.t ref;
-    env_name     : A.lident;
-    env_context  : assetdecl list;
-    env_locals   : Sid.t;
-    env_scopes   : Sid.t list;
-    env_path     : string;
-    env_su       : A.storage_usage;
-    env_with_ret : bool;
+    env_error            : ecallback;
+    env_bindings         : components;
+    env_loaded           : (t importdecl) Mlib.t ref;
+    env_name             : A.lident;
+    env_context          : assetdecl list;
+    env_locals           : Sid.t;
+    env_scopes           : Sid.t list;
+    env_path             : string;
+    env_with_side_effect : bool;
+    env_with_ret         : bool;
   }
 
   and cache = (t importdecl) Mlib.t ref
@@ -2004,7 +2003,7 @@ end = struct
       env_locals   = Sid.empty;
       env_scopes   = [];
       env_path     = Option.map_dfl (fun x -> x) "." path;
-      env_su       = A.SUpure;
+      env_with_side_effect = false;
       env_with_ret = false;
     }
 
@@ -2449,25 +2448,12 @@ end = struct
         end
   end
 
-  module StorageUsage = struct
-    let get_level (su : A.storage_usage) =
-      match su with
-      | SUpure -> 0
-      | SUread -> 1
-      | SUwrite -> 2
+  module FunctionProperties = struct
+    let with_side_effect (env : t) : bool =
+      env.env_with_side_effect
 
-    let get (env : t) : A.storage_usage =
-      env.env_su
-
-    let set (env : t) (su : A.storage_usage) : t =
-      {env with env_su = su}
-
-    let update (env : t) (su : A.storage_usage) : t =
-      let lvl_env = get_level env.env_su in
-      let lvl_su = get_level su in
-      if (lvl_env < lvl_su)
-      then set env su
-      else env
+    let set_side_effect (env : t) (v : bool) : t =
+      {env with env_with_side_effect = v}
 
     let with_return (env : t) : bool =
       env.env_with_ret
@@ -3996,8 +3982,8 @@ let rec for_xexpr
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
       begin
-        match mode.em_kind, fun_.fs_storage_usage with
-        | `View, A.SUwrite -> Env.emit_error env (loc tope, CannotCallSideEffectFunctionInView)
+        match mode.em_kind, fun_.fs_side_effect with
+        | `View, true -> Env.emit_error env (loc tope, CannotCallSideEffectFunctionInView)
         | _ -> ()
       end;
 
@@ -5257,7 +5243,7 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : env * (A.lvalue * A.pt
           | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
-        let env = Env.StorageUsage.update env A.SUwrite in
+        let env = Env.FunctionProperties.set_side_effect env true in
         env, Some (`Var x, vd.vr_type)
 
       | _ ->
@@ -5371,7 +5357,7 @@ let rec for_instruction_r
               let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               check_side_effect();
-              let env = Env.StorageUsage.update env A.SUwrite in
+              let env = Env.FunctionProperties.set_side_effect env true in
               begin
                 match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
@@ -5583,7 +5569,7 @@ let rec for_instruction_r
           A.TToperation (e)
 
       in
-      let env = Env.StorageUsage.update env A.SUwrite in
+      let env = Env.FunctionProperties.set_side_effect env true in
       env, mki (Itransfer tr)
 
     | Edetach (id, v, f) -> begin
@@ -5799,7 +5785,7 @@ let rec for_instruction_r
     | Ereturn re ->
       if Option.is_none ret then
         Env.emit_error env (loc re, ReturnInVoidContext);
-      let env = Env.StorageUsage.set_return env true in
+      let env = Env.FunctionProperties.set_return env true in
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
     | Evar (x, ty, v, c) ->
@@ -5958,12 +5944,12 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let env, args = for_args_decl env fdecl.args in
       let rty = Option.bind (for_type env) fdecl.ret_t in
       let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
-      let env = Env.StorageUsage.set env A.SUpure in
-      let env = Env.StorageUsage.set_return env false in
+      let env = Env.FunctionProperties.set_side_effect env false in
+      let env = Env.FunctionProperties.set_return env false in
       let env, body = for_instruction ~ret:rty place env fdecl.body in
-      let storage_usage = Env.StorageUsage.get env in
+      let side_effect = Env.FunctionProperties.with_side_effect env in
 
-      if not (Env.StorageUsage.with_return env) && Option.is_some rty
+      if not (Env.FunctionProperties.with_return env) && Option.is_some rty
       then (Env.emit_error env (loc fdecl.name, FunctionNoReturn));
 
       if not (List.exists Option.is_none args) then
@@ -5975,7 +5961,7 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
               fs_args  = List.pmap id args;
               fs_retty = (match rty with | Some ty -> Typed ty | None -> Void);
               fs_body  = body;
-              fs_storage_usage = storage_usage })
+              fs_side_effect = side_effect })
         else (env, None)
       else (env, None))
 
@@ -6834,13 +6820,13 @@ let functions_of_fdecls fdecls =
         name = x; typ = Some ty; default = None; shadow  = false; loc = loc x;
       }) decl.fs_args in
 
-    A.{ name          = decl.fs_name;
-        kind          = decl.fs_kind;
-        args          = args;
-        body          = decl.fs_body;
-        return        = decl.fs_retty;
-        storage_usage = decl.fs_storage_usage;
-        loc           = loc decl.fs_name; }
+    A.{ name        = decl.fs_name;
+        kind        = decl.fs_kind;
+        args        = args;
+        body        = decl.fs_body;
+        return      = decl.fs_retty;
+        side_effect = decl.fs_side_effect;
+        loc         = loc decl.fs_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 

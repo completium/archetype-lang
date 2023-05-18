@@ -520,20 +520,14 @@ type returned_fun_type =
   | Void
 [@@deriving show {with_path = false}]
 
-type storage_usage =
-| SUpure
-| SUread
-| SUwrite
-[@@deriving show {with_path = false}]
-
 type function_ = {
-  name          : lident;
-  kind          : fun_kind;
-  args          : lident decl_gen list;
-  body          : instruction;
-  return        : returned_fun_type;
-  storage_usage : storage_usage;
-  loc           : Location.t [@opaque];
+  name        : lident;
+  kind        : fun_kind;
+  args        : lident decl_gen list;
+  body        : instruction;
+  return      : returned_fun_type;
+  side_effect : bool;
+  loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -719,8 +713,8 @@ let mk_label_term ?label ?error ?(loc = Location.dummy) term =
 let mk_variable ?(loc = Location.dummy) decl kind =
   { decl; kind; loc }
 
-let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return storage_usage =
-  { name; kind; args; body; return; storage_usage; loc }
+let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body return side_effect =
+  { name; kind; args; body; return; side_effect; loc }
 
 let mk_transition ?(trs = []) from =
   { from; trs }

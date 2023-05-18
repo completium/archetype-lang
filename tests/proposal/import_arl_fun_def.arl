@@ -1,0 +1,25 @@
+archetype import_arl_fun_def
+
+asset my_asset {
+  k : nat;
+  v : string;
+} initialized with {
+  {2; "mystr"}
+}
+
+function f_pure() : nat {
+  return 2
+}
+
+function f_read_storage() : string {
+  return my_asset[2].v
+}
+
+function f_write_storage() : unit {
+  my_asset.add({3; "astring"});
+  return Unit
+}
+
+function f_write_storage_inline() {
+  my_asset.add({3; "another_string"})
+}
