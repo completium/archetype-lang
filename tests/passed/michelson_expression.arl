@@ -5,5 +5,5 @@ variable res : nat = 0
 entry exec () {
   const a = 1;
   const b = 2;
-  res := michelson<nat> { ADD } [a; b]
+  res := michelson<nat> { ADD } [a : b]
 }

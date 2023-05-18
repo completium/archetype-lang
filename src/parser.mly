@@ -988,7 +988,7 @@ simple_expr_r:
  | MICHELSON x=mich_sequence
      { Emicheline x }
 
- | MICHELSON LESS t=type_t GREATER x=mich_sequence LBRACKET xs=snl(SEMI_COLON, simple_expr) RBRACKET
+ | MICHELSON LESS t=type_t GREATER x=mich_sequence LBRACKET xs=snl(COLON, simple_expr) RBRACKET
      { Emicheline_expr (t, x, xs) }
 
  | INVALID_EXPR

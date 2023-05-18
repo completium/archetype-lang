@@ -646,7 +646,7 @@ let pp_mterm fmt (mt : mterm) =
         Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
           pp_type t
           Micheline_printer.print_expr (Micheline_tools.obj_to_micheline m)
-          (pp_list "; " f) a
+          (pp_list " : " f) a
       in
       pp fmt (t, m, a)
 

@@ -817,7 +817,7 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
         pp_type t
         Micheline_printer.print_expr (Micheline_tools.pt_to_micheline m)
-        (pp_list "; " pp_simple_expr) a
+        (pp_list " : " pp_simple_expr) a
     end
 
 and pp_else fmt (e : expr option) =
