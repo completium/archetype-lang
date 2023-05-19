@@ -646,6 +646,8 @@ type fullname  = A.lident * A.lident [@@deriving show {with_path = false}]
 
 let unloc_longident (lid : A.longident) = unloc (snd lid)
 
+let loc_longident ((nm, x) : A.longident) = Location.mergeall (List.map loc [nm; x])
+
 let mknm (nm, id) =
   (match nm with None -> Current | Some x -> Named x), id
 
@@ -1692,7 +1694,7 @@ type vardecl = {
 
 (* -------------------------------------------------------------------- *)
 type fundecl = {
-  fs_name  : A.lident;
+  fs_name  : A.longident;
   fs_kind  : A.fun_kind;
   fs_args  : (A.lident * A.ptyp) list;
   fs_retty : A.returned_fun_type;
@@ -2269,7 +2271,7 @@ end = struct
       exists env (relative env name)
 
     let push (env : t) (decl : fundecl) =
-      push env ~loc:(loc decl.fs_name) (unloc decl.fs_name) (`Function decl)
+      push env ~loc:(loc_longident decl.fs_name) (unloc_longident decl.fs_name) (`Function decl)
   end
 
   module Asset = struct
@@ -5989,7 +5991,7 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
         if check_and_emit_name_free env fdecl.name then
           let to_visibility = function | PT.VVonchain | PT.VVnone -> A.VVonchain | PT.VVoffchain -> A.VVoffchain | PT.VVonoffchain -> A.VVonoffchain in
           (env, Some {
-              fs_name  = fdecl.name;
+              fs_name  = (Env.name env, fdecl.name);
               fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview (to_visibility fdecl.view_visibility) else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = (match rty with | Some ty -> Typed ty | None -> Void);
@@ -6861,7 +6863,7 @@ let functions_of_fdecls fdecls =
         return      = decl.fs_retty;
         side_effect = decl.fs_side_effect;
         storage_usage = decl.fs_storage_usage;
-        loc         = loc decl.fs_name; }
+        loc         = loc_longident decl.fs_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
@@ -7090,17 +7092,17 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
                   match v with
                   | A.Ffunction fs -> begin
-                      let name = unloc fs.name in
+                      let name = unloc_longident fs.name in
                       match fs.kind with
                       | FKfunction -> (accu_entrypoints, accu_views, fs::accu_funs)
                       | FKgetter -> begin
-                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
+                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc_longident fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                           let typ_ = args_to_type fs.args in
                           let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
                           ((name, typ_)::accu_entrypoints, accu_views, accu_funs)
                         end
                       | FKview (VVonchain | VVonoffchain )-> begin
-                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
+                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc_longident fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                           let typ_ = args_to_type fs.args in
                           (accu_entrypoints, (name, (typ_, rt))::accu_views, accu_funs)
                         end

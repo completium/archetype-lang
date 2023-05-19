@@ -521,7 +521,7 @@ type returned_fun_type =
 [@@deriving show {with_path = false}]
 
 type function_ = {
-  name        : lident;
+  name        : longident;
   kind        : fun_kind;
   args        : lident decl_gen list;
   body        : instruction;

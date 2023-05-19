@@ -1323,7 +1323,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   in
 
   let process_function (env : env) (function_ : A.function_) : M.function_node =
-    let name  = M.mk_mident function_.name in
+    let name  = to_mident function_.name in
     let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) function_.args in
     let env   = {env with function_p = Some (name, args); } in
     let body  = to_instruction env function_.body in

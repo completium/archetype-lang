@@ -4712,3 +4712,25 @@ let process_inline_function (model : model) =
     model with
     functions = List.filter (fun x -> not (is_inline_function x)) model.functions
   }
+
+let remove_unused_function (model : model) : model =
+  let app_funs : mident list =
+    let rec aux ctx (accu : mident list) (mt : mterm) : mident list =
+      match mt.node with
+      | Mapp (id, _) -> id::accu
+      | _ -> fold_term (aux ctx) accu mt
+    in
+    fold_model aux model []
+  in
+
+  let is_used_function (fn : function_node) : bool =
+    match fn with
+    | Function (fs, _) -> List.exists (fun fid -> cmp_mident fid fs.name) app_funs
+    | _ -> true
+  in
+
+  {
+    model with
+    functions = List.filter is_used_function model.functions
+  }
+

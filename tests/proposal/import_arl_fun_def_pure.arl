@@ -1,0 +1,9 @@
+archetype import_arl_fun_def_pure
+
+function f1 () : nat {
+  return 2
+}
+
+function f2() : string {
+  return "mystr"
+}
