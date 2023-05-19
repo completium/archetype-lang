@@ -332,7 +332,7 @@ let to_const = function
   | Cemit                  -> "emit"
 
 let pp_call_kind fmt = function
-  | Cid id -> pp_id fmt id
+  | Cid id -> pp_longident fmt id
   | Cconst c -> pp_str fmt (to_const c)
 
 let pp_security_role = pp_lident

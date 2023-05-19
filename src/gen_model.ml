@@ -338,7 +338,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
       (* enum value *)
       | A.Pvar id when is_enum_type pterm.type_ (unloc_longident id) -> M.Menumval (to_mident id, [], to_mident (get_enum_type pterm.type_))
-      | A.Pcall (_, Cid id, [], args) when is_enum_type pterm.type_ (unloc id) -> M.Menumval (M.mk_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, to_mident (get_enum_type pterm.type_))
+      | A.Pcall (_, Cid id, [], args) when is_enum_type pterm.type_ ((unloc |@ snd) id) -> M.Menumval (to_mident id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, to_mident (get_enum_type pterm.type_))
 
 
       | A.Pvar ((_, { pldesc = "state" }))           -> M.Mvar (M.mk_mident (dumloc ""), Vstate)
@@ -845,7 +845,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         M.Misimplicitaddress (fx)
 
       | A.Pcall (_, A.Cid id, _, args) ->
-        M.Mapp (M.mk_mident id, List.map (fun x -> term_arg_to_expr f x) args)
+        M.Mapp (to_mident id, List.map (fun x -> term_arg_to_expr f x) args)
 
       | A.Pcall (None, A.Cconst A.Cgreedyand, [], [AExpr a; AExpr b]) ->
         let fa = f a in
@@ -1184,7 +1184,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
       | A.Imicheline micheline -> M.Mmicheline micheline
 
-      | A.Icall (i, Cid id, args) -> M.Mapp (M.mk_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
+      | A.Icall (i, Cid id, args) -> M.Mapp (to_mident id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 
       | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
         M.Mfail (Invalid (f p))

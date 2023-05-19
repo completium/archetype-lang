@@ -665,6 +665,9 @@ let loc_nmid (nm, x) =
     | PT.SIId nm  -> [loc nm]
   in Location.mergeall (loc x :: nm)
 
+let pt_to_longident ((scope, fid) : PT.id_scope * PT.lident) : A.longident =
+  (match scope with | SIId id -> id | _ -> dumloc ""), fid
+
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | TODO
@@ -4020,7 +4023,7 @@ let rec for_xexpr
         | Typed ty -> ty
       in
 
-      mk_sp (Some rty) (A.Pcall (None, A.Cid (snd f), [], args))
+      mk_sp (Some rty) (A.Pcall (None, A.Cid (pt_to_longident f), [], args))
 
     (* FIXME:NM: WTF? *)
     | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (unloc_nmid f)) ->
@@ -4039,7 +4042,7 @@ let rec for_xexpr
       let args = List.map  (fun x -> A.AExpr x) args in
 
       let typ = A.Tenum decl.sd_name in
-      mk_sp (Some typ) (A.Pcall (None, A.Cid (snd f), [], args))
+      mk_sp (Some typ) (A.Pcall (None, A.Cid (pt_to_longident f), [], args))
 
     | Eapp (Fident f, args) -> begin
         let args = List.map (for_xexpr env) args in
@@ -5887,7 +5890,7 @@ let rec for_instruction_r
             let tys = List.map snd f_info.fs_args in
 
             let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
-            env, mki (A.Icall (None, Cid lid, args))
+            env, mki (A.Icall (None, Cid (pt_to_longident f), args))
           end
         end
       end

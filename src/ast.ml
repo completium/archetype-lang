@@ -326,7 +326,7 @@ and pattern_node =
 (* -------------------------------------------------------------------- *)
 
 type call_kind =
-  | Cid of lident
+  | Cid of longident
   | Cconst of const
 [@@deriving show {with_path = false}]
 
