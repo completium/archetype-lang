@@ -1,4 +1,4 @@
-archetype import_arl_fun_error_unknown_fun
+archetype import_arl_fun_error_unknown_namespace
 
 variable res : nat = 0
 

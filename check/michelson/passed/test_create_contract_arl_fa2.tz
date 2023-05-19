@@ -98,6 +98,32 @@
                                            (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))
                                   (option %permit (pair key signature))))))) ;
              code { LAMBDA
+                      (pair address
+                            (list (pair (address %from_)
+                                        (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))
+                      bool
+                      { UNPAIR ;
+                        PUSH unit Unit ;
+                        PUSH bool True ;
+                        DUP 4 ;
+                        ITER { DUP 2 ;
+                               IF { DUP ;
+                                    GET 1 ;
+                                    DUP 5 ;
+                                    COMPARE ;
+                                    EQ ;
+                                    IF { PUSH bool True } { PUSH bool False } }
+                                  { PUSH bool False } ;
+                               DIP 1 { SWAP ; DROP 1 } ;
+                               SWAP ;
+                               DROP 1 } ;
+                        DUP ;
+                        DIP 1 { SWAP ; DROP 1 } ;
+                        SWAP ;
+                        DROP 1 ;
+                        DUG 2 ;
+                        DROP 2 } ;
+                    LAMBDA
                       bool
                       bool
                       { PUSH unit Unit ;
@@ -231,7 +257,7 @@
                         DUG 2 ;
                         DROP 2 } ;
                     NIL operation ;
-                    DIG 6 ;
+                    DIG 7 ;
                     UNPAIR ;
                     DIP 1 { UNPAIR 15 } ;
                     IF_LEFT
@@ -988,7 +1014,7 @@
                                     PAIR 15 ;
                                     SWAP ;
                                     PAIR } } } } ;
-                    DIP 1 { DROP 5 } } ;
+                    DIP 1 { DROP 6 } } ;
              view "get_royalties"
                   nat
                   (list (pair (address %part_account) (nat %part_value)))

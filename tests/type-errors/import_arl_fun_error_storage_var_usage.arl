@@ -1,0 +1,9 @@
+archetype import_arl_fun_error_storage_var_usage
+
+import "../passed/import_arl_fun_def.arl"
+
+variable res : string = ""
+
+entry exec() {
+  res := import_arl_fun_def::f_read_storage_var()
+}

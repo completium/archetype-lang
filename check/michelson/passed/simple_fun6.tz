@@ -1,23 +1,12 @@
 { storage int ;
   parameter (or (or (unit %exec) (unit %exec1)) (unit %exec2)) ;
   code { LAMBDA int int { PUSH unit Unit ; DUP 2 ; SWAP ; DROP 1 ; SWAP ; DROP 1 } ;
-         LAMBDA
-           int
-           int
-           { PUSH unit Unit ;
-             PUSH int 1 ;
-             DUP 3 ;
-             ADD ;
-             SWAP ;
-             DROP 1 ;
-             SWAP ;
-             DROP 1 } ;
-         DIG 2 ;
+         SWAP ;
          UNPAIR ;
          IF_LEFT
            { IF_LEFT
                { DROP 1 ;
-                 DUP 3 ;
+                 DUP 2 ;
                  PUSH int 0 ;
                  EXEC ;
                  SWAP ;
@@ -25,7 +14,7 @@
                  NIL operation ;
                  PAIR }
                { DROP 1 ;
-                 DUP 3 ;
+                 DUP 2 ;
                  PUSH int 1 ;
                  EXEC ;
                  SWAP ;
@@ -33,11 +22,11 @@
                  NIL operation ;
                  PAIR } }
            { DROP 1 ;
-             DUP 3 ;
+             DUP 2 ;
              PUSH int 2 ;
              EXEC ;
              SWAP ;
              DROP 1 ;
              NIL operation ;
              PAIR } ;
-         DIP 1 { DROP 2 } } }
+         DIP 1 { DROP 1 } } }

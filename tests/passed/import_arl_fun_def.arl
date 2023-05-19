@@ -7,12 +7,18 @@ asset my_asset {
   {2; "mystr"}
 }
 
+variable my_var : nat = 0
+
 function f_pure() : nat {
   return 2
 }
 
 function f_read_storage() : string {
   return my_asset[2].v
+}
+
+function f_read_storage_var() : nat {
+  return my_var
 }
 
 function f_write_storage() : unit {

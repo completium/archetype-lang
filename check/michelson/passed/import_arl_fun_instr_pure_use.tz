@@ -1,0 +1,3 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { CDR ; PUSH string "ok" ; FAILWITH } }

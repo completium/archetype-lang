@@ -345,6 +345,30 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/fun_view_instr_side_effect.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('import_arl_fun_error_instr', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_instr.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('import_arl_fun_error_side_effect', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_side_effect.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('import_arl_fun_error_storage_usage', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_storage_usage.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('import_arl_fun_error_storage_var_usage', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_storage_var_usage.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('import_arl_fun_error_unknown_fun', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_unknown_fun.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('import_arl_fun_error_unknown_namespace', async () => {
+    const stat = compile("../tests/type-errors/import_arl_fun_error_unknown_namespace.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

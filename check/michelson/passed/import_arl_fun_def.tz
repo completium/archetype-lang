@@ -1,0 +1,3 @@
+{ storage (pair (map %my_asset nat string) (nat %my_var)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

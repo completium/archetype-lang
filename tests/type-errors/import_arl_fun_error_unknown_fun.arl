@@ -1,6 +1,6 @@
 archetype import_arl_fun_error_unknown_fun
 
-import "./import_arl_fun_def.arl"
+import "../passed/import_arl_fun_def.arl"
 
 variable res : nat = 0
 

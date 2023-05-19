@@ -1949,6 +1949,9 @@ module Env : sig
     val with_side_effect : t -> bool
     val set_side_effect : t -> bool -> t
 
+    val with_storage_usage : t -> bool
+    val set_storage_usage : t -> bool -> unit
+
     val with_return : t -> bool
     val set_return : t -> bool -> t
   end
@@ -1998,6 +2001,7 @@ end = struct
     env_scopes           : Sid.t list;
     env_path             : string;
     env_with_side_effect : bool;
+    env_with_storage_usage : bool ref;
     env_with_ret         : bool;
   }
 
@@ -2017,6 +2021,7 @@ end = struct
       env_scopes   = [];
       env_path     = Option.map_dfl (fun x -> x) "." path;
       env_with_side_effect = false;
+      env_with_storage_usage = ref false;
       env_with_ret = false;
     }
 
@@ -2467,6 +2472,12 @@ end = struct
 
     let set_side_effect (env : t) (v : bool) : t =
       {env with env_with_side_effect = v}
+
+    let with_storage_usage (env : t) : bool =
+      !(env.env_with_storage_usage)
+
+    let set_storage_usage (env : t) (v : bool) : unit =
+      env.env_with_storage_usage := v
 
     let with_return (env : t) : bool =
       env.env_with_ret
@@ -3254,12 +3265,14 @@ let rec for_xexpr
             | Some (body, `Inline) ->
               { body with loc = loc tope }
             | _ ->
+              Env.FunctionProperties.set_storage_usage env true;
               mk_sp (Some decl.vr_type) (A.Pvar decl.vr_name)
           end
 
         | Some (`Asset decl) ->
           let decl = as_full decl in
           let typ = A.Tcontainer ((A.Tasset decl.as_name), A.Collection) in
+          Env.FunctionProperties.set_storage_usage env true;
           mk_sp (Some typ) (A.Pvar decl.as_name)
 
         | Some (`StateByCtor (decl, ctor)) ->
@@ -5379,6 +5392,7 @@ let rec for_instruction_r
               let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               check_side_effect();
+              Env.FunctionProperties.set_storage_usage env true;
               let env = Env.FunctionProperties.set_side_effect env true in
               begin
                 match c, method_.mth_purity with
@@ -5980,9 +5994,10 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
       let env = Env.FunctionProperties.set_side_effect env false in
       let env = Env.FunctionProperties.set_return env false in
+      Env.FunctionProperties.set_storage_usage env false;
       let env, body = for_instruction ~ret:rty place env fdecl.body in
       let side_effect = Env.FunctionProperties.with_side_effect env in
-      let storage_usage = false in
+      let storage_usage = Env.FunctionProperties.with_storage_usage env in
 
       if not (Env.FunctionProperties.with_return env) && Option.is_some rty
       then (Env.emit_error env (loc fdecl.name, FunctionNoReturn));

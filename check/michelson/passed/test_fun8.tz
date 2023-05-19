@@ -23,45 +23,8 @@
              DROP 1 ;
              DUG 2 ;
              DROP 2 } ;
-         LAMBDA
-           (pair (pair (pair %basic
-                          (int %transfer_policy)
-                          (int %sender_hook_policy)
-                          (int %receiver_hook_policy))
-                       (option %custom (pair (string %tag) (option %config_api address))))
-                 nat
-                 int
-                 (lambda
-                    (pair (pair (pair %basic
-                                   (int %transfer_policy)
-                                   (int %sender_hook_policy)
-                                   (int %receiver_hook_policy))
-                                (option %custom (pair (string %tag) (option %config_api address))))
-                          int)
-                    int))
-           int
-           { UNPAIR 4 ;
-             PUSH unit Unit ;
-             DUP 5 ;
-             DUP 5 ;
-             DUP ;
-             PUSH int 0 ;
-             COMPARE ;
-             EQ ;
-             IF { DUP 4 ; GET 1 ; GET 3 } { DUP 4 ; GET 1 ; GET 3 } ;
-             SWAP ;
-             DROP 1 ;
-             DUP 4 ;
-             PAIR ;
-             EXEC ;
-             DUP ;
-             DIP 1 { SWAP ; DROP 1 } ;
-             SWAP ;
-             DROP 1 ;
-             DUG 4 ;
-             DROP 4 } ;
-         DIG 2 ;
+         SWAP ;
          CDR ;
          NIL operation ;
          PAIR ;
-         DIP 1 { DROP 2 } } }
+         DIP 1 { DROP 1 } } }

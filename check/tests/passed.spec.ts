@@ -753,6 +753,11 @@ import * as import_arl_enum_with_args_use_complete from '../bindings/passed/impo
 import * as import_arl_event_def from '../bindings/passed/import_arl_event_def'
 import * as import_arl_event_use from '../bindings/passed/import_arl_event_use'
 import * as import_arl_event_use_collide from '../bindings/passed/import_arl_event_use_collide'
+import * as import_arl_fun_2_pure_use from '../bindings/passed/import_arl_fun_2_pure_use'
+import * as import_arl_fun_def from '../bindings/passed/import_arl_fun_def'
+import * as import_arl_fun_def_pure from '../bindings/passed/import_arl_fun_def_pure'
+import * as import_arl_fun_instr_pure_use from '../bindings/passed/import_arl_fun_instr_pure_use'
+import * as import_arl_fun_pure_use from '../bindings/passed/import_arl_fun_pure_use'
 import * as import_arl_record_complex_0 from '../bindings/passed/import_arl_record_complex_0'
 import * as import_arl_record_complex_1 from '../bindings/passed/import_arl_record_complex_1'
 import * as import_arl_record_complex_2 from '../bindings/passed/import_arl_record_complex_2'
@@ -13445,10 +13450,8 @@ describe('passed', async () => {
   it('fun_view_instr_pure', async () => {
     await fun_view_instr_pure.fun_view_instr_pure.deploy({ as: alice })
 
-    await expect_to_fail(async () => {
-      await fun_view_instr_pure.fun_view_instr_pure.exec({ as: alice })
-    }, { string: "OK" })
-
+    const res = await fun_view_instr_pure.fun_view_instr_pure.view_my_view({ as: alice })
+    assert(res && res.equals(new Nat(0)))
   })
 
   it('fun_view_pure', async () => {
@@ -13917,6 +13920,49 @@ describe('passed', async () => {
     assert(ret.events.length == 2)
     assert(JSON.stringify(ret.events[0].payload) == '{"prim":"Pair","args":[{"int":"2"},{"string":"mystr"}]}')
     assert(JSON.stringify(ret.events[1].payload) == '{"prim":"Pair","args":[{"string":"mystr"},{"prim":"Pair","args":[{"int":"2"},{"bytes":"02"}]}]}')
+  })
+
+  it('import_arl_fun_2_pure_use', async () => {
+    await import_arl_fun_2_pure_use.import_arl_fun_2_pure_use.deploy({ as: alice })
+
+    const res_before = await import_arl_fun_2_pure_use.import_arl_fun_2_pure_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_fun_2_pure_use.import_arl_fun_2_pure_use.exec({ as: alice })
+
+    const res_after = await import_arl_fun_2_pure_use.import_arl_fun_2_pure_use.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('import_arl_fun_def', async () => {
+    await import_arl_fun_def.import_arl_fun_def.deploy({ as: alice })
+  })
+
+  it('import_arl_fun_def_pure', async () => {
+    await import_arl_fun_def_pure.import_arl_fun_def_pure.deploy({ as: alice })
+  })
+
+  it('import_arl_fun_instr_pure_use', async () => {
+    await import_arl_fun_instr_pure_use.import_arl_fun_instr_pure_use.deploy({ as: alice })
+
+    const res_before = await import_arl_fun_instr_pure_use.import_arl_fun_instr_pure_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expect_to_fail(async () => {
+     await import_arl_fun_instr_pure_use.import_arl_fun_instr_pure_use.exec({ as: alice })
+    }, { string: "ok" })
+  })
+
+  it('import_arl_fun_pure_use', async () => {
+    await import_arl_fun_pure_use.import_arl_fun_pure_use.deploy({ as: alice })
+
+    const res_before = await import_arl_fun_pure_use.import_arl_fun_pure_use.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await import_arl_fun_pure_use.import_arl_fun_pure_use.exec({ as: alice })
+
+    const res_after = await import_arl_fun_pure_use.import_arl_fun_pure_use.get_res()
+    assert(res_after.equals(new Nat(2)))
   })
 
   it('import_arl_record_complex_0', async () => {

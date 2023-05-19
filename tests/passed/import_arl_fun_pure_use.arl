@@ -1,9 +1,9 @@
-archetype import_arl_event_use
+archetype import_arl_fun_pure_use
 
 import "./import_arl_fun_def.arl"
 
 variable res : nat = 0
 
 entry exec() {
-  import_arl_fun_def::f_pure_inline()
+  res := import_arl_fun_def::f_pure()
 }

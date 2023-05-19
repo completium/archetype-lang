@@ -1,5 +1,5 @@
 {
-  "name": "fun_view_instr_pure",
+  "name": "import_arl_fun_2_pure_use",
   "parameters": [],
   "types": {
     "assets": [],
@@ -33,33 +33,13 @@
     },
     "is_storable": true
   },
-  "entrypoints": [],
-  "getters": [],
-  "views": [
+  "entrypoints": [
     {
-      "name": "my_view",
-      "args": [],
-      "return": {
-        "node": "nat",
-        "name": null,
-        "int_value": null,
-        "args": []
-      },
-      "return_michelson": {
-        "value": {
-          "prim": "nat",
-          "int": null,
-          "bytes": null,
-          "string": null,
-          "args": [],
-          "annots": [],
-          "array": [],
-          "var_id": null,
-          "var_type": null
-        },
-        "is_storable": true
-      }
+      "name": "exec",
+      "args": []
     }
   ],
+  "getters": [],
+  "views": [],
   "errors": []
 }

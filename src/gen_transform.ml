@@ -828,7 +828,7 @@ let remove_enum (model : model) : model =
                   let lt = mk_or l1 in
                   (fun xs -> fr l0 (mk_left (lt) (g xs)))
               in
-              MapString.add (normalize_mident x.name) f accu
+              MapString.add (normalize_mident (mk_mident ?namespace:(fst e.name) (snd x.name))) f accu
             ) MapString.empty values
         end
       in
@@ -977,7 +977,7 @@ let remove_enum (model : model) : model =
             | Some f -> f
             | None -> begin
                 Format.eprintf "NotFound: %s@\n" (normalize_mident id);
-                MapString.iter (fun x _ -> Format.eprintf "key: %s@\n"  x) info.fitems;
+                MapString.iter (fun x _ -> Format.eprintf "key: %s@\n" x) info.fitems;
                 assert false
               end
           in
@@ -4717,7 +4717,7 @@ let remove_unused_function (model : model) : model =
   let app_funs : mident list =
     let rec aux ctx (accu : mident list) (mt : mterm) : mident list =
       match mt.node with
-      | Mapp (id, _) -> id::accu
+      | Mapp (id, args) -> id::(List.fold_left (aux ctx) accu args)
       | _ -> fold_term (aux ctx) accu mt
     in
     fold_model aux model []
