@@ -5,5 +5,5 @@ import "./import_arl_fun_def.arl"
 variable res : nat = 0
 
 entry exec() {
-  res := import_arl_fun_def::f_pure()
+  import_arl_fun_def::f_pure_inline()
 }

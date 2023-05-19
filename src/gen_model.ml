@@ -1595,15 +1595,32 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         end) iasts ast.decls
   in
 
+  let afuns =
+    List.fold_right (fun (_, x : ident * 'b Typing.importdecl) accu -> begin
+          match x.id_ast with
+          | None -> accu
+          | Some x -> begin
+              let ds = x.funs |> List.filter (function
+                  | A.Ffunction fs-> begin
+                    match fs.kind with
+                    | FKfunction -> not fs.side_effect && not fs.storage_usage
+                    | _ -> false
+                  end
+                  | A.Ftransaction _ -> false) in
+              ds @ accu
+            end
+        end) iasts ast.funs
+  in
+
   let extract_cc_models (model : M.model) =
     let rec aux ctx accu (mt : M.mterm) : M.model list =
       match mt.node with
       | M.Mcreatecontract (CCArl(id, _), _, _) -> begin
-        let a = Typing.Env.Import.get _tenv id in
-        let ast = Option.get a.id_ast in
-        let m = to_model (_tenv, ast) in
-        m::accu
-      end
+          let a = Typing.Env.Import.get _tenv id in
+          let ast = Option.get a.id_ast in
+          let m = to_model (_tenv, ast) in
+          m::accu
+        end
       | _ -> M.fold_term (aux ctx) accu mt
     in
     M.fold_model aux model []
@@ -1612,7 +1629,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let parameters = List.map (process_parameter env) ast.parameters in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) adecls in
-  let functions = List.map (process_fun_ env) ast.funs in
+  let functions = List.map (process_fun_ env) afuns in
   let model = M.mk_model ~parameters ?metadata ~decls ~functions ~loc:ast.loc name in
 
   let cc_models = extract_cc_models model in

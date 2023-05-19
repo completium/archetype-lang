@@ -690,6 +690,8 @@ type error_desc =
   | CannotInfer
   | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
+  | CannotImportFunctionWithSideEffect
+  | CannotImportFunctionWithStorageUsage
   | CannotUpdatePKey
   | CannotUseInstrWithSideEffectInView
   | CollectionExpected
@@ -726,6 +728,7 @@ type error_desc =
   | FunctionInvalidInstructionVoid
   | FunctionInvalidTypeVoid
   | FunctionNoReturn
+  | FunctionUnknownFunction            of ident * ident
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
@@ -952,6 +955,8 @@ let pp_error_desc fmt e =
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
+  | CannotImportFunctionWithSideEffect -> pp "Cannot import function with side effect"
+  | CannotImportFunctionWithStorageUsage -> pp "Cannot import function with storage usage"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CannotUseInstrWithSideEffectInView -> pp "Cannot use instruction with side effect in view"
   | CollectionExpected                 -> pp "Collection expected"
@@ -989,6 +994,7 @@ let pp_error_desc fmt e =
   | FunctionInvalidInstructionVoid     -> pp "Invalid function, instruction used in instruction must be void (without returned value)"
   | FunctionInvalidTypeVoid            -> pp "Invalid type, function is void"
   | FunctionNoReturn                   -> pp "Invalid function, no return instruction found"
+  | FunctionUnknownFunction (nm, id)   -> pp "Unknown function `%s' in namespace `%s'" id nm
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
@@ -1624,6 +1630,7 @@ type 'env importdecl = {
   id_ast         : A.ast option;
   id_entrypoints : (ident * A.type_) list;
   id_views       : (ident * (A.type_ * A.type_)) list;
+  id_funs        : A.function_ list;
   id_env         : 'env option;
 }
 [@@deriving show {with_path = false}]
@@ -1688,6 +1695,7 @@ type fundecl = {
   fs_retty : A.returned_fun_type;
   fs_body  : A.instruction;
   fs_side_effect : bool;
+  fs_storage_usage : bool;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -3987,6 +3995,15 @@ let rec for_xexpr
         | _ -> ()
       end;
 
+      let is_imported = f |> unloc_nmid |> fst |> (function | Named _ -> true | _ -> false) in
+      begin
+        if is_imported then
+          match fun_.fs_side_effect, fun_.fs_storage_usage with
+          | true, _ -> Env.emit_error env (loc tope, CannotImportFunctionWithSideEffect)
+          | _, true -> Env.emit_error env (loc tope, CannotImportFunctionWithStorageUsage)
+          | _ -> ()
+      end;
+
       let tyargs =
         if List.length args <> List.length fun_.fs_args then begin
           let na = List.length args and ne = List.length fun_.fs_args in
@@ -5830,13 +5847,13 @@ let rec for_instruction_r
 
       env, mki (A.Ideclvaropt (x, v, fa, c))
 
-    | Eapp (Fident (SINone, fn), args) -> begin
-        let lid : longident = (Current, unloc fn) in
-        let opt_f_info = Env.Function.lookup env lid in
+    | Eapp (Fident f, args) -> begin
+        let lid : A.lident = f |> snd in
+        let opt_f_info = Env.Function.lookup env (unloc_nmid f) in
 
         if (Option.is_none opt_f_info)
         then begin
-          Env.emit_error env (loc fn, FunctionNotFound (unloc fn));
+          Env.emit_error env (loc i, FunctionNotFound (unloc lid));
           env, mki (Iseq [])
         end
         else begin
@@ -5846,25 +5863,31 @@ let rec for_instruction_r
           begin
             match f_info.fs_retty with
             | Void -> ()
-            | Typed _ -> Env.emit_error env (loc fn, FunctionInvalidInstructionVoid)
+            | Typed _ -> Env.emit_error env (loc i, FunctionInvalidInstructionVoid)
           end;
 
           begin
             match kind, f_info.fs_side_effect with
-            | `View, true -> Env.emit_error env (loc fn, CannotCallSideEffectFunctionInView)
+            | `View, true -> Env.emit_error env (loc i, CannotCallSideEffectFunctionInView)
             | _ -> ()
+          end;
+
+          let is_imported = f |> unloc_nmid |> fst |> (function | Named _ -> true | _ -> false) in
+          begin
+            if is_imported && f_info.fs_side_effect
+            then Env.emit_error env (loc i, CannotImportFunctionWithSideEffect)
           end;
 
           if (List.length f_info.fs_args <> List.length args)
           then begin
-            Env.emit_error env (loc fn, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+            Env.emit_error env (loc i, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
             env, mki (Iseq [])
           end
           else begin
             let tys = List.map snd f_info.fs_args in
 
             let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
-            env, mki (A.Icall (None, Cid fn, args))
+            env, mki (A.Icall (None, Cid lid, args))
           end
         end
       end
@@ -5954,6 +5977,7 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       let env = Env.FunctionProperties.set_return env false in
       let env, body = for_instruction ~ret:rty place env fdecl.body in
       let side_effect = Env.FunctionProperties.with_side_effect env in
+      let storage_usage = false in
 
       if not (Env.FunctionProperties.with_return env) && Option.is_some rty
       then (Env.emit_error env (loc fdecl.name, FunctionNoReturn));
@@ -5967,7 +5991,8 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
               fs_args  = List.pmap id args;
               fs_retty = (match rty with | Some ty -> Typed ty | None -> Void);
               fs_body  = body;
-              fs_side_effect = side_effect })
+              fs_side_effect = side_effect;
+              fs_storage_usage = storage_usage })
         else (env, None)
       else (env, None))
 
@@ -6832,6 +6857,7 @@ let functions_of_fdecls fdecls =
         body        = decl.fs_body;
         return      = decl.fs_retty;
         side_effect = decl.fs_side_effect;
+        storage_usage = decl.fs_storage_usage;
         loc         = loc decl.fs_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
@@ -7004,6 +7030,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
                   id_ast         = None;
                   id_entrypoints = entrypoints;
                   id_views       = views;
+                  id_funs        = [];
                   id_env         = None;
                 } in
 
@@ -7044,8 +7071,8 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
 
         | None ->
           let make_importdecl_from_ast id ((ienv, iast) : env * A.ast) =
-            let entrypoints, views =
-              List.fold_left (fun (accu_entrypoints, accu_views) v ->
+            let entrypoints, views, funs =
+              List.fold_left (fun (accu_entrypoints, accu_views, accu_funs) v ->
                   let args_to_type args =
                     let l =
                       List.fold_right
@@ -7061,25 +7088,26 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
                   match v with
                   | A.Ffunction fs -> begin
                       let name = unloc fs.name in
-                      let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                       match fs.kind with
-                      | FKfunction -> (accu_entrypoints, accu_views)
+                      | FKfunction -> (accu_entrypoints, accu_views, fs::accu_funs)
                       | FKgetter -> begin
+                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                           let typ_ = args_to_type fs.args in
                           let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
-                          ((name, typ_)::accu_entrypoints, accu_views)
+                          ((name, typ_)::accu_entrypoints, accu_views, accu_funs)
                         end
                       | FKview (VVonchain | VVonoffchain )-> begin
+                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                           let typ_ = args_to_type fs.args in
-                          (accu_entrypoints, (name, (typ_, rt))::accu_views)
+                          (accu_entrypoints, (name, (typ_, rt))::accu_views, accu_funs)
                         end
-                      | FKview VVoffchain -> (accu_entrypoints, accu_views)
+                      | FKview VVoffchain -> (accu_entrypoints, accu_views, accu_funs)
                     end
                   | A.Ftransaction ts -> begin
                       let typ_ = args_to_type ts.args in
-                      ((unloc ts.name, typ_)::accu_entrypoints, accu_views)
+                      ((unloc ts.name, typ_)::accu_entrypoints, accu_views, accu_funs)
                     end
-                ) ([], []) iast.funs in
+                ) ([], [], []) iast.funs in
 
             { id_name        = id;
               id_path        = path;
@@ -7087,6 +7115,7 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
               id_ast         = Some iast;
               id_entrypoints = entrypoints;
               id_views       = views;
+              id_funs        = funs;
               id_env         = Some ienv; }
 
           in

@@ -1,0 +1,9 @@
+archetype import_arl_fun_error_unknown_fun
+
+import "./import_arl_fun_def.arl"
+
+variable res : unit = Unit
+
+entry exec() {
+  import_arl_fun_def::f_write_storage_inline()
+}

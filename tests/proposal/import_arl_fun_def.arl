@@ -20,6 +20,10 @@ function f_write_storage() : unit {
   return Unit
 }
 
+function f_pure_inline() {
+  fail("ok")
+}
+
 function f_write_storage_inline() {
   my_asset.add({3; "another_string"})
 }
