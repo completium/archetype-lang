@@ -5849,6 +5849,12 @@ let rec for_instruction_r
             | Typed _ -> Env.emit_error env (loc fn, FunctionInvalidInstructionVoid)
           end;
 
+          begin
+            match kind, f_info.fs_side_effect with
+            | `View, true -> Env.emit_error env (loc fn, CannotCallSideEffectFunctionInView)
+            | _ -> ()
+          end;
+
           if (List.length f_info.fs_args <> List.length args)
           then begin
             Env.emit_error env (loc fn, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));

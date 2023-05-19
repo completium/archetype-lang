@@ -710,6 +710,7 @@ import * as fun_instr_unit from '../bindings/passed/fun_instr_unit'
 import * as fun_instr_unit_arg from '../bindings/passed/fun_instr_unit_arg'
 import * as fun_instr_unit_arg_side_effect from '../bindings/passed/fun_instr_unit_arg_side_effect'
 import * as fun_unit from '../bindings/passed/fun_unit'
+import * as fun_view_instr_pure from '../bindings/passed/fun_view_instr_pure'
 import * as fun_view_pure from '../bindings/passed/fun_view_pure'
 import * as fun_view_read from '../bindings/passed/fun_view_read'
 import * as fun_view_read_asset from '../bindings/passed/fun_view_read_asset'
@@ -13439,6 +13440,15 @@ describe('passed', async () => {
 
     const u_after = await fun_unit.fun_unit.get_u()
     assert(u_after.equals(new Unit()))
+  })
+
+  it('fun_view_instr_pure', async () => {
+    await fun_view_instr_pure.fun_view_instr_pure.deploy({ as: alice })
+
+    await expect_to_fail(async () => {
+      await fun_view_instr_pure.fun_view_instr_pure.exec({ as: alice })
+    }, { string: "OK" })
+
   })
 
   it('fun_view_pure', async () => {

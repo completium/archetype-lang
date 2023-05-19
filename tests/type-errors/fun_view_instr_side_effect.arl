@@ -1,0 +1,12 @@
+archetype fun_view_instr_side_effect
+
+variable res : nat = 0
+
+function f() {
+  res := 2
+}
+
+view my_view() : nat {
+  f();
+  return 0
+}

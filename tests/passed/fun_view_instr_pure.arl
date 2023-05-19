@@ -1,0 +1,12 @@
+archetype fun_view_instr_pure
+
+variable res : nat = 0
+
+function f() {
+  do_require(false, "OK")
+}
+
+view my_view() : nat {
+  f();
+  return 0
+}
