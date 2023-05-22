@@ -218,6 +218,7 @@ describe('Generate binding', async () => {
 
   describe('Generate spec.ts files', async () => {
     const items: Array<[string, string, number]> = [
+      ['passed-errors', '../tests/passed', 0],
       ['syntax-errors', '../tests/syntax-errors', 1],
       ['type-errors', '../tests/type-errors', 3],
       ['model-errors', '../tests/model-errors', 5],

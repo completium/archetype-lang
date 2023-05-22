@@ -684,11 +684,11 @@ type error_desc =
   | CannotCallSideEffectFunctionInView
   | CannotCaptureVariables
   | CannotEffectConstVar
+  | CannotImportFunctionWithSideEffect
+  | CannotImportFunctionWithStorageUsage
   | CannotInfer
   | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
-  | CannotImportFunctionWithSideEffect
-  | CannotImportFunctionWithStorageUsage
   | CannotUpdatePKey
   | CannotUseInstrWithSideEffectInView
   | CollectionExpected
@@ -721,10 +721,10 @@ type error_desc =
   | FileNotFound                       of ident
   | ForeignState                       of ident option * ident option
   | FormulaExpected
-  | FunctionNotFound                   of ident
   | FunctionInvalidInstructionVoid
   | FunctionInvalidTypeVoid
   | FunctionNoReturn
+  | FunctionNotFound                   of ident
   | FunctionUnknownFunction            of ident * ident
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
@@ -732,6 +732,8 @@ type error_desc =
   | InvalidApplicationKind             of ident * ident
   | InvalidArcheTypeDecl
   | InvalidArgForGlobalConstant
+  | InvalidArgumentType                of A.ptyp * A.ptyp
+  | InvalidArlFile
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
   | InvalidAssetGetContainer           of A.container
@@ -772,6 +774,7 @@ type error_desc =
   | InvalidSourcedByAsset
   | InvalidSourcedByExpression
   | InvalidStateExpression
+  | InvalidStorageType                 of A.ptyp * A.ptyp
   | InvalidStringValue
   | InvalidTezValueNeg
   | InvalidTezValueOverflow
@@ -801,9 +804,8 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTuple
-  | InvalidArgumentType                of A.ptyp * A.ptyp
-  | InvalidArlFile
-  | InvalidStorageType                 of A.ptyp * A.ptyp
+  | InvalidTypePassable                of A.ptyp
+  | InvalidTypeStorable                of A.ptyp
   | InvalidTzFile
   | InvalidValueForCurrency
   | InvalidValueForMemoSize
@@ -847,11 +849,11 @@ type error_desc =
   | PostConditionInGlobalSpec
   | ReadOnlyGlobal                     of ident
   | RecordExpected
-  | ReturnInVoidContext
   | RecordUpdateDuplicatedFieldName    of ident
   | RecordUpdateOnNonRecordOrAsset
   | RecordUpdateOnPKey
   | RecordUpdateWithInvalidFieldName
+  | ReturnInVoidContext
   | SecurityInExpr
   | SpecOperatorInExpr
   | StringLiteralExpected
@@ -869,13 +871,13 @@ type error_desc =
   | UnknownGetter                      of ident
   | UnknownImport                      of ident
   | UnknownImportExtension             of ident
-  | UnknownView                        of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of longident
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
   | UnknownTypeName                    of longident
   | UnknownVariable                    of ident
+  | UnknownView                        of ident
   | UpdateEffectOnPkey
   | UpdateEffectWithoutDefault
   | UselessPattern
@@ -951,14 +953,14 @@ let pp_error_desc fmt e =
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
   | CannotAssignStorageVariableInView x -> pp "Cannot assign storage variable `%s' in view" x
-  | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
   | CannotCallSideEffectFunctionInView -> pp "Cannot call side effect function in view"
+  | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
   | CannotEffectConstVar               -> pp "Cannot apply an effect on constant variable"
+  | CannotImportFunctionWithSideEffect -> pp "Cannot import function with side effect"
+  | CannotImportFunctionWithStorageUsage -> pp "Cannot import function with storage usage"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
-  | CannotImportFunctionWithSideEffect -> pp "Cannot import function with side effect"
-  | CannotImportFunctionWithStorageUsage -> pp "Cannot import function with storage usage"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CannotUseInstrWithSideEffectInView -> pp "Cannot use instruction with side effect in view"
   | CollectionExpected                 -> pp "Collection expected"
@@ -979,8 +981,7 @@ let pp_error_desc fmt e =
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
-  | DuplicatedFieldInAssetOrRecordLiteral i
-    -> pp "Duplicated field in asset or record literal: %a" pp_ident i
+  | DuplicatedFieldInAssetOrRecordLiteral i -> pp "Duplicated field in asset or record literal: %a" pp_ident i
   | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPackingVar x             -> pp "Duplicated packing variable: %a" pp_ident x
@@ -992,10 +993,10 @@ let pp_error_desc fmt e =
   | FileNotFound i                     -> pp "File not found: %s" i
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
-  | FunctionNotFound id                -> pp "Function `%s' is not found" id
   | FunctionInvalidInstructionVoid     -> pp "Invalid function, instruction used in instruction must be void (without returned value)"
   | FunctionInvalidTypeVoid            -> pp "Invalid type, function is void"
   | FunctionNoReturn                   -> pp "Invalid function, no return instruction found"
+  | FunctionNotFound id                -> pp "Function `%s' is not found" id
   | FunctionUnknownFunction (nm, id)   -> pp "Unknown function `%s' in namespace `%s'" id nm
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
@@ -1003,22 +1004,23 @@ let pp_error_desc fmt e =
   | InvalidApplicationKind (id, k)     -> pp "Invalid function, `%s' is %s" id k
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidArgForGlobalConstant        -> pp "Invalid argument for `global_constant', must be a constant expr"
+  | InvalidArgumentType (from_, to_)   -> pp "Invalid argument type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
+  | InvalidArlFile                     -> pp "Invalid arl file"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
+  | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidContractValueForCreateContract -> pp "Invalid argument for `create_contract`"
-  | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
   | InvalidEntryDescription            -> pp "Invalid entry description"
   | InvalidEntryExpression             -> pp "Invalid entry expression"
+  | InvalidEventType                   -> pp "Invalid type, only event type are allowed"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
-  | InvalidEventType                   -> pp "Invalid type, only event type are allowed"
   | InvalidFailIdType (id, e, _)       -> pp "'%s' type, expected '%a'" id Printer_ast.pp_ptyp e
-  | InvalidFieldsCountInAssetOrRecordLiteral
-    -> pp "Invalid fields count in asset or record literal"
+  | InvalidFieldsCountInAssetOrRecordLiteral -> pp "Invalid fields count in asset or record literal"
   | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
@@ -1029,8 +1031,8 @@ let pp_error_desc fmt e =
   | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
-  | InvalidMethodWithIterableBigMap id -> pp "Invalid method with iterable big map asset: %s" id
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
+  | InvalidMethodWithIterableBigMap id -> pp "Invalid method with iterable big map asset: %s" id
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
   | InvalidNumberOfParameters (n1, n2) -> pp "Invalid number of parameters: found '%i', but expected '%i'" n2 n1
   | InvalidPackingExpr                 -> pp "Invalid packing expression"
@@ -1041,18 +1043,19 @@ let pp_error_desc fmt e =
   | InvalidSecurityEntry               -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
-  | InvalidSourcedByExpression         -> pp "Invalid 'Sourcedby' expression"
   | InvalidSourcedByAsset              -> pp "Invalid 'Sourcedby' asset, the key must be typed address"
+  | InvalidSourcedByExpression         -> pp "Invalid 'Sourcedby' expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidStorageType (from_, to_)    -> pp "Invalid storage type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
   | InvalidStringValue                 -> pp "Invalid string value"
   | InvalidTezValueNeg                 -> pp "Invalid tez value, cannot be negative"
   | InvalidTezValueOverflow            -> pp "Overflow tez value"
+  | InvalidTypeDeclOpt                 -> pp "Invalid type optional declaration, must be typed option"
   | InvalidTypeForAddressToContract    -> pp "Invalid type for address_to_contract"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
   | InvalidTypeForCallview             -> pp "Invalid type for call_view"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
-  | InvalidTypeDeclOpt                 -> pp "Invalid type optional declaration, must be typed option"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
@@ -1063,34 +1066,31 @@ let pp_error_desc fmt e =
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMake                 -> pp "Invalid type for Make"
   | InvalidTypeForMakeEvent            -> pp "Invalid type for 'make_event'"
-  | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
+  | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
-  | InvalidTypeForParameter            -> pp "Invalid type for parameter"
+  | InvalidTypeForOptionalAssign       -> pp "Invalid type for optional assignment, must be an option type"
   | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
-  | InvalidTypeForOptionalAssign       -> pp "Invalid type for optional assignment, must be an option type"
+  | InvalidTypeForParameter            -> pp "Invalid type for parameter"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTuple                -> pp "Invalid type for tuple"
-  | InvalidArgumentType (from_, to_)   -> pp "Invalid argument type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
-  | InvalidArlFile                     -> pp "Invalid arl file"
-  | InvalidStorageType (from_, to_)    -> pp "Invalid storage type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
+  | InvalidTypePassable ty             -> pp "Invalid type, `%a' is not passable" Printer_ast.pp_ptyp ty
+  | InvalidTypeStorable ty             -> pp "Invalid type, `%a' is not storable" Printer_ast.pp_ptyp ty
   | InvalidTzFile                      -> pp "Invalid tz file"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
+  | InvalidValueForMemoSize            -> pp "Invalid value for memo size (0 <= n <= 65535)"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
-  | InvalidValueForMemoSize            -> pp "Invalid value for memo size (0 <= n <= 65535)"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
   | MisorderedPkeyFields               -> pp "Primary keys order should follow asset fields order"
-  | MissingFieldInAssetOrRecordLiteral i
-    -> pp "Missing field in asset or record literal: %a" pp_ident i
+  | MissingFieldInAssetOrRecordLiteral i -> pp "Missing field in asset or record literal: %a" pp_ident i
   | MixedAnonInAssetOrRecordLiteral    -> pp "Mixed anonymous in asset or record literal"
-  | MixedFieldNamesInAssetOrRecordLiteral l
-    -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_longident) l
+  | MixedFieldNamesInAssetOrRecordLiteral l -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_longident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
@@ -1118,11 +1118,11 @@ let pp_error_desc fmt e =
   | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | RecordExpected                     -> pp "Record expected"
-  | ReturnInVoidContext                -> pp "Unexpected return in void context"
   | RecordUpdateDuplicatedFieldName x  -> pp "Duplicated field name: %a" pp_ident x
   | RecordUpdateOnNonRecordOrAsset     -> pp "Record update on a non-record/asset expression"
   | RecordUpdateOnPKey                 -> pp "Record updates cannot act on primary keys"
   | RecordUpdateWithInvalidFieldName   -> pp "Unknown or invalid field name"
+  | ReturnInVoidContext                -> pp "Unexpected return in void context"
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | StringLiteralExpected              -> pp "Expecting a string literal"
@@ -1140,13 +1140,13 @@ let pp_error_desc fmt e =
   | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
   | UnknownImport i                    -> pp "Unknown import identifier name: %a" pp_ident i
   | UnknownImportExtension i           -> pp "Unknown import extension : %a" pp_ident i
-  | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_longident i
   | UnknownProcedure i                 -> pp "Unknown procedure: %a" pp_ident i
   | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_longident i
   | UnknownVariable i                  -> pp "Unknown variable: %a" pp_ident i
+  | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UselessPattern                     -> pp "Useless match branch"
@@ -5285,8 +5285,11 @@ let for_cfs = for_cf
 
 (* -------------------------------------------------------------------- *)
 let for_arg_decl ?(can_asset = false) (env : env) ((x, ty) : PT.lident_typ) =
+  let lty = loc (fst ty) in
   let ty = for_type env ty in
   let b  = check_and_emit_name_free env x in
+
+  Option.iter (fun ty -> if (not (Type.Michelson.is_passable ty)) then Env.emit_error env (lty, InvalidTypePassable (ty))) ty;
 
   if not can_asset then begin
     ty |> Option.iter (fun ty ->
@@ -6206,6 +6209,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   let (x, ty, pe, ctt) = unloc decl in
+  let lty = loc (fst ty) in
 
   let ty = for_type env ty in
 
@@ -6220,6 +6224,8 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
 
   if Option.is_none pe && (match ty with | Some A.Tsapling_state _ -> false | _ -> true) then
     Env.emit_error env (loc decl, UninitializedVar);
+
+  Option.iter (fun ty -> if not (Type.Michelson.is_storable ty) then Env.emit_error env (lty, InvalidTypeStorable (ty))) ty;
 
   match ty with
   | None ->
@@ -6288,7 +6294,10 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let for_field field =
     let (f, fty, init) = field in
+    let lty : Location.t = loc (fst fty) in
     let fty  = for_type ~pkey env fty in
+
+    Option.iter (fun ty -> if not (Type.Michelson.is_storable ty) then Env.emit_error env (lty, InvalidTypeStorable (ty))) fty;
 
     if   check_and_emit_name_free ~pre:`Asset env f
     then Option.map (fun fty -> mkloc (loc f) (unloc f, fty, init)) fty

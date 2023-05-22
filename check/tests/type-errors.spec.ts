@@ -481,6 +481,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/no_packable_unpack.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('no_passable', async () => {
+    const stat = compile("../tests/type-errors/no_passable.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('no_pkey_assignment_in_addupdate', async () => {
     const stat = compile("../tests/type-errors/no_pkey_assignment_in_addupdate.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -491,6 +495,14 @@ describe('type-errors', async () => {
   })
   it('no_result_in_prog', async () => {
     const stat = compile("../tests/type-errors/no_result_in_prog.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('no_storable_in_asset', async () => {
+    const stat = compile("../tests/type-errors/no_storable_in_asset.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('no_storable_in_variable', async () => {
+    const stat = compile("../tests/type-errors/no_storable_in_variable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('no_update_asset_key', async () => {

@@ -85,24 +85,8 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/neg_literal_tez.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('no_passable', async () => {
-    const stat = compile("../tests/proposal-type-errors/no_passable.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('no_return', async () => {
     const stat = compile("../tests/proposal-type-errors/no_return.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_side_effect_in_function2', async () => {
-    const stat = compile("../tests/proposal-type-errors/no_side_effect_in_function2.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_storable_in_asset', async () => {
-    const stat = compile("../tests/proposal-type-errors/no_storable_in_asset.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('no_storable_in_variable', async () => {
-    const stat = compile("../tests/proposal-type-errors/no_storable_in_variable.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('plus_equals_nat_rational', async () => {
