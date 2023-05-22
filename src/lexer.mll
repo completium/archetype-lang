@@ -156,6 +156,7 @@ let no_transfer = "no" blank+ "transfer"
 let fail_if  = "fail" blank+ "if"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
+let number   = ('-')? digit+
 let tz_addr  = (("tz" ('1' | '2' | '3' | '4')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 let tz_expr  = "expr" ['0'-'9' 'a'-'z' 'A'-'Z']+
 let annot    = ['@' ':' '$' '&' '%' '!' '?'] (['_' '0'-'9' 'a'-'z' 'A'-'Z' '%' '@'])+
@@ -186,6 +187,10 @@ rule token = parse
   | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }
   | (pep515 as input) 'i' { NUMBERINT (Big_int.big_int_of_string input) }
   | pep515 as input       { NUMBERNAT (Big_int.big_int_of_string input) }
+  | (bytes as v) "g1"     { BYTES_G1 (String.sub v 2 ((String.length v) - 2)) }
+  | (bytes as v) "g2"     { BYTES_G2 (String.sub v 2 ((String.length v) - 2)) }
+  | (bytes as v) "fr"     { BYTES_FR (String.sub v 2 ((String.length v) - 2)) }
+  | (number as input) "fr" { NUMBER_FR (Big_int.big_int_of_string input) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }

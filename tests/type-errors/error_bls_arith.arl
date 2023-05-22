@@ -1,0 +1,8 @@
+archetype arith_bls2
+
+variable r : bls12_381_fr = 10fr
+
+entry exec () {
+  var a : nat = 1;
+  r := r + a;
+}

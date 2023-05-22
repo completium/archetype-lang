@@ -455,10 +455,10 @@ let pp_mterm fmt (mt : mterm) =
     | Mkey v       -> Format.fprintf fmt "\"%a\"" pp_str v
     | Mkey_hash v  -> Format.fprintf fmt "\"%a\"" pp_str v
     | Msignature v -> Format.fprintf fmt "\"%a\"" pp_str v
-    | Mbls12_381_fr v -> Format.fprintf fmt "0x%s" v
-    | Mbls12_381_fr_n v -> pp_big_int fmt v
-    | Mbls12_381_g1 v -> Format.fprintf fmt "0x%s" v
-    | Mbls12_381_g2 v -> Format.fprintf fmt "0x%s" v
+    | Mbls12_381_fr v -> Format.fprintf fmt "0x%sfr" v
+    | Mbls12_381_fr_n v -> Format.fprintf fmt "%afr" pp_big_int v
+    | Mbls12_381_g1 v -> Format.fprintf fmt "0x%sg1" v
+    | Mbls12_381_g2 v -> Format.fprintf fmt "0x%sg2" v
     | Munit -> Format.fprintf fmt "Unit"
     | MsaplingStateEmpty _ -> Format.fprintf fmt "0x00"
     | MsaplingTransaction (_, v) -> Format.fprintf fmt "0x%s" v

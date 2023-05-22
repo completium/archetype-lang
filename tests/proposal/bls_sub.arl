@@ -1,6 +1,6 @@
 archetype bls_sub
 
-variable res : bls12_381_fr = 0x01
+variable res : bls12_381_fr = 0x01fr
 
 entry exec () {
   res := res - res

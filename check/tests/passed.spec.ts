@@ -121,6 +121,7 @@ import * as assign_vardecl_rat_int from '../bindings/passed/assign_vardecl_rat_i
 import * as assign_vardecl_rat_nat from '../bindings/passed/assign_vardecl_rat_nat'
 import * as before_asset_api from '../bindings/passed/before_asset_api'
 import * as before_var from '../bindings/passed/before_var'
+import * as bls_lit from '../bindings/passed/bls_lit'
 import * as builtin_in_function from '../bindings/passed/builtin_in_function'
 import * as called_by_an_asset from '../bindings/passed/called_by_an_asset'
 import * as cast from '../bindings/passed/cast'
@@ -3759,6 +3760,11 @@ describe('passed', async () => {
     await before_var.before_var.exec({ as: alice })
     const v_after = await before_var.before_var.get_v()
     assert(v_after.equals(new Int(0)))
+  })
+
+  it('bls_lit', async () => {
+    await bls_lit.bls_lit.deploy({ as: alice })
+    // TODO
   })
 
   it('builtin_in_function', async () => {

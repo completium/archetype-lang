@@ -142,6 +142,10 @@ let pp_bval fmt (bval : bval) =
     | BVduration v             -> Core.pp_duration_for_printer fmt v
     | BVbytes s                -> Format.fprintf fmt "0x%a" pp_str s
     | BVunit                   -> Format.fprintf fmt "Unit"
+    | BVbls12_381_num_fr n     -> Format.fprintf fmt "%afr" pp_big_int n
+    | BVbls12_381_byt_fr v     -> Format.fprintf fmt "0x%sfr" v
+    | BVbls12_381_g1 v         -> Format.fprintf fmt "0x%sg1" v
+    | BVbls12_381_g2 v         -> Format.fprintf fmt "0x%sg2" v
   in
   pp_struct_poly pp_node fmt bval
 

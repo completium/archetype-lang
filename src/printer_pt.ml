@@ -843,6 +843,10 @@ and pp_literal fmt lit =
   | Ldate                 d -> Format.fprintf fmt "%s" d
   | Lbytes                s -> Format.fprintf fmt "0x%s" s
   | Lpercent              n -> Format.fprintf fmt "%s%%" n
+  | LnumberFr             n -> Format.fprintf fmt "%sfr" (Big_int.string_of_big_int n)
+  | LbytesFr              s -> Format.fprintf fmt "0x%sfr" s
+  | LbytesG1              s -> Format.fprintf fmt "0x%sg1" s
+  | LbytesG2              s -> Format.fprintf fmt "0x%sg2" s
 
 and pp_ident_ident fmt a =
   match a with

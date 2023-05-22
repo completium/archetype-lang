@@ -1,0 +1,8 @@
+{ storage
+    (pair (bls12_381_fr %a)
+          (bls12_381_fr %b)
+          (bls12_381_g1 %c)
+          (bls12_381_g2 %d)
+          (bls12_381_fr %e)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } }

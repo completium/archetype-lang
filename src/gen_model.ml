@@ -369,6 +369,10 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Plit ({node = BVduration d; _})             -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})                -> M.Mbytes v
       | A.Plit ({node = BVunit; _})                   -> M.Munit
+      | A.Plit ({node = BVbls12_381_num_fr n; _})     -> M.Mbls12_381_fr_n n
+      | A.Plit ({node = BVbls12_381_byt_fr v; _})     -> M.Mbls12_381_fr v
+      | A.Plit ({node = BVbls12_381_g1 v; _})         -> M.Mbls12_381_g1 v
+      | A.Plit ({node = BVbls12_381_g2 v; _})         -> M.Mbls12_381_g2 v
 
 
       | A.Pdot (e, id) -> begin
@@ -427,11 +431,6 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | A.Tbuiltin VTstring, A.Tbuiltin VTkey,          { node = Mstring v; _} -> M.Mkey v
           | A.Tbuiltin VTstring, A.Tbuiltin VTkeyhash,      { node = Mstring v; _} -> M.Mkey_hash v
           | A.Tbuiltin VTstring, A.Tbuiltin VTsignature,    { node = Mstring v; _} -> M.Msignature v
-          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_fr, { node = Mbytes v; _}  -> M.Mbls12_381_fr v
-          | A.Tbuiltin VTnat,    A.Tbuiltin VTbls12_381_fr, { node = Mnat v; _}    -> M.Mbls12_381_fr_n v
-          | A.Tbuiltin VTint,    A.Tbuiltin VTbls12_381_fr, { node = Mint v; _}    -> M.Mbls12_381_fr_n v
-          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_g1, { node = Mbytes v; _}  -> M.Mbls12_381_g1 v
-          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_g2, { node = Mbytes v; _}  -> M.Mbls12_381_g2 v
           | A.Tbuiltin VTbytes,  A.Tsapling_transaction n,  { node = Mbytes v; _}  -> M.MsaplingTransaction (n, v)
           | A.Tbuiltin VTbytes,  A.Tbuiltin VTchest,        { node = Mbytes v; _}  -> M.Mchest v
           | A.Tbuiltin VTbytes,  A.Tbuiltin VTchest_key,    { node = Mbytes v; _}  -> M.Mchest_key v

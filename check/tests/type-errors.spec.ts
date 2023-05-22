@@ -177,6 +177,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/effect_method_asset_update_partition.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('error_bls_arith', async () => {
+    const stat = compile("../tests/type-errors/error_bls_arith.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('expr_cmp_eq_list', async () => {
     const stat = compile("../tests/type-errors/expr_cmp_eq_list.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

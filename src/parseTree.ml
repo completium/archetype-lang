@@ -208,6 +208,10 @@ and literal =
   | Ldate           of string
   | Lbytes          of string
   | Lpercent        of string
+  | LnumberFr       of Core.big_int
+  | LbytesFr        of string
+  | LbytesG1        of string
+  | LbytesG2        of string
 
 and record_item = (assignment_operator * lident) option * expr
 

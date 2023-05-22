@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
   - Side effect in function
   - Michelson instruction
+### Changed
+  - BREAKING: bls curves literals
 
 ## [1.4.2] - 2023-05-03
 ### Added

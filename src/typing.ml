@@ -437,18 +437,10 @@ end = struct
         | A.VTstring   , A.VTkeyhash    -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
 
-        | A.VTbls12_381_fr, A.VTnat -> Some 3
         | A.VTbls12_381_fr, A.VTint -> Some 2
-
-        | A.VTint, A.VTbls12_381_fr -> Some 1
-        | A.VTnat, A.VTbls12_381_fr -> Some 2
 
         | A.VTstring, A.VTchainid -> Some 1
         | A.VTbytes, A.VTchainid -> Some 1
-
-        | A.VTbytes, A.VTbls12_381_fr -> Some 1
-        | A.VTbytes, A.VTbls12_381_g2 -> Some 1
-        | A.VTbytes, A.VTbls12_381_g1 -> Some 1
 
         | A.VTbytes, A.VTchest -> Some 1
         | A.VTbytes, A.VTchest_key -> Some 1
@@ -1299,6 +1291,13 @@ let opsigs =
                            PT.Unary PT.Uminus, ([x], x)])
         [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
       |> List.flatten)
+      @
+      [
+         PT.Arith PT.Mult   , ([A.VTnat; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
+         PT.Arith PT.Mult   , ([A.VTint; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
+         PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTnat      ], A.VTbls12_381_fr)  ;
+         PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTint      ], A.VTbls12_381_fr)  ;
+      ]
   in
 
   cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others @ bls_curves
@@ -3130,6 +3129,11 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
       let n, d = Core.string_to_big_int_percent n in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
+
+  | LnumberFr n -> mk_sp A.vtbls12_381_fr (A.BVbls12_381_num_fr n)
+  | LbytesFr v -> mk_sp A.vtbls12_381_fr (A.BVbls12_381_byt_fr v)
+  | LbytesG1 v -> mk_sp A.vtbls12_381_g1 (A.BVbls12_381_g1 v)
+  | LbytesG2 v -> mk_sp A.vtbls12_381_g2 (A.BVbls12_381_g2 v)
 
 (* -------------------------------------------------------------------- *)
 type ekind = [`Init | `Entry | `Function | `View ]

@@ -309,6 +309,10 @@ and bval_node =
   | BVduration     of Core.duration
   | BVbytes        of string
   | BVunit
+  | BVbls12_381_num_fr of Core.big_int
+  | BVbls12_381_byt_fr of string
+  | BVbls12_381_g1 of string
+  | BVbls12_381_g2 of string
 [@@deriving show {with_path = false}]
 
 

@@ -66,6 +66,7 @@ let string_of_token = function
   | OFFCHAIN             -> "OFFCHAIN"
   | NUMBERNAT n          -> Printf.sprintf "NUMBERNAT(%s)" (Big_int.string_of_big_int n)
   | NUMBERINT n          -> Printf.sprintf "NUMBERINT(%s)" (Big_int.string_of_big_int n)
+  | NUMBER_FR n          -> Printf.sprintf "NUMBER_FR(%s)" (Big_int.string_of_big_int n)
   | NOT                  -> "NOT"
   | NONE                 -> "NONE"
   | NO_TRANSFER          -> "NO_TRANSFER"
@@ -154,6 +155,9 @@ let string_of_token = function
   | CALLED               -> "CALLED"
   | CALL_VIEW            -> "CALL_VIEW"
   | CALL                 -> "CALL"
+  | BYTES_G2 s           -> Printf.sprintf "BYTES_G2(%s)" s
+  | BYTES_G1 s           -> Printf.sprintf "BYTES_G1(%s)" s
+  | BYTES_FR s           -> Printf.sprintf "BYTES_FR(%s)" s
   | BYTES s              -> Printf.sprintf "BYTES(%s)" s
   | BY                   -> "BY"
   | BIG_MAP              -> "BIG_MAP"
@@ -239,6 +243,7 @@ let string_of_symbol = function
   | X (T T_OFFCHAIN)-> "offchain"
   | X (T T_NUMBERNAT) -> "a nat number"
   | X (T T_NUMBERINT) -> "a int number"
+  | X (T T_NUMBER_FR) -> "number_fr"
   | X (T T_NOT) -> "not"
   | X (T T_NONE) -> "none"
   | X (T T_NO_TRANSFER) -> "no transfer"
@@ -268,8 +273,8 @@ let string_of_symbol = function
   | X (T T_LEFT) -> "left"
   | X (T T_LBRACKET) -> "["
   | X (T T_LBRACE) -> "{"
-  | X (T T_LAMBDA_MICHELSON) -> "lambda_michelson"
   | X (T T_LAMBDA) -> "lambda"
+  | X (T T_LAMBDA_MICHELSON) -> "lambda_michelson"
   | X (T T_ITERABLE_BIG_MAP) -> "iterable_big_map"
   | X (T T_ITER) -> "iter"
   | X (T T_IS) -> "is"
@@ -329,6 +334,9 @@ let string_of_symbol = function
   | X (T T_CALL) -> "call"
   | X (T T_CALL_VIEW) -> "call_view"
   | X (T T_BYTES) -> "bytes"
+  | X (T T_BYTES_G2) -> "bytes_g2"
+  | X (T T_BYTES_G1) -> "bytes_g1"
+  | X (T T_BYTES_FR) -> "bytes_fr"
   | X (T T_BY) -> "by"
   | X (T T_BIG_MAP) -> "big_map"
   | X (T T_BEGIN) -> "begin"

@@ -195,6 +195,10 @@
 %token <string> DATE
 %token <string> BYTES
 %token <string> PERCENT_LIT
+%token <string> BYTES_FR
+%token <string> BYTES_G1
+%token <string> BYTES_G2
+%token <Big_int.big_int> NUMBER_FR
 
 %nonassoc IN
 
@@ -1014,6 +1018,10 @@ literal:
  | x=DATE                 { Ldate           x }
  | x=BYTES                { Lbytes          x }
  | x=PERCENT_LIT          { Lpercent        x }
+ | x=BYTES_FR             { LbytesFr        x }
+ | x=BYTES_G1             { LbytesG1        x }
+ | x=BYTES_G2             { LbytesG2        x }
+ | x=NUMBER_FR            { LnumberFr       x }
 
 %inline bool_value:
  | TRUE  { true }
