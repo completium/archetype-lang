@@ -1,4 +1,4 @@
-archetype arith_bls2
+archetype error_bls_arith
 
 variable r : bls12_381_fr = 10fr
 

@@ -772,6 +772,7 @@ type error_desc =
   | InvalidSourcedByExpression
   | InvalidStateExpression
   | InvalidStringValue
+  | InvalidTezValueNeg
   | InvalidTezValueOverflow
   | InvalidTypeDeclOpt
   | InvalidTypeForAddressToContract
@@ -1039,6 +1040,7 @@ let pp_error_desc fmt e =
   | InvalidSourcedByAsset              -> pp "Invalid 'Sourcedby' asset, the key must be typed address"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidStringValue                 -> pp "Invalid string value"
+  | InvalidTezValueNeg                 -> pp "Invalid tez value, cannot be negative"
   | InvalidTezValueOverflow            -> pp "Overflow tez value"
   | InvalidTypeForAddressToContract    -> pp "Invalid type for address_to_contract"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
@@ -1291,13 +1293,13 @@ let opsigs =
                            PT.Unary PT.Uminus, ([x], x)])
         [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
       |> List.flatten)
-      @
-      [
-         PT.Arith PT.Mult   , ([A.VTnat; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
-         PT.Arith PT.Mult   , ([A.VTint; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
-         PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTnat      ], A.VTbls12_381_fr)  ;
-         PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTint      ], A.VTbls12_381_fr)  ;
-      ]
+    @
+    [
+      PT.Arith PT.Mult   , ([A.VTnat; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
+      PT.Arith PT.Mult   , ([A.VTint; A.VTbls12_381_fr      ], A.VTbls12_381_fr)  ;
+      PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTnat      ], A.VTbls12_381_fr)  ;
+      PT.Arith PT.Mult   , ([A.VTbls12_381_fr; A.VTint      ], A.VTbls12_381_fr)  ;
+    ]
   in
 
   cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others @ bls_curves
@@ -3077,6 +3079,8 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
   let get_tz_value k tz =
     try
       let res = Core.string_to_big_int_tz k tz in
+      if Big_int.sign_big_int res = -1
+      then Env.emit_error env (loc topv, InvalidTezValueNeg);
       let max = Big_int.big_int_of_string "9223372036854775807" in
       if Big_int.gt_big_int res max
       then Env.emit_error env (loc topv, InvalidTezValueOverflow);
