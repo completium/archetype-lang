@@ -279,6 +279,7 @@ let to_const = function
   | CrequireEntrypoint     -> "require_entrypoint"
   | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
+  | CselfCallView          -> "self_call_view"
   | Cmakeevent             -> "make_event"
   | Csimplifyrational      -> "simplify_rational"
   | Cgetnumerator          -> "get_numerator"

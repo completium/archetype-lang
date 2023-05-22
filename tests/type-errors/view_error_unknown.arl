@@ -1,0 +1,7 @@
+archetype view_error_unknown
+
+variable res : option<string> = none
+
+entry exec() {
+  res := self.get(2, 3)
+}

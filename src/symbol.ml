@@ -415,6 +415,7 @@ let string_of_symbol = function
   | X (N N_option_calledby_) -> "a call by option"
   | X (N N_option_asset_options_) -> "assets option"
   | X (N N_option_asset_fields_) -> "asset fields option"
+  | X (N N_option_app_args_) -> "app args option"
   | X (N N_nonempty_list_type_tuple_) -> "a non empty list of type tuple"
   | X (N N_nonempty_list_transition_to_item_) -> "a non empty list of transition to item"
   | X (N N_nonempty_list_mich_argument_) -> "a non empty list of mich arguments"

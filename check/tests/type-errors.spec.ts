@@ -529,5 +529,37 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/update_type_error.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('view_error_bad_arguments_0', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_arguments_0.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_bad_arguments_1', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_arguments_1.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_bad_arguments_2', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_arguments_2.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_bad_fs_kind_fun', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_fs_kind_fun.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_bad_fs_kind_getter', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_fs_kind_getter.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_bad_return_type_fun', async () => {
+    const stat = compile("../tests/type-errors/view_error_bad_return_type_fun.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_off_chain_visibility', async () => {
+    const stat = compile("../tests/type-errors/view_error_off_chain_visibility.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_error_unknown', async () => {
+    const stat = compile("../tests/type-errors/view_error_unknown.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
 })
   

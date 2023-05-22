@@ -205,6 +205,7 @@ type const =
   | CrequireEntrypoint
   | CcallView
   | CimportCallView
+  | CselfCallView
   | Csimplifyrational
   | Cgetnumerator
   | Cgetdenominator

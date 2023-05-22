@@ -120,6 +120,10 @@ and micheline_t =
   | MIprim   of string * micheline_t list * string list
   | MIseq    of micheline_t list
 
+and method_kind =
+  | MKexpr of expr
+  | MKself
+
 and expr_unloc =
   | Eterm          of (id_scope * lident)
   | Eliteral       of literal
@@ -132,7 +136,7 @@ and expr_unloc =
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list
   | Eappt          of function_ * type_t list * expr list
-  | Emethod        of expr * lident * expr list
+  | Emethod        of method_kind * lident * expr list
   | Etransfer      of transfer_t
   | Edetach        of lident * expr * expr
   | Edorequire     of expr * expr

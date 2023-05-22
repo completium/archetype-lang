@@ -400,6 +400,11 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "self.%a"
         pp_mid id
 
+    | Mselfcallview (_t, id, args) ->
+      Format.fprintf fmt "self.%a(%a)"
+        pp_id id
+        (pp_list ", " f) args
+
 
     (* operation *)
 

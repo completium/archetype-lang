@@ -1,6 +1,6 @@
 archetype view_with_self
 
-variable res : nat = 0
+variable res : option<nat> = none
 
 view get() : nat {
   return 2

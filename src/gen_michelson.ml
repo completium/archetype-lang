@@ -845,6 +845,7 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mimportcallview (_t, _a, _b, _c) -> emit_error (UnsupportedTerm ("Mimportcallview"))
     | Mself id                -> get_self_entrypoint (M.unloc_mident id)
+    | Mselfcallview (_t, _id, _args) -> emit_error (UnsupportedTerm ("Mselfcallview"))
 
 
     (* operation *)

@@ -879,6 +879,9 @@ type error_desc =
   | UpdateEffectWithoutDefault
   | UselessPattern
   | UsePkeyOfInsteadOfAsset
+  | ViewInvalidFsType                  of ident * ident
+  | ViewInvalidReturnType
+  | ViewInvalidVisibility
   | VoidMethodInExpr
   | VSetInExpr
   | VSetOnNonAsset
@@ -1146,6 +1149,9 @@ let pp_error_desc fmt e =
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UselessPattern                     -> pp "Useless match branch"
   | UsePkeyOfInsteadOfAsset            -> pp "Cannot reference assets directly, use `pkey of` instead"
+  | ViewInvalidFsType (id, k)          -> pp "Invalid declaration kind, `%s' is %s, expected view" id k
+  | ViewInvalidReturnType              -> pp "Invalid view returned type"
+  | ViewInvalidVisibility              -> pp "Invalid view visibility, must be on-chain"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
   | VSetInExpr                         -> pp "Virtual set in expression"
   | VSetOnNonAsset                     -> pp "Virtual set modifier on non-asset"
@@ -4182,7 +4188,44 @@ let rec for_xexpr
         | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc_nmid id, [])); bailout ()
       end
 
-    | Emethod (the, m, args) -> begin
+    | Emethod (MKself, id, args) -> begin
+        let vdecl =
+          match Env.Function.lookup env (Current, unloc id) with
+          | Some d -> begin
+              match d.fs_kind with
+              | FKview visibility -> begin
+                  if (match visibility with | VVoffchain -> true | _ -> false)
+                  then (Env.emit_error env (loc tope, ViewInvalidVisibility); bailout ());
+                  d
+                end
+              | FKfunction -> (Env.emit_error env (loc tope, ViewInvalidFsType (unloc id, "a function")); bailout ())
+              | FKgetter -> (Env.emit_error env (loc tope, ViewInvalidFsType (unloc id, "a getter")); bailout ())
+            end
+          | _ -> Env.emit_error env (loc tope, UnknownView (unloc id)); bailout ()
+        in
+
+        let rt =
+          match vdecl.fs_retty with
+          | Typed ty -> ty
+          | _ -> (Env.emit_error env (loc tope, ViewInvalidReturnType); A.vtunit)
+        in
+
+        if (List.length vdecl.fs_args <> List.length args)
+        then begin
+          Env.emit_error env (loc tope, InvalidNumberOfArguments (List.length vdecl.fs_args, List.length args));
+          mk_sp (Some (A.Toption rt)) (A.Pvar (dumloc "", (mkloc (loc tope) "<error>")))
+        end
+        else begin
+          let tys = List.map snd vdecl.fs_args in
+
+          let args = List.map2 (fun ty v -> A.AExpr (for_xexpr env ~ety:ty v)) tys args in
+          mk_sp
+            (Some (A.Toption rt))
+            (A.Pcall (None, A.Cconst CselfCallView, [rt], [A.AIdent id] @ args))
+        end
+      end
+
+    | Emethod (MKexpr the, m, args) -> begin
         match unloc the, args with
         | Eapp (Fident (SINone, cn), [a]), [arg] when Option.is_some (Env.Import.lookup env (unloc cn)) -> begin
             let view_id = unloc m in
@@ -5378,7 +5421,7 @@ let rec for_instruction_r
 
   try
     match unloc i with
-    | Emethod (pthe, m, args) -> begin
+    | Emethod (MKexpr pthe, m, args) -> begin
         let check_side_effect _ =
           begin
             match kind with

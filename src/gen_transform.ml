@@ -4635,6 +4635,10 @@ let remove_import_mterm (model : model) =
     let f = aux ctx in
     match mt.node with
     | Mimportcallview (t, a, b, c) -> mk_mterm (Mcallview (t, f a, b, f c)) (mt.type_)
+    | Mselfcallview (t, id, args) -> begin
+        let arg = mk_pair (List.map f args) in
+        mk_mterm (Mcallview (t, mselfaddress, (None, id), arg)) (mt.type_)
+      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

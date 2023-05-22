@@ -392,12 +392,12 @@
          ADD ;
          DIP 1 { DIG 8 ; DROP 1 } ;
          DUG 8 ;
-         PUSH int 1 ;
+         PUSH bls12_381_fr 1 ;
          DUP 10 ;
          ADD ;
          DIP 1 { DIG 8 ; DROP 1 } ;
          DUG 8 ;
-         PUSH int 1 ;
+         PUSH bls12_381_fr 1 ;
          DUP 10 ;
          ADD ;
          DIP 1 { DIG 8 ; DROP 1 } ;

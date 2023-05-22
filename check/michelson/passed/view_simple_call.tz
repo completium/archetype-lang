@@ -1,0 +1,25 @@
+{ storage (option nat) ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         SELF_ADDRESS ;
+         PUSH nat 5 ;
+         PUSH string "mystr" ;
+         PAIR ;
+         VIEW "my_view" nat ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } ;
+  view "my_view"
+       (pair string nat)
+       nat
+       { CAR ;
+         UNPAIR ;
+         UNIT ;
+         DUP 3 ;
+         DUP 3 ;
+         SIZE ;
+         ADD ;
+         SWAP ;
+         DROP 1 ;
+         DIP 1 { DROP 2 } } }

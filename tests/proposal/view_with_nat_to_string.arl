@@ -1,0 +1,11 @@
+archetype view_with_nat_to_string
+
+variable res : option<string> = none
+
+view my_view(n : nat) : string {
+  return nat_to_string(n)
+}
+
+entry exec() {
+  res := self.my_view(2)
+}

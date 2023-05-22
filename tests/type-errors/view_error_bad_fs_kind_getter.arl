@@ -1,0 +1,11 @@
+archetype view_error_bad_fs_kind_getter
+
+variable res : option<string> = none
+
+getter get(a : nat, b : nat) : nat {
+  return (a + b)
+}
+
+entry exec() {
+  res := self.get(2, 3)
+}

@@ -897,7 +897,7 @@ simple_expr_r:
      { Esqapp (i, e) }
 
  | x=simple_expr DOT id=ident a=app_args
-     { Emethod (x, id, a) }
+     { Emethod (MKexpr x, id, a) }
 
  | x=simple_expr QUESTIONDOT s=scope y=ident
      { Equestiondot (x, (s, y)) }
@@ -968,8 +968,8 @@ simple_expr_r:
  | EMIT LESS t=type_t GREATER x=paren(expr)
      { Eemit (t, x) }
 
- | SELF DOT x=ident
-     { Eself x }
+ | SELF DOT x=ident a=app_args?
+     { match a with None -> Eself x | Some a -> Emethod (MKself, x, a) }
 
  | GET_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
      { Eentrypoint (t, a, b, None) }

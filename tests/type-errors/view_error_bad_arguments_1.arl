@@ -1,0 +1,11 @@
+archetype view_error_bad_arguments_1
+
+variable res : option<nat> = none
+
+view get(a : nat, b : nat) : nat {
+  return (a + b)
+}
+
+entry exec() {
+  res := self.get(2, 3, 4)
+}

@@ -1604,6 +1604,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mcallview (_t, _a, _b, _c)       -> assert false
     | Mimportcallview (_t, _a, _b, _c) -> assert false
     | Mself _id                        -> assert false
+    | Mselfcallview (_t, _id, _args)   -> assert false
 
 
     (* operation *)

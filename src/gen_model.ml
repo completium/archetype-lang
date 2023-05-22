@@ -989,6 +989,11 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let t = type_to_type t in
         M.Mimportcallview (t, addr, M.mk_mident id, arg)
 
+      | A.Pcall (None, A.Cconst A.CselfCallView, [t], (AIdent id)::args) ->
+        let args = List.map (function | A.AExpr a -> f a | _ -> assert false) args in
+        let t = type_to_type t in
+        M.Mselfcallview (t, id, args)
+
       (* Fail *)
 
       | A.Pcall (aux, A.Cconst c, types, args) ->
@@ -1601,10 +1606,10 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | Some x -> begin
               let ds = x.funs |> List.filter (function
                   | A.Ffunction fs-> begin
-                    match fs.kind with
-                    | FKfunction -> not fs.side_effect && not fs.storage_usage
-                    | _ -> false
-                  end
+                      match fs.kind with
+                      | FKfunction -> not fs.side_effect && not fs.storage_usage
+                      | _ -> false
+                    end
                   | A.Ftransaction _ -> false) in
               ds @ accu
             end

@@ -476,7 +476,7 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt (e, id, args) =
       Format.fprintf fmt "%a.%a%a"
-        pp_simple_expr e
+        (fun fmt -> function | MKself -> Format.fprintf fmt "self"  | MKexpr e -> pp_simple_expr fmt e) e
         pp_id id
         (fun fmt args ->
            match args with

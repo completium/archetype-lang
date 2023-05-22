@@ -1252,6 +1252,7 @@ import * as view_offchain_nat from '../bindings/passed/view_offchain_nat'
 import * as view_onchain from '../bindings/passed/view_onchain'
 import * as view_onchain_offchain from '../bindings/passed/view_onchain_offchain'
 import * as view_simple from '../bindings/passed/view_simple'
+import * as view_simple_call from '../bindings/passed/view_simple_call'
 import * as view_simple_caller from '../bindings/passed/view_simple_caller'
 import * as view_storage_0 from '../bindings/passed/view_storage_0'
 import * as view_storage_1 from '../bindings/passed/view_storage_1'
@@ -1259,6 +1260,8 @@ import * as view_storage_2 from '../bindings/passed/view_storage_2'
 import * as view_storage_3 from '../bindings/passed/view_storage_3'
 import * as view_storage_4 from '../bindings/passed/view_storage_4'
 import * as view_storage_5 from '../bindings/passed/view_storage_5'
+import * as view_with_self from '../bindings/passed/view_with_self'
+import * as view_with_self_add from '../bindings/passed/view_with_self_add'
 import * as with_metadata_json from '../bindings/passed/with_metadata_json'
 import * as with_metadata_json_with_offchain_view from '../bindings/passed/with_metadata_json_with_offchain_view'
 import * as with_metadata_uri from '../bindings/passed/with_metadata_uri'
@@ -14120,7 +14123,7 @@ describe('passed', async () => {
     const res_imported_after = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_imported()
     assert(res_imported_after.equals(Option.Some(new Nat(5))))
     const res_top_after = await import_arl_view_use_collide.import_arl_view_use_collide.get_res_top()
-    assert(res_top_after.equals(Option.None()))
+    assert(res_top_after.equals(Option.Some<string>("mystr")))
   })
 
   it('import_tz_entry_use', async () => {
@@ -24333,6 +24336,18 @@ describe('passed', async () => {
     assert(n_view_after?.equals(new Nat(3)))
   })
 
+  it('view_simple_call', async () => {
+    await view_simple_call.view_simple_call.deploy({ as: alice })
+
+    const res_before = await view_simple_call.view_simple_call.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await view_simple_call.view_simple_call.exec({ as: alice })
+
+    const res_after = await view_simple_call.view_simple_call.get_res()
+    assert(res_after.equals(Option.Some(new Nat(10))))
+  })
+
   it('view_simple_caller', async () => {
     await view_simple.view_simple.deploy({ as: alice })
     await view_simple_caller.view_simple_caller.deploy({ as: alice })
@@ -24490,6 +24505,30 @@ describe('passed', async () => {
     assert(c_after.equals(new Nat(3)))
     const d_after = await view_storage_5.view_storage_5.get_d()
     assert(d_after.equals(new Nat(4)))
+  })
+
+  it('view_with_self', async () => {
+    await view_with_self.view_with_self.deploy({ as: alice })
+
+    const res_before = await view_with_self.view_with_self.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await view_with_self.view_with_self.exec({ as: alice })
+
+    const res_after = await view_with_self.view_with_self.get_res()
+    assert(res_after.equals(Option.Some(new Nat(2))))
+  })
+
+  it('view_with_self_add', async () => {
+    await view_with_self_add.view_with_self_add.deploy({ as: alice })
+
+    const res_before = await view_with_self_add.view_with_self_add.get_res()
+    assert(res_before.equals(Option.None()))
+
+    await view_with_self_add.view_with_self_add.exec({ as: alice })
+
+    const res_after = await view_with_self_add.view_with_self_add.get_res()
+    assert(res_after.equals(Option.Some(new Nat(5))))
   })
 
   it('with_metadata_json', async () => {

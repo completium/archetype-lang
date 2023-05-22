@@ -1,0 +1,11 @@
+archetype view_error_off_chain_visibility
+
+variable res : option<nat> = none
+
+offchain view get(a : nat, b : nat) : nat {
+  return (a + b)
+}
+
+entry exec() {
+  res := self.get(2, 3)
+}
