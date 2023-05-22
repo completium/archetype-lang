@@ -25,10 +25,6 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/bad_type_for_pack.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
-  it('getter_used_like_function', async () => {
-    const stat = compile("../tests/proposal-type-errors/getter_used_like_function.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('id_redefinition', async () => {
     const stat = compile("../tests/proposal-type-errors/id_redefinition.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

@@ -1,0 +1,9 @@
+archetype view_used_like_function
+
+view my_view() : nat {
+  return 0
+}
+
+entry exec () {
+  const r = my_view();
+}

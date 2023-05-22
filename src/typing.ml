@@ -729,6 +729,7 @@ type error_desc =
   | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
+  | InvalidApplicationKind             of ident * ident
   | InvalidArcheTypeDecl
   | InvalidArgForGlobalConstant
   | InvalidAssetCollectionExpr         of A.ptyp
@@ -999,6 +1000,7 @@ let pp_error_desc fmt e =
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
+  | InvalidApplicationKind (id, k)     -> pp "Invalid function, `%s' is %s" id k
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidArgForGlobalConstant        -> pp "Invalid argument for `global_constant', must be a constant expr"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
@@ -4020,6 +4022,13 @@ let rec for_xexpr
     | Eapp (Fident f, args) when Env.Function.exists env (unloc_nmid f) ->
       let fun_ = Option.get (Env.Function.lookup env (unloc_nmid f)) in
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+
+      begin
+        match fun_.fs_kind with
+        | FKgetter -> Env.emit_error env (loc tope, InvalidApplicationKind(unloc (snd f), "a getter"))
+        | FKview _ -> Env.emit_error env (loc tope, InvalidApplicationKind(unloc (snd f), "a view"))
+        | FKfunction -> ()
+      end;
 
       begin
         match mode.em_kind, fun_.fs_side_effect with

@@ -349,6 +349,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/fun_view_instr_side_effect.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('getter_used_like_function', async () => {
+    const stat = compile("../tests/type-errors/getter_used_like_function.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('import_arl_fun_error_instr', async () => {
     const stat = compile("../tests/type-errors/import_arl_fun_error_instr.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -559,6 +563,10 @@ describe('type-errors', async () => {
   })
   it('view_error_unknown', async () => {
     const stat = compile("../tests/type-errors/view_error_unknown.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('view_used_like_function', async () => {
+    const stat = compile("../tests/type-errors/view_used_like_function.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
 })
