@@ -514,6 +514,7 @@ import * as expr_fun_concat_byt from '../bindings/passed/expr_fun_concat_byt'
 import * as expr_fun_concat_list_byt from '../bindings/passed/expr_fun_concat_list_byt'
 import * as expr_fun_concat_list_str from '../bindings/passed/expr_fun_concat_list_str'
 import * as expr_fun_concat_str from '../bindings/passed/expr_fun_concat_str'
+import * as expr_fun_exp_horner from '../bindings/passed/expr_fun_exp_horner'
 import * as expr_fun_floor from '../bindings/passed/expr_fun_floor'
 import * as expr_fun_get_denominator from '../bindings/passed/expr_fun_get_denominator'
 import * as expr_fun_get_numerator from '../bindings/passed/expr_fun_get_numerator'
@@ -9918,6 +9919,18 @@ describe('passed', async () => {
 
     const res_after = await expr_fun_concat_str.expr_fun_concat_str.get_res()
     assert(res_after == "abcdef")
+  })
+
+  it('expr_fun_exp_horner', async () => {
+    await expr_fun_exp_horner.expr_fun_exp_horner.deploy({ as: alice })
+
+    const res_before = await expr_fun_exp_horner.expr_fun_exp_horner.get_res()
+    assert(res_before.equals(new Rational(0)))
+
+    await expr_fun_exp_horner.expr_fun_exp_horner.exec(new Rational(0.55), new Nat(20), { as: alice })
+
+    const res_0 = await expr_fun_exp_horner.expr_fun_exp_horner.get_res()
+    assert(res_0.toString() == "1.73325301786739523682")
   })
 
   it('expr_fun_floor', async () => {

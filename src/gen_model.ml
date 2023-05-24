@@ -843,6 +843,11 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let fx = f x in
         M.Misimplicitaddress (fx)
 
+      | A.Pcall (None, A.Cconst A.Cexphorner, [], [AExpr x; AExpr s]) ->
+        let fx = f x in
+        let fs = f s in
+        M.Mexp_horner (fx, fs)
+
       | A.Pcall (_, A.Cid id, _, args) ->
         M.Mapp (to_mident id, List.map (fun x -> term_arg_to_expr f x) args)
 

@@ -1489,7 +1489,8 @@ let coreops : opinfo list =
     op "bytes_to_nat" A.Cbytestonat `Total None [A.vtbytes] (`Ty A.vtnat) Mint.empty;
     op "nat_to_bytes" A.Cnattobytes `Total None [A.vtnat] (`Ty A.vtbytes) Mint.empty;
     op "bytes_to_int" A.Cbytestoint `Total None [A.vtbytes] (`Ty A.vtint) Mint.empty;
-    op "int_to_bytes" A.Cinttobytes `Total None [A.vtint] (`Ty A.vtbytes) Mint.empty
+    op "int_to_bytes" A.Cinttobytes `Total None [A.vtint] (`Ty A.vtbytes) Mint.empty;
+    op "exp_horner" A.Cexphorner `Total None [A.vtrational; A.vtnat] (`Ty A.vtrational) Mint.empty;
   ]
 
 

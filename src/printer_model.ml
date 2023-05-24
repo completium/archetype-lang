@@ -1466,6 +1466,12 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "is_implicit_address (%a)"
         f x
 
+    | Mexp_horner (x, s) ->
+      Format.fprintf fmt "exp_horner (%a, %a)"
+        f x
+        f s
+
+
     (* crypto functions *)
 
     | Mblake2b x ->

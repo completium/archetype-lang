@@ -1163,6 +1163,7 @@ let to_ir (model : M.model) : T.ir =
     | Mget_numerator     x -> T.Iunop (Ucar,  f x)
     | Mget_denominator   x -> T.Iunop (Ucdr,  f x)
     | Misimplicitaddress x -> let b = T.Bis_implicit_address  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mexp_horner (_x, _s) -> emit_error (UnsupportedTerm ("Mexp_horner"))
 
     (* crypto functions *)
 

@@ -286,6 +286,7 @@ let to_const = function
   | Cgetdenominator        -> "get_denominator"
   | Cglobalconstant        -> "global_constant"
   | Cisimplicitaddress     -> "is_implicit_address"
+  | Cexphorner             -> "exp_horner"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"

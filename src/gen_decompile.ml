@@ -1843,6 +1843,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mget_numerator _x     -> assert false
     | Mget_denominator _x   -> assert false
     | Misimplicitaddress _x -> assert false
+    | Mexp_horner (_x, _s)  -> assert false
 
 
     (* crypto functions *)

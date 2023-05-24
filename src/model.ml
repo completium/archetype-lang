@@ -411,6 +411,7 @@ type 'term mterm_node  =
   | Mget_numerator     of 'term
   | Mget_denominator   of 'term
   | Misimplicitaddress of 'term
+  | Mexp_horner        of 'term * 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -916,6 +917,7 @@ let tcontract t            = mktype (Tcontract t)
 let tticket t              = mktype (Tticket t)
 let tsapling_state       n = mktype (Tsapling_state n)
 let tsapling_transaction n = mktype (Tsapling_transaction n)
+let trational              = mktype (Tbuiltin Brational)
 let tchainid               = mktype (Tbuiltin Bchainid)
 let tbls12_381_fr          = mktype (Tbuiltin Bbls12_381_fr)
 let tbls12_381_g1          = mktype (Tbuiltin Bbls12_381_g1)
@@ -949,6 +951,8 @@ let mk_bnat         x = mk_mterm (Mnat x) tnat
 let mk_nat          x = mk_bnat  (Big_int.big_int_of_int x)
 let mk_bint         x = mk_mterm (Mint x) tint
 let mk_int          x = mk_bint  (Big_int.big_int_of_int x)
+let mk_brational  n d = mk_mterm (Mrational (n, d)) trational
+let mk_rational   n d = mk_mterm (Mrational (Big_int.big_int_of_int n, Big_int.big_int_of_int d)) trational
 let mk_address      x = mk_mterm (Maddress x) taddress
 let unit              = mk_mterm (Munit) tunit
 let mk_sapling_state_empty n = mk_mterm (MsaplingStateEmpty n) (tsapling_state n)
@@ -989,6 +993,10 @@ let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : 
 
 let mk_letin id v b = mk_mterm (Mletin([id], LVsimple v, Some v.type_, b, None)) b.type_
 
+let mk_declvar id ty v = mk_mterm (Mdeclvar ([id], Some ty, v, false)) tunit
+let mk_iter id bound_min bound_max body is_nat = mk_mterm (Miter (id, bound_min, bound_max, body, is_nat)) tunit
+let mk_return x = mk_mterm (Mreturn x) tunit
+
 let mk_tupleaccess n (x : mterm) =
   match get_ntype x.type_ with
   | Ttuple lt ->
@@ -1003,6 +1011,8 @@ let mk_max (lhs : mterm) (rhs : mterm) (t : type_) = mk_mterm (Mmax (lhs, rhs)) 
 let mk_abs (x : mterm) = mk_mterm (Mabs x) tnat
 
 let mk_nat_to_int (x : mterm) = mk_mterm (Mnattoint x) tint
+let mk_int_to_rat (x : mterm) = mk_mterm (Minttorat x) trational
+let mk_nat_to_rat (x : mterm) = mk_mterm (Mnattorat x) trational
 
 let mk_some x = mk_mterm (Msome x) (toption x.type_)
 
@@ -1475,6 +1485,7 @@ let cmp_mterm_node
     | Mget_numerator x1, Mget_numerator x2                                             -> cmp x1 x2
     | Mget_denominator x1, Mget_denominator x2                                         -> cmp x1 x2
     | Misimplicitaddress x1, Misimplicitaddress x2                                     -> cmp x1 x2
+    | Mexp_horner (x1, s1), Mexp_horner (x2, s2)                                       -> cmp x1 x2 && cmp s1 s2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1941,6 +1952,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mget_numerator x               -> Mget_numerator (f x)
   | Mget_denominator x             -> Mget_denominator (f x)
   | Misimplicitaddress x           -> Misimplicitaddress (f x)
+  | Mexp_horner (x, s)             -> Mexp_horner (f x, f s)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2319,6 +2331,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mget_numerator x                      -> f accu x
   | Mget_denominator x                    -> f accu x
   | Misimplicitaddress x                  -> f accu x
+  | Mexp_horner (x, s)                    -> f (f accu x) s
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -3534,6 +3547,12 @@ let fold_map_term
   | Misimplicitaddress x ->
     let xe, xa = f accu x in
     g (Misimplicitaddress xe), xa
+
+  | Mexp_horner (x, s) ->
+    let xe, xa = f accu x in
+    let se, sa = f xa s in
+    g (Mexp_horner (xe, se)), sa
+
 
   (* crypto functions *)
 

@@ -210,6 +210,7 @@ type const =
   | Cgetnumerator
   | Cgetdenominator
   | Cglobalconstant
+  | Cexphorner
   (* set *)
   | Csadd
   | Csremove

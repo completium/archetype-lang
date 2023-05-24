@@ -2049,6 +2049,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/expr_fun_concat_str.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('expr_fun_exp_horner', async () => {
+    const stat = compile("../tests/passed/expr_fun_exp_horner.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('expr_fun_floor', async () => {
     const stat = compile("../tests/passed/expr_fun_floor.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

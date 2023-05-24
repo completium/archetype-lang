@@ -4738,3 +4738,70 @@ let remove_unused_function (model : model) : model =
     functions = List.filter is_used_function model.functions
   }
 
+let add_builtin_functions (model : model) : model =
+
+  let cst_exp_horner = "exp_horner" in
+
+  let fetch_builtin_funs _ : SetString.t =
+    let rec aux ctx (accu : SetString.t) (mt : mterm) : SetString.t =
+      let f = aux ctx in
+      match mt.node with
+      | Mexp_horner (x, s) -> let accu = f (f accu x) s in SetString.add cst_exp_horner accu
+      | _ -> fold_term f accu mt
+    in
+    fold_model aux model SetString.empty
+  in
+
+  let fun_set = fetch_builtin_funs () in
+
+  let funs : function_node list = SetString.fold (fun x accu ->
+      if String.equal cst_exp_horner x
+      then begin
+        let name = mk_mident (dumloc cst_exp_horner) in
+
+        let x_mident = mk_mident (dumloc "x") in
+        let s_mident = mk_mident (dumloc "s") in
+        let r_mident = mk_mident (dumloc "r") in
+        let i_mident = mk_mident (dumloc "i") in
+        let body =
+          let one_rat = mk_rational 1 1 in
+          let minus_int x y = mk_mterm (Mminus (x, y)) tint in
+          let plus_rational x y = mk_mterm (Mplus (x, y)) trational in
+          let minus_rational x y = mk_mterm (Mminus (x, y)) trational in
+          let mult_rational x y = mk_mterm (Mmult (x, y)) trational in
+          let divrat_rational x y = mk_mterm (Mdivrat (x, y)) trational in
+          let x_var = mk_pvar x_mident trational in
+          let s_var = mk_pvar s_mident tnat in
+          let r_var = mk_mvar r_mident trational in
+          let i_var = mk_mvar i_mident tint in
+          seq [
+            mk_declvar r_mident trational (plus_rational one_rat (mk_mterm (Mdivrat (x_var, mk_nat_to_rat s_var)) trational));
+            mk_iter i_mident (mk_int 1) (minus_int (mk_nat_to_int s_var) (mk_int 1))
+              (seq [
+                  mk_mterm (Massign (ValueAssign, trational, Avar r_mident,
+                                     plus_rational one_rat (mult_rational x_var (divrat_rational r_var (minus_rational s_var (mk_int_to_rat i_var))))
+                                    )) tunit
+                ]) false;
+            mk_mterm (Mreturn r_var) tunit
+          ] in
+        let args = [(x_mident, trational, None); (s_mident, tnat, None)] in
+        let fs : function_struct = mk_function_struct ~args name body in
+        let res : function_node = Function (fs, Typed trational) in
+        res::accu
+      end
+      else assert false) fun_set []
+  in
+
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mexp_horner (x, s) -> begin
+        let name = mk_mident (dumloc cst_exp_horner) in
+        let x = f x in let s = f s in mk_mterm (Mapp(name, [x; s])) trational
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  let model = map_mterm_model aux model in
+
+  let model = {model with functions = funs @ model.functions } in
+  model
