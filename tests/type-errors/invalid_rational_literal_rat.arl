@@ -1,0 +1,3 @@
+archetype invalid_rational_literal_rat
+
+variable r : rational = 2 / 0.0

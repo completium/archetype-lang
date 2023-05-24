@@ -389,6 +389,18 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_container_instr.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('invalid_rational_literal_int', async () => {
+    const stat = compile("../tests/type-errors/invalid_rational_literal_int.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_rational_literal_nat', async () => {
+    const stat = compile("../tests/type-errors/invalid_rational_literal_nat.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_rational_literal_rat', async () => {
+    const stat = compile("../tests/type-errors/invalid_rational_literal_rat.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_type_do_require', async () => {
     const stat = compile("../tests/type-errors/invalid_type_do_require.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

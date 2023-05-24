@@ -811,6 +811,7 @@ type error_desc =
   | InvalidValueForMemoSize
   | InvalidVariableForMethod
   | InvalidVarOrArgType
+  | InvalidZeroValue
   | LabelInNonInvariant
   | LetInElseInInstruction
   | LetInElseOnNonOption
@@ -1083,6 +1084,7 @@ let pp_error_desc fmt e =
   | InvalidValueForMemoSize            -> pp "Invalid value for memo size (0 <= n <= 65535)"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
+  | InvalidZeroValue                   -> pp "Invalid value, cannot be 0 in the context"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
@@ -3893,7 +3895,24 @@ let rec for_xexpr
 
           | Arith op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
-            A.Parith (tt_arith_operator op, a1, a2)
+            let op = tt_arith_operator op in
+            begin
+              match op with
+              | DivRat (*| DivEuc | Modulo | DivMod*) -> begin
+                  let rec is_zero (pterm : A.pterm) =
+                    match pterm.node with
+                    | Pcast(_, _, v) -> is_zero v
+                    | Plit ({node = BVnat n})
+                    | Plit ({node = BVint n})
+                    | Plit ({node = BVrational (n, _)}) -> Big_int.eq_big_int n Big_int.zero_big_int
+                    | _ -> false
+                  in
+                  if is_zero a2
+                  then Env.emit_error env (a2.loc, InvalidZeroValue)
+                end
+              | _ -> ()
+            end;
+            A.Parith (op, a1, a2)
 
           | Cmp op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
