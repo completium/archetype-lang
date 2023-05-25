@@ -61,6 +61,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/asset_value_key_opt.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('assign_error_int_rat', async () => {
+    const stat = compile("../tests/type-errors/assign_error_int_rat.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('bad_type_return', async () => {
     const stat = compile("../tests/type-errors/bad_type_return.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -523,6 +527,10 @@ describe('type-errors', async () => {
   })
   it('no_var_sum', async () => {
     const stat = compile("../tests/type-errors/no_var_sum.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('plus_equals_nat_rational', async () => {
+    const stat = compile("../tests/type-errors/plus_equals_nat_rational.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('same_field_name', async () => {

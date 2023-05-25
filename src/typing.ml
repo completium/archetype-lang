@@ -5182,7 +5182,7 @@ and for_arg_effect
     None
 
 (* -------------------------------------------------------------------- *)
-and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e =
+and for_assign_expr ?autoview ?(asset = false) ?(t : A.ptyp option) mode env orloc (op, lfty, rfty) e =
   let op =
     match op with
     | ValueAssign -> None
@@ -5197,7 +5197,7 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
   let ety = if Option.is_none op then Some rfty else None in
   let e = for_xexpr ?autoview mode env ?ety e in
 
-  Format.eprintf "lfty=%a@\nrfty=%a@\n" Printer_ast.pp_ptyp lfty Printer_ast.pp_ptyp rfty;
+  (* Format.eprintf "lfty=%a@\nrfty=%a@\n" Printer_ast.pp_ptyp lfty Printer_ast.pp_ptyp rfty; *)
 
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
@@ -5205,7 +5205,13 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
         |> Option.bind (fun ety ->
             select_operator env ~asset orloc (op, [lfty; ety]))
         |> Option.map (fun sig_ ->
-            cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e)))
+            Option.iter (fun ty ->
+              match op, sig_.osl_ret, ty with
+              | PT.Arith PT.Minus, A.Tbuiltin VTint, A.Tbuiltin VTnat -> ()
+              | _, from_, to_ when not (Type.compatible ~autoview:false ~for_eq:false ~from_ ~to_) -> Env.emit_error env (e.loc, IncompatibleTypes (from_, to_))
+              | _, _, _ -> ()) t;
+            cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e))
+  )
 
 (* -------------------------------------------------------------------- *)
 and for_role (env : env) (name : PT.lident) =
@@ -5557,7 +5563,7 @@ let rec for_instruction_r
 
           | Some (_, fty) ->
             let mode = { em_pred = false; em_kind = kind; } in
-            for_assign_expr mode env (loc plv) (op, fty, fty) pe
+            for_assign_expr ~t mode env (loc plv) (op, fty, fty) pe
         in
 
         env, mki (A.Iassign (op, t, x, e, None))
@@ -5583,7 +5589,7 @@ let rec for_instruction_r
           | Some (_, fty) ->
             let fty = A.Toption fty in
             let mode = { em_pred = false; em_kind = kind; } in
-            for_assign_expr mode  env (loc plv) (op, fty, fty) pe
+            for_assign_expr mode ~t env (loc plv) (op, fty, fty) pe
         in
 
         env, mki (A.Iassign (op, t, x, e, Some fa))

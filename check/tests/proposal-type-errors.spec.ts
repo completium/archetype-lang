@@ -13,10 +13,6 @@ const compile = (p : string) => {
 /* Tests ------------------------------------------------------------------- */
 
 describe('proposal-type-errors', async () => {
-  it('assign_error_int_rat', async () => {
-    const stat = compile("../tests/proposal-type-errors/assign_error_int_rat.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
   it('assign_op_nat_rat', async () => {
     const stat = compile("../tests/proposal-type-errors/assign_op_nat_rat.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
@@ -83,10 +79,6 @@ describe('proposal-type-errors', async () => {
   })
   it('no_return', async () => {
     const stat = compile("../tests/proposal-type-errors/no_return.arl")
-    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
-  })
-  it('plus_equals_nat_rational', async () => {
-    const stat = compile("../tests/proposal-type-errors/plus_equals_nat_rational.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
   it('record_not_comparable', async () => {
