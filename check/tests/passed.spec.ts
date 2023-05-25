@@ -720,6 +720,7 @@ import * as function_with_nat_to_string from '../bindings/passed/function_with_n
 import * as function_with_simplify_rational from '../bindings/passed/function_with_simplify_rational'
 import * as get_in_require_failif from '../bindings/passed/get_in_require_failif'
 import * as get_some_with_msg from '../bindings/passed/get_some_with_msg'
+import * as getter_called_by from '../bindings/passed/getter_called_by'
 import * as greedy_and from '../bindings/passed/greedy_and'
 import * as greedy_or from '../bindings/passed/greedy_or'
 import * as implicit_cast_to_view from '../bindings/passed/implicit_cast_to_view'
@@ -13537,6 +13538,17 @@ describe('passed', async () => {
 
     const res_after = await get_some_with_msg.get_some_with_msg.get_res()
     assert(res_after.equals(new Nat(1)))
+  })
+
+  it('getter_called_by', async () => {
+    await getter_called_by.getter_called_by.deploy({ as: alice })
+
+    await expect_to_fail(async () => {
+      await getter_called_by.getter_called_by.get({as : bob })
+    }, { "string": "INVALID_CALLER" })
+
+    const res = await getter_called_by.getter_called_by.get({as : alice})
+    assert(res.equals(new Nat(2)))
   })
 
   it('greedy_and', async () => {

@@ -286,6 +286,7 @@ and declaration_unloc =
   | Dasset         of asset_decl
   | Drecord        of record_decl
   | Dentry         of entry_decl
+  | Dgetter        of getter_decl
   | Dtransition    of transition_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -319,6 +320,14 @@ and entry_decl =
   * args
   * entry_properties
   * expr option
+
+and getter_decl = {
+  name  : lident;
+  args  : args;
+  ret_t : type_t;
+  entry_properties : entry_properties;
+  body  : expr;
+}
 
 and transition_decl =
   lident
@@ -604,6 +613,7 @@ let get_name = function
   | Drecord (id, _, _)              -> unloc id
   | Devent  (id, _, _)              -> unloc id
   | Dentry (id, _, _, _)            -> unloc id
+  | Dgetter {name; _}               -> unloc name
   | Dtransition (id, _, _, _, _) -> unloc id
   | Dnamespace (id, _)              -> unloc id
   | Dfunction fs                    -> unloc fs.name

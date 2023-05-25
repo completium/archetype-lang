@@ -1591,52 +1591,52 @@
         "prim": null,
         "int": null,
         "bytes": null,
-        "string": "INTERNAL_ERROR",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "INTERNAL_ERROR",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "INTERNAL_ERROR",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
         "string": "USER_GETOPT_INTERNAL_ERROR",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INTERNAL_ERROR",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INTERNAL_ERROR",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    },
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "INTERNAL_ERROR",
         "args": [],
         "annots": [],
         "array": [],

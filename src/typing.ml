@@ -1007,7 +1007,7 @@ let pp_error_desc fmt e =
   | InvalidArgForGlobalConstant        -> pp "Invalid argument for `global_constant', must be a constant expr"
   | InvalidArgumentType (from_, to_)   -> pp "Invalid argument type, expected: %a, actual: %a" Printer_ast.pp_ptyp to_ Printer_ast.pp_ptyp from_
   | InvalidArlFile                     -> pp "Invalid arl file"
-  | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
+  | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" Printer_ast.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
   | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
@@ -1336,6 +1336,7 @@ let opsigs =
 type acttx = [
   | `Entry      of PT.entry_decl
   | `Transition of PT.transition_decl
+  | `Getter     of PT.getter_decl
 ]
 
 type groups = {
@@ -1732,6 +1733,8 @@ type txeffect = {
 type tentrydecl = {
   ad_name   : A.lident;
   ad_args   : (A.lident * A.ptyp) list;
+  ad_getter : bool;
+  ad_ret_t  : A.ptyp option;
   ad_srcby  : (A.pterm option) loced list * A.pterm option;
   ad_callby : (A.pterm option) loced list * A.pterm option;
   ad_stateis: (A.lident * A.pterm option) option;
@@ -3151,7 +3154,7 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
   | LbytesG2 v -> mk_sp A.vtbls12_381_g2 (A.BVbls12_381_g2 v)
 
 (* -------------------------------------------------------------------- *)
-type ekind = [`Init | `Entry | `Function | `View ]
+type ekind = [`Init | `Entry | `Getter | `Function | `View ]
 
 type emode_t = {
   em_kind : ekind;
@@ -5196,6 +5199,8 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
   let ety = if Option.is_none op then Some rfty else None in
   let e = for_xexpr ?autoview mode env ?ety e in
 
+  Format.eprintf "lfty=%a@\nrfty=%a@\n" Printer_ast.pp_ptyp lfty Printer_ast.pp_ptyp rfty;
+
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
         e.type_
@@ -5353,7 +5358,7 @@ let for_lvalue (kind : ekind) (env : env) (e : PT.expr) : env * (A.lvalue * A.pt
 
       | Some (`Global vd) ->
         begin match vd.vr_kind, kind, vd.vr_core with
-          | `Variable, (`Entry | `Function), _
+          | `Variable, (`Entry | `Getter | `Function), _
           | _, _, Some (A.Coperations | A.Cmetadata) ->
             ()
           | `Variable, `View, _ ->
@@ -5459,6 +5464,7 @@ let rec for_instruction_r
             match kind with
             | `Entry -> ()
             | `Function -> ()
+            | `Getter -> ()
             | `View -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInView)
             | `Init -> ()
           end
@@ -6011,9 +6017,9 @@ and for_instruction ~(ret : A.type_ option) (kind : ekind) (env : env) (i : PT.e
   Env.inscope env (fun env -> for_instruction_r ~ret kind env i)
 
 (* -------------------------------------------------------------------- *)
-let for_effect (kind : ekind) (env : env) (effect : PT.expr) =
+let for_effect ~(ret : A.type_ option) (kind : ekind) (env : env) (effect : PT.expr) =
   Env.inscope env (fun env ->
-      let env, i = for_instruction ~ret:None kind env effect in (env, (env, i)))
+      let env, i = for_instruction kind env effect ~ret in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
 let for_named_state ?enum (env : env) (x : PT.lident) =
@@ -6117,7 +6123,7 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr `Entry env ~ety:A.vtaddress cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_entry (env : env) (act : PT.entry_properties) i =
+let for_entry (env : env) (act : PT.entry_properties) i (ret : PT.type_t option) =
   let fe = for_expr `Entry env in
   let sourcedby = Option.map (fun (x, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd) act.sourcedby in
   let calledby  = Option.map (fun (x, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd) act.calledby  in
@@ -6126,17 +6132,18 @@ let for_entry (env : env) (act : PT.entry_properties) i =
   let env, cst  = Option.foldmap (for_cfs `Entry) env act.constants in
   let env, req  = Option.foldmap (for_rfs `Entry) env act.require in
   let env, fai  = Option.foldmap (for_rfs `Entry) env act.failif in
-  let env, poeffect = Option.foldmap (for_effect `Entry) env i in
+  let ret = Option.bind (for_type env) ret in
+  let env, poeffect = Option.foldmap (for_effect ~ret:ret (if Option.is_some ret then `Entry else `Getter)) env i in
   let effect = Option.map snd poeffect in
   let env, funs = List.fold_left_map for_function env act.functions in
-  (env, (sourcedby, calledby, stateis, actfs, cst, req, fai, funs, effect))
+  (env, (ret, sourcedby, calledby, stateis, actfs, cst, req, fai, funs, effect))
 
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
   let tx_state  = for_named_state ?enum env state in
   let tx_when   = Option.map (for_expr ~ety:(A.Tbuiltin A.VTbool) `Function env) when_ in
   let env, tx_effect = snd_map (Option.map snd)
-      (Option.foldmap (for_effect `Entry) env effect) in
+      (Option.foldmap (for_effect ~ret:None `Entry) env effect) in
 
   env, { tx_state; tx_when; tx_effect; }
 
@@ -6727,12 +6734,14 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
-            let env, (srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
-              for_entry env pt i in
+            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
+              for_entry env pt i None in
 
             let decl =
               { ad_name   = x;
                 ad_args   = List.pmap (fun x -> x) args;
+                ad_getter = false;
+                ad_ret_t  = ret;
                 ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
                 ad_callby = Option.get_dfl [] (fst callby), snd callby;
                 ad_stateis= stateis;
@@ -6748,6 +6757,37 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       in
 
       if check_and_emit_name_free env x then
+        (Env.Tentry.push env decl, Some decl)
+      else (env, None)
+    end
+
+  | `Getter {name; args; ret_t; entry_properties; body} -> begin
+      let env, decl =
+        Env.inscope env (fun env ->
+            let env, args = for_args_decl env args in
+            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
+              for_entry env entry_properties (Some body) (Some ret_t) in
+
+            let decl =
+              { ad_name   = name;
+                ad_args   = List.pmap (fun x -> x) args;
+                ad_getter = true;
+                ad_ret_t  = ret;
+                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
+                ad_callby = Option.get_dfl [] (fst callby), snd callby;
+                ad_stateis= stateis;
+                ad_effect = Option.map (fun x -> `Raw x) effect;
+                ad_funs   = funs;
+                ad_csts   = Option.get_dfl [] csts;
+                ad_reqs   = Option.get_dfl [] reqs;
+                ad_fais   = Option.get_dfl [] fais;
+                ad_actfs  = actfs; } in
+
+            (env, decl))
+
+      in
+
+      if check_and_emit_name_free env name then
         (Env.Tentry.push env decl, Some decl)
       else (env, None)
     end
@@ -6772,8 +6812,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
             env, Option.map fst aout, Option.map snd aout in
 
           let from_ = for_state_formula ?enum env from_ in
-          let env, (srcby, callby, stateis, actfs, csts, reqs, fais, funs, _effect) =
-            for_entry env entrys None in
+          let env, (_ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, _effect) =
+            for_entry env entrys None None in
 
           let env, tx =
             List.fold_left_map (for_transition ?enum) env tx in
@@ -6781,6 +6821,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
           let decl =
             { ad_name   = x;
               ad_args   = List.pmap (fun x -> x) args;
+              ad_getter = false;
+              ad_ret_t  = None;
               ad_srcby  = Option.get_dfl [] (fst srcby),  snd srcby;
               ad_callby = Option.get_dfl [] (fst callby), snd callby;
               ad_stateis= stateis;
@@ -6848,6 +6890,9 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
+
+    | PT.Dgetter infos ->
+      { g with gr_acttxs = mk (`Getter infos) :: g.gr_acttxs }
 
     | PT.Dtransition infos ->
       { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
@@ -7010,7 +7055,10 @@ let transentrys_of_tdecls tdecls =
       match tdecl.ad_effect with
       | Some (`Raw x) -> Some x | _ -> None in
 
-    A.{ name = tdecl.ad_name;
+    let kind = if tdecl.ad_getter then match tdecl.ad_ret_t with | Some ty -> A.Getter ty | None -> assert false else A.Entry in
+
+    A.{ kind = kind;
+        name = tdecl.ad_name;
         args =
           List.map (fun (x, xty) ->
               A.{ name = x; typ = Some xty; default = None; shadow  = false; loc = loc x; })
@@ -7027,7 +7075,9 @@ let transentrys_of_tdecls tdecls =
         effect          = effect;
         loc             = loc tdecl.ad_name; }
 
-  in List.map for1 (List.pmap id tdecls)
+  in
+  let getters, entries = List.fold_right (fun (x : A.transaction) (g, e) -> match x.kind with | Entry -> (g, x::e) | Getter _ -> (x::g, e) ) (List.map for1 (List.pmap id tdecls)) ([], []) in
+  (getters @ entries)
 
 (* -------------------------------------------------------------------- *)
 let for_parameters ?init env params =

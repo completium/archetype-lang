@@ -1,8 +1,8 @@
 archetype getter_called_by
 
 getter get () : nat {
-   called by tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+   called by tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
    effect {
-     return 0
+     return 2
    }
 }

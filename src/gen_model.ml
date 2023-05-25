@@ -1547,7 +1547,13 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let side_effect = false in
     let loc   = transaction.loc in
 
-    process_fun_gen (M.mk_mident transaction.name) args side_effect body loc (fun x -> M.Entry x)
+    let f fs =
+      match transaction.kind with
+      | Entry -> M.Entry fs
+      | Getter ty -> M.Getter (fs, type_to_type ty)
+    in
+
+    process_fun_gen (M.mk_mident transaction.name) args side_effect body loc f
   in
 
   let process_parameter env (p : A.parameter) : M.parameter =

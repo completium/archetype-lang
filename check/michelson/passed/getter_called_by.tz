@@ -1,0 +1,27 @@
+{ storage unit ;
+  parameter (pair %get unit (contract %callback nat)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         CDR ;
+         PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
+         SENDER ;
+         COMPARE ;
+         EQ ;
+         NOT ;
+         IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+         NIL operation ;
+         NIL operation ;
+         DUP 5 ;
+         ITER { CONS } ;
+         DUP 3 ;
+         AMOUNT ;
+         PUSH nat 2 ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         SWAP ;
+         PAIR } }

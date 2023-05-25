@@ -1175,6 +1175,21 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                      (pp_expr e_default PNone) code
                  )) cod)) (props, code)
 
+  | Dgetter ({name; args; ret_t; entry_properties; body}) ->
+    Format.fprintf fmt "getter %a%a : %a%a"
+      pp_id name
+      pp_fun_args args
+      pp_type ret_t
+      (pp_do_if (not (is_empty_entry_properties_opt entry_properties (Some body)))
+         (fun fmt x ->
+            let pr, cod = x in
+            Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
+              pp_entry_properties pr
+              (fun fmt code ->
+                   Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
+                     (pp_expr e_default PNone) code
+                 ) cod)) (entry_properties, body)
+
   | Dtransition (id, args, from, props, trs) ->
     Format.fprintf fmt "transition %a%a%a"
       pp_id id

@@ -1110,9 +1110,12 @@ let pp_function fmt (f : function_) =
 let pp_otherwise fmt o = pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" pp_pterm x) fmt o
 
 let pp_transaction_entry fmt (t : transaction) =
-  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+  let decl, oty = match t.kind with | Entry -> "entry", None | Getter ty -> ("getter", Some ty) in
+  Format.fprintf fmt "%s %a%a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+    decl
     pp_id t.name
     pp_fun_args t.args
+    (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_type x)) oty
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby

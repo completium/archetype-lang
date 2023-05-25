@@ -2873,6 +2873,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/get_some_with_msg.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('getter_called_by', async () => {
+    const stat = compile("../tests/passed/getter_called_by.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('greedy_and', async () => {
     const stat = compile("../tests/passed/greedy_and.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

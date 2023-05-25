@@ -296,7 +296,8 @@ declaration_r:
  | x=transition         { x }
  | x=namespace          { x }
  | x=function_decl      { x }
- | x=getter_decl        { x }
+ | x=getter             { x }
+ | x=getter_simple      { x }
  | x=view_decl          { x }
  | x=type_decl          { x }
  | INVALID_DECL         { Dinvalid }
@@ -372,20 +373,6 @@ function_decl:
 | f=function_gen
     { Dfunction f }
 
-%inline getter_gen:
- | GETTER id=ident xs=function_args
-     r=function_return? LBRACE b=fun_body RBRACE {
-  {
-    name   = id;
-    args   = xs;
-    ret_t  = r;
-    body   = b;
-    getter = true;
-    view   = false;
-    view_visibility = VVnone;
-  }
-}
-
 %inline view_visibility:
 | ONCHAIN OFFCHAIN { VVonoffchain }
 | ONCHAIN          { VVonchain }
@@ -405,10 +392,6 @@ function_decl:
     view_visibility = vv;
   }
 }
-
-getter_decl:
-| f=getter_gen
-    { Dfunction f }
 
 view_decl:
 | f=view_gen
@@ -561,6 +544,14 @@ entry:
 entry_simple:
   ENTRY x=ident args=function_args e=braced(block)
       { Dentry (x, args, dummy_entry_properties, Some e) }
+
+getter:
+  GETTER name=ident args=function_args ret_t=function_return LBRACE entry_properties=entry_properties body=effect RBRACE
+    { Dgetter { name; args; ret_t; entry_properties; body } }
+
+getter_simple:
+  GETTER name=ident args=function_args ret_t=function_return body=braced(block)
+    { Dgetter { name; args; ret_t; entry_properties = dummy_entry_properties; body } }
 
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
