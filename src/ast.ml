@@ -516,7 +516,6 @@ type view_visibility =
 
 type fun_kind =
   | FKfunction
-  | FKgetter
   | FKview of view_visibility
 [@@deriving show {with_path = false}]
 

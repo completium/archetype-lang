@@ -4048,7 +4048,6 @@ let rec for_xexpr
 
       begin
         match fun_.fs_kind with
-        | FKgetter -> Env.emit_error env (loc tope, InvalidApplicationKind(unloc (snd f), "a getter"))
         | FKview _ -> Env.emit_error env (loc tope, InvalidApplicationKind(unloc (snd f), "a view"))
         | FKfunction -> ()
       end;
@@ -4231,7 +4230,6 @@ let rec for_xexpr
                   d
                 end
               | FKfunction -> (Env.emit_error env (loc tope, ViewInvalidFsType (unloc id, "a function")); bailout ())
-              | FKgetter -> (Env.emit_error env (loc tope, ViewInvalidFsType (unloc id, "a getter")); bailout ())
             end
           | _ -> Env.emit_error env (loc tope, UnknownView (unloc id)); bailout ()
         in
@@ -6080,7 +6078,7 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty = Option.bind (for_type env) fdecl.ret_t in
-      let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
+      let place = if fdecl.view then `View else `Function in
       let env = Env.FunctionProperties.set_side_effect env false in
       let env = Env.FunctionProperties.set_return env false in
       Env.FunctionProperties.set_storage_usage env false;
@@ -6096,7 +6094,7 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
           let to_visibility = function | PT.VVonchain | PT.VVnone -> A.VVonchain | PT.VVoffchain -> A.VVoffchain | PT.VVonoffchain -> A.VVonoffchain in
           (env, Some {
               fs_name  = (Env.name env, fdecl.name);
-              fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview (to_visibility fdecl.view_visibility) else FKfunction;
+              fs_kind  = if fdecl.view then FKview (to_visibility fdecl.view_visibility) else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = (match rty with | Some ty -> Typed ty | None -> Void);
               fs_body  = body;
@@ -7249,12 +7247,6 @@ let rec for_import_decl (env : env) (decls : (PT.lident option * PT.lident) loce
                       let name = unloc_longident fs.name in
                       match fs.kind with
                       | FKfunction -> (accu_entrypoints, accu_views, fs::accu_funs)
-                      | FKgetter -> begin
-                          let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc_longident fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
-                          let typ_ = args_to_type fs.args in
-                          let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
-                          ((name, typ_)::accu_entrypoints, accu_views, accu_funs)
-                        end
                       | FKview (VVonchain | VVonoffchain )-> begin
                           let rt = (match fs.return with | A.Typed ty -> ty | A.Void -> (Env.emit_error env (loc_longident fs.name, FunctionInvalidTypeVoid); A.vtunit)) in
                           let typ_ = args_to_type fs.args in

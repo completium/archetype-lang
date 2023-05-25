@@ -1020,7 +1020,7 @@ let pp_assert fmt (id, f, is, u) =
 let pp_function fmt (f : s_function) =
   Format.fprintf fmt "%s%s %a %a%a {@\n%a@\n}@\n"
     (match f.view_visibility with | VVonoffchain -> "onchain offchain "  | VVonchain -> "onchain "  | VVoffchain -> "offchain "  | VVnone -> "")
-    (if f.getter then "getter" else if f.view then "view" else "function")
+    (if f.view then "view" else "function")
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t

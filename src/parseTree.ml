@@ -242,7 +242,6 @@ and s_function = {
   args  : args;
   ret_t : type_t option;
   body  : expr;
-  getter: bool;
   view  : bool;
   view_visibility: view_visibility;
 }
@@ -514,8 +513,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t body getter view view_visibility : s_function =
-  {name; args; ret_t; body; getter; view; view_visibility}
+let mk_s_function name args ret_t body view view_visibility : s_function =
+  {name; args; ret_t; body; view; view_visibility}
 
 let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?(functions = []) _ : entry_properties =
   { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; functions }

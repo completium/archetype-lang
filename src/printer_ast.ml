@@ -1101,7 +1101,7 @@ let pp_function fmt (f : function_) =
     | Typed ty -> pp_type fmt ty
   in
   Format.fprintf fmt "%s %a%a : %a =@\n  @[%a@]@\n"
-    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview vv -> ((match vv with | VVonchain -> "onchain" | VVoffchain -> "offchain" | VVonoffchain -> "offchain onchain") ^ " view"))
+    (match f.kind with | FKfunction -> "function" | FKview vv -> ((match vv with | VVonchain -> "onchain" | VVoffchain -> "offchain" | VVonoffchain -> "offchain onchain") ^ " view"))
     pp_longident f.name
     pp_fun_args f.args
     pp_returned_fun_type f.return

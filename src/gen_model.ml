@@ -1342,7 +1342,6 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let side_effect = function_.side_effect in
     let f     = match function_.kind with
       | FKfunction -> (fun x -> M.Function (x, (match function_.return with | A.Typed ty -> M.Typed (type_to_type ty) | A.Void -> M.Void)))
-      | FKgetter   -> (fun x -> M.Getter (x, get_ret_type function_.return))
       | FKview vv  -> (fun x -> M.View (x, get_ret_type function_.return, to_vv vv))
     in
     process_fun_gen name args side_effect body loc f

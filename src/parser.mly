@@ -359,7 +359,6 @@ namespace:
     args   = xs;
     ret_t  = r;
     body   = b;
-    getter = false;
     view   = false;
     view_visibility = VVnone;
   }
@@ -387,7 +386,6 @@ function_decl:
     args   = xs;
     ret_t  = r;
     body   = b;
-    getter = false;
     view   = true;
     view_visibility = vv;
   }
