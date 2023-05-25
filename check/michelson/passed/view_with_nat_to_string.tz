@@ -1,5 +1,5 @@
-{ storage string ;
-  parameter (nat %exec) ;
+{ storage (option string) ;
+  parameter (unit %exec) ;
   code { LAMBDA
            nat
            string
@@ -97,13 +97,116 @@
              SWAP ;
              DROP 1 } ;
          SWAP ;
-         UNPAIR ;
-         DUP 3 ;
-         DUP 2 ;
-         EXEC ;
-         DIP 1 { SWAP ; DROP 1 } ;
+         CDR ;
+         SELF_ADDRESS ;
+         PUSH nat 2 ;
+         VIEW "my_view" string ;
          SWAP ;
          DROP 1 ;
          NIL operation ;
          PAIR ;
+         DIP 1 { DROP 1 } } ;
+  view "my_view"
+       nat
+       string
+       { CAR ;
+         UNIT ;
+         DUP 2 ;
+         DUP ;
+         PUSH string "" ;
+         EMPTY_MAP nat string ;
+         PUSH string "9" ;
+         SOME ;
+         PUSH nat 9 ;
+         UPDATE ;
+         PUSH string "8" ;
+         SOME ;
+         PUSH nat 8 ;
+         UPDATE ;
+         PUSH string "7" ;
+         SOME ;
+         PUSH nat 7 ;
+         UPDATE ;
+         PUSH string "6" ;
+         SOME ;
+         PUSH nat 6 ;
+         UPDATE ;
+         PUSH string "5" ;
+         SOME ;
+         PUSH nat 5 ;
+         UPDATE ;
+         PUSH string "4" ;
+         SOME ;
+         PUSH nat 4 ;
+         UPDATE ;
+         PUSH string "3" ;
+         SOME ;
+         PUSH nat 3 ;
+         UPDATE ;
+         PUSH string "2" ;
+         SOME ;
+         PUSH nat 2 ;
+         UPDATE ;
+         PUSH string "1" ;
+         SOME ;
+         PUSH nat 1 ;
+         UPDATE ;
+         PUSH string "0" ;
+         SOME ;
+         PUSH nat 0 ;
+         UPDATE ;
+         PUSH nat 0 ;
+         PUSH nat 10 ;
+         DUP 5 ;
+         EDIV ;
+         IF_NONE
+           { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+           { DUP ; CDR ; SWAP ; DROP 1 } ;
+         COMPARE ;
+         NEQ ;
+         LOOP { DUP 2 ;
+                DUP 2 ;
+                PUSH nat 10 ;
+                DUP 6 ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CDR ; SWAP ; DROP 1 } ;
+                GET ;
+                IF_NONE { PUSH string "NOT_FOUND" ; FAILWITH } {} ;
+                CONCAT ;
+                DIP 1 { SWAP ; DROP 1 } ;
+                SWAP ;
+                PUSH nat 10 ;
+                DUP 4 ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CAR ; SWAP ; DROP 1 } ;
+                DIP 1 { DIG 2 ; DROP 1 } ;
+                DUG 2 ;
+                PUSH nat 0 ;
+                PUSH nat 10 ;
+                DUP 5 ;
+                EDIV ;
+                IF_NONE
+                  { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                  { DUP ; CDR ; SWAP ; DROP 1 } ;
+                COMPARE ;
+                NEQ } ;
+         DUP 4 ;
+         PUSH nat 0 ;
+         COMPARE ;
+         EQ ;
+         IF { PUSH string "0" } { DUP 2 } ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
+         SWAP ;
+         DROP 1 ;
          DIP 1 { DROP 1 } } }

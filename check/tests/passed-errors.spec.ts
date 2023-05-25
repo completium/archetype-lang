@@ -5041,6 +5041,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/view_storage_5.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('view_with_nat_to_string', async () => {
+    const stat = compile("../tests/passed/view_with_nat_to_string.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('view_with_self', async () => {
     const stat = compile("../tests/passed/view_with_self.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

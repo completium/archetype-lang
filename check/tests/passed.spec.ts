@@ -1262,6 +1262,7 @@ import * as view_storage_2 from '../bindings/passed/view_storage_2'
 import * as view_storage_3 from '../bindings/passed/view_storage_3'
 import * as view_storage_4 from '../bindings/passed/view_storage_4'
 import * as view_storage_5 from '../bindings/passed/view_storage_5'
+import * as view_with_nat_to_string from '../bindings/passed/view_with_nat_to_string'
 import * as view_with_self from '../bindings/passed/view_with_self'
 import * as view_with_self_add from '../bindings/passed/view_with_self_add'
 import * as with_metadata_json from '../bindings/passed/with_metadata_json'
@@ -24530,6 +24531,16 @@ describe('passed', async () => {
     assert(c_after.equals(new Nat(3)))
     const d_after = await view_storage_5.view_storage_5.get_d()
     assert(d_after.equals(new Nat(4)))
+  })
+
+  it('view_with_nat_to_string', async () => {
+    await view_with_nat_to_string.view_with_nat_to_string.deploy({ as: alice })
+
+    const res_123 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(123), {as: alice})
+    assert(res_123 == "123")
+
+    const res_0 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(0), {as: alice})
+    assert(res_0 == "0")
   })
 
   it('view_with_self', async () => {

@@ -4740,6 +4740,7 @@ let remove_unused_function (model : model) : model =
 
 let add_builtin_functions (model : model) : model =
 
+  let cst_nat_to_string = "nat_to_string" in
   let cst_exp_horner = "exp_horner" in
 
   let fetch_builtin_funs _ : SetString.t =
@@ -4747,6 +4748,7 @@ let add_builtin_functions (model : model) : model =
       let f = aux ctx in
       match mt.node with
       | Mexp_horner (x, s) -> let accu = f (f accu x) s in SetString.add cst_exp_horner accu
+      | Mnattostring x -> let accu = f accu x in SetString.add cst_nat_to_string accu
       | _ -> fold_term f accu mt
     in
     fold_model aux model SetString.empty
@@ -4755,7 +4757,55 @@ let add_builtin_functions (model : model) : model =
   let fun_set = fetch_builtin_funs () in
 
   let funs : function_node list = SetString.fold (fun x accu ->
-      if String.equal cst_exp_horner x
+      let mk_ret x = mk_mterm (Mreturn x) tunit in
+      if String.equal cst_nat_to_string x
+      then begin
+        let tymap = tmap tnat tstring in
+        let name = mk_mident (dumloc cst_nat_to_string) in
+
+        let a_mident = mk_mident (dumloc "a") in
+        let x_mident = mk_mident (dumloc "x") in
+        let r_mident = mk_mident (dumloc "r") in
+        let m_mident = mk_mident (dumloc "m") in
+        let body =
+          let mk_eq lhs rhs = mk_mterm (Mequal (tnat, lhs, rhs)) tbool in
+          let mk_ne lhs rhs = mk_mterm (Mnequal (tnat, lhs, rhs)) tbool in
+          let mk_mod10 x = mk_mterm (Mmodulo (x, mk_nat 10)) tnat in
+          let mk_while cond body = mk_mterm (Mwhile (cond, body)) tunit in
+          let mk_assign t id v = mk_mterm (Massign (ValueAssign, t, Avar id, v)) tunit in
+          let mk_concat lhs rhs = mk_mterm (Mconcat (lhs, rhs)) tstring in
+          let a_var = mk_pvar a_mident tnat in
+          let x_var = mk_mvar x_mident tnat in
+          let r_var = mk_mvar r_mident tstring in
+          let m_var = mk_mvar m_mident tymap in
+          let mk_mapget k = mk_mterm (Mmapget (MKMap, tnat, tstring, m_var, k, None)) tstring in
+          seq [
+            mk_declvar x_mident tnat a_var;
+            mk_declvar r_mident tstring (mk_string "");
+            mk_declvar m_mident tymap (mk_mterm (Mlitmap (MKMap, [
+                mk_nat 0, mk_string "0";
+                mk_nat 1, mk_string "1";
+                mk_nat 2, mk_string "2";
+                mk_nat 3, mk_string "3";
+                mk_nat 4, mk_string "4";
+                mk_nat 5, mk_string "5";
+                mk_nat 6, mk_string "6";
+                mk_nat 7, mk_string "7";
+                mk_nat 8, mk_string "8";
+                mk_nat 9, mk_string "9"
+              ])) tymap);
+            mk_while (mk_ne (mk_mod10 x_var) (mk_nat 0)) (seq [
+              mk_assign tstring r_mident (mk_concat (mk_mapget (mk_mod10 x_var)) r_var);
+              mk_assign tnat x_mident (mk_mterm (Mdiveuc (x_var, mk_nat 10)) tnat)
+            ]);
+            mk_ret (mk_mterm (Mexprif (mk_eq (mk_nat 0) a_var, mk_string "0", r_var)) tstring )
+          ] in
+        let args = [(a_mident, tnat, None)] in
+        let fs : function_struct = mk_function_struct ~args name body in
+        let res : function_node = Function (fs, Typed tstring) in
+        res::accu
+      end
+      else if String.equal cst_exp_horner x
       then begin
         let name = mk_mident (dumloc cst_exp_horner) in
 
@@ -4797,7 +4847,11 @@ let add_builtin_functions (model : model) : model =
     match mt.node with
     | Mexp_horner (x, s) -> begin
         let name = mk_mident (dumloc cst_exp_horner) in
-        let x = f x in let s = f s in mk_mterm (Mapp(name, [x; s])) trational
+        let x = f x in let s = f s in mk_mterm (Mapp (name, [x; s])) trational
+      end
+    | Mnattostring x -> begin
+        let name = mk_mident (dumloc cst_nat_to_string) in
+        let x = f x in mk_mterm (Mapp (name, [x])) tstring
       end
     | _ -> map_mterm (aux ctx) mt
   in

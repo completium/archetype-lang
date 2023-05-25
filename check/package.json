@@ -9,7 +9,7 @@
     "mockup_init": "completium-cli mockup init",
     "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts ./tests/type-errors.spec.ts ./tests/model-errors.spec.ts ./tests/contracts/*.spec.ts ./tests/passed.spec.ts",
     "test:errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts ./tests/type-errors.spec.ts ./tests/model-errors.spec.ts ./tests/passed-errors.spec.ts",
-    "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g getter_called_by",
+    "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g view_with_nat_to_string",
     "test:passed-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed-errors.spec.ts",
     "test:syntax-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts",
     "test:type-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/type-errors.spec.ts",
