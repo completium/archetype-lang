@@ -113,8 +113,6 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIBuiltin (Bfloor)]
       | Mceil _ ->
         [APIBuiltin (Bceil)]
-      | Mnattostring _ ->
-        [APIBuiltin (Bnattostring)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->

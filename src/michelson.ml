@@ -341,7 +341,6 @@ and builtin =
   | BlistNth of type_
   | BlistHead of type_
   | BlistTail of type_
-  | Bnattostring
   | Bbytestonat
   | Bnattobytes
   | Bratcmp
@@ -1139,7 +1138,6 @@ let cmp_builtin lhs rhs =
   | BlistNth t1, BlistNth t2           -> cmp_type t1 t2
   | BlistHead t1, BlistHead t2         -> cmp_type t1 t2
   | BlistTail t1, BlistTail t2         -> cmp_type t1 t2
-  | Bnattostring, Bnattostring         -> true
   | Bbytestonat, Bbytestonat           -> true
   | Bnattobytes, Bnattobytes           -> true
   | Bratcmp, Bratcmp                   -> true
@@ -1508,7 +1506,6 @@ end = struct
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | BlistHead t      -> "_list_head_"    ^ (ft t)
     | BlistTail t      -> "_list_tail_"    ^ (ft t)
-    | Bnattostring    -> "_nat_to_string_"
     | Bbytestonat     -> "_bytes_to_nat_"
     | Bnattobytes     -> "_nat_to_bytes_"
     | Bsimplify_rational    -> "_simplify_rational_"

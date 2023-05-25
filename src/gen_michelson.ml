@@ -295,7 +295,6 @@ let to_ir (model : M.model) : T.ir =
     | T.BlistNth       _ -> false
     | T.BlistHead      _ -> false
     | T.BlistTail      _ -> false
-    | T.Bnattostring     -> false
     | T.Bbytestonat      -> false
     | T.Bnattobytes      -> false
     | T.Bratcmp          -> false
@@ -318,7 +317,6 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_builtin_fun b : T.func =
-    let return x = T.Iassign (fun_result, x) in
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
     let ctx = T.mk_ctx_func () in
     match b with
@@ -353,45 +351,6 @@ let to_ir (model : M.model) : T.ir =
         let targ = T.tpair [(T.tlist t); T.tnat] in
         let tret = T.tlist t in
         T.mk_func name targ tret ctx (T.Abstract b)
-      end
-    | Bnattostring -> begin
-        let targ = T.tnat in
-        let tret = T.tstring in
-        let args, body = begin
-          let arg_name     = "x" in
-          let args         = [arg_name, targ] in
-          let res_name     = "res" in
-          let map_name     = "m" in
-          let pair_name    = "p" in
-          let zero   = T.inat Big_int.zero_big_int in
-          let ten    = T.inat (Big_int.big_int_of_int 10) in
-          let varg   = T.ivar arg_name in
-          let vres   = T.ivar res_name in
-          let vmap   = T.ivar map_name in
-          let vpair  = T.ivar pair_name in
-          let cond   = T.Icompare(Cgt, varg, zero) in
-          let map    = T.Imap (false, T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
-                                                          T.inat (Big_int.big_int_of_int 1), T.istring "1";
-                                                          T.inat (Big_int.big_int_of_int 2), T.istring "2";
-                                                          T.inat (Big_int.big_int_of_int 3), T.istring "3";
-                                                          T.inat (Big_int.big_int_of_int 4), T.istring "4";
-                                                          T.inat (Big_int.big_int_of_int 5), T.istring "5";
-                                                          T.inat (Big_int.big_int_of_int 6), T.istring "6";
-                                                          T.inat (Big_int.big_int_of_int 7), T.istring "7";
-                                                          T.inat (Big_int.big_int_of_int 8), T.istring "8";
-                                                          T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail M.fail_msg_NOT_FOUND, "_var_ifnone", T.ivar "_var_ifnone", T.tstring) in
-          let concat     = T.Ibinop (Bconcat, get_map, vres) in
-          let assign_res = T.Iassign (res_name, concat) in
-          let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", T.ivar "_var_ifnone", T.tpair [T.tint; T.tnat]) in
-          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
-          let loop       = T.Iloop (cond, b) in
-          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
-          args, T.Iif (cond, a, return (T.istring "0"), T.tunit)
-        end
-        in
-        T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Bbytestonat -> begin
         let targ = T.tbytes in
@@ -1147,7 +1106,7 @@ let to_ir (model : M.model) : T.ir =
     | Minttonat x        -> T.Iunop (Uisnat, f x)
     | Mfloor  x          -> let b = T.Bfloor       in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mceil   x          -> let b = T.Bceil        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
-    | Mnattostring x     -> let b = T.Bnattostring in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mnattostring _     -> emit_error (UnsupportedTerm ("Mnattostring"))
     | Mbytestonat x      -> let b = T.Bbytestonat  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mnattobytes x      -> let b = T.Bnattobytes  in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mbytestoint x      -> T.Iunop (Uint, f x)
@@ -1333,7 +1292,6 @@ let to_ir (model : M.model) : T.ir =
         | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
         | Mlisthead (t, _, _)     -> (doit accu mt (T.BlistHead (to_type model t)))
         | Mlisttail (t, _, _)     -> (doit accu mt (T.BlistTail (to_type model t)))
-        | Mnattostring _          -> (doit accu mt (T.Bnattostring))
         | Mbytestonat _           -> (doit accu mt (T.Bbytestonat))
         | Mnattobytes _           -> (doit accu mt (T.Bnattobytes))
         | Msimplify_rational _    -> (doit accu mt (T.Bsimplify_rational))
@@ -1607,7 +1565,6 @@ let map_implem : (string * T.code list) list = [
 ]
 
 let concrete_michelson b : T.code =
-  let error _ = emit_error (NoConcreteImplementationFor (get_fun_name b)) in
   let get_implem b : T.code list = List.assoc (get_fun_name b) map_implem in
   match b with
   | T.Bmin _          -> T.cseq (get_implem (Bmin T.tunit))
@@ -1708,7 +1665,6 @@ let concrete_michelson b : T.code =
       cdrop 2;
       cdip (1, [cdrop 3])
     ]
-  | T.Bnattostring    -> error ()
   | T.Bbytestonat     -> T.cseq (get_implem b)
   | T.Bnattobytes     -> T.cseq (get_implem b)
   | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;

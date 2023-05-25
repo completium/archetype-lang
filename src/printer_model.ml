@@ -1736,7 +1736,6 @@ let pp_api_builtin fmt = function
   | Boptget t   -> Format.fprintf fmt "getopt on %a" pp_type t
   | Bfloor      -> pp_str fmt "floor"
   | Bceil       -> pp_str fmt "ceil"
-  | Bnattostring-> Format.fprintf fmt "nat_to_string"
   | Bfail t     -> Format.fprintf fmt "fail on %a" pp_type t
 
 let pp_api_internal fmt = function

@@ -548,7 +548,6 @@ and api_builtin =
   | Boptget of type_
   | Bfloor
   | Bceil
-  | Bnattostring
   | Bfail of type_
 [@@deriving show {with_path = false}]
 
@@ -1595,7 +1594,6 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Boptget t1, Boptget t2 -> cmp_type t1 t2
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
-    | Bnattostring, Bnattostring -> true
     | Bfail t1, Bfail t2 -> cmp_type t1 t2
     | _ -> false
   in
@@ -3883,7 +3881,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Boptget t -> Boptget (for_type t)
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
-        | Bnattostring -> Bnattostring
         | Bfail t -> Bfail (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
@@ -4921,8 +4918,7 @@ end = struct
              | APIBuiltin (Boptget       _) -> 38
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
-             | APIBuiltin (Bnattostring   ) -> 41
-             | APIBuiltin (Bfail         _) -> 42
+             | APIBuiltin (Bfail         _) -> 41
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in
