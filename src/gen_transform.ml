@@ -4763,10 +4763,10 @@ let add_builtin_functions (model : model) : model =
         let tymap = tmap tnat tstring in
         let name = mk_mident (dumloc cst_nat_to_string) in
 
-        let a_mident = mk_mident (dumloc "a") in
-        let x_mident = mk_mident (dumloc "x") in
-        let r_mident = mk_mident (dumloc "r") in
-        let m_mident = mk_mident (dumloc "m") in
+        let a_mident = mk_mident (dumloc "_arg_nat_to_string") in
+        let x_mident = mk_mident (dumloc "_var_x_nat_to_string") in
+        let r_mident = mk_mident (dumloc "_var_r_nat_to_string") in
+        let m_mident = mk_mident (dumloc "_var_m_nat_to_string") in
         let body =
           let mk_eq lhs rhs = mk_mterm (Mequal (tnat, lhs, rhs)) tbool in
           let mk_ne lhs rhs = mk_mterm (Mnequal (tnat, lhs, rhs)) tbool in
@@ -4809,10 +4809,10 @@ let add_builtin_functions (model : model) : model =
       then begin
         let name = mk_mident (dumloc cst_exp_horner) in
 
-        let x_mident = mk_mident (dumloc "x") in
-        let s_mident = mk_mident (dumloc "s") in
-        let r_mident = mk_mident (dumloc "r") in
-        let i_mident = mk_mident (dumloc "i") in
+        let x_mident = mk_mident (dumloc "_arg_x_exp_horner") in
+        let s_mident = mk_mident (dumloc "_arg_s_exp_horner") in
+        let r_mident = mk_mident (dumloc "_var_r_exp_horner") in
+        let i_mident = mk_mident (dumloc "_var_i_exp_horner") in
         let body =
           let one_rat = mk_rational 1 1 in
           let minus_int x y = mk_mterm (Mminus (x, y)) tint in

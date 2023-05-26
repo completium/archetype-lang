@@ -63,6 +63,7 @@ entry exec () {
     ob := slice(0xabcdef01, 1, 2);
     n := length(0xabcdef01);
 
+    r := exp_horner(0.1, 20);
     s := nat_to_string(42);
   }
 }
