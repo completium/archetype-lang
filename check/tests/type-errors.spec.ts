@@ -317,6 +317,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/fun_error_view_write.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('fun_error_view_write_with_emit', async () => {
+    const stat = compile("../tests/type-errors/fun_error_view_write_with_emit.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('fun_error_view_write_with_transfer', async () => {
     const stat = compile("../tests/type-errors/fun_error_view_write_with_transfer.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

@@ -1,0 +1,17 @@
+archetype fun_error_view_write_with_emit
+
+event my_event {
+  a : nat;
+  b : string;
+}
+
+variable res : nat = 0
+
+function f() : nat {
+  emit<my_event>({0; "mystr"});
+  return 0
+}
+
+view my_view() : nat {
+  return f()
+}

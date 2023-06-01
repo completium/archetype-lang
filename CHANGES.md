@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Michelson instruction
   - Sections in getters
   - `exp_horner` function
+  - `self` for internal call view
 ### Changed
   - BREAKING: bls curves literals
 

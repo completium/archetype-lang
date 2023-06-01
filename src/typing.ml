@@ -5740,6 +5740,7 @@ let rec for_instruction_r
 
       in
       let e   = for_expr ~ety kind env arg in
+      let env = Env.FunctionProperties.set_side_effect env true in
       env, mki (A.Iemit (idt, e)) (* FIXME: namespace *)
 
     | Eif (c, bit, bif) ->
