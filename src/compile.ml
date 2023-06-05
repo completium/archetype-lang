@@ -82,7 +82,7 @@ let output_dprogram (dp : Michelson.dprogram) =
 let output_obj_micheline (o : Michelson.obj_micheline) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_obj_micheline o
-  else Format.printf "%a@." Printer_michelson.pp_obj_micheline o
+  else Format.printf "%a@." (Printer_michelson.pp_obj_micheline ~var_dynamic:false) o
 
 let output_micheline (m : Michelson.micheline) =
   if !Options.opt_raw
@@ -107,12 +107,12 @@ let output_data (d : Michelson.data) =
 let extract_obj_micheline (x : Michelson.obj_micheline) : string =
   if !Options.opt_rjson
   then Format.asprintf "%a@." Michelson.pp_obj_micheline x
-  else Format.asprintf "%a@." Printer_michelson.pp_obj_micheline x
+  else Format.asprintf "%a@." (Printer_michelson.pp_obj_micheline ~var_dynamic:false) x
 
 let output_obj_micheline (x : Michelson.obj_micheline) =
   if !Options.opt_rjson
   then Format.printf "%a@." Michelson.pp_obj_micheline x
-  else Format.printf "%a@." Printer_michelson.pp_obj_micheline x
+  else Format.printf "%a@." (Printer_michelson.pp_obj_micheline ~var_dynamic:false) x
 
 let remove_newline (input : string) : string =
   let a : string ref = ref "" in

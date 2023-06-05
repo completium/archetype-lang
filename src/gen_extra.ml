@@ -243,7 +243,7 @@ let show_entries (input : T.obj_micheline) =
 let to_micheline (input : string) =
   let tokens = Lexing.from_string input in
   let m = Michelson_parser.main Michelson_lexer.token tokens in
-  Format.printf "%a@." Printer_michelson.pp_obj_micheline m
+  Format.printf "%a@." (Printer_michelson.pp_obj_micheline ~var_dynamic:false) m
 
 
 type storage_value = {
