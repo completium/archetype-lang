@@ -799,7 +799,7 @@ let pp_micheline fmt (m : micheline) =
      \"storage\":@\n    @[%a@]@\n\
      }"
     (pp_list ",@\n" pp_obj_micheline) m.code
-    (pp_obj_micheline ~var_dynamic:true) m.storage
+    (pp_obj_micheline ~var_dynamic:false) m.storage
 
 (* -------------------------------------------------------------------------- *)
 
