@@ -742,13 +742,14 @@ let pp_prim fmt pp (p : prim) =
       ppf (p.annots, "annots", (fun fmt s -> Format.fprintf fmt "\"%s\"" s), false)
 
 let rec pp_obj_micheline ?(var_dynamic = false) fmt (o : obj_micheline) =
+  let f = (pp_obj_micheline ~var_dynamic) in
   let pp x = Format.fprintf fmt "{  %a  }" x in
   match o with
-  | Oprim   p -> pp_prim fmt pp_obj_micheline p
+  | Oprim   p -> pp_prim fmt f p
   | Ostring v -> pp pp_a ("string", String.escaped v)
   | Obytes  v -> pp pp_a ("bytes", v)
   | Oint    v -> pp pp_a ("int", v)
-  | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
+  | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" f) l
   | Ovar    x -> begin
       if var_dynamic
       then begin
@@ -757,7 +758,7 @@ let rec pp_obj_micheline ?(var_dynamic = false) fmt (o : obj_micheline) =
         | OMVint    (x, b) -> Format.fprintf fmt "{\"int\": %s%s}" x (if b then "" else ".toString()")
         | OMVstring x -> pp pp_b ("string", x)
         | OMVbytes  x -> pp pp_b ("bytes", x)
-        | OMVif (x, a, b) -> Format.fprintf fmt "(%s ? %a : %a)" x (pp_obj_micheline ~var_dynamic) a (pp_obj_micheline ~var_dynamic) b
+        | OMVif (x, a, b) -> Format.fprintf fmt "(%s ? %a : %a)" x f a f b
       end
       else
         let id =
