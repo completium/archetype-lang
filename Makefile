@@ -4,7 +4,7 @@
 .PHONY: all js merlin build build-deps run test clean
 
 # --------------------------------------------------------------------
-all: build compiler
+all: build js compiler
 
 build:
 	@dune build
