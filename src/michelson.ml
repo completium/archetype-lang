@@ -6,7 +6,30 @@ type 'a with_annot = {
   annotation: ident option;
 }
 [@@deriving show {with_path = false}]
+type position = {
+  line : int;
+  col : int;
+  char : int;
+}
+[@@deriving yojson, show {with_path = false}]
 
+type range = {
+  start: position;
+  end_: position [@key "end"];
+}
+[@@deriving yojson, show {with_path = false}]
+
+type obj_stack = {
+  name: string;
+  (* type_: type_ option; *)
+}
+[@@deriving yojson, show {with_path = false}]
+
+type obj_debug = {
+  range: range;
+  stack: obj_stack;
+}
+[@@deriving yojson, show {with_path = false}]
 
 type prim = {
   prim: ident;
@@ -218,7 +241,7 @@ and code_node =
   | CUSTOM             of obj_micheline
 [@@deriving show {with_path = false}]
 
-and code = { node : code_node; type_: (type_ list) option ref; }
+and code = { node : code_node; type_: (type_ list) option ref; debug: obj_debug option }
 
 and z_operator =
   | Znow
@@ -624,8 +647,8 @@ let mk_type ?annotation node : type_ =
 let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
   { args; stovars }
 
-let mk_code ?type_ node : code =
-  { node; type_ = ref type_ }
+let mk_code ?type_ ?debug node : code =
+  { node; type_ = ref type_; debug }
 
 let mk_func name targ tret ctx body : func =
   { name; targ; tret; ctx; body }
