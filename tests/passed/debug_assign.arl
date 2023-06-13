@@ -1,0 +1,8 @@
+archetype debug_assign
+
+variable a : nat = 0
+
+entry exec() {
+	var v = 2;
+	a := v
+}

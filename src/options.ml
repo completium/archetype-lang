@@ -7,6 +7,7 @@ type target_lang =
   | BindingsJs
   | BindingsTs
   | ContractMetadata
+  | DebugTrace
 [@@deriving show {with_path = false}]
 
 exception UnknownTarget of string
@@ -20,9 +21,10 @@ let string_to_target_lang = function
   | "markdown"          -> Markdown
   | "bindings-js"       -> BindingsJs
   | "bindings-ts"       -> BindingsTs
+  | "debug-trace"       -> DebugTrace
   | v                   -> raise (UnknownTarget v)
 
-let version = "1.4.3-rev1.2"
+let version = "1.4.4-rc1"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)

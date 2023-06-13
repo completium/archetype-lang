@@ -1,0 +1,10 @@
+{ storage nat ;
+  parameter (unit %exec) ;
+  code { CDR ;
+         PUSH nat 2 ;
+         DUP ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 ;
+         NIL operation ;
+         PAIR } }

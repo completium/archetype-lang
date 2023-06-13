@@ -605,6 +605,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/dangling_else.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('debug_assign', async () => {
+    const stat = compile("../tests/passed/debug_assign.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('dec_lit', async () => {
     const stat = compile("../tests/passed/dec_lit.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

@@ -149,7 +149,8 @@ let output (model : Model.model) : string =
         | MichelsonStorage
         | OffchainViews
         | ContractMetadata
-        | Javascript -> begin
+        | Javascript
+        | DebugTrace -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
               let storage_data = Gen_michelson.process_data ir.storage_data in
@@ -196,6 +197,10 @@ let output (model : Model.model) : string =
                   | ContractMetadata -> begin
                       let offchain_views : Michelson.offchain_view list = Gen_michelson.generate_offchain_view ir in
                       Format.fprintf fmt "%s" (Gen_extra.generate_contract_metadata ~only_views:false model offchain_views)
+                    end
+                  | DebugTrace -> begin
+                      let debug_trace : Gen_debug_trace.debug_trace = Gen_debug_trace.generate_debug_trace_json michelson in
+                      Format.fprintf fmt "%s" (Gen_debug_trace.to_trace_json debug_trace)
                     end
                   | _ -> assert false
                 end
@@ -347,7 +352,8 @@ let generate_target model =
   | MichelsonStorage
   | OffchainViews
   | ContractMetadata
-  | Javascript ->
+  | Javascript
+  | DebugTrace ->
     model
     |> toolchain ~debug
     |> output

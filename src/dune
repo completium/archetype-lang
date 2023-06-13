@@ -21,7 +21,7 @@
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_extra mtyping
-  binding gen_contract_interface compile
+  binding gen_contract_interface gen_debug_trace compile
   lsp
   )
   (libraries menhirLib num str yojson ppx_deriving_yojson.runtime hex unix xmlm)

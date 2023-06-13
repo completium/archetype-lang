@@ -153,6 +153,7 @@ import * as custom_storage7 from '../bindings/passed/custom_storage7'
 import * as custom_storage8 from '../bindings/passed/custom_storage8'
 import * as custom_storage9 from '../bindings/passed/custom_storage9'
 import * as dangling_else from '../bindings/passed/dangling_else'
+import * as debug_assign from '../bindings/passed/debug_assign'
 import * as dec_lit from '../bindings/passed/dec_lit'
 import * as decl_var_opt from '../bindings/passed/decl_var_opt'
 import * as decl_var_opt_default from '../bindings/passed/decl_var_opt_default'
@@ -4158,6 +4159,16 @@ describe('passed', async () => {
     await dangling_else.dangling_else.exec({ as: alice })
     const res_after = await dangling_else.dangling_else.get_res();
     assert(res_after.equals(new Nat(42)))
+  })
+
+  it('debug_assign', async () => {
+    await debug_assign.debug_assign.deploy({ as: alice })
+
+    const a_before = await debug_assign.debug_assign.get_a();
+    assert(a_before.equals(new Nat(0)))
+    await debug_assign.debug_assign.exec({ as: alice })
+    const a_after = await debug_assign.debug_assign.get_a();
+    assert(a_after.equals(new Nat(2)))
   })
 
   it('dec_lit', async () => {

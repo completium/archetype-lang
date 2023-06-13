@@ -25,6 +25,7 @@ let main () : unit =
     | "markdown"          -> Options.target := Markdown
     | "bindings-js"       -> Options.target := BindingsJs
     | "bindings-ts"       -> Options.target := BindingsTs
+    | "debug-trace"       -> Options.target := DebugTrace
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
