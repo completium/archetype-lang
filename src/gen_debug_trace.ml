@@ -2,6 +2,8 @@ open Michelson
 
 type step = {
   range: range;
+  micheline_location: int list;
+  stack: obj_stack list;
 }
 [@@deriving yojson, show {with_path = false}]
 

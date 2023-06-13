@@ -1,5 +1,6 @@
 open Ident
 open Tools
+open Location
 
 type 'a with_annot = {
   node:       'a;
@@ -26,6 +27,7 @@ type obj_stack = {
 [@@deriving yojson, show {with_path = false}]
 
 type obj_debug = {
+  id: string * string;
   range: range;
   stack: obj_stack;
 }
@@ -399,7 +401,7 @@ and access_value = {
 }
 [@@deriving show {with_path = false}]
 
-and instruction =
+and instruction_node =
   | Iseq         of instruction list
   | IletIn       of ident * instruction * instruction * bool
   | Ivar_access  of access_value
@@ -435,6 +437,12 @@ and instruction =
   | Ireplace     of ident * ident * klv * instruction
   | Ireadticket  of instruction
   | Imicheline   of obj_micheline * type_ list * instruction list
+[@@deriving show {with_path = false}]
+
+and instruction = {
+  node: instruction_node;
+  loc : Location.t option;
+}
 [@@deriving show {with_path = false}]
 
 and ritem =
@@ -474,6 +482,7 @@ type func = {
   tret: type_;
   ctx: ctx_func;
   body: implem;
+  loc: Location.t;
 }
 [@@deriving show {with_path = false}]
 
@@ -482,6 +491,7 @@ type entry = {
   args: (ident * type_) list;
   eargs: (ident * type_) list;
   body: instruction;
+  loc: Location.t;
 }
 [@@deriving show {with_path = false}]
 
@@ -650,11 +660,11 @@ let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
 let mk_code ?type_ ?debug node : code =
   { node; type_ = ref type_; debug }
 
-let mk_func name targ tret ctx body : func =
-  { name; targ; tret; ctx; body }
+let mk_func name targ tret ctx body loc : func =
+  { name; targ; tret; ctx; body; loc }
 
-let mk_entry name args eargs body : entry =
-  { name; args; eargs; body }
+let mk_entry name args eargs body loc : entry =
+  { name; args; eargs; body; loc }
 
 let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views offchain_views entries : ir =
   { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; offchain_views; entries; parameters }
@@ -676,65 +686,118 @@ let mk_dprogram ?(procs = []) storage parameter storage_data name code =
 
 (* -------------------------------------------------------------------- *)
 
-let toperation    = mk_type Toperation
-let tunit         = mk_type Tunit
-let tstring       = mk_type Tstring
-let tnat          = mk_type Tnat
-let tint          = mk_type Tint
-let tbool         = mk_type Tbool
-let tmutez        = mk_type Tmutez
-let taddress      = mk_type Taddress
-let ttimestamp    = mk_type Ttimestamp
-let tchain_id     = mk_type Tchain_id
-let tbytes        = mk_type Tbytes
-let tpair l       = mk_type (Tpair l)
-let tor t1 t2     = mk_type (Tor (t1, t2))
+let taddress                   = mk_type Taddress
+let tbig_map             t1 t2 = mk_type (Tbig_map (t1, t2))
+let tbool                      = mk_type Tbool
+let tbytes                     = mk_type Tbytes
+let tchain_id                  = mk_type Tchain_id
+let tcontract            t     = mk_type (Tcontract t)
+let tint                       = mk_type Tint
+let tkey                       = mk_type Tkey
+let tkey_hash                  = mk_type Tkey_hash
+let tlambda              t1 t2 = mk_type (Tlambda (t1, t2))
+let tlist                t     = mk_type (Tlist t)
+let tmap                 t1 t2 = mk_type (Tmap (t1, t2))
+let tmutez                     = mk_type Tmutez
+let tnat                       = mk_type Tnat
+let toperation                 = mk_type Toperation
+let toption              t     = mk_type (Toption t)
+let tor                  t1 t2 = mk_type (Tor (t1, t2))
+let tpair                ts    = mk_type (Tpair ts)
+let tset                 t     = mk_type (Tset t)
+let tsignature                 = mk_type Tsignature
+let tstring                    = mk_type Tstring
+let ttimestamp                 = mk_type Ttimestamp
+let tunit                      = mk_type Tunit
+let tticket              t     = mk_type (Tticket t)
+let tsapling_state       n     = mk_type (Tsapling_state       n)
+let tsapling_transaction n     = mk_type (Tsapling_transaction n)
+let tbls12_381_fr              = mk_type Tbls12_381_fr
+let tbls12_381_g1              = mk_type Tbls12_381_g1
+let tbls12_381_g2              = mk_type Tbls12_381_g2
+let tnever                     = mk_type Tnever
+let tchest                     = mk_type Tchest
+let tchest_key                 = mk_type Tchest_key
+
+(* -- *)
+
 let trat          = tpair [tint; tnat]
-let tlist t       = mk_type (Tlist t)
-let tset t        = mk_type (Tlist t)
-let tmap t1 t2    = mk_type (Tmap (t1, t2))
-let tlambda t1 t2 = mk_type (Tlambda (t1, t2))
-let toption t     = mk_type (Toption t)
-let tcontract t   = mk_type (Tcontract t)
-let tkey_hash     = mk_type (Tkey_hash)
-let tticket t     = mk_type (Tticket t)
-let tnever        = mk_type (Tnever)
 
 (* -------------------------------------------------------------------- *)
 
-let ivar id          = Ivar_access {av_ident = id; av_path = []; av_source_no_dup = false; av_value_no_dup = false}
-let itrue            = Iconst (tbool,    Dtrue)
-let ifalse           = Iconst (tbool,    Dfalse)
-let iint n           = Iconst (tint,     Dint n)
-let inat n           = Iconst (tnat,     Dint n)
-let istring s        = Iconst (tstring,  Dstring s)
-let imutez  v        = Iconst (tmutez,   Dint v)
-let isome   s        = Iunop  (Usome, s)
-let inone   t        = Izop   (Znone t)
-let iunit            = Izop    Zunit
-let inil t           = Izop (Znil t)
-let iemptyset t      = Izop (Zemptyset t)
-let iemptymap k v    = Izop (Zemptymap (k, v))
-let iemptybigmap k v = Izop (Zemptybigmap (k, v))
-let icar x           = Iunop (Ucar, x)
-let icdr x           = Iunop (Ucdr, x)
-let ifail msg        = Iunop (Ufail, istring msg)
-let ifaild data      = Iunop (Ufail, data)
-let iskip            = Iseq []
-let ileft t x        = Iunop  (Uleft t, x)
-let iright t x       = Iunop  (Uright t, x)
-let ieq  l r         = Icompare (Ceq, l, r)
-let iadd l r         = Ibinop (Badd, l, r)
-let isub l r         = Ibinop (Bsub, l, r)
-let isub_mutez l r   = Ibinop (Bsubmutez, l, r)
-let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icar (ivar "_var_ifnone"), tint )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DIV_BY_ZERO", "_var_ifnone", icdr (ivar "_var_ifnone"), tnat )
-let irecord ir       = Irecord ir
-let isrecord l       = irecord (Rtuple l)
-let ipair x y        = Ibinop (Bpair, x, y)
-let icarn n x        = Iunop (UcarN n, x)
-let icdrn n x        = Iunop (UcdrN n, x)
+let mk_instruction ?loc node : instruction = {node; loc}
+
+let iseq              ?loc a           = mk_instruction ?loc (Iseq a)
+let iletIn            ?loc a b c d     = mk_instruction ?loc (IletIn (a, b, c, d))
+let ivar_access       ?loc a           = mk_instruction ?loc (Ivar_access a)
+let icall             ?loc a b c       = mk_instruction ?loc (Icall (a, b, c))
+let iassign           ?loc a b         = mk_instruction ?loc (Iassign (a, b))
+let iassigntuple      ?loc a b c d     = mk_instruction ?loc (Iassigntuple (a, b, c, d))
+let iif               ?loc a b c d     = mk_instruction ?loc (Iif (a, b, c, d))
+let iifnone           ?loc a b c d e   = mk_instruction ?loc (Iifnone (a, b, c, d, e))
+let iifleft           ?loc a b c d e f = mk_instruction ?loc (Iifleft (a, b, c, d, e, f))
+let iifcons           ?loc a b c d e f = mk_instruction ?loc (Iifcons (a, b, c, d, e, f))
+let iloop             ?loc a b         = mk_instruction ?loc (Iloop (a, b))
+let iiter             ?loc a b c       = mk_instruction ?loc (Iiter (a, b, c))
+let iloopleft         ?loc a b c       = mk_instruction ?loc (Iloopleft (a, b, c))
+let ilambda           ?loc a b c d     = mk_instruction ?loc (Ilambda (a, b, c, d))
+let ilambda_michelson ?loc a b c       = mk_instruction ?loc (Ilambda_michelson (a, b, c))
+let izop              ?loc a           = mk_instruction ?loc (Izop a)
+let iunop             ?loc a b         = mk_instruction ?loc (Iunop (a, b))
+let ibinop            ?loc a b c       = mk_instruction ?loc (Ibinop (a, b, c))
+let iterop            ?loc a b c d     = mk_instruction ?loc (Iterop (a, b, c, d))
+let iupdate           ?loc a b         = mk_instruction ?loc (Iupdate (a, b))
+let iconst            ?loc a b         = mk_instruction ?loc (Iconst (a, b))
+let icompare          ?loc a b c       = mk_instruction ?loc (Icompare (a, b, c))
+let iset              ?loc a b         = mk_instruction ?loc (Iset (a, b))
+let ilist             ?loc a b         = mk_instruction ?loc (Ilist (a, b))
+let imap              ?loc a b c d     = mk_instruction ?loc (Imap (a, b, c, d))
+let irecord           ?loc a           = mk_instruction ?loc (Irecord (a))
+let irecupdate        ?loc a b         = mk_instruction ?loc (Irecupdate (a, b))
+let imap_             ?loc a b c       = mk_instruction ?loc (Imap_ (a, b, c))
+let ifold             ?loc a b c d e f = mk_instruction ?loc (Ifold (a, b, c, d, e, f))
+let ireverse          ?loc a b         = mk_instruction ?loc (Ireverse (a, b))
+let imichelson        ?loc a b c       = mk_instruction ?loc (Imichelson (a, b, c))
+let iwildcard         ?loc a b         = mk_instruction ?loc (Iwildcard (a, b))
+let ireplace          ?loc a b c d     = mk_instruction ?loc (Ireplace (a, b, c, d))
+let ireadticket       ?loc a           = mk_instruction ?loc (Ireadticket a)
+let imicheline        ?loc a b c       = mk_instruction ?loc (Imicheline (a, b, c))
+
+(* -- *)
+
+let ivar         ?loc id   = ivar_access ?loc {av_ident = id; av_path = []; av_source_no_dup = false; av_value_no_dup = false}
+let itrue        ?loc _    = iconst ?loc tbool Dtrue
+let ifalse       ?loc _    = iconst ?loc tbool Dfalse
+let iint         ?loc n    = iconst ?loc tint (Dint n)
+let inat         ?loc n    = iconst ?loc tnat (Dint n)
+let istring      ?loc s    = iconst ?loc tstring (Dstring s)
+let imutez       ?loc v    = iconst ?loc tmutez (Dint v)
+let isome        ?loc s    = iunop ?loc Usome s
+let inone        ?loc t    = izop ?loc (Znone t)
+let iunit        ?loc _    = izop ?loc  Zunit
+let inil         ?loc t    = izop ?loc (Znil t)
+let iemptyset    ?loc t    = izop ?loc (Zemptyset t)
+let iemptymap    ?loc k v  = izop ?loc (Zemptymap (k, v))
+let iemptybigmap ?loc k v  = izop ?loc (Zemptybigmap (k, v))
+let icar         ?loc x    = iunop ?loc Ucar x
+let icdr         ?loc x    = iunop ?loc Ucdr x
+let ifail        ?loc msg  = iunop ?loc Ufail (istring ?loc msg)
+let ifaild       ?loc data = iunop ?loc Ufail data
+let iskip        ?loc _    = iseq ?loc []
+let ileft        ?loc t x  = iunop ?loc (Uleft t) x
+let iright       ?loc t x  = iunop ?loc (Uright t) x
+let ieq          ?loc l r  = icompare ?loc Ceq l r
+let iadd         ?loc l r  = ibinop ?loc Badd l r
+let isub         ?loc l r  = ibinop ?loc Bsub l r
+let isub_mutez   ?loc l r  = ibinop ?loc Bsubmutez l r
+let imul         ?loc l r  = ibinop ?loc Bmul l r
+let iediv        ?loc l r  = ibinop ?loc Bediv l r
+let idiv         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") "_var_ifnone" (icar ?loc (ivar ?loc "_var_ifnone")) tint
+let imod         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") "_var_ifnone" (icdr ?loc (ivar ?loc "_var_ifnone")) tnat
+let isrecord     ?loc l    = irecord ?loc (Rtuple l)
+let ipair        ?loc x y  = ibinop ?loc Bpair x y
+let icarn        ?loc n x  = iunop ?loc (UcarN n) x
+let icdrn        ?loc n x  = iunop ?loc (UcdrN n) x
 
 (* -------------------------------------------------------------------- *)
 

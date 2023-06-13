@@ -512,7 +512,7 @@ let pp_top f fmt (op, a1, a2, a3) =
 let rec pp_instruction fmt (i : instruction) =
   let pp s = Format.fprintf fmt s in
   let f = pp_instruction in
-  match i with
+  match i.node with
   | Iseq [] -> pp "{ }"
   | Iseq l -> (pp_list ";@\n" f) fmt l
   | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
