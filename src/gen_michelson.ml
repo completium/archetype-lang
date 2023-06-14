@@ -1396,7 +1396,7 @@ let map_implem : (string * T.code list) list = [
   get_fun_name (T.Bmax T.tunit)  , T.[cdup (); cunpair (); ccompare (); clt (); cif ([ccdr ()], [ccar ()])];
   get_fun_name T.Bratcmp         , T.[cunpair (); cunpair (); cdip (1, [cunpair ()]); cunpair (); cdug 3; cmul (); cdip (1, [cmul ()]); cswap (); ccompare (); cswap ();
                                       cifleft ([cdrop 1; ceq ()], [cifleft ([cifleft ([cdrop 1; clt ()], [cdrop 1; cle ()])],
-                                                                         [cifleft ([cdrop 1; cgt ()], [cdrop 1; cge ()])])])];
+                                                                            [cifleft ([cdrop 1; cgt ()], [cdrop 1; cge ()])])])];
   get_fun_name T.Bfloor          , T.[cunpair (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [ccar ()])];
   get_fun_name T.Bceil           , T.[cunpair (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [cunpair (); cswap (); cint (); ceq (); cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd ()])])];
   get_fun_name T.Bratnorm        ,   [];
@@ -1694,6 +1694,14 @@ type env = {
   fail : bool;
 }
 [@@deriving show {with_path = false}]
+
+let process_debug (env : env) (l : Location.t option) : T.debug =
+  let stack : T.stack_item list = List.map (fun (x : stack_item) -> T.{stack_item_name = x.id; stack_item_type = None} ) env.stack in
+  let res : T.debug = {
+    stack = stack;
+    loc = l
+  } in
+  res
 
 let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
 let fail_env (env : env) = { env with fail = true }
@@ -2256,7 +2264,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           end
         end
     end
-  | Iconst (t, e) -> T.cpush (rar t, e), inc_env env
+  | Iconst (t, e) -> let nenv = inc_env env in T.cpush ~debug:(process_debug nenv i.loc) (rar t, e), nenv
   | Icompare (op, lhs, rhs) -> begin
       let op =
         match op with
@@ -2417,9 +2425,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Imicheline (micheline, ts, args) -> begin
       let env, l = List.fold_left (fun (env, accu) x -> begin
-        let x, env = fe env x in
-        (env, accu @ [x])
-      end) (env, []) args in
+            let x, env = fe env x in
+            (env, accu @ [x])
+          end) (env, []) args in
       let env = List.fold_left (fun env _x -> dec_env env) env args in
       let env = List.fold_left (fun env _x -> inc_env env) env ts in
       T.cseq (l @ (List.map T.ccustom (T.remove_seq_obj_micheline micheline))), env

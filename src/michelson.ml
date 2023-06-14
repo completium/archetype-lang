@@ -250,7 +250,7 @@ and stack_item = {
 and stack = stack_item list
 
 and debug = {
-  stack: stack option;
+  stack: stack;
   loc: Location.t option;
 }
 
@@ -1462,7 +1462,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | CUSTOM v                 -> CUSTOM v
   in
   let type_ = Option.map (List.map ft) !(x.type_) in
-  mk_code ?type_ node
+  let debug = x.debug in
+  mk_code ?debug ?type_ node
 
 
 let map_code (fc : code -> code) = map_code_gen fc id id
