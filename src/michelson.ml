@@ -242,7 +242,19 @@ and code_node =
   | CUSTOM             of obj_micheline
 [@@deriving show {with_path = false}]
 
-and code = { node : code_node; type_: (type_ list) option ref; debug: obj_debug option }
+and stack_item = {
+  stack_item_name: string;
+  stack_item_type: type_ option;
+}
+
+and stack = stack_item list
+
+and debug = {
+  stack: stack option;
+  loc: Location.t option;
+}
+
+and code = { node : code_node; type_: (type_ list) option ref; debug : debug option }
 
 and z_operator =
   | Znow
@@ -800,140 +812,141 @@ let icdrn        ?loc n x  = iunop ?loc (UcdrN n) x
 
 (* -------------------------------------------------------------------- *)
 
-let ctrue     = mk_code (PUSH (mk_type Tbool, Dtrue))
-let cfalse    = mk_code (PUSH (mk_type Tbool, Dfalse))
-let cint n    = mk_code (PUSH (mk_type Tint,  Dint n))
-let cnat n    = mk_code (PUSH (mk_type Tnat,  Dint n))
-let cstring s = mk_code (PUSH (mk_type Tstring,  Dstring s))
-let cfail msg = mk_code (SEQ [mk_code (PUSH (mk_type Tstring,  Dstring msg)); mk_code FAILWITH])
-let cskip     = mk_code (SEQ [])
-
 (* Control structures *)
-let cseq            a             = mk_code (SEQ a)
-let capply                        = mk_code  APPLY
-let cexec                         = mk_code  EXEC
-let cfailwith                     = mk_code  FAILWITH
-let cif            (a, b)         = mk_code (IF (a, b))
-let cifcons        (a, b)         = mk_code (IF_CONS (a, b))
-let cifleft        (a, b)         = mk_code (IF_LEFT (a, b))
-let cifnone        (a, b)         = mk_code (IF_NONE (a, b))
-let citer           a             = mk_code (ITER a)
-let clambda        (a, b, c)      = mk_code (LAMBDA (a, b, c))
-let cloop           a             = mk_code (LOOP a)
-let cloop_left      a             = mk_code (LOOP_LEFT a)
+let cseq                   ?debug  a        = mk_code ?debug (SEQ a)
+let capply                 ?debug  _        = mk_code ?debug  APPLY
+let cexec                  ?debug  _        = mk_code ?debug  EXEC
+let cfailwith              ?debug  _        = mk_code ?debug  FAILWITH
+let cif                    ?debug (a, b)    = mk_code ?debug (IF (a, b))
+let cifcons                ?debug (a, b)    = mk_code ?debug (IF_CONS (a, b))
+let cifleft                ?debug (a, b)    = mk_code ?debug (IF_LEFT (a, b))
+let cifnone                ?debug (a, b)    = mk_code ?debug (IF_NONE (a, b))
+let citer                  ?debug  a        = mk_code ?debug (ITER a)
+let clambda                ?debug (a, b, c) = mk_code ?debug (LAMBDA (a, b, c))
+let cloop                  ?debug  a        = mk_code ?debug (LOOP a)
+let cloop_left             ?debug  a        = mk_code ?debug (LOOP_LEFT a)
 (* Stack manipulation *)
-let cdig            a             = mk_code (DIG a)
-let cdip           (a, b)         = mk_code (DIP (a, b))
-let cdrop           a             = mk_code (DROP a)
-let cdug            a             = mk_code (DUG a)
-let cdup                          = mk_code  DUP
-let cdup_n          a             = mk_code (DUP_N a)
-let cpush          (a, b)         = mk_code (PUSH (a, b))
-let cswap                         = mk_code  SWAP
+let cdig                   ?debug  a        = mk_code ?debug (DIG a)
+let cdip                   ?debug (a, b)    = mk_code ?debug (DIP (a, b))
+let cdrop                  ?debug  a        = mk_code ?debug (DROP a)
+let cdug                   ?debug  a        = mk_code ?debug (DUG a)
+let cdup                   ?debug  _        = mk_code ?debug  DUP
+let cdup_n                 ?debug  a        = mk_code ?debug (DUP_N a)
+let cpush                  ?debug (a, b)    = mk_code ?debug (PUSH (a, b))
+let cswap                  ?debug  _        = mk_code ?debug  SWAP
 (* Arthmetic operations *)
-let cabs                          = mk_code  ABS
-let cadd                          = mk_code  ADD
-let ccompare                      = mk_code  COMPARE
-let cediv                         = mk_code  EDIV
-let ceq                           = mk_code  EQ
-let cge                           = mk_code  GE
-let cgt                           = mk_code  GT
-let cnat                          = mk_code  NAT
-let cint                          = mk_code  INT
-let cbytes                        = mk_code  BYTES
-let cisnat                        = mk_code  ISNAT
-let cle                           = mk_code  LE
-let clsl                          = mk_code  LSL
-let clsr                          = mk_code  LSR
-let clt                           = mk_code  LT
-let cmul                          = mk_code  MUL
-let cneg                          = mk_code  NEG
-let cneq                          = mk_code  NEQ
-let csub                          = mk_code  SUB
-let csub_mutez                    = mk_code  SUB_MUTEZ
-
+let cabs                   ?debug  _        = mk_code ?debug  ABS
+let cadd                   ?debug  _        = mk_code ?debug  ADD
+let ccompare               ?debug  _        = mk_code ?debug  COMPARE
+let cediv                  ?debug  _        = mk_code ?debug  EDIV
+let ceq                    ?debug  _        = mk_code ?debug  EQ
+let cge                    ?debug  _        = mk_code ?debug  GE
+let cgt                    ?debug  _        = mk_code ?debug  GT
+let cnat                   ?debug  _        = mk_code ?debug  NAT
+let cint                   ?debug  _        = mk_code ?debug  INT
+let cbytes                 ?debug  _        = mk_code ?debug  BYTES
+let cisnat                 ?debug  _        = mk_code ?debug  ISNAT
+let cle                    ?debug  _        = mk_code ?debug  LE
+let clsl                   ?debug  _        = mk_code ?debug  LSL
+let clsr                   ?debug  _        = mk_code ?debug  LSR
+let clt                    ?debug  _        = mk_code ?debug  LT
+let cmul                   ?debug  _        = mk_code ?debug  MUL
+let cneg                   ?debug  _        = mk_code ?debug  NEG
+let cneq                   ?debug  _        = mk_code ?debug  NEQ
+let csub                   ?debug  _        = mk_code ?debug  SUB
+let csub_mutez             ?debug  _        = mk_code ?debug  SUB_MUTEZ
 (* Boolean operations *)
-let cand                          = mk_code  AND
-let cnot                          = mk_code  NOT
-let cor                           = mk_code  OR
-let cxor                          = mk_code  XOR
+let cand                   ?debug  _        = mk_code ?debug  AND
+let cnot                   ?debug  _        = mk_code ?debug  NOT
+let cor                    ?debug  _        = mk_code ?debug  OR
+let cxor                   ?debug  _        = mk_code ?debug  XOR
 (* Cryptographic operations *)
-let cblake2b                      = mk_code  BLAKE2B
-let ccheck_signature              = mk_code  CHECK_SIGNATURE
-let chash_key                     = mk_code  HASH_KEY
-let ckeccak                       = mk_code  KECCAK
-let cpairing_check                = mk_code  PAIRING_CHECK
-let csapling_empty_state   a      = mk_code (SAPLING_EMPTY_STATE a)
-let csapling_verify_update        = mk_code  SAPLING_VERIFY_UPDATE
-let csha256                       = mk_code  SHA256
-let csha512                       = mk_code  SHA512
-let csha3                         = mk_code  SHA3
+let cblake2b               ?debug  _        = mk_code ?debug  BLAKE2B
+let ccheck_signature       ?debug  _        = mk_code ?debug  CHECK_SIGNATURE
+let chash_key              ?debug  _        = mk_code ?debug  HASH_KEY
+let ckeccak                ?debug  _        = mk_code ?debug  KECCAK
+let cpairing_check         ?debug  _        = mk_code ?debug  PAIRING_CHECK
+let csapling_empty_state   ?debug  a        = mk_code ?debug (SAPLING_EMPTY_STATE a)
+let csapling_verify_update ?debug  _        = mk_code ?debug  SAPLING_VERIFY_UPDATE
+let csha256                ?debug  _        = mk_code ?debug  SHA256
+let csha512                ?debug  _        = mk_code ?debug  SHA512
+let csha3                  ?debug  _        = mk_code ?debug  SHA3
 (* Blockchain operations *)
-let caddress                      = mk_code  ADDRESS
-let camount                       = mk_code  AMOUNT
-let cbalance                      = mk_code  BALANCE
-let cchain_id                     = mk_code  CHAIN_ID
-let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
-let ccreate_contract    c         = mk_code (CREATE_CONTRACT c)
-let cemit               (a, b)    = mk_code (EMIT (a, b))
-let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
-let clevel                        = mk_code  LEVEL
-let cmin_block_time               = mk_code  MIN_BLOCK_TIME
-let cnow                          = mk_code  NOW
-let cself                a        = mk_code (SELF a)
-let cself_address                 = mk_code  SELF_ADDRESS
-let csender                       = mk_code  SENDER
-let cset_delegate                 = mk_code  SET_DELEGATE
-let csource                       = mk_code  SOURCE
-let ctotal_voting_power           = mk_code  TOTAL_VOTING_POWER
-let ctransfer_tokens              = mk_code  TRANSFER_TOKENS
-let cvoting_power                 = mk_code  VOTING_POWER
+let caddress               ?debug  _        = mk_code ?debug  ADDRESS
+let camount                ?debug  _        = mk_code ?debug  AMOUNT
+let cbalance               ?debug  _        = mk_code ?debug  BALANCE
+let cchain_id              ?debug  _        = mk_code ?debug  CHAIN_ID
+let ccontract              ?debug (a, b)    = mk_code ?debug (CONTRACT (a, b))
+let ccreate_contract       ?debug  c        = mk_code ?debug (CREATE_CONTRACT c)
+let cemit                  ?debug (a, b)    = mk_code ?debug (EMIT (a, b))
+let cimplicit_account      ?debug  _        = mk_code ?debug  IMPLICIT_ACCOUNT
+let clevel                 ?debug  _        = mk_code ?debug  LEVEL
+let cmin_block_time        ?debug  _        = mk_code ?debug  MIN_BLOCK_TIME
+let cnow                   ?debug  _        = mk_code ?debug  NOW
+let cself                  ?debug  a        = mk_code ?debug (SELF a)
+let cself_address          ?debug  _        = mk_code ?debug  SELF_ADDRESS
+let csender                ?debug  _        = mk_code ?debug  SENDER
+let cset_delegate          ?debug  _        = mk_code ?debug  SET_DELEGATE
+let csource                ?debug  _        = mk_code ?debug  SOURCE
+let ctotal_voting_power    ?debug  _        = mk_code ?debug  TOTAL_VOTING_POWER
+let ctransfer_tokens       ?debug  _        = mk_code ?debug  TRANSFER_TOKENS
+let cvoting_power          ?debug  _        = mk_code ?debug  VOTING_POWER
 (* Operations on data structures *)
-let ccar                          = mk_code  CAR
-let ccdr                          = mk_code  CDR
-let cconcat                       = mk_code  CONCAT
-let ccons                         = mk_code  CONS
-let cempty_big_map       (a, b)   = mk_code (EMPTY_BIG_MAP (a, b))
-let cempty_map           (a, b)   = mk_code (EMPTY_MAP (a, b))
-let cempty_set            a       = mk_code (EMPTY_SET a)
-let cget                          = mk_code  GET
-let cget_n                n       = mk_code (GET_N n)
-let cget_and_update               = mk_code  GET_AND_UPDATE
-let cleft                 a       = mk_code (LEFT a)
-let cmap                  a       = mk_code (MAP a)
-let cmem                          = mk_code  MEM
-let cnever                        = mk_code  NEVER
-let cnil                  a       = mk_code (NIL a)
-let cnone                 a       = mk_code (NONE a)
-let cpack                         = mk_code  PACK
-let cpair                         = mk_code  PAIR
-let cpair_n               n       = mk_code (PAIR_N n)
-let cright                a       = mk_code (RIGHT a)
-let csize                         = mk_code  SIZE
-let cslice                        = mk_code  SLICE
-let csome                         = mk_code  SOME
-let cunit                         = mk_code  UNIT
-let cunpair                       = mk_code  UNPAIR
-let cunpair_n             n       = mk_code (UNPAIR_N n)
-let cunpack               a       = mk_code (UNPACK a)
-let cupdate                       = mk_code  UPDATE
-let cupdate_n             n       = mk_code (UPDATE_N n)
+let ccar                   ?debug  _        = mk_code ?debug  CAR
+let ccdr                   ?debug  _        = mk_code ?debug  CDR
+let cconcat                ?debug  _        = mk_code ?debug  CONCAT
+let ccons                  ?debug  _        = mk_code ?debug  CONS
+let cempty_big_map         ?debug (a, b)    = mk_code ?debug (EMPTY_BIG_MAP (a, b))
+let cempty_map             ?debug (a, b)    = mk_code ?debug (EMPTY_MAP (a, b))
+let cempty_set             ?debug  a        = mk_code ?debug (EMPTY_SET a)
+let cget                   ?debug  _        = mk_code ?debug  GET
+let cget_n                 ?debug  n        = mk_code ?debug (GET_N n)
+let cget_and_update        ?debug  _        = mk_code ?debug  GET_AND_UPDATE
+let cleft                  ?debug  a        = mk_code ?debug (LEFT a)
+let cmap                   ?debug  a        = mk_code ?debug (MAP a)
+let cmem                   ?debug  _        = mk_code ?debug  MEM
+let cnever                 ?debug  _        = mk_code ?debug  NEVER
+let cnil                   ?debug  a        = mk_code ?debug (NIL a)
+let cnone                  ?debug  a        = mk_code ?debug (NONE a)
+let cpack                  ?debug  _        = mk_code ?debug  PACK
+let cpair                  ?debug  _        = mk_code ?debug  PAIR
+let cpair_n                ?debug  n        = mk_code ?debug (PAIR_N n)
+let cright                 ?debug  a        = mk_code ?debug (RIGHT a)
+let csize                  ?debug  _        = mk_code ?debug  SIZE
+let cslice                 ?debug  _        = mk_code ?debug  SLICE
+let csome                  ?debug  _        = mk_code ?debug  SOME
+let cunit                  ?debug  _        = mk_code ?debug  UNIT
+let cunpair                ?debug  _        = mk_code ?debug  UNPAIR
+let cunpair_n              ?debug  n        = mk_code ?debug (UNPAIR_N n)
+let cunpack                ?debug  a        = mk_code ?debug (UNPACK a)
+let cupdate                ?debug  _        = mk_code ?debug  UPDATE
+let cupdate_n              ?debug  n        = mk_code ?debug (UPDATE_N n)
 (* Operations on tickets *)
-let cjoin_tickets                 = mk_code JOIN_TICKETS
-let cread_ticket                  = mk_code READ_TICKET
-let csplit_ticket                 = mk_code SPLIT_TICKET
-let cticket                       = mk_code TICKET
+let cjoin_tickets          ?debug  _        = mk_code ?debug  JOIN_TICKETS
+let cread_ticket           ?debug  _        = mk_code ?debug  READ_TICKET
+let csplit_ticket          ?debug  _        = mk_code ?debug  SPLIT_TICKET
+let cticket                ?debug  _        = mk_code ?debug  TICKET
 (* Other *)
-let ccast                  a      = mk_code (CAST a)
-let crename                       = mk_code RENAME
-let cview (c, t)                  = mk_code (VIEW (c, t))
-let copen_chest                   = mk_code OPEN_CHEST
-let ccreate_contract c            = mk_code (CREATE_CONTRACT c)
+let ccast                  ?debug  a        = mk_code ?debug (CAST a)
+let crename                ?debug  _        = mk_code ?debug  RENAME
+let cview                  ?debug (c, t)    = mk_code ?debug (VIEW (c, t))
+let copen_chest            ?debug  _        = mk_code ?debug  OPEN_CHEST
+let ccreate_contract       ?debug  c        = mk_code ?debug (CREATE_CONTRACT c)
 (* Macro *)
-let ccarn                      k  = mk_code (CAR_N k)
-let ccdrn                      k  = mk_code (CDR_N k)
+let ccarn                  ?debug  k        = mk_code ?debug (CAR_N k)
+let ccdrn                  ?debug  k        = mk_code ?debug (CDR_N k)
 (* Custom *)
-let ccustom m                     = mk_code (CUSTOM m)
+let ccustom                ?debug  m        = mk_code ?debug (CUSTOM m)
+
+(* -- *)
+
+let ctrue        ?debug _ = cpush ?debug (tbool,     Dtrue)
+let cfalse       ?debug _ = cpush ?debug (tbool,     Dfalse)
+let cpush_int    ?debug n = cpush ?debug (tint,      Dint n)
+let cpush_nat    ?debug n = cpush ?debug (tnat,      Dint n)
+let cpush_string ?debug s = cpush ?debug (tstring,   Dstring s)
+let cfail        ?debug s = cseq  ?debug [cpush_string s; cfailwith ()]
+let cskip        ?debug _ = cseq  ?debug []
 
 (* -------------------------------------------------------------------- *)
 

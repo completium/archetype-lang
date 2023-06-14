@@ -21,7 +21,7 @@ type debug_trace = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-let generate_debug_trace_json (michelson : michelson) : debug_trace =
+let generate_debug_trace_json (_michelson : michelson) : debug_trace =
   let res : debug_trace = {name = ""; path = ""; decls = []} in
   res
 

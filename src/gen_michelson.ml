@@ -1392,98 +1392,98 @@ let data_map_bytes_nat : T.data list = List.int_fold (fun accu idx -> (T.Delt (D
 let data_map_nat_bytes : T.data list = List.int_fold (fun accu idx -> (T.Delt (Dint (Big_int.big_int_of_int idx), Dbytes (Format.asprintf "%02x" idx)))::accu) [] 256 |> List.rev
 
 let map_implem : (string * T.code list) list = [
-  get_fun_name (T.Bmin T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccar], [ccdr])];
-  get_fun_name (T.Bmax T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccdr], [ccar])];
-  get_fun_name T.Bratcmp         , T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
-                                      cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                         [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
-  get_fun_name T.Bfloor          , T.[cunpair; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [ccar])];
-  get_fun_name T.Bceil           , T.[cunpair; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [cunpair; cswap; cint; ceq; cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd])])];
+  get_fun_name (T.Bmin T.tunit)  , T.[cdup (); cunpair (); ccompare (); clt (); cif ([ccar ()], [ccdr ()])];
+  get_fun_name (T.Bmax T.tunit)  , T.[cdup (); cunpair (); ccompare (); clt (); cif ([ccdr ()], [ccar ()])];
+  get_fun_name T.Bratcmp         , T.[cunpair (); cunpair (); cdip (1, [cunpair ()]); cunpair (); cdug 3; cmul (); cdip (1, [cmul ()]); cswap (); ccompare (); cswap ();
+                                      cifleft ([cdrop 1; ceq ()], [cifleft ([cifleft ([cdrop 1; clt ()], [cdrop 1; cle ()])],
+                                                                         [cifleft ([cdrop 1; cgt ()], [cdrop 1; cge ()])])])];
+  get_fun_name T.Bfloor          , T.[cunpair (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [ccar ()])];
+  get_fun_name T.Bceil           , T.[cunpair (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [cunpair (); cswap (); cint (); ceq (); cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd ()])])];
   get_fun_name T.Bratnorm        ,   [];
-  get_fun_name T.Brataddsub      , T.[cunpair; cunpair; cdip (1, [cunpair; cswap; cdup]); cunpair; cswap; cdup; cdig 3; cmul; cdup; cpush (tnat, Dint Big_int.zero_big_int);
-                                      ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], []); cdug 4; cdig 3; cmul; cdip (1, [cmul]); cdig 3; cifleft ([cdrop 1; cadd], [cdrop 1; cswap; csub]); cpair;];
-  get_fun_name T.Bratmul         , T.[cunpair; cdip (1, [cunpair]); cunpair; cdip (1, [cswap]); cmul;
-                                      cdip (1, [cmul; cdup; cpush (tnat, Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], [])]); cpair ];
-  get_fun_name T.Bratdiv         , T.[cunpair; cdip (1, [cunpair]); cunpair; cdig 3;
-                                      cdup; cdig 3; cdup; cdug 4; cmul;
-                                      cpush (tnat, T.Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], []);
-                                      cpush (tint, T.Dint Big_int.zero_big_int); cdig 4; cdup; cdug 5; ccompare; cge; cif ([cint], [cneg]); cmul; cdip (1, [cmul; cabs]); cpair ];
-  get_fun_name T.Bratuminus      , T.[cunpair; cneg; cpair];
-  get_fun_name T.Bratabs         , T.[cunpair; cabs; cint; cpair];
-  get_fun_name T.Brattez         , T.[cunpair; cunpair;
-                                      cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []) ;ccar]);
-                                      cabs; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
-  get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
-  get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
+  get_fun_name T.Brataddsub      , T.[cunpair (); cunpair (); cdip (1, [cunpair (); cswap (); cdup ()]); cunpair (); cswap (); cdup (); cdig 3; cmul (); cdup (); cpush (tnat, Dint Big_int.zero_big_int);
+                                      ccompare (); ceq (); cif ([cfail M.fail_msg_DIV_BY_ZERO], []); cdug 4; cdig 3; cmul (); cdip (1, [cmul ()]); cdig 3; cifleft ([cdrop 1; cadd ()], [cdrop 1; cswap (); csub ()]); cpair ();];
+  get_fun_name T.Bratmul         , T.[cunpair (); cdip (1, [cunpair ()]); cunpair (); cdip (1, [cswap ()]); cmul ();
+                                      cdip (1, [cmul (); cdup (); cpush (tnat, Dint Big_int.zero_big_int); ccompare (); ceq (); cif ([cfail M.fail_msg_DIV_BY_ZERO], [])]); cpair () ];
+  get_fun_name T.Bratdiv         , T.[cunpair (); cdip (1, [cunpair ()]); cunpair (); cdig 3;
+                                      cdup (); cdig 3; cdup (); cdug 4; cmul ();
+                                      cpush (tnat, T.Dint Big_int.zero_big_int); ccompare (); ceq (); cif ([cfail M.fail_msg_DIV_BY_ZERO], []);
+                                      cpush (tint, T.Dint Big_int.zero_big_int); cdig 4; cdup (); cdug 5; ccompare (); cge (); cif ([cint ()], [cneg ()]); cmul (); cdip (1, [cmul (); cabs ()]); cpair () ];
+  get_fun_name T.Bratuminus      , T.[cunpair (); cneg (); cpair ()];
+  get_fun_name T.Bratabs         , T.[cunpair (); cabs (); cint (); cpair ()];
+  get_fun_name T.Brattez         , T.[cunpair (); cunpair ();
+                                      cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap (); cediv (); cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []) ; ccar ()]);
+                                      cabs (); cdig 2; cmul (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar (); cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ()];
+  get_fun_name T.Bratdur         , T.[cunpair (); cunpair (); cdig 2; cmul (); cediv (); cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar ()];
+  get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap (); cediv (); cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []); ccar ()];
 
   get_fun_name T.Bsimplify_rational, T.[
       cpush (tunit, T.Dunit);
       cdup_n 2;
-      ccar;
+      ccar ();
       cdup_n 3;
-      ccdr;
+      ccdr ();
       cdup_n 2;
       cdup_n 2;
       cpush (tnat, T.Dint Big_int.zero_big_int);
       cdup_n 2;
-      ccompare;
-      cneq;
+      ccompare ();
+      cneq ();
       cloop [
-        cdup;
+        cdup ();
         cdup_n 2;
-        cint;
+        cint ();
         cdup_n 4;
-        cediv;
-        cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccdr; cswap; cdrop 1]);
+        cediv ();
+        cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith ()], [ cdup (); ccdr (); cswap (); cdrop 1]);
         cdip (1, [cdig 1; cdrop 1]);
         cdug 1;
-        cdup;
-        cint;
+        cdup ();
+        cint ();
         cdip (1, [cdig 2; cdrop 1]);
         cdug 2;
         cdrop 1;
         cpush (tnat, T.Dint Big_int.zero_big_int);
         cdup_n 2;
-        ccompare;
-        cneq
+        ccompare ();
+        cneq ()
       ];
       cpush (tnat, T.Dint Big_int.unit_big_int);
       cdup_n 3;
       cdup_n 5;
-      cint;
-      cediv;
-      cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccar; cswap; cdrop 1]);
-      cpair;
+      cint ();
+      cediv ();
+      cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith ()], [ cdup (); ccar (); cswap (); cdrop 1]);
+      cpair ();
       cpush (tnat, T.Dint Big_int.unit_big_int);
       cdup_n 4;
       cdup_n 7;
-      cediv;
-      cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], [ cdup; ccar; cswap; cdrop 1]);
-      cpair;
-      cpair;
-      cunpair;
-      cdip (1, [cunpair]);
-      cunpair;
+      cediv ();
+      cifnone ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith ()], [ cdup (); ccar (); cswap (); cdrop 1]);
+      cpair ();
+      cpair ();
+      cunpair ();
+      cdip (1, [cunpair ()]);
+      cunpair ();
       cdig 3;
-      cdup;
+      cdup ();
       cdig 3;
-      cdup;
+      cdup ();
       cdug 4;
-      cmul;
+      cmul ();
       cpush (tnat, T.Dint Big_int.zero_big_int);
-      ccompare;
-      ceq;
-      cif ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith], []);
+      ccompare ();
+      ceq ();
+      cif ([cpush (tstring, T.Dstring "DIV_BY_ZERO"); cfailwith ()], []);
       cpush (tint, T.Dint Big_int.zero_big_int);
       cdig 4;
-      cdup;
+      cdup ();
       cdug 5;
-      ccompare;
-      cge;
-      cif ([cint], [cneg]);
-      cmul;
-      cdip (1, [cmul; cabs]);
-      cpair;
+      ccompare ();
+      cge ();
+      cif ([cint ()], [cneg ()]);
+      cmul ();
+      cdip (1, [cmul (); cabs ()]);
+      cpair ();
       cdip (1, [cdig 4; cdrop 1]);
       cdug 4;
       cdrop 4;
@@ -1494,35 +1494,35 @@ let map_implem : (string * T.code list) list = [
       cpush (tmap tbytes tnat, Dlist data_map_bytes_nat);
       cpush (tnat, T.Dint Big_int.zero_big_int);
       cdup_n 3;
-      csize;
+      csize ();
       cpush (tnat, T.Dint Big_int.zero_big_int);
       cdup_n 2;
       cdup_n 2;
-      ccompare;
-      clt;
+      ccompare ();
+      clt ();
       cloop [
         cpush (tnat, T.Dint (Big_int.big_int_of_int 256));
         cdig 3;
-        cmul;
+        cmul ();
         cdug 2;
         cdup_n 5;
         cpush (tnat, T.Dint (Big_int.unit_big_int));
         cdup_n 3;
-        cslice;
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        cslice ();
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
         cdup_n 5;
-        cswap;
-        cget;
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+        cswap ();
+        cget ();
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
         cdig 3;
-        cadd;
+        cadd ();
         cdug 2;
         cpush (tnat, T.Dint (Big_int.unit_big_int));
-        cadd;
+        cadd ();
         cdup_n 2;
         cdup_n 2;
-        ccompare;
-        clt
+        ccompare ();
+        clt ()
       ];
       cdig 2;
       cdip (1, [cdrop 4])
@@ -1532,36 +1532,36 @@ let map_implem : (string * T.code list) list = [
       cpush (tlist tbytes, Dlist []);
       cdup_n 3;
       cpush (tnat, Dint Big_int.zero_big_int);
-      ccompare;
-      cneq;
+      ccompare ();
+      cneq ();
       cloop [
         cpush (tnat, Dint (Big_int.big_int_of_int 256));
         cdig 3;
-        cediv;
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
-        cunpair;
+        cediv ();
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
+        cunpair ();
         cdug 3;
         cdup_n 3;
-        cswap;
-        cget;
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
-        ccons;
+        cswap ();
+        cget ();
+        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
+        ccons ();
         cdup_n 3;
         cpush (tnat, Dint Big_int.zero_big_int);
-        ccompare;
-        cneq];
-      cconcat;
+        ccompare ();
+        cneq ()];
+      cconcat ();
       cdip (1, [cdrop 2])
     ];
   get_fun_name T.Bis_implicit_address, T.[
-      cpack;
+      cpack ();
       cpush (tnat, Dint Big_int.unit_big_int);
       cpush (tnat, Dint (Big_int.big_int_of_int 6));
-      cslice;
-      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith], []);
+      cslice ();
+      cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
       cpush (tbytes, Dbytes ("00"));
-      ccompare;
-      ceq
+      ccompare ();
+      ceq ()
     ]
 ]
 
@@ -1572,105 +1572,105 @@ let concrete_michelson b : T.code =
   | T.Bmax _          -> T.cseq (get_implem (Bmax T.tunit))
   | T.Bfloor          -> T.cseq (get_implem b)
   | T.Bceil           -> T.cseq (get_implem b)
-  | T.BlistContains _ -> T.cseq T.[cunpair; cfalse; cswap; citer [cdig 2; cdup; cdug 3; ccompare; ceq; cor; ]; cdip (1, [cdrop 1])]
-  | T.BlistNth t      -> T.cseq T.[cunpair; cpush (tnat, T.Dint Big_int.zero_big_int); cpush (toption t, T.Dnone); cdig 2;
-                                   citer [cdup_n 3; cdup_n 5; ccompare; ceq; cif ([csome; cswap; cdrop 1], [cdrop 1]); cswap; cpush (tnat, T.Dint Big_int.unit_big_int); cadd; cswap];
+  | T.BlistContains _ -> T.cseq T.[cunpair (); cfalse (); cswap (); citer [cdig 2; cdup (); cdug 3; ccompare (); ceq (); cor () ]; cdip (1, [cdrop 1])]
+  | T.BlistNth t      -> T.cseq T.[cunpair (); cpush (tnat, T.Dint Big_int.zero_big_int); cpush (toption t, T.Dnone); cdig 2;
+                                   citer [cdup_n 3; cdup_n 5; ccompare (); ceq (); cif ([csome (); cswap (); cdrop 1], [cdrop 1]); cswap (); cpush (tnat, T.Dint Big_int.unit_big_int); cadd (); cswap ()];
                                    cdip (1, [cdrop 2]) ]
   | T.BlistHead t -> T.cseq T.[
-      cunpair;
+      cunpair ();
       cdup_n 2;
       cdup_n 2;
-      csize;
-      cpair;
-      cdup;
-      cunpair;
-      ccompare;
-      clt;
-      cif ([ccar], [ccdr]);
+      csize ();
+      cpair ();
+      cdup ();
+      cunpair ();
+      ccompare ();
+      clt ();
+      cif ([ccar ()], [ccdr ()]);
       cnil t;
       cdup_n 2;
-      cint;
+      cint ();
       cpush (tint, Dint Big_int.zero_big_int);
       cdup_n 2;
       cdup_n 2;
-      ccompare;
-      clt;
+      ccompare ();
+      clt ();
       cloop [
         cdig 2;
         cdup_n 5;
-        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith]);
-        cswap;
+        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith ()]);
+        cswap ();
         cdig 6;
         cdrop 1;
         cdug 5;
-        ccons;
+        ccons ();
         cdug 2;
         cpush (tint, Dint Big_int.unit_big_int);
         cdup_n 2;
-        cadd;
-        cswap;
+        cadd ();
+        cswap ();
         cdrop 1;
         cdup_n 2;
         cdup_n 2;
-        ccompare;
-        clt
+        ccompare ();
+        clt ()
       ];
       cdrop 2;
       cnil t;
       cdig 1;
-      citer [ccons];
+      citer [ccons ()];
       cdip (1, [cdrop 3])
     ]
   | T.BlistTail t -> T.cseq T.[
-      cunpair;
+      cunpair ();
       cnil t;
       cdig 1;
-      citer [ccons];
+      citer [ccons ()];
       cdup_n 2;
       cdup_n 2;
-      csize;
-      cpair;
-      cdup;
-      cunpair;
-      ccompare;
-      clt;
-      cif ([ccar], [ccdr]);
+      csize ();
+      cpair ();
+      cdup ();
+      cunpair ();
+      ccompare ();
+      clt ();
+      cif ([ccar ()], [ccdr ()]);
       cnil t;
       cdup_n 2;
-      cint;
+      cint ();
       cpush (tint, Dint Big_int.zero_big_int);
       cdup_n 2;
       cdup_n 2;
-      ccompare;
-      clt;
+      ccompare ();
+      clt ();
       cloop [
         cdig 2;
         cdup_n 5;
-        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith]);
-        cswap;
+        cifcons ([], [cpush (tstring, Dstring "ERROR"); cfailwith ()]);
+        cswap ();
         cdig 6;
         cdrop 1;
         cdug 5;
-        ccons;
+        ccons ();
         cdug 2;
         cpush (tint, Dint Big_int.unit_big_int);
         cdup_n 2;
-        cadd;
-        cswap;
+        cadd ();
+        cswap ();
         cdrop 1;
         cdup_n 2;
         cdup_n 2;
-        ccompare;
-        clt
+        ccompare ();
+        clt ()
       ];
       cdrop 2;
       cdip (1, [cdrop 3])
     ]
   | T.Bbytestonat     -> T.cseq (get_implem b)
   | T.Bnattobytes     -> T.cseq (get_implem b)
-  | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
-                                   cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                      [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]
+  | T.Bratcmp         -> T.cseq T.[cunpair (); cunpair (); cdip (1, [cunpair ()]); cunpair (); cdug 3; cmul (); cdip (1, [cmul ()]); cswap (); ccompare (); cswap ();
+                                   cifleft ([cdrop 1; ceq ()], [cifleft ([cifleft ([cdrop 1; clt ()], [cdrop 1; cle ()])],
+                                                                         [cifleft ([cdrop 1; cgt ()], [cdrop 1; cge ()])])])]
   | T.Bratnorm        -> T.cseq (get_implem b)
   | T.Brataddsub      -> T.cseq (get_implem b)
   | T.Bratmul         -> T.cseq (get_implem b)
@@ -1791,7 +1791,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     match n with
     | -1 -> []
     | 0  -> ((if si.populated then [T.cdrop 1] else []))
-    | 1  -> ((if si.populated then [T.cswap; T.cdrop 1 ] else []))
+    | 1  -> ((if si.populated then [T.cswap (); T.cdrop 1 ] else []))
     | _  -> ((if si.populated then [T.cdip (n, [T.cdrop 1])] else []))
   in
 
@@ -1811,7 +1811,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | [e]  -> g env e
     | e::t ->
       List.fold_left (fun (a, env) x -> begin
-            let v, env = g env x in (T.cseq [a; v; T.cpair], dec_env env)
+            let v, env = g env x in (T.cseq [a; v; T.cpair ()], dec_env env)
           end ) (g env e) t
   in
 
@@ -1827,7 +1827,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let c, nenv =
         match n with
         | 0 -> T.cseq [ v ], env
-        | 1 -> T.cseq [ v; T.cswap; T.cdrop 1 ], dec_env env
+        | 1 -> T.cseq [ v; T.cswap (); T.cdrop 1 ], dec_env env
         | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
       in
       (* print_env ~str:("assign:after " ^ id) nenv; *)
@@ -1842,102 +1842,102 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   in
 
   let z_op_to_code = function
-    | T.Znow                   -> T.cnow
-    | T.Zamount                -> T.camount
-    | T.Zbalance               -> T.cbalance
-    | T.Zsource                -> T.csource
-    | T.Zsender                -> T.csender
-    | T.Zaddress               -> T.caddress
-    | T.Zchain_id              -> T.cchain_id
+    | T.Znow                   -> T.cnow ()
+    | T.Zamount                -> T.camount ()
+    | T.Zbalance               -> T.cbalance ()
+    | T.Zsource                -> T.csource ()
+    | T.Zsender                -> T.csender ()
+    | T.Zaddress               -> T.caddress ()
+    | T.Zchain_id              -> T.cchain_id ()
     | T.Zself a                -> T.cself a
-    | T.Zself_address          -> T.cself_address
+    | T.Zself_address          -> T.cself_address ()
     | T.Znone t                -> T.cnone (rar t)
-    | T.Zunit                  -> T.cunit
+    | T.Zunit                  -> T.cunit ()
     | T.Znil t                 -> T.cnil (rar t)
     | T.Zemptyset t            -> T.cempty_set (rar t)
     | T.Zemptymap (k, v)       -> T.cempty_map (rar k, rar v)
     | T.Zemptybigmap (k, v)    -> T.cempty_big_map (rar k, rar v)
-    | T.Ztotalvotingpower      -> T.ctotal_voting_power
-    | T.Zlevel                 -> T.clevel
-    | T.Zmin_block_time        -> T.cmin_block_time
+    | T.Ztotalvotingpower      -> T.ctotal_voting_power ()
+    | T.Zlevel                 -> T.clevel ()
+    | T.Zmin_block_time        -> T.cmin_block_time ()
     | T.Zsapling_empty_state n -> T.csapling_empty_state n
   in
 
   let un_op_to_code = function
-    | T.Ucar             -> T.ccar
-    | T.Ucdr             -> T.ccdr
+    | T.Ucar             -> T.ccar ()
+    | T.Ucdr             -> T.ccdr ()
     | T.Uleft t          -> T.cleft (rar t)
     | T.Uright t         -> T.cright (rar t)
-    | T.Uneg             -> T.cneg
-    | T.Unat             -> T.cnat
-    | T.Uint             -> T.cint
-    | T.Ubytes           -> T.cbytes
-    | T.Unot             -> T.cnot
-    | T.Uabs             -> T.cabs
-    | T.Uisnat           -> T.cisnat
-    | T.Usome            -> T.csome
-    | T.Usize            -> T.csize
-    | T.Upack            -> T.cpack
+    | T.Uneg             -> T.cneg ()
+    | T.Unat             -> T.cnat ()
+    | T.Uint             -> T.cint ()
+    | T.Ubytes           -> T.cbytes ()
+    | T.Unot             -> T.cnot ()
+    | T.Uabs             -> T.cabs ()
+    | T.Uisnat           -> T.cisnat ()
+    | T.Usome            -> T.csome ()
+    | T.Usize            -> T.csize ()
+    | T.Upack            -> T.cpack ()
     | T.Uunpack        t -> T.cunpack (rar t)
-    | T.Ublake2b         -> T.cblake2b
-    | T.Usha256          -> T.csha256
-    | T.Usha512          -> T.csha512
-    | T.Usha3            -> T.csha3
-    | T.Ukeccak          -> T.ckeccak
-    | T.Uhash_key        -> T.chash_key
-    | T.Ufail            -> T.cfailwith
+    | T.Ublake2b         -> T.cblake2b ()
+    | T.Usha256          -> T.csha256 ()
+    | T.Usha512          -> T.csha512 ()
+    | T.Usha3            -> T.csha3 ()
+    | T.Ukeccak          -> T.ckeccak ()
+    | T.Uhash_key        -> T.chash_key ()
+    | T.Ufail            -> T.cfailwith ()
     | T.Ucontract (t, a) -> T.ccontract (rar t, a)
-    | T.Usetdelegate     -> T.cset_delegate
-    | T.Uimplicitaccount -> T.cimplicit_account
-    | T.Ueq              -> T.ceq
-    | T.Une              -> T.cneq
-    | T.Ugt              -> T.cgt
-    | T.Uge              -> T.cge
-    | T.Ult              -> T.clt
-    | T.Ule              -> T.cle
-    | T.Uvotingpower     -> T.cvoting_power
-    | T.Ureadticket      -> T.cread_ticket
-    | T.Ujointickets     -> T.cjoin_tickets
-    | T.Upairing_check   -> T.cpairing_check
-    | T.Uconcat          -> T.cconcat
-    | T.Uaddress         -> T.caddress
+    | T.Usetdelegate     -> T.cset_delegate ()
+    | T.Uimplicitaccount -> T.cimplicit_account ()
+    | T.Ueq              -> T.ceq ()
+    | T.Une              -> T.cneq ()
+    | T.Ugt              -> T.cgt ()
+    | T.Uge              -> T.cge ()
+    | T.Ult              -> T.clt ()
+    | T.Ule              -> T.cle ()
+    | T.Uvotingpower     -> T.cvoting_power ()
+    | T.Ureadticket      -> T.cread_ticket ()
+    | T.Ujointickets     -> T.cjoin_tickets ()
+    | T.Upairing_check   -> T.cpairing_check ()
+    | T.Uconcat          -> T.cconcat ()
+    | T.Uaddress         -> T.caddress ()
     | T.UcarN n          -> T.ccarn n
     | T.UcdrN n          -> T.ccdrn n
-    | T.UforcePair       -> T.cpair
+    | T.UforcePair       -> T.cpair ()
     | T.Uemit (t, id)    -> T.cemit (t, id)
   in
 
   let bin_op_to_code = function
-    | T.Badd                   -> T.cadd
-    | T.Bsub                   -> T.csub
-    | T.Bmul                   -> T.cmul
-    | T.Bediv                  -> T.cediv
-    | T.Blsl                   -> T.clsl
-    | T.Blsr                   -> T.clsr
-    | T.Bor                    -> T.cor
-    | T.Band                   -> T.cand
-    | T.Bxor                   -> T.cxor
-    | T.Bcompare               -> T.ccompare
-    | T.Bget                   -> T.cget
-    | T.Bmem                   -> T.cmem
-    | T.Bconcat                -> T.cconcat
-    | T.Bcons                  -> T.ccons
-    | T.Bpair                  -> T.cpair
-    | T.Bexec                  -> T.cexec
-    | T.Bapply                 -> T.capply
-    | T.Bcreateticket          -> T.cticket
-    | T.Bsplitticket           -> T.csplit_ticket
-    | T.Bsapling_verify_update -> T.csapling_verify_update
+    | T.Badd                   -> T.cadd ()
+    | T.Bsub                   -> T.csub ()
+    | T.Bmul                   -> T.cmul ()
+    | T.Bediv                  -> T.cediv ()
+    | T.Blsl                   -> T.clsl ()
+    | T.Blsr                   -> T.clsr ()
+    | T.Bor                    -> T.cor ()
+    | T.Band                   -> T.cand ()
+    | T.Bxor                   -> T.cxor ()
+    | T.Bcompare               -> T.ccompare ()
+    | T.Bget                   -> T.cget ()
+    | T.Bmem                   -> T.cmem ()
+    | T.Bconcat                -> T.cconcat ()
+    | T.Bcons                  -> T.ccons ()
+    | T.Bpair                  -> T.cpair ()
+    | T.Bexec                  -> T.cexec ()
+    | T.Bapply                 -> T.capply ()
+    | T.Bcreateticket          -> T.cticket ()
+    | T.Bsplitticket           -> T.csplit_ticket ()
+    | T.Bsapling_verify_update -> T.csapling_verify_update ()
     | T.Bview (c, t)           -> T.cview (c, t)
-    | T.Bsubmutez              -> T.csub_mutez
+    | T.Bsubmutez              -> T.csub_mutez ()
   in
 
   let ter_op_to_code = function
-    | T.Tcheck_signature   -> T.ccheck_signature
-    | T.Tslice             -> T.cslice
-    | T.Tupdate            -> T.cupdate
-    | T.Ttransfer_tokens   -> T.ctransfer_tokens
-    | T.Topen_chest        -> T.copen_chest
+    | T.Tcheck_signature   -> T.ccheck_signature ()
+    | T.Tslice             -> T.cslice ()
+    | T.Tupdate            -> T.cupdate ()
+    | T.Ttransfer_tokens   -> T.ctransfer_tokens ()
+    | T.Topen_chest        -> T.copen_chest ()
     | T.Tcreate_contract c -> T.ccreate_contract c
   in
 
@@ -1957,7 +1957,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         match idx with
         | -1 -> T.cseq [v; b]
         | 0  -> T.cseq ([v; b] @ (if si.populated then [T.cdrop 1] else []))
-        | 1  -> T.cseq ([v; b] @ (if si.populated then [T.cswap; T.cdrop 1 ] else []))
+        | 1  -> T.cseq ([v; b] @ (if si.populated then [T.cswap (); T.cdrop 1 ] else []))
         | _  -> T.cseq ([v; b] @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else []))
       in
       (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
@@ -1994,13 +1994,13 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
               ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev av.av_path) |> List.flatten in
           let nenv = inc_env env in
           (* print_env ~str:"Ivar_access" nenv; *)
-          (T.cseq (c @ p @ [T.cdup] @ [T.cdip (1, r @ d)])), nenv
+          (T.cseq (c @ p @ [T.cdup ()] @ [T.cdip (1, r @ d)])), nenv
         end
       end
       else begin
         let c =
           if n = 0
-          then T.cdup
+          then T.cdup ()
           else T.cdup_n (n + 1)
         in
         let p = List.map (fun ai -> T.cget_n (compute_path_n ai)) av.av_path in
@@ -2011,7 +2011,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Icall (id, args, inline)   -> begin
       let get_args env =
         match args with
-        | [] -> T.cunit, inc_env env
+        | [] -> T.cunit (), inc_env env
         | _ -> fold env args
       in
       match inline, List.assoc_opt id map_implem with
@@ -2021,7 +2021,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       | _ -> begin
           let fid, env   = fe env (T.ivar id) in
           let cargs, env = get_args env in
-          T.cseq [fid; cargs; T.cexec], dec_env env
+          T.cseq [fid; cargs; T.cexec ()], dec_env env
         end
     end
 
@@ -2130,7 +2130,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let b, env_body2 = fe env_body b in
           let _, si_k = get_pos_stack_item env_body2 k in
           let _, si_v = get_pos_stack_item env_body2 v in
-          T.cseq T.[c; citer ([cunpair; b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
+          T.cseq T.[c; citer ([cunpair (); b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
         end
       | _ -> assert false
     end
@@ -2139,7 +2139,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let l, env0 = f l in
       let b, _ = fe (add_var_env (dec_env env0) i) b in
 
-      T.cseq T.[l; cloop_left [b; cswap; cdrop 1]], inc_env (dec_env env0)
+      T.cseq T.[l; cloop_left [b; cswap (); cdrop 1]], inc_env (dec_env env0)
     end
 
   | Ilambda (rt, id, at, e) -> begin
@@ -2218,8 +2218,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             | [] -> assert false
             | (k, s)::q -> begin
                 (* Format.eprintf "k, s: (%i, %i)@\n" k s; *)
-                let unpair x = [T.cunpair] @ x @ [T.cpair] in
-                let swap   x = [T.cswap]   @ x @ [T.cswap] in
+                let unpair x = [T.cunpair ()] @ x @ [T.cpair ()] in
+                let swap   x = [T.cswap ()]   @ x @ [T.cswap ()] in
                 let h env =
                   match q with
                   | [] -> aop_to_code env aop |> fst
@@ -2260,27 +2260,27 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Icompare (op, lhs, rhs) -> begin
       let op =
         match op with
-        | Ceq -> T.ceq
-        | Cne -> T.cneq
-        | Clt -> T.clt
-        | Cle -> T.cle
-        | Cgt -> T.cgt
-        | Cge -> T.cge
+        | Ceq -> T.ceq ()
+        | Cne -> T.cneq ()
+        | Clt -> T.clt ()
+        | Cle -> T.cle ()
+        | Cgt -> T.cgt ()
+        | Cge -> T.cge ()
       in
       let r, env = fe env rhs in
       let l, env = fe env lhs in
-      T.cseq [r; l; T.ccompare; op], dec_env env
+      T.cseq [r; l; T.ccompare (); op], dec_env env
     end
 
   | Iset (t, l) -> begin
       let l, nenv =
-        List.fold_right (fun x (l, env) -> let x, env = fe (inc_env env) x in ((T.cseq [ T.ctrue; x; T.cupdate ])::l, dec_env (dec_env env))) (List.rev l) ([], inc_env env)
+        List.fold_right (fun x (l, env) -> let x, env = fe (inc_env env) x in ((T.cseq [ T.ctrue (); x; T.cupdate () ])::l, dec_env (dec_env env))) (List.rev l) ([], inc_env env)
       in
       (T.cseq ((T.cempty_set t)::l), nenv)
     end
   | Ilist (t, l) -> begin
       let l, nenv =
-        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons ])::l, dec_env env)) (List.rev l) ([], inc_env env)
+        List.fold_right (fun x (l, env) -> let x, env = fe env x in ((T.cseq [ x; T.ccons () ])::l, dec_env env)) (List.rev l) ([], inc_env env)
       in
       (T.cseq ((T.cnil t)::l), nenv)
     end
@@ -2292,7 +2292,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
                |> List.map (fun (x, y) ->
                    let y, _ = fe (inc_env env) y in
                    let x, _ = fe (inc_env (inc_env env)) x in
-                   T.cseq [y; T.csome; x; T.cupdate ] ))), inc_env env
+                   T.cseq [y; T.csome (); x; T.cupdate () ] ))), inc_env env
     end
   | Irecord ri -> begin
       let rec aux env = function
@@ -2312,8 +2312,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
               then h env v s @ g (q, env) x
               else begin
                 if s = x + 2
-                then [T.cswap ] @ g (l, env) (x + 1) @ [T.cswap]
-                else [T.cswap; T.cunpair ] @ g (l, inc_env env) (x + 1) @ [T.cpair; T.cswap]
+                then [T.cswap () ] @ g (l, env) (x + 1) @ [T.cswap ()]
+                else [T.cswap (); T.cunpair () ] @ g (l, inc_env env) (x + 1) @ [T.cpair (); T.cswap ()]
               end
             end
         in
@@ -2321,7 +2321,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         let b =
           if s = 1
           then a
-          else [T.cunpair] @ a @ [T.cpair]
+          else [T.cunpair ()] @ a @ [T.cpair ()]
         in
         T.cseq b, env
       in
@@ -2330,7 +2330,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | T.RUassign (s, l) -> assign env s l (fun env v s ->
             let env = if s = 1 then dec_env env else env in
             let v, _ = fe env v in
-            [T.cdrop 1; v]
+            T.[cdrop 1; v]
           )
         | T.RUnodes  (s, l) -> assign env s l (fun env v _ ->
             let v, _ = aux (inc_env env) v in
@@ -2347,8 +2347,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let env2, pi, n =
         let env_= add_var_env env ia in
         match iy with
-        | Some iy -> add_var_env (add_var_env env_ iy) ix, T.cunpair, 2
-        | None -> add_var_env env_ ix, T.cskip, 1
+        | Some iy -> add_var_env (add_var_env env_ iy) ix, T.cunpair (), 2
+        | None -> add_var_env env_ ix, T.cskip (), 1
       in
       let b, _env2 = fe env2 b in
       T.cseq [a; c; T.citer [pi; b; T.cdrop n]], inc_env env
@@ -2363,7 +2363,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Ireverse (t, x) -> begin
       let x, env = fe (inc_env env) x in
-      T.cseq [T.cnil t; x; T.citer [T.ccons]], dec_env env
+      T.cseq [T.cnil t; x; T.citer [T.ccons ()]], dec_env env
     end
 
   | Imichelson (a, c, v) -> begin
@@ -2385,10 +2385,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       (* print_env ~str:"Ireplace after" nenv; *)
       let b =
         match k with
-        | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
+        | KLVoption ty -> T.[cifnone ([a; cfailwith ()], [cnone ty; cswap ()])]
         | KLVmap (ty, k) -> begin
             let k, _ = fe (inc_env env) k in
-            [T.cnone ty; k; T.cget_and_update; T.cifnone ([T.cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); T.cfailwith], [])]
+            T.[cnone ty; k; cget_and_update (); T.cifnone ([cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); cfailwith ()], [])]
           end
       in
       let nenv = populate_env nenv v in
@@ -2407,11 +2407,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           let r = List.map (fun (ai : T.access_item) ->
               ([T.cdug (ai.ai_index)] @ [T.cpair_n ai.ai_length])) (List.rev v.av_path) |> List.flatten in
 
-          T.cseq (ccdig @ p @ [T.cread_ticket] @ [T.cdip(1, r @ ccdug)]), inc_env env
+          T.cseq (ccdig @ p @ T.[cread_ticket ()] @ [T.cdip(1, r @ ccdug)]), inc_env env
         end
       | _ -> begin
           let v, env = f x in
-          T.cseq [v; T.cread_ticket; T.cswap; T.cdrop 1], inc_env env
+          T.cseq T.[v; cread_ticket (); cswap (); cdrop 1], inc_env env
         end
     end
 
@@ -2450,7 +2450,7 @@ and build_view storage_list (v : T.func) : T.view_struct =
   let unfold_all = function
     | []     -> []
     | [_]    -> []
-    | [_; _] -> [T.cunpair]
+    | [_; _] -> [T.cunpair ()]
     | l      -> [T.cunpair_n (List.length l)]
   in
 
@@ -2476,9 +2476,9 @@ and build_view storage_list (v : T.func) : T.view_struct =
           let last = n = s - 1 in
           (* Format.eprintf "extract_storage_vars: last: %b@\n" last; *)
           match found, last with
-          | false, false -> doit (n + 1) s (code @ [T.ccdr], ids) stos
+          | false, false -> doit (n + 1) s (code @ [T.ccdr ()], ids) stos
           | false, true  -> code @ [T.cdrop 1], ids
-          | true, false  -> doit (n + 1) s (code @ [T.cunpair; T.cswap], id::ids) q
+          | true, false  -> doit (n + 1) s (code @ [T.cunpair (); T.cswap ()], id::ids) q
           | true, true   -> code, id::ids
         end
       | [] -> code @ [T.cdrop 1], ids
@@ -2497,14 +2497,14 @@ and build_view storage_list (v : T.func) : T.view_struct =
     | [], [] -> [T.cdrop 1], env, 0
 
     | args, [] ->
-      let code = [T.ccar] @ unfold_all args in
+      let code = [T.ccar ()] @ unfold_all args in
       let env = { env with stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
       code, env, List.length args
 
     | [], stovars ->
       let scode, svs = extract_storage_vars stovars in
       (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
-      let code = [T.ccdr] @ scode in
+      let code = [T.ccdr ()] @ scode in
       let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
       code, env, List.length svs
 
@@ -2512,14 +2512,14 @@ and build_view storage_list (v : T.func) : T.view_struct =
       let scode, svs = extract_storage_vars stovars in
       let acode = unfold_all args in
       let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
-      let code = [T.cunpair] @ scode @ acode in
+      let code = [T.cunpair ()] @ scode @ acode in
       let avs = List.map fst args in
       let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
       code, env, List.length (svs @ avs)
 
   in
 
-  let fold_vars = fold_vars @ [T.cunit] in
+  let fold_vars = fold_vars @ [T.cunit ()] in
 
   let env = add_var_env env fun_result in
   (* print_env env; *)
@@ -2551,7 +2551,7 @@ and to_michelson (ir : T.ir) : T.michelson =
 
   let build_code _ =
 
-    let unfold = foldi (fun x -> T.cunpair::T.cswap::x ) [] in
+    let unfold = foldi (fun x -> T.cunpair ()::T.cswap ()::x ) [] in
 
     let unfold_n x =
       match x with
@@ -2577,7 +2577,7 @@ and to_michelson (ir : T.ir) : T.michelson =
                 let unfold_args = unfold_n nb_args in
                 let res = T.cpush (T.tunit, T.Dunit) in
                 let env = add_var_env env fun_result in
-                let es = if nb_args = 0 then T.[cswap; cdrop 1] else T.[cdug nb_args; T.cdrop nb_args] in
+                let es = if nb_args = 0 then T.[cswap (); cdrop 1] else T.[cdug nb_args; T.cdrop nb_args] in
                 let code, _ = instruction_to_code env body in unfold_args @ [res] @ code::es
               | Abstract b    -> [concrete_michelson b]
             in
@@ -2610,7 +2610,7 @@ and to_michelson (ir : T.ir) : T.michelson =
       match e.args, e.eargs with
       | [], [] -> begin
           let code, _ = instruction_to_code env e.body in
-          T.cseq ([T.cdrop 1] @ [code] @ fold_storage @ eops @ [T.cpair])
+          T.cseq ([T.cdrop 1] @ [code] @ fold_storage @ eops @ [T.cpair ()])
         end
       | l, m -> begin
           let nb_eargs = List.length m in
@@ -2618,8 +2618,8 @@ and to_michelson (ir : T.ir) : T.michelson =
           let unfold_eargs =
             if List.length m > 0
             then if List.length l = 0
-              then [T.cunpair; T.cdrop 1]
-              else [T.cunpair]
+              then [T.cunpair (); T.cdrop 1]
+              else [T.cunpair ()]
             else []
           in
 
@@ -2631,13 +2631,13 @@ and to_michelson (ir : T.ir) : T.michelson =
           let code, nenv = instruction_to_code env e.body in
           let diff = List.count (fun x -> not x.populated) nenv.stack in
           (* Format.eprintf "diff: %n\n" diff; *)
-          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair])
+          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
         end
     in
 
     let code =
       match ir.entries with
-      | [] -> [T.ccdr; T.cnil (T.toperation); T.cpair]
+      | [] -> T.[ccdr (); cnil (T.toperation); cpair ()]
       | entries ->
         let us = if nb_storage_item > 1 then [T.cdip (1, unfold_storage)] else [] in
         let e =
@@ -2645,7 +2645,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           |> List.map for_entry
           |> shape_entrypoints (fun x y -> T.cifleft ([x], [y])) (T.cseq [])
         in
-        [T.cunpair] @ us @ [e]
+        [T.cunpair ()] @ us @ [e]
     in
     T.cseq (cfuns @ ops @ fff @ code @ eee)
     |> T.Utils.flat
