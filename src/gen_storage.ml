@@ -112,10 +112,10 @@ let generate_storage (model : model) : model =
       | Massign (op, t, Avar id, v) when Model.Utils.is_field_storage model (unloc_mident id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massign (op, t, Avarstore id, vv)) tunit
+          mk_mterm ~loc:mt.loc (Massign (op, t, Avarstore id, vv)) tunit
         end
       | Mvar (id, Vlocal) when Model.Utils.is_field_storage model (unloc_mident id) ->
-        mk_mterm (Mvar (id, Vstorevar)) mt.type_
+        mk_mterm ~loc:mt.loc (Mvar (id, Vstorevar)) mt.type_
       | _ -> map_mterm (aux c) mt
     in
     Model.map_mterm_model aux model

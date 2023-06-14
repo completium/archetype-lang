@@ -74,9 +74,9 @@ let flat_sequence_mterm (mt : mterm) =
               | _ -> (aux x)::accu) l [] in
           begin
             match l with
-            | [] -> mk_mterm (Mseq []) tunit
+            | [] -> mk_mterm ~loc:mt.loc (Mseq []) tunit
             | [e] -> aux e
-            | _ -> mk_mterm (Mseq (List.map aux l)) (List.last l).type_
+            | _ -> let loc = Location.mergeall (List.map (fun (x : mterm) -> x.loc) l) in mk_mterm ~loc (Mseq (List.map aux l)) (List.last l).type_
           end
       end
     | _ -> map_mterm aux mt
@@ -335,7 +335,7 @@ let remove_container_op_in_update_exec (model : model) : model =
         let mterm_update = { mt with node = Mupdate (an, k, newl) } in
         match instrs with
         | [] -> mterm_update
-        | _ -> mk_mterm (Mseq (mterm_update::instrs)) tunit
+        | _ -> let l = mterm_update::instrs in let loc = Location.mergeall (List.map (fun x -> x.loc) instrs) in mk_mterm ~loc (Mseq l) tunit
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -691,7 +691,7 @@ let move_partition_init_asset (model : model) : model =
 
 let replace_declvar_by_letin (model : model) : model =
   let empty : mterm = mk_mterm (Mseq []) tunit in
-  let process_declvar (ids, t, init) accu =
+  let process_declvar loc (ids, t, init) accu =
     begin
       let body =
         match accu with
@@ -699,7 +699,7 @@ let replace_declvar_by_letin (model : model) : model =
         | [i] -> i
         | lll -> mk_mterm (Mseq accu) (List.last lll).type_
       in
-      mk_mterm (Mletin(ids, init, t, body, None)) body.type_
+      mk_mterm ~loc (Mletin(ids, init, t, body, None)) body.type_
     end
   in
   let rec aux c (mt : mterm) : mterm =
@@ -708,11 +708,11 @@ let replace_declvar_by_letin (model : model) : model =
       let ll = List.fold_right (fun (x : mterm) accu ->
           match x.node with
           | Mdeclvar (ids, t, v, _) ->
-            let res =  process_declvar (ids, t, LVsimple (aux c v)) accu in
+            let res =  process_declvar x.loc (ids, t, LVsimple (aux c v)) accu in
             [ res ]
           | Mdetach (id, dk, tya, fa) ->
             let va = match dk with | DK_option (_, id) -> mk_mident (dumloc id) | DK_map (_, id, _) -> mk_mident (dumloc id) in
-            let res = process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) accu in
+            let res = process_declvar x.loc ([id], Some tya, LVreplace (va, dk, aux c fa)) accu in
             [ res ]
           | _ ->
             begin
@@ -721,10 +721,10 @@ let replace_declvar_by_letin (model : model) : model =
             end
         ) l [] in
       { mt with node = Mseq ll }
-    | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, LVsimple (aux c v)) []
+    | Mdeclvar (ids, t, v, _) -> process_declvar mt.loc (ids, t, LVsimple (aux c v)) []
     | Mdetach (id, dk, tya, fa) -> begin
         let va = match dk with | DK_option (_, id) -> mk_mident (dumloc id) | DK_map (_, id, _) -> mk_mident (dumloc id) in
-        process_declvar ([id], Some tya, LVreplace (va, dk, aux c fa)) []
+        process_declvar mt.loc ([id], Some tya, LVreplace (va, dk, aux c fa)) []
       end
     | _ -> map_mterm (aux c) mt
   in
@@ -1473,7 +1473,7 @@ let replace_assignfield_by_update (model : model) : model =
     | Massign (op, _, Aasset (an, fn, key), v) ->
       let an = unloc_mident an in
       let l = [(fn, op, v)] in
-      mk_mterm (Mupdate (an, key, l)) tunit
+      mk_mterm ~loc:mt.loc (Mupdate (an, key, l)) tunit
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -1528,7 +1528,7 @@ let merge_update (model : model) : model =
           | [] -> []
         in
         let ll = f [] l in
-        mk_mterm (Mseq ll) mt.type_
+        mk_mterm ~loc:mt.loc (Mseq ll) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -1611,7 +1611,7 @@ let split_key_values (model : model) : model =
     | Mcast ((Tcontainer ((Tasset _, _), _), _), (Tcontainer ((Tasset _, _), _), _), v), _ -> aux ctx v
     | Massets l, (Tcontainer ((Tasset an, _), _), _) ->
       let l = List.map (aux ctx) l in
-      mk_mterm (Mlitset l) (tset ((Utils.get_asset_key model an |> snd)))
+      mk_mterm ~loc:mt.loc (Mlitset l) (tset ((Utils.get_asset_key model an |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
 
@@ -1690,23 +1690,23 @@ let remove_assign_operator (model : model) : model =
     | Massign (op, t, Avar id, v) ->
       let lhs = mk_mterm (Mvar (id, Vlocal)) v.type_ in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Avar id, v)) mt.type_
+      mk_mterm ~loc:mt.loc (Massign (ValueAssign, t, Avar id, v)) mt.type_
     | Massign (op, t, Avarstore id, v) ->
       let lhs = mk_mterm (Mvar (id, Vstorevar)) v.type_ in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Avarstore id, v)) mt.type_
+      mk_mterm ~loc:mt.loc (Massign (ValueAssign, t, Avarstore id, v)) mt.type_
     | Massign (op, t, Aasset (an, fn, k), v) ->
       let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Aasset (an, fn, k), v)) mt.type_
+      mk_mterm ~loc:mt.loc (Massign (ValueAssign, t, Aasset (an, fn, k), v)) mt.type_
     | Massign (op, t, Arecord (lv, rn, fn), v) ->
       let lhs = mk_mterm (Mdot (lv, fn)) v.type_ in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Arecord (lv, rn, fn), v)) mt.type_
+      mk_mterm ~loc:mt.loc (Massign (ValueAssign, t, Arecord (lv, rn, fn), v)) mt.type_
     | Massign (op, t, Atuple (lv, i, l), v) ->
       let lhs = mk_tupleaccess i lv in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Atuple (lv, i, l), v)) mt.type_
+      mk_mterm ~loc:mt.loc (Massign (ValueAssign, t, Atuple (lv, i, l), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
