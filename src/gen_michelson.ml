@@ -419,20 +419,20 @@ let to_ir (model : M.model) : T.ir =
   let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
 
 
-  let instr_update (ak : M.assign_kind) (op : T.aoperator) : T.instruction =
+  let instr_update (ak : M.assign_kind) (op : T.aoperator) loc : T.instruction =
     match ak with
-    | Avar id       -> T.iupdate (Uvar (M.unloc_mident id)) op
-    | Avarstore id  -> T.iupdate (Uvar (M.unloc_mident id)) op
+    | Avar id       -> T.iupdate ~loc (Uvar (M.unloc_mident id)) op
+    | Avarstore id  -> T.iupdate ~loc (Uvar (M.unloc_mident id)) op
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
     | Arecord ({node = Mvar(id, _)}, rn, fn) -> begin
         let l = Model.Utils.get_record_pos model rn (M.unloc_mident fn) in
-        T.iupdate (Urec (M.unloc_mident id, l)) op
+        T.iupdate ~loc (Urec (M.unloc_mident id, l)) op
       end
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
-    | Atuple ({node = Mvar(id, _)}, n, l) -> T.iupdate (Urec (M.unloc_mident id, [n, l])) op
+    | Atuple ({node = Mvar(id, _)}, n, l) -> T.iupdate ~loc (Urec (M.unloc_mident id, [n, l])) op
     | Atuple _      -> emit_error (UnsupportedTerm "Atuple")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
-    | Aoperations   -> T.iupdate (Uvar operations) op
+    | Aoperations   -> T.iupdate ~loc (Uvar operations) op
   in
 
   let rec to_data (mt : M.mterm) : T.data =
@@ -519,32 +519,32 @@ let to_ir (model : M.model) : T.ir =
       | _ -> Some (pref ^ id)
     in
 
-    let contract_internal id a t d =
+    let contract_internal id a t d loc =
       let fdata =
         match id with
         | Some v -> (T.ipair (T.istring M.fail_msg_ENTRY_NOT_FOUND) (T.istring v))
         | None -> T.istring M.fail_msg_ENTRY_NOT_FOUND
       in
-      T.iifnone (T.iunop (Ucontract (t, a)) d) (T.ifaild fdata) "_var_ifnone" (T.ivar "_var_ifnone") T.tint
+      T.iifnone ~loc (T.iunop (Ucontract (t, a)) d) (T.ifaild fdata) "_var_ifnone" (T.ivar "_var_ifnone") T.tint
     in
 
-    let get_entrypoint id t d =
+    let get_entrypoint id t d loc =
       let annot = get_entrypoint_annot ~pref:"%" id in
-      contract_internal (Some id) annot t d
+      contract_internal (Some id) annot t d loc
     in
 
     let vops = T.ivar operations in
 
-    let get_contract   id t d = contract_internal id None     t d in
-    let get_self_entrypoint id =
+    let get_contract   id t d loc = contract_internal id None t d loc in
+    let get_self_entrypoint id loc =
       let fs = M.Utils.get_fs model id in
       let ts = List.map proj3_2 fs.args in
-      get_entrypoint id (to_one_type (List.map (to_type model) ts)) (T.izop Zself_address)
+      get_entrypoint id (to_one_type (List.map (to_type model) ts)) (T.izop Zself_address) loc
     in
 
-    let mk_tuple l : T.instruction =
+    let mk_tuple ?loc l : T.instruction =
       match List.rev l with
-      | []  -> T.iunit ()
+      | []  -> T.iunit ?loc ()
       | [e] -> e
       | e::t -> List.fold_left (fun accu x -> T.ibinop Bpair x accu) e t
     in
@@ -640,7 +640,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Mvar (id, kind) -> begin
 
             let f x =
-              T.ivar_access {
+              T.ivar_access ~loc:mtt.loc {
                 av_ident = x;
                 av_path = accu;
                 av_source_no_dup = is_ticket_type model mt.type_;
@@ -676,8 +676,8 @@ let to_ir (model : M.model) : T.ir =
         in
         let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
 
-        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, dk, fa) -> T.ireplace (M.unloc_mident id) (M.unloc_mident idv) (to_dk dk) (f fa) in
-        T.iletIn (M.unloc_mident id) v (f b) is_unit
+        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, dk, fa) -> T.ireplace ~loc:mtt.loc (M.unloc_mident id) (M.unloc_mident idv) (to_dk dk) (f fa) in
+        T.iletIn ~loc:mtt.loc (M.unloc_mident id) v (f b) is_unit
       end
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
@@ -688,41 +688,41 @@ let to_ir (model : M.model) : T.ir =
           | Some l -> List.map (fun (id, _t) -> T.ivar id) l
           | _ -> []
         in
-        T.icall (M.unloc_mident e) (List.map f args @ eargs) false
+        T.icall ~loc:mtt.loc (M.unloc_mident e) (List.map f args @ eargs) false
       end
 
     (* assign *)
 
-    | Massign (_op, _, Avar id, v)                 -> T.iassign (M.unloc_mident id) (f v)
-    | Massign (_op, _, Avarstore id, v)            -> T.iassign (M.unloc_mident id) (f v)
+    | Massign (_op, _, Avar id, v)                 -> T.iassign  ~loc:mtt.loc (M.unloc_mident id) (f v)
+    | Massign (_op, _, Avarstore id, v)            -> T.iassign  ~loc:mtt.loc (M.unloc_mident id) (f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
     | Massign (_op, _, Arecord ({node = Mvar (id, _); type_ = t}, _rn, fn), v) -> begin
-        let id = M.unloc_mident id in
+        let lid, id = aspair (snd id) in
         let rn =
           match M.get_ntype t with
           | M.Trecord rn -> rn
           | _ -> assert false
         in
         let ru = make_ru rn (M.unloc_mident fn) v in
-        let a = T.irecupdate (T.ivar id) ru in
-        T.iassign id a
+        let a = T.irecupdate (T.ivar ~loc:lid id) ru in
+        T.iassign ~loc:mtt.loc id a
       end
     | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
-    | Massign (_op, _, Atuple ({node = Mvar (id, _)}, n, l), v)    -> let id = M.unloc_mident id in T.iassigntuple id n l (f v)
+    | Massign (_op, _, Atuple ({node = Mvar (id, _)}, n, l), v) -> let id = M.unloc_mident id in T.iassigntuple ~loc:mtt.loc id n l (f v)
     | Massign (_op, _, Atuple _, _v)               -> emit_error (UnsupportedTerm ("Tuple is not a var"))
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
-    | Massign (_op, _, Aoperations, v)             -> T.iassign operations (f v)
+    | Massign (_op, _, Aoperations, v)             -> T.iassign ~loc:mtt.loc operations (f v)
     | Massignopt _ -> emit_error (UnsupportedTerm ("Massignopt"))
 
     (* control *)
 
-    | Mif (c, t, Some e)         -> T.iif (f c) (f t) (f e) T.tunit
-    | Mif (c, t, None)           -> T.iif (f c) (f t) (T.iskip ()) T.tunit
+    | Mif (c, t, Some e)         -> T.iif ~loc:mtt.loc (f c) (f t) (f e) T.tunit
+    | Mif (c, t, None)           -> T.iif ~loc:mtt.loc (f c) (f t) (T.iskip ()) T.tunit
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
-    | Minstrmatchoption (x, i, ve, ne)       -> T.iifnone (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
-    | Minstrmatchor (x, lid, le, rid, re)    -> T.iifleft (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
-    | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
-    | Mfor (id, c, b)         -> begin
+    | Minstrmatchoption (x, i, ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
+    | Minstrmatchor (x, lid, le, rid, re)    -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
+    | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
+    | Mfor (id, c, b) -> begin
         let ids =
           match id with
           | M.FIsimple x      -> [x]
@@ -739,12 +739,12 @@ let to_ir (model : M.model) : T.ir =
           | ICKmap   c -> f c
         in
         let b = f b in
-        T.iiter ids c b
+        T.iiter ~loc:mtt.loc ids c b
       end
     | Miter (_i, _a, _b, _c, _) -> emit_error (UnsupportedTerm ("Miter"))
-    | Mwhile (c, b)             -> T.iloop (f c) (f b)
-    | Mseq is                   -> T.iseq (List.map f is)
-    | Mreturn x                 -> T.iassign fun_result (f x)
+    | Mwhile (c, b)             -> T.iloop ~loc:mtt.loc (f c) (f b)
+    | Mseq is                   -> T.iseq ~loc:mtt.loc (List.map f is)
+    | Mreturn x                 -> T.iassign ~loc:mtt.loc fun_result (f x)
 
 
     (* effect *)
@@ -765,56 +765,56 @@ let to_ir (model : M.model) : T.ir =
           | NoTransfer             -> T.istring M.fail_msg_NO_TRANSFER
           | InvalidState           -> T.istring M.fail_msg_INVALID_STATE
         in
-        T.iunop Ufail x
+        T.iunop ~loc:mtt.loc Ufail x
       end
     | Mfailsome _ -> emit_error (UnsupportedTerm ("Mfailsome"))
     | Mtransfer tr -> begin
         let op =
           match tr with
-          | TKsimple (v, d)         -> T.iterop Ttransfer_tokens (T.iunit ()) (f v) (get_contract None T.tunit (f d))
-          | TKcall (v, id, t, d, a) -> T.iterop Ttransfer_tokens (f a) (f v) (get_entrypoint id (to_type model t) (f d))
-          | TKentry (v, e, a)       -> T.iterop Ttransfer_tokens (f a) (f v) (f e)
-          | TKgen (v, id, _cn, t, a, arg) -> T.iterop Ttransfer_tokens (f arg) (f v) (get_entrypoint id (to_type model t) (f a))
+          | TKsimple (v, d)         -> T.iterop ~loc:mtt.loc Ttransfer_tokens (T.iunit ()) (f v) (get_contract None T.tunit (f d) mtt.loc)
+          | TKcall (v, id, t, d, a) -> T.iterop ~loc:mtt.loc Ttransfer_tokens (f a) (f v) (get_entrypoint id (to_type model t) (f d) mtt.loc)
+          | TKentry (v, e, a)       -> T.iterop ~loc:mtt.loc Ttransfer_tokens (f a) (f v) (f e)
+          | TKgen (v, id, _cn, t, a, arg) -> T.iterop ~loc:mtt.loc Ttransfer_tokens (f arg) (f v) (get_entrypoint id (to_type model t) (f a) mtt.loc)
           | TKself (v, id, args)    -> begin
               let a =
                 match args with
                 | []  -> T.iunit ()
                 | [e] -> f (snd e)
-                | _   -> T.isrecord (List.map (fun (_, x) -> f x) args)
+                | _   -> T.isrecord ~loc:mtt.loc (List.map (fun (_, x) -> f x) args)
               in
-              T.iterop Ttransfer_tokens a (f v) (get_self_entrypoint id)
+              T.iterop ~loc:mtt.loc Ttransfer_tokens a (f v) (get_self_entrypoint id mtt.loc)
             end
           | TKoperation op -> f op
         in
-        T.iassign operations (T.ireverse T.toperation (T.ibinop Bcons op (T.ireverse T.toperation vops)))
+        T.iassign operations ~loc:mtt.loc (T.ireverse T.toperation (T.ibinop Bcons op (T.ireverse T.toperation vops)))
       end
     | Memit (e, value)  -> begin
-        let op = T.iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e)))) (f value) in
-        T.iassign operations (T.ireverse T.toperation (T.ibinop Bcons op (T.ireverse T.toperation vops)))
+        let op = T.iunop ~loc:mtt.loc (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e)))) (f value) in
+        T.iassign ~loc:mtt.loc operations (T.ireverse T.toperation (T.ibinop Bcons op (T.ireverse T.toperation vops)))
       end
     | Mdetach _  -> emit_error (UnsupportedTerm ("Mdetach"))
-    | Mmicheline micheline  -> T.imicheline micheline [] []
+    | Mmicheline micheline  -> T.imicheline ~loc:mtt.loc micheline [] []
 
     (* entrypoint *)
 
     | Mgetentrypoint (t, id, d)  ->
       let annot = get_entrypoint_annot (M.unloc_mident id) in
-      T.iunop (Ucontract (to_type model t, annot)) (f d)
+      T.iunop ~loc:mtt.loc (Ucontract (to_type model t, annot)) (f d)
 
-    | Mcallview (t, a, b, c)           -> T.ibinop (Bview (M.unloc_mident b, to_type model t)) (f c) (f a)
+    | Mcallview (t, a, b, c)           -> T.ibinop ~loc:mtt.loc (Bview (M.unloc_mident b, to_type model t)) (f c) (f a)
     | Mimportcallview (_t, _a, _b, _c) -> emit_error (UnsupportedTerm ("Mimportcallview"))
-    | Mself id                         -> get_self_entrypoint (M.unloc_mident id)
+    | Mself id                         -> get_self_entrypoint (M.unloc_mident id) mtt.loc
     | Mselfcallview (_t, _id, _args)   -> emit_error (UnsupportedTerm ("Mselfcallview"))
 
 
     (* operation *)
 
     | Moperations                    -> vops
-    | Mmakeoperation (v, e, a)       -> T.iterop Ttransfer_tokens (f a) (f v) (f e)
-    | Mmakeevent (t, id, a)          -> T.iunop (Uemit (to_type model t, Some (M.unloc_mident id))) (f a)
+    | Mmakeoperation (v, e, a)       -> T.iterop ~loc:mtt.loc Ttransfer_tokens (f a) (f v) (f e)
+    | Mmakeevent (t, id, a)          -> T.iunop ~loc:mtt.loc (Uemit (to_type model t, Some (M.unloc_mident id))) (f a)
     | Mcreatecontract (cc, d, a) -> begin
         match cc with
-        | CCTz (tz, arg) -> T.iunop UforcePair (T.iterop (Tcreate_contract tz.ms_content) (f d) (f a) (f arg))
+        | CCTz (tz, arg) -> T.iunop ~loc:mtt.loc UforcePair (T.iterop (Tcreate_contract tz.ms_content) (f d) (f a) (f arg))
         | _ -> assert false
       end
 
@@ -822,85 +822,85 @@ let to_ir (model : M.model) : T.ir =
 
     (* literals *)
 
-    | Mint  v                    -> T.iconst T.tint                     (Dint v)
-    | Mnat  v                    -> T.iconst T.tnat                     (Dint v)
-    | Mbool true                 -> T.iconst T.tbool                     Dtrue
-    | Mbool false                -> T.iconst T.tbool                     Dfalse
-    | Mrational _                -> emit_error                          (UnsupportedTerm ("Mrational"))
-    | Mstring v                  -> T.iconst T.tstring                  (Dstring v)
-    | Mmutez v                   -> T.iconst T.tmutez                   (Dint v)
-    | Maddress v                 -> T.iconst T.taddress                 (Dstring v)
-    | Mdate v                    -> T.iconst T.ttimestamp               (Dint (Core.date_to_timestamp v))
-    | Mduration v                -> T.iconst T.tint                     (Dint (Core.duration_to_timestamp v))
-    | Mtimestamp v               -> T.iconst T.ttimestamp               (Dint v)
-    | Mbytes v                   -> T.iconst T.tbytes                   (Dbytes v)
-    | Mchain_id v                -> T.iconst T.tchain_id                (Dstring v)
-    | Mkey v                     -> T.iconst T.tkey                     (Dstring v)
-    | Mkey_hash v                -> T.iconst T.tkey_hash                (Dstring v)
-    | Msignature v               -> T.iconst T.tsignature               (Dstring v)
-    | Mbls12_381_fr v            -> T.iconst T.tbls12_381_fr            (Dbytes v)
-    | Mbls12_381_fr_n v          -> T.iconst T.tbls12_381_fr            (Dint v)
-    | Mbls12_381_g1 v            -> T.iconst T.tbls12_381_g1            (Dbytes v)
-    | Mbls12_381_g2 v            -> T.iconst T.tbls12_381_g2            (Dbytes v)
-    | Munit                      -> T.iconst T.tunit                     Dunit
-    | MsaplingStateEmpty n       -> T.iconst (T.tsapling_state n)       (Dlist [])
-    | MsaplingTransaction (n, v) -> T.iconst (T.tsapling_transaction n) (Dbytes v)
-    | Mchest v                   -> T.iconst T.tchest                   (Dbytes v)
-    | Mchest_key v               -> T.iconst T.tchest_key               (Dbytes v)
-    | Mtz_expr _                 -> emit_error                          (UnsupportedTerm ("Mtz_expr"))
+    | Mint  v                    -> T.iconst ~loc:mtt.loc T.tint                     (Dint v)
+    | Mnat  v                    -> T.iconst ~loc:mtt.loc T.tnat                     (Dint v)
+    | Mbool true                 -> T.iconst ~loc:mtt.loc T.tbool                     Dtrue
+    | Mbool false                -> T.iconst ~loc:mtt.loc T.tbool                     Dfalse
+    | Mrational _                -> emit_error                                       (UnsupportedTerm ("Mrational"))
+    | Mstring v                  -> T.iconst ~loc:mtt.loc T.tstring                  (Dstring v)
+    | Mmutez v                   -> T.iconst ~loc:mtt.loc T.tmutez                   (Dint v)
+    | Maddress v                 -> T.iconst ~loc:mtt.loc T.taddress                 (Dstring v)
+    | Mdate v                    -> T.iconst ~loc:mtt.loc T.ttimestamp               (Dint (Core.date_to_timestamp v))
+    | Mduration v                -> T.iconst ~loc:mtt.loc T.tint                     (Dint (Core.duration_to_timestamp v))
+    | Mtimestamp v               -> T.iconst ~loc:mtt.loc T.ttimestamp               (Dint v)
+    | Mbytes v                   -> T.iconst ~loc:mtt.loc T.tbytes                   (Dbytes v)
+    | Mchain_id v                -> T.iconst ~loc:mtt.loc T.tchain_id                (Dstring v)
+    | Mkey v                     -> T.iconst ~loc:mtt.loc T.tkey                     (Dstring v)
+    | Mkey_hash v                -> T.iconst ~loc:mtt.loc T.tkey_hash                (Dstring v)
+    | Msignature v               -> T.iconst ~loc:mtt.loc T.tsignature               (Dstring v)
+    | Mbls12_381_fr v            -> T.iconst ~loc:mtt.loc T.tbls12_381_fr            (Dbytes v)
+    | Mbls12_381_fr_n v          -> T.iconst ~loc:mtt.loc T.tbls12_381_fr            (Dint v)
+    | Mbls12_381_g1 v            -> T.iconst ~loc:mtt.loc T.tbls12_381_g1            (Dbytes v)
+    | Mbls12_381_g2 v            -> T.iconst ~loc:mtt.loc T.tbls12_381_g2            (Dbytes v)
+    | Munit                      -> T.iconst ~loc:mtt.loc T.tunit                     Dunit
+    | MsaplingStateEmpty n       -> T.iconst ~loc:mtt.loc (T.tsapling_state n)       (Dlist [])
+    | MsaplingTransaction (n, v) -> T.iconst ~loc:mtt.loc (T.tsapling_transaction n) (Dbytes v)
+    | Mchest v                   -> T.iconst ~loc:mtt.loc T.tchest                   (Dbytes v)
+    | Mchest_key v               -> T.iconst ~loc:mtt.loc T.tchest_key               (Dbytes v)
+    | Mtz_expr _                 -> emit_error                                       (UnsupportedTerm ("Mtz_expr"))
 
     (* control expression *)
 
-    | Mexprif (c, t, e)                      -> T.iif (f c) (f t) (f e) (ft mtt.type_)
+    | Mexprif (c, t, e)                      -> T.iif ~loc:mtt.loc (f c) (f t) (f e) (ft mtt.type_)
     | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-    | Mmatchoption (x, i, ve, ne)            -> T.iifnone (f x) (f ne) (M.unloc_mident i) (f ve) (ft mtt.type_)
-    | Mmatchor (x, lid, le, rid, re)         -> T.iifleft (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
-    | Mmatchlist (x, hid, tid, hte, ee)      -> T.iifcons (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) (ft mtt.type_)
+    | Mmatchoption (x, i, ve, ne)            -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) (ft mtt.type_)
+    | Mmatchor (x, lid, le, rid, re)         -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
+    | Mmatchlist (x, hid, tid, hte, ee)      -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) (ft mtt.type_)
     | Mternarybool (_c, _a, _b)              -> emit_error (UnsupportedTerm ("Mternarybool"))
     | Mternaryoption (_c, _a, _b)            -> emit_error (UnsupportedTerm ("Mternaryoption"))
-    | Mfold (e, i, l)                        -> T.iloopleft (f e) (M.unloc_mident i) (f l)
-    | Mmap (e, i, l)                         -> T.imap_ (f e) (M.unloc_mident i) (f l)
-    | Mexeclambda (l, a)                     -> T.ibinop (Bexec) (f a) (f l)
-    | Mapplylambda (l, a)                    -> T.ibinop (Bapply) (f a) (f l)
+    | Mfold (e, i, l)                        -> T.iloopleft ~loc:mtt.loc (f e) (M.unloc_mident i) (f l)
+    | Mmap (e, i, l)                         -> T.imap_ ~loc:mtt.loc (f e) (M.unloc_mident i) (f l)
+    | Mexeclambda (l, a)                     -> T.ibinop ~loc:mtt.loc (Bexec) (f a) (f l)
+    | Mapplylambda (l, a)                    -> T.ibinop ~loc:mtt.loc (Bapply) (f a) (f l)
 
     (* composite type constructors *)
 
-    | Mleft  (t, v) -> T.iunop (Uleft (ft t)) (f v)
-    | Mright (t, v) -> T.iunop (Uright (ft t)) (f v)
+    | Mleft  (t, v) -> T.iunop ~loc:mtt.loc (Uleft (ft t)) (f v)
+    | Mright (t, v) -> T.iunop ~loc:mtt.loc (Uright (ft t)) (f v)
     | Mnone    -> begin
         let t =
           match M.get_ntype mtt.type_ with
           | M.Toption t -> to_type model t
           | _ -> assert false
         in
-        T.izop (T.Znone t)
+        T.izop ~loc:mtt.loc (T.Znone t)
       end
 
-    | Msome v -> T.iunop Usome (f v)
+    | Msome v -> T.iunop ~loc:mtt.loc Usome (f v)
 
-    | Mtuple l      -> mk_tuple (List.map f l)
+    | Mtuple l      -> mk_tuple ~loc:mtt.loc (List.map f l)
     | Masset     _l -> emit_error (UnsupportedTerm ("Masset"))
     | Massets    _l -> emit_error (UnsupportedTerm ("Massets"))
     | Mlitset    l -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tset t -> T.iset (ft t) (List.map f l)
+        | M.Tset t -> T.iset ~loc:mtt.loc (ft t) (List.map f l)
         | _ -> assert false
       end
     | Mlitlist   l ->  begin
         match M.get_ntype mtt.type_ with
-        | M.Tlist t -> T.ilist (ft t) (List.map f l)
+        | M.Tlist t -> T.ilist ~loc:mtt.loc (ft t) (List.map f l)
         | _ -> assert false
       end
     | Mlitmap (_, l) -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tmap (k, v) -> T.imap false (ft k) (ft v) (List.map (fun (x, y) -> f x, f y) l)
-        | M.Tbig_map (k, v) -> T.imap true (ft k) (ft v) (List.map (fun (x, y) -> f x, f y) l)
+        | M.Tmap (k, v) -> T.imap ~loc:mtt.loc false (ft k) (ft v) (List.map (fun (x, y) -> f x, f y) l)
+        | M.Tbig_map (k, v) -> T.imap ~loc:mtt.loc true (ft k) (ft v) (List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
     | Mlitrecord l
     | Mlitevent l -> begin
         match l with
-        | [] -> T.iconst (T.mk_type Tunit) Dunit
+        | [] -> T.iconst ~loc:mtt.loc (T.mk_type Tunit) Dunit
         | _ ->
           let ri =
             let ll = List.map (fun (_, x) -> f x) l in
@@ -931,11 +931,11 @@ let to_ir (model : M.model) : T.ir =
             | M.Tevent  rn -> doit M.Utils.get_event  rn
             | _ -> mk_default ()
           in
-          T.irecord ri
+          T.irecord ~loc:mtt.loc ri
       end
-    | Mlambda (rt, id, at, e) -> T.ilambda (ft rt) (M.unloc_mident id) (ft at) (f e)
-    | Mlambda_michelson (it, rt, body) -> T.ilambda_michelson (ft it) (ft rt) body
-    | Mmicheline_expr (t, m, a) -> T.imicheline m [ft t] (List.map f a)
+    | Mlambda (rt, id, at, e) -> T.ilambda ~loc:mtt.loc (ft rt) (M.unloc_mident id) (ft at) (f e)
+    | Mlambda_michelson (it, rt, body) -> T.ilambda_michelson ~loc:mtt.loc (ft it) (ft rt) body
+    | Mmicheline_expr (t, m, a) -> T.imicheline ~loc:mtt.loc m [ft t] (List.map f a)
 
     (* access *)
 
@@ -945,40 +945,40 @@ let to_ir (model : M.model) : T.ir =
 
     (* comparison operators *)
 
-    | Mequal (_, l, r)  -> T.icompare (Ceq) (f l) (f r)
-    | Mnequal (_, l, r) -> T.icompare (Cne) (f l) (f r)
-    | Mgt (l, r)        -> T.icompare (Cgt) (f l) (f r)
-    | Mge (l, r)        -> T.icompare (Cge) (f l) (f r)
-    | Mlt (l, r)        -> T.icompare (Clt) (f l) (f r)
-    | Mle (l, r)        -> T.icompare (Cle) (f l) (f r)
+    | Mequal (_, l, r)  -> T.icompare ~loc:mtt.loc (Ceq) (f l) (f r)
+    | Mnequal (_, l, r) -> T.icompare ~loc:mtt.loc (Cne) (f l) (f r)
+    | Mgt (l, r)        -> T.icompare ~loc:mtt.loc (Cgt) (f l) (f r)
+    | Mge (l, r)        -> T.icompare ~loc:mtt.loc (Cge) (f l) (f r)
+    | Mlt (l, r)        -> T.icompare ~loc:mtt.loc (Clt) (f l) (f r)
+    | Mle (l, r)        -> T.icompare ~loc:mtt.loc (Cle) (f l) (f r)
     | Mmulticomp _      -> emit_error (UnsupportedTerm ("Mmulticomp"))
 
 
     (* arithmetic operators *)
 
-    | Mand (l, r)        -> T.ibinop Band (f l) (f r)
-    | Mor (l, r)         -> T.ibinop Bor  (f l) (f r)
-    | Mgreedyand (l, r)  -> T.ibinop Band (f l) (f r)
-    | Mgreedyor (l, r)   -> T.ibinop Bor  (f l) (f r)
-    | Mxor (l, r)        -> T.ibinop Bxor (f l) (f r)
-    | Mnot e             -> T.iunop  Unot (f e)
-    | Mplus (l, r)       -> T.iadd (f l) (f r)
+    | Mand (l, r)        -> T.ibinop ~loc:mtt.loc Band (f l) (f r)
+    | Mor (l, r)         -> T.ibinop ~loc:mtt.loc Bor  (f l) (f r)
+    | Mgreedyand (l, r)  -> T.ibinop ~loc:mtt.loc Band (f l) (f r)
+    | Mgreedyor (l, r)   -> T.ibinop ~loc:mtt.loc Bor  (f l) (f r)
+    | Mxor (l, r)        -> T.ibinop ~loc:mtt.loc Bxor (f l) (f r)
+    | Mnot e             -> T.iunop ~loc:mtt.loc  Unot (f e)
+    | Mplus (l, r)       -> T.iadd ~loc:mtt.loc (f l) (f r)
     | Mminus (l, r)      -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tbuiltin Btez -> T.iifnone (T.isub_mutez (f l) (f r)) (T.ifail M.fail_msg_NAT_NEG_ASSIGN) "_var_ifnone" (T.ivar "_var_ifnone") (ft mtt.type_)
-        | _ -> T.isub (f l) (f r)
+        | M.Tbuiltin Btez -> T.iifnone ~loc:mtt.loc (T.isub_mutez (f l) (f r)) (T.ifail M.fail_msg_NAT_NEG_ASSIGN) "_var_ifnone" (T.ivar "_var_ifnone") (ft mtt.type_)
+        | _ -> T.isub ~loc:mtt.loc (f l) (f r)
       end
-    | Mmult (l, r)       -> T.imul (f l) (f r)
+    | Mmult (l, r)       -> T.imul ~loc:mtt.loc (f l) (f r)
     | Mdivrat _          -> emit_error (UnsupportedTerm ("Mdivrat"))
-    | Mdiveuc (l, r)     -> T.idiv (f l) (f r)
-    | Mmodulo (l, r)     -> T.imod (f l) (f r)
-    | Mdivmod (l, r)     -> T.ibinop Bediv (f l) (f r)
-    | Muminus e          -> T.iunop  Uneg (f e)
-    | MthreeWayCmp (l, r)-> T.ibinop Bcompare (f l) (f r)
-    | Mshiftleft (l, r)  -> T.ibinop Blsl (f l) (f r)
-    | Mshiftright (l, r) -> T.ibinop Blsr (f l) (f r)
-    | Msubnat (l, r)     -> T.iunop Uisnat (T.ibinop Bsub (f l) (f r))
-    | Msubmutez (l, r)   -> T.isub_mutez (f l) (f r)
+    | Mdiveuc (l, r)     -> T.idiv ~loc:mtt.loc (f l) (f r)
+    | Mmodulo (l, r)     -> T.imod ~loc:mtt.loc (f l) (f r)
+    | Mdivmod (l, r)     -> T.ibinop ~loc:mtt.loc Bediv (f l) (f r)
+    | Muminus e          -> T.iunop ~loc:mtt.loc  Uneg (f e)
+    | MthreeWayCmp (l, r)-> T.ibinop ~loc:mtt.loc Bcompare (f l) (f r)
+    | Mshiftleft (l, r)  -> T.ibinop ~loc:mtt.loc Blsl (f l) (f r)
+    | Mshiftright (l, r) -> T.ibinop ~loc:mtt.loc Blsr (f l) (f r)
+    | Msubnat (l, r)     -> T.iunop ~loc:mtt.loc Uisnat (T.ibinop Bsub (f l) (f r))
+    | Msubmutez (l, r)   -> T.isub_mutez ~loc:mtt.loc (f l) (f r)
 
 
     (* asset api effect *)
@@ -1017,8 +1017,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match M.get_ntype src, M.get_ntype dst, v.node with
-        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type model t) (f v)
-        | M.Tbuiltin Btez, M.Tbuiltin Bnat, _                  -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
+        | M.Tbuiltin Baddress, M.Tcontract t, _ -> get_contract None (to_type model t) (f v) mtt.loc
+        | M.Tbuiltin Btez, M.Tbuiltin Bnat, _   -> T.idiv ~loc:mtt.loc (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
     | Mtupleaccess (x, n) -> begin
@@ -1037,24 +1037,24 @@ let to_ir (model : M.model) : T.ir =
       in
       let ru = List.fold_left (fun (ru : T.ruitem option) (fn, v) -> Some (make_ru ?ru rn fn v)) None l in
       let ru = match ru with | None -> assert false | Some v -> v in
-      T.irecupdate (f x) ru
+      T.irecupdate ~loc:mtt.loc (f x) ru
     | Mmakeasset _ -> emit_error (UnsupportedTerm ("Mmakeasset"))
     | Mtocontainer _ -> emit_error (UnsupportedTerm ("Mtocontainer"))
-    | Mglobal_constant (ty, v) -> T.iconst (ft ty) (to_data v)
+    | Mglobal_constant (ty, v) -> T.iconst ~loc:mtt.loc (ft ty) (to_data v)
 
     (* set api expression *)
 
-    | Msetadd (_, c, a)             -> T.iterop (Tupdate) (f a) (T.itrue ()) (f c)
-    | Msetremove (_, c, a)          -> T.iterop (Tupdate) (f a) (T.ifalse ()) (f c)
-    | Msetupdate (_, c, b, v)       -> T.iterop (Tupdate) (f v) (f b) (f c)
-    | Msetcontains (_, c, k)        -> T.ibinop  Bmem     (f k) (f c)
-    | Msetlength (_, c)             -> T.iunop  Usize     (f c)
-    | Msetfold (_, ix, ia, c, a, b) -> T.ifold (M.unloc_mident ix) None (M.unloc_mident ia) (f c) (f a) (T.iassign (M.unloc_mident ia) (f b))
+    | Msetadd (_, c, a)             -> T.iterop ~loc:mtt.loc (Tupdate) (f a) (T.itrue ()) (f c)
+    | Msetremove (_, c, a)          -> T.iterop ~loc:mtt.loc (Tupdate) (f a) (T.ifalse ()) (f c)
+    | Msetupdate (_, c, b, v)       -> T.iterop ~loc:mtt.loc (Tupdate) (f v) (f b) (f c)
+    | Msetcontains (_, c, k)        -> T.ibinop ~loc:mtt.loc  Bmem     (f k) (f c)
+    | Msetlength (_, c)             -> T.iunop  ~loc:mtt.loc  Usize     (f c)
+    | Msetfold (_, ix, ia, c, a, b) -> T.ifold  ~loc:mtt.loc (M.unloc_mident ix) None (M.unloc_mident ia) (f c) (f a) (T.iassign (M.unloc_mident ia) (f b))
 
     (* set api instruction *)
 
-    | Msetinstradd    (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.itrue ()))
-    | Msetinstrremove (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.ifalse ()))
+    | Msetinstradd    (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.itrue ())) mtt.loc
+    | Msetinstrremove (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.ifalse ())) mtt.loc
 
     (* list api expression *)
 
@@ -1070,113 +1070,113 @@ let to_ir (model : M.model) : T.ir =
 
     (* list api instruction *)
 
-    | Mlistinstrprepend (_, ak, v) -> instr_update ak (Abinop (Bcons, f v))
-    | Mlistinstrconcat  (_, ak, v) -> instr_update ak (Abinop (Bconcat, f v))
+    | Mlistinstrprepend (_, ak, v) -> instr_update ak (Abinop (Bcons, f v)) mtt.loc
+    | Mlistinstrconcat  (_, ak, v) -> instr_update ak (Abinop (Bconcat, f v)) mtt.loc
 
 
     (* map api expression *)
 
-    | Mmapput (_, _, _, c, k, v)     -> T.iterop Tupdate (f k) (T.isome (f v)) (f c)
-    | Mmapremove (_, _, tv, c, k)    -> T.iterop Tupdate (f k) (T.inone (ft tv)) (f c)
-    | Mmapupdate (_, _, _, c, k, v)  -> T.iterop Tupdate (f k) (f v) (f c)
+    | Mmapput (_, _, _, c, k, v)     -> T.iterop ~loc:mtt.loc Tupdate (f k) (T.isome (f v)) (f c)
+    | Mmapremove (_, _, tv, c, k)    -> T.iterop ~loc:mtt.loc Tupdate (f k) (T.inone (ft tv)) (f c)
+    | Mmapupdate (_, _, _, c, k, v)  -> T.iterop ~loc:mtt.loc Tupdate (f k) (f v) (f c)
     | Mmapget (_, _, _, _, _, _)     -> emit_error (UnsupportedTerm ("Mmapget"))
-    | Mmapgetopt (_, _, _, c, k)     -> T.ibinop Bget (f k) (f c)
-    | Mmapcontains (_, _, _, c, k)   -> T.ibinop Bmem (f k) (f c)
-    | Mmaplength (_, _, _, c)        -> T.iunop Usize (f c)
-    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.ifold (M.unloc_mident ik) (Some (M.unloc_mident iv)) (M.unloc_mident ia) (f c) (f a) (T.iassign (M.unloc_mident ia) (f b))
+    | Mmapgetopt (_, _, _, c, k)     -> T.ibinop ~loc:mtt.loc Bget (f k) (f c)
+    | Mmapcontains (_, _, _, c, k)   -> T.ibinop ~loc:mtt.loc Bmem (f k) (f c)
+    | Mmaplength (_, _, _, c)        -> T.iunop ~loc:mtt.loc Usize (f c)
+    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.ifold ~loc:mtt.loc (M.unloc_mident ik) (Some (M.unloc_mident iv)) (M.unloc_mident ia) (f c) (f a) (T.iassign (M.unloc_mident ia) (f b))
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v)))
-    | Mmapinstrremove (_, _, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv)))
-    | Mmapinstrupdate (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) )
+    | Mmapinstrput    (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v))) mtt.loc
+    | Mmapinstrremove (_, _, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv))) mtt.loc
+    | Mmapinstrupdate (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) ) mtt.loc
 
     (* builtin functions *)
 
-    | Mmax (l, r)                -> let b = T.Bmax (to_type model l.type_) in add_builtin b; T.icall (get_fun_name b) [f l; f r] (is_inline b)
-    | Mmin (l, r)                -> let b = T.Bmin (to_type model l.type_) in add_builtin b; T.icall (get_fun_name b) [f l; f r] (is_inline b)
-    | Mabs x when is_rat x.type_ -> let b = T.Bratabs in add_builtin b; T.icall (get_fun_name b) [f x] (is_inline b)
-    | Mabs x                     -> T.iunop  Uabs (f x)
-    | Mconcat (x, y)             -> T.ibinop Bconcat (f x) (f y)
-    | Mconcatlist x              -> T.iunop  Uconcat (f x)
-    | Mslice (x, s, e)           -> T.iterop Tslice (f s) (f e) (f x)
-    | Mlength x                  -> T.iunop  Usize (f x)
-    | Misnone x                  -> T.iifnone (f x) (T.itrue ())  "_var_ifnone" (T.ifalse ()) T.tbool
-    | Missome x                  -> T.iifnone (f x) (T.ifalse ()) "_var_ifnone" (T.itrue ()) T.tbool
-    | Minttonat x                -> T.iunop  Uisnat (f x)
-    | Mfloor  x                  -> let b = T.Bfloor in add_builtin b; T.icall (get_fun_name b) [f x] (is_inline b)
-    | Mceil   x                  -> let b = T.Bceil  in add_builtin b; T.icall (get_fun_name b) [f x] (is_inline b)
+    | Mmax (l, r)                -> let b = T.Bmax (to_type model l.type_) in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f l; f r] (is_inline b)
+    | Mmin (l, r)                -> let b = T.Bmin (to_type model l.type_) in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f l; f r] (is_inline b)
+    | Mabs x when is_rat x.type_ -> let b = T.Bratabs in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
+    | Mabs x                     -> T.iunop   ~loc:mtt.loc Uabs (f x)
+    | Mconcat (x, y)             -> T.ibinop  ~loc:mtt.loc Bconcat (f x) (f y)
+    | Mconcatlist x              -> T.iunop   ~loc:mtt.loc Uconcat (f x)
+    | Mslice (x, s, e)           -> T.iterop  ~loc:mtt.loc Tslice (f s) (f e) (f x)
+    | Mlength x                  -> T.iunop   ~loc:mtt.loc Usize (f x)
+    | Misnone x                  -> T.iifnone ~loc:mtt.loc (f x) (T.itrue ())  "_var_ifnone" (T.ifalse ()) T.tbool
+    | Missome x                  -> T.iifnone ~loc:mtt.loc (f x) (T.ifalse ()) "_var_ifnone" (T.itrue ()) T.tbool
+    | Minttonat x                -> T.iunop   ~loc:mtt.loc Uisnat (f x)
+    | Mfloor  x                  -> let b = T.Bfloor in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
+    | Mceil   x                  -> let b = T.Bceil  in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
     | Mnattostring _             -> emit_error (UnsupportedTerm ("Mnattostring"))
-    | Mbytestonat x              -> let b = T.Bbytestonat  in add_builtin b; T.icall (get_fun_name b) [f x] (is_inline b)
-    | Mnattobytes x              -> let b = T.Bnattobytes  in add_builtin b; T.icall (get_fun_name b) [f x] (is_inline b)
-    | Mbytestoint x              -> T.iunop Uint (f x)
-    | Minttobytes x              -> T.iunop Ubytes (f x)
-    | Mpack x                    -> T.iunop Upack ( f x)
-    | Munpack (t, x)             -> T.iunop (Uunpack (ft t)) (f x)
-    | Msetdelegate x             -> T.iunop Usetdelegate (f x)
-    | Mkeyhashtocontract x       -> T.iunop Uimplicitaccount (f x)
-    | Mcontracttoaddress x       -> T.iunop Uaddress (f x)
-    | Maddresstocontract (t, x)  -> T.iunop (Ucontract (ft t, None)) (f x)
-    | Mkeytoaddress    x         -> T.iunop Uaddress (T.iunop (Uimplicitaccount) (T.iunop  (Uhash_key) (f x)))
-    | Msimplify_rational x       -> let b = T.Bsimplify_rational in add_builtin b; T.icall (get_fun_name b) ([f x]) (is_inline b)
-    | Mget_numerator     x       -> T.iunop (Ucar) (f x)
-    | Mget_denominator   x       -> T.iunop (Ucdr) (f x)
-    | Misimplicitaddress x       -> let b = T.Bis_implicit_address  in add_builtin b; T.icall (get_fun_name b) ([f x]) (is_inline b)
+    | Mbytestonat x              -> let b = T.Bbytestonat  in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
+    | Mnattobytes x              -> let b = T.Bnattobytes  in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
+    | Mbytestoint x              -> T.iunop ~loc:mtt.loc  Uint                    (f x)
+    | Minttobytes x              -> T.iunop ~loc:mtt.loc  Ubytes                  (f x)
+    | Mpack x                    -> T.iunop ~loc:mtt.loc  Upack                   (f x)
+    | Munpack (t, x)             -> T.iunop ~loc:mtt.loc (Uunpack (ft t))         (f x)
+    | Msetdelegate x             -> T.iunop ~loc:mtt.loc  Usetdelegate            (f x)
+    | Mkeyhashtocontract x       -> T.iunop ~loc:mtt.loc  Uimplicitaccount        (f x)
+    | Mcontracttoaddress x       -> T.iunop ~loc:mtt.loc  Uaddress                (f x)
+    | Maddresstocontract (t, x)  -> T.iunop ~loc:mtt.loc (Ucontract (ft t, None)) (f x)
+    | Mkeytoaddress    x         -> T.iunop ~loc:mtt.loc  Uaddress                (T.iunop Uimplicitaccount (T.iunop Uhash_key (f x)))
+    | Msimplify_rational x       -> let b = T.Bsimplify_rational in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) ([f x]) (is_inline b)
+    | Mget_numerator     x       -> T.iunop ~loc:mtt.loc Ucar                     (f x)
+    | Mget_denominator   x       -> T.iunop ~loc:mtt.loc Ucdr                     (f x)
+    | Misimplicitaddress x       -> let b = T.Bis_implicit_address in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) ([f x]) (is_inline b)
     | Mexp_horner (_x, _s)       -> emit_error (UnsupportedTerm ("Mexp_horner"))
 
     (* crypto functions *)
 
-    | Mblake2b x                -> T.iunop Ublake2b  (f x)
-    | Msha256  x                -> T.iunop Usha256   (f x)
-    | Msha512  x                -> T.iunop Usha512   (f x)
-    | Msha3    x                -> T.iunop Usha3     (f x)
-    | Mkeccak  x                -> T.iunop Ukeccak   (f x)
-    | Mkeytokeyhash x           -> T.iunop Uhash_key (f x)
-    | Mchecksignature (k, s, x) -> T.iterop Tcheck_signature (f k) (f s) (f x)
+    | Mblake2b x                -> T.iunop  ~loc:mtt.loc Ublake2b         (f x)
+    | Msha256  x                -> T.iunop  ~loc:mtt.loc Usha256          (f x)
+    | Msha512  x                -> T.iunop  ~loc:mtt.loc Usha512          (f x)
+    | Msha3    x                -> T.iunop  ~loc:mtt.loc Usha3            (f x)
+    | Mkeccak  x                -> T.iunop  ~loc:mtt.loc Ukeccak          (f x)
+    | Mkeytokeyhash x           -> T.iunop  ~loc:mtt.loc Uhash_key        (f x)
+    | Mchecksignature (k, s, x) -> T.iterop ~loc:mtt.loc Tcheck_signature (f k) (f s) (f x)
 
 
     (* crypto functions *)
 
-    | Mtotalvotingpower         -> T.izop  Ztotalvotingpower
-    | Mvotingpower  x           -> T.iunop Uvotingpower (f x)
+    | Mtotalvotingpower         -> T.izop  ~loc:mtt.loc Ztotalvotingpower
+    | Mvotingpower  x           -> T.iunop ~loc:mtt.loc Uvotingpower (f x)
 
 
     (* ticket *)
 
-    | Mcreateticket (x, a)   -> T.ibinop Bcreateticket (f x) (f a)
-    | Mreadticket x          -> T.ireadticket (f x)
-    | Msplitticket (x, a, b) -> T.ibinop Bsplitticket (f x) (mk_tuple [f a; f b])
-    | Mjointickets (x, y)    -> T.iunop  Ujointickets (mk_tuple [f x; f y])
+    | Mcreateticket (x, a)   -> T.ibinop      ~loc:mtt.loc Bcreateticket (f x) (f a)
+    | Mreadticket x          -> T.ireadticket ~loc:mtt.loc (f x)
+    | Msplitticket (x, a, b) -> T.ibinop      ~loc:mtt.loc Bsplitticket (f x) (mk_tuple [f a; f b])
+    | Mjointickets (x, y)    -> T.iunop       ~loc:mtt.loc Ujointickets (mk_tuple [f x; f y])
 
 
     (* sapling *)
 
-    | Msapling_empty_state n        -> T.izop (Zsapling_empty_state n)
-    | Msapling_verify_update (s, t) -> T.ibinop Bsapling_verify_update (f s) (f t)
+    | Msapling_empty_state n        -> T.izop   ~loc:mtt.loc (Zsapling_empty_state n)
+    | Msapling_verify_update (s, t) -> T.ibinop ~loc:mtt.loc Bsapling_verify_update (f s) (f t)
 
 
     (* bls curve *)
 
-    | Mpairing_check x -> T.iunop (Upairing_check) (f x)
+    | Mpairing_check x -> T.iunop ~loc:mtt.loc (Upairing_check) (f x)
 
 
     (* timelock *)
 
-    | Mopen_chest (x, y, z) -> T.iterop (Topen_chest) (f x) (f y) (f z)
+    | Mopen_chest (x, y, z) -> T.iterop ~loc:mtt.loc (Topen_chest) (f x) (f y) (f z)
 
 
     (* constants *)
 
-    | Mnow           -> T.izop Znow
-    | Mtransferred   -> T.izop Zamount
-    | Mcaller        -> T.izop Zsender
-    | Mbalance       -> T.izop Zbalance
-    | Msource        -> T.izop Zsource
-    | Mselfaddress   -> T.izop Zself_address
-    | Mselfchainid   -> T.izop Zchain_id
-    | Mmetadata      -> assert false
-    | Mlevel         -> T.izop Zlevel
-    | Mminblocktime  -> T.izop Zmin_block_time
+    | Mnow           -> T.izop ~loc:mtt.loc Znow
+    | Mtransferred   -> T.izop ~loc:mtt.loc Zamount
+    | Mcaller        -> T.izop ~loc:mtt.loc Zsender
+    | Mbalance       -> T.izop ~loc:mtt.loc Zbalance
+    | Msource        -> T.izop ~loc:mtt.loc Zsource
+    | Mselfaddress   -> T.izop ~loc:mtt.loc Zself_address
+    | Mselfchainid   -> T.izop ~loc:mtt.loc Zchain_id
+    | Mmetadata      -> emit_error (UnsupportedTerm ("Mmetadata"))
+    | Mlevel         -> T.izop ~loc:mtt.loc Zlevel
+    | Mminblocktime  -> T.izop ~loc:mtt.loc Zmin_block_time
 
 
     (* variable *)
@@ -1184,13 +1184,13 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (v, kind) -> begin
         let f =
           if is_ticket_type model mtt.type_
-          then fun x -> T.ivar_access {
+          then fun x -> T.ivar_access  ~loc:mtt.loc {
               av_ident = x;
               av_path = [];
               av_source_no_dup = true;
               av_value_no_dup = true
             }
-          else fun x -> T.ivar x
+          else fun x -> T.ivar ~loc:mtt.loc x
         in
 
         match kind with
@@ -1202,13 +1202,13 @@ let to_ir (model : M.model) : T.ir =
         | Vfield           -> assert false
         | Vthe             -> assert false
         | Vstate           -> assert false
-        | Vparameter       -> T.iwildcard (ft mtt.type_) (M.unloc_mident v)
+        | Vparameter       -> T.iwildcard ~loc:mtt.loc (ft mtt.type_) (M.unloc_mident v)
       end
     | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
 
-    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.icall (get_fun_name b) [T.isrecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) (T.iunit ())] (is_inline b)
+    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [T.isrecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) (T.iunit ())] (is_inline b)
     | Mratcmp (op, l, r)   ->
       let op =
         let u    = T.iunit () in
@@ -1221,28 +1221,28 @@ let to_ir (model : M.model) : T.ir =
         | Gt -> T.iright tu (T.iright tou (T.ileft  tu u))
         | Ge -> T.iright tu (T.iright tou (T.iright tu u))
       in
-      let b = T.Bratcmp in add_builtin b; T.icall (get_fun_name b) [T.isrecord [f l; f r]; op] (is_inline b)
+      let b = T.Bratcmp in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [T.isrecord [f l; f r]; op] (is_inline b)
     | Mratarith (op, l, r)    -> begin
         (* let norm x = let b = T.Bratnorm in add_builtin b; T.Icall (get_fun_name b, [x]) in *)
         let norm x = x in
         match op with
-        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.icall (get_fun_name b) [T.isrecord [f l; f r]; T.ileft  T.tunit (T.iunit ())] (is_inline b))
-        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.icall (get_fun_name b) [T.isrecord [f l; f r]; T.iright T.tunit (T.iunit ())] (is_inline b))
-        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.icall (get_fun_name b) [f l; f r] (is_inline b))
-        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.icall (get_fun_name b) [f l; f r] (is_inline b))
+        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.icall ~loc:mtt.loc (get_fun_name b) [T.isrecord [f l; f r]; T.ileft  T.tunit (T.iunit ())] (is_inline b))
+        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.icall ~loc:mtt.loc (get_fun_name b) [T.isrecord [f l; f r]; T.iright T.tunit (T.iunit ())] (is_inline b))
+        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.icall ~loc:mtt.loc (get_fun_name b) [f l; f r] (is_inline b))
+        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.icall ~loc:mtt.loc (get_fun_name b) [f l; f r] (is_inline b))
       end
-    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.icall (get_fun_name b) [f v] (is_inline b)
-    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.icall (get_fun_name b) [f c; f t] (is_inline b)
-    | Mnattoint e             -> T.iunop (Uint) (f e)
-    | Mnattorat e             -> T.isrecord [T.iunop Uint (f e); T.inat Big_int.unit_big_int]
-    | Minttorat e             -> T.isrecord [f e; T.inat Big_int.unit_big_int]
-    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.icall (get_fun_name b) ([f c; f t]) (is_inline b)
+    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f v] (is_inline b)
+    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f c; f t] (is_inline b)
+    | Mnattoint e             -> T.iunop ~loc:mtt.loc (Uint) (f e)
+    | Mnattorat e             -> T.isrecord ~loc:mtt.loc [T.iunop Uint (f e); T.inat Big_int.unit_big_int]
+    | Minttorat e             -> T.isrecord ~loc:mtt.loc [f e; T.inat Big_int.unit_big_int]
+    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) ([f c; f t]) (is_inline b)
 
 
     (* utils *)
 
     | Minttodate _         -> emit_error (UnsupportedTerm ("Minttodate"))
-    | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.icall (get_fun_name b) [f v] (is_inline b)
+    | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f v] (is_inline b)
 
   in
 

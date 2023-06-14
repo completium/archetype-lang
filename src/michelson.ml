@@ -1,6 +1,5 @@
 open Ident
 open Tools
-open Location
 
 type 'a with_annot = {
   node:       'a;
