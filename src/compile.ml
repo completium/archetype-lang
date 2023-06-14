@@ -200,7 +200,9 @@ let output (model : Model.model) : string =
                     end
                   | DebugTrace -> begin
                       let debug_trace : Gen_debug_trace.debug_trace = Gen_debug_trace.generate_debug_trace_json michelson in
-                      Format.fprintf fmt "%s" (Gen_debug_trace.to_trace_json debug_trace)
+                      if !Options.opt_raw_debug_trace
+                          then Format.fprintf fmt "%a@." Gen_debug_trace.pp_debug_trace  debug_trace
+                          else Format.fprintf fmt "%a@." Gen_debug_trace.pp_trace_json   debug_trace
                     end
                   | _ -> assert false
                 end

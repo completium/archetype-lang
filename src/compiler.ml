@@ -86,6 +86,8 @@ let main () : unit =
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
+      "-rdt", Arg.Set Options.opt_raw_debug_trace, " Same as -rj";
+      "--raw-debug-trace", Arg.Set Options.opt_raw_debug_trace, " Same as -rdt";
       "-j", Arg.Set Options.opt_json, " Json";
       "--json", Arg.Set Options.opt_json, " Same as -j";
       "-rj", Arg.Set Options.opt_rjson, " Raw Json";
