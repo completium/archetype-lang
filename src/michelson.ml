@@ -249,7 +249,14 @@ and stack_item = {
 
 and stack = stack_item list
 
+and decl_bound = {
+  db_kind: string;
+  db_name: string;
+  db_bound: string;
+}
+
 and debug = {
+  decl_bound: decl_bound option;
   stack: stack;
   loc: Location.t option;
 }

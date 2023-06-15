@@ -277,22 +277,31 @@ let generate_debug_trace_json (michelson : T.michelson) : debug_trace =
   res
 
 let pp_range fmt (l : Location.t) =
-  let pp_position fmt (a, b, c) = Format.fprintf fmt "{\"line\":%d,\"col\":%d,\"char\":%d}" a b c in
+  let pp_position fmt (a, b, c) =
+    Format.fprintf fmt "{\"line\":%d,\"col\":%d,\"char\":%d}"
+      a b c
+  in
   let sl, sc = l.loc_start in
   let el, ec = l.loc_end in
   Format.fprintf fmt ",\"range\":{\"name\":\"%s\",\"begin\":%a,\"end\":%a}"
     l.loc_fname
-    pp_position (sc, sl, l.loc_bchar)
-    pp_position (ec, el, l.loc_echar)
+    pp_position (sl, sc, l.loc_bchar)
+    pp_position (el, ec, l.loc_echar)
+
+let pp_decl_bound fmt (decl_bound : T.decl_bound) =
+  Format.fprintf fmt ",\"decl_bound\":{\"kind\":\"%s\",\"name\":\"%s\",\"bound\":\"%s\"}"
+    decl_bound.db_kind
+    decl_bound.db_name
+    decl_bound.db_bound
 
 let pp_debug_ fmt (debug : T.debug) =
   let pp_option = Printer_tools.pp_option in
   let pp_list = Printer_tools.pp_list in
-  (* let pp_string fmt str = Format.fprintf fmt "\"%s\"" str in *)
   let pp_stack_item fmt (si : T.stack_item) = Format.fprintf fmt "{\"name\":\"%s\"}" si.stack_item_name in
-  Format.fprintf fmt ",\"debug\":{\"stack\":[%a]%a}"
+  Format.fprintf fmt ",\"debug\":{\"stack\":[%a]%a%a}"
     (pp_list "," pp_stack_item) debug.stack
     (pp_option pp_range) debug.loc
+    (pp_option pp_decl_bound) debug.decl_bound
 
 let rec pp_micheline_ fmt (mich : micheline) =
   let pp_list = Printer_tools.pp_list in

@@ -1695,13 +1695,19 @@ type env = {
 }
 [@@deriving show {with_path = false}]
 
-let process_debug (env : env) (l : Location.t option) : T.debug =
+let process_debug ?decl_bound ?loc (env : env) : T.debug =
   let stack : T.stack_item list = List.map (fun (x : stack_item) -> T.{stack_item_name = x.id; stack_item_type = None} ) env.stack in
-  let res : T.debug = {
-    stack = stack;
-    loc = l
-  } in
+  let res : T.debug = { decl_bound; stack; loc } in
   res
+
+let rec assign_last_seq (debug : T.debug) (cs : T.code list) =
+  match List.rev cs with
+  | a::l -> begin
+      match a.node with
+      | T.SEQ ll -> List.rev ({a with node = T.SEQ (assign_last_seq debug ll)}::l)
+      | _ -> List.rev ({a with debug = Some debug}::l)
+    end
+  | [] -> []
 
 let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
 let fail_env (env : env) = { env with fail = true }
@@ -1838,12 +1844,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | 1 -> [ v; T.cswap (); T.cdrop 1 ], dec_env env
         | _ -> [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
       in
-      let debug = process_debug nenv loc in
-      let cs =
-        match List.rev cs with
-        | a::l -> List.rev ({a with debug = Some debug}::l)
-        | [] -> []
-      in
+      let debug = process_debug ?loc nenv in
+      let cs = assign_last_seq debug cs in
       (* print_env ~str:("assign:after " ^ id) nenv; *)
       T.cseq cs, nenv
     end
@@ -1961,7 +1963,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | IletIn (id, v, b, _u)    -> begin
       let v, env = f v in
       let env = add_var_env (dec_env env) id in
-      let debug = process_debug env i.loc in
+      let debug = process_debug ?loc:i.loc env in
       let v = {v with debug = Some debug} in
       (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
@@ -2279,7 +2281,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iconst (t, e) -> begin
       let nenv = inc_env env in
-      let debug = process_debug nenv i.loc in
+      let debug = process_debug ?loc:i.loc nenv in
       T.cpush ~debug (rar t, e), nenv
     end
 
@@ -2635,8 +2637,12 @@ and to_michelson (ir : T.ir) : T.michelson =
       (* stack state : functions, (operations list)?, unfolded storage, extra_argument? , argument *)
       match e.args, e.eargs with
       | [], [] -> begin
-          let code, _ = instruction_to_code env e.body in
-          T.cseq ([T.cdrop 1] @ [code] @ fold_storage @ eops @ [T.cpair ()])
+          let debug_begin = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "begin"} env in
+          let code, env = instruction_to_code env e.body in
+          let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
+          let seq_code = [code] in
+          let seq_code = assign_last_seq debug_end seq_code in
+          T.cseq ([T.cdrop ~debug:debug_begin 1] @ seq_code @ fold_storage @ eops @ [T.cpair ()])
         end
       | l, m -> begin
           let nb_eargs = List.length m in
