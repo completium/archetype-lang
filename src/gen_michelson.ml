@@ -1825,21 +1825,27 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   let fold env l = fold_gen fe env l in
 
-  let assign env id v =
+  let assign ?loc env id v =
     (* let n = get_sp_for_id env id in *)
     let n, si = get_pos_stack_item env id in
     if si.populated
     then begin
       (* print_env ~str:("assign:before " ^ id) env; *)
       (* Format.eprintf "assign n: %d@." n; *)
-      let c, nenv =
+      let cs, nenv =
         match n with
-        | 0 -> T.cseq [ v ], env
-        | 1 -> T.cseq [ v; T.cswap (); T.cdrop 1 ], dec_env env
-        | _ -> T.cseq [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
+        | 0 -> [ v ], env
+        | 1 -> [ v; T.cswap (); T.cdrop 1 ], dec_env env
+        | _ -> [ v; (T.cdip (1, [T.cdig (n - 1); T.cdrop 1])); T.cdug (n - 1)], dec_env env
+      in
+      let debug = process_debug nenv loc in
+      let cs =
+        match List.rev cs with
+        | a::l -> List.rev ({a with debug = Some debug}::l)
+        | [] -> []
       in
       (* print_env ~str:("assign:after " ^ id) nenv; *)
-      c, nenv
+      T.cseq cs, nenv
     end
     else begin
       (* print_env ~str:("assign:before " ^ id) env; *)
@@ -1955,6 +1961,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | IletIn (id, v, b, _u)    -> begin
       let v, env = f v in
       let env = add_var_env (dec_env env) id in
+      let debug = process_debug env i.loc in
+      let v = {v with debug = Some debug} in
       (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
       (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
@@ -2037,7 +2045,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       (* print_env ~str:("Iassign:before " ^ id) env; *)
       let v, env = f v in
       (* print_env ~str:("Iassign:after " ^ id) env; *)
-      assign env id v
+      assign ?loc:i.loc env id v
     end
 
   | Iassigntuple (id, i, l, v) -> begin
@@ -2167,18 +2175,21 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let c = z_op_to_code op in
       c, inc_env env
     end
+
   | Iunop (op, e) -> begin
       let op = un_op_to_code op in
       let e, env = fe env e in
       let env = match op.node with T.FAILWITH -> fail_env env | _ -> env in
       T.cseq [e; op], env
     end
+
   | Ibinop (op, lhs, rhs) -> begin
       let op = bin_op_to_code op in
       let rhs, env = fe env rhs in
       let lhs, env = fe env lhs in
       T.cseq [rhs; lhs; op], (dec_env env)
     end
+
   | Iterop (op, a1, a2, a3) -> begin
       let op = ter_op_to_code op in
       let a3, env = fe env a3 in
@@ -2186,6 +2197,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let a1, env = fe env a1 in
       T.cseq [a3; a2; a1; op], (dec_env (dec_env env))
     end
+
   | Iupdate (ku, aop) -> begin
       let aop_to_code env = function
         | T.Aunop   op       ->
@@ -2264,7 +2276,13 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           end
         end
     end
-  | Iconst (t, e) -> let nenv = inc_env env in T.cpush ~debug:(process_debug nenv i.loc) (rar t, e), nenv
+
+  | Iconst (t, e) -> begin
+      let nenv = inc_env env in
+      let debug = process_debug nenv i.loc in
+      T.cpush ~debug (rar t, e), nenv
+    end
+
   | Icompare (op, lhs, rhs) -> begin
       let op =
         match op with
