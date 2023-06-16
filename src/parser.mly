@@ -109,6 +109,7 @@
 %token MICHELSON
 %token MAP
 %token MATCH
+%token MATCH_DETACH
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -868,6 +869,8 @@ order_operations:
 
 simple_expr_r:
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
+
+ | MATCH_DETACH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
  | FOLD LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Efold (x, id, e) }
 

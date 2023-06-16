@@ -1,0 +1,18 @@
+archetype match_detach_big_map_unit_match
+
+variable mt : big_map<address, ticket<unit>> = []
+
+entry init(a : address) {
+  const t ?= create_ticket(Unit, 1);
+  mt.put(a, t)
+}
+
+entry exec(param : ticket<unit>) {
+  match_detach mt[caller] with
+  | some(d) -> begin
+      const new_ticket ?= join_tickets(d, param);
+      mt.put(caller, new_ticket)
+    end
+  | none -> mt.put(caller, param)
+  end
+}

@@ -168,6 +168,7 @@ import * as decomp_while from '../bindings/passed/decomp_while'
 import * as decomp_while1 from '../bindings/passed/decomp_while1'
 import * as decomp_while2 from '../bindings/passed/decomp_while2'
 import * as detach_big_map_string from '../bindings/passed/detach_big_map_string'
+import * as detach_big_map_unit from '../bindings/passed/detach_big_map_unit'
 import * as detach_map_string from '../bindings/passed/detach_map_string'
 import * as detach_option_string from '../bindings/passed/detach_option_string'
 import * as duration_to_int from '../bindings/passed/duration_to_int'
@@ -4377,6 +4378,26 @@ describe('passed', async () => {
     assert(res_after == "my_string")
     const mt_after = await detach_big_map_string.detach_big_map_string.get_mt_value(new Nat(0));
     assert(mt_after === undefined)
+  })
+
+  it('detach_big_map_unit', async () => {
+    await detach_big_map_unit.detach_big_map_unit.deploy({ as: alice })
+
+    await detach_big_map_unit.detach_big_map_unit.init(alice.get_address(), { as: alice })
+
+    const ticket_alice_before =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
+    assert(ticket_alice_before?.equals(new Ticket<Unit>(detach_big_map_unit.detach_big_map_unit.get_address(), new Unit(), new Nat(1))))
+
+    const ticket_bob_before =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
+    assert(ticket_bob_before === undefined)
+
+    await detach_big_map_unit.detach_big_map_unit.exec({ as: alice })
+
+    const ticket_alice_after =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
+    assert(ticket_alice_after?.equals(new Ticket<Unit>(detach_big_map_unit.detach_big_map_unit.get_address(), new Unit(), new Nat(3))))
+
+    const ticket_bob_after =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
+    assert(ticket_bob_after === undefined)
   })
 
   it('detach_map_string', async () => {

@@ -1,0 +1,19 @@
+archetype detach_big_map_unit
+
+variable mt : big_map<address, ticket<unit>> = []
+
+entry init(a : address) {
+  const t ?= create_ticket(Unit, 1);
+  mt.put(a, t)
+}
+
+entry %import(param : ticket<unit>) {
+  detach mt[source] as d : "ERROR";
+  const new_ticket ?= join_tickets(d, param);
+  mt.put(source, new_ticket)
+}
+
+entry exec() {
+  const t ?= create_ticket(Unit, 2);
+  transfer 0tz to entry self.%import(t)
+}
