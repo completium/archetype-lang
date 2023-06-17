@@ -1111,6 +1111,11 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       let g = to_instruction env in
       let n : A.instruction_node = instr.node in
 
+      let to_dk = function
+        | A.DK_option (ty, id) -> M.DK_option (type_to_type ty, id)
+        | A.DK_map (ty, id, k) -> M.DK_map (type_to_type ty, id, f k)
+      in
+
       match n with
       | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
       | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
@@ -1145,6 +1150,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, M.mk_mident id, g ve, g ne)
       | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, M.mk_mident lid, g le, M.mk_mident rid, g re)
       | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, g hte, g ee)
+      | A.Imatchdetach (dk, id, ve, ne)     -> M.Minstrmatchdetach   (to_dk dk, M.mk_mident id, g ve, g ne)
       | A.Iassign (op, t, lv, e, fa) -> begin
           let to_ak (lv : A.lvalue) =
             match lv with
@@ -1184,12 +1190,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ifail   m -> M.Mfail (Invalid (f m))
       | A.Ifailsome v -> M.Mfailsome (f v)
-      | A.Idetach (id, dk, ty, fa) ->
-        let to_dk = function
-          | A.DK_option (ty, id) -> M.DK_option (type_to_type ty, id)
-          | A.DK_map (ty, id, k) -> M.DK_map (type_to_type ty, id, f k)
-        in
-        M.Mdetach (M.mk_mident id, to_dk dk, type_to_type ty, f fa)
+
+      | A.Idetach (id, dk, ty, fa) -> M.Mdetach (M.mk_mident id, to_dk dk, type_to_type ty, f fa)
 
       | A.Imicheline micheline -> M.Mmicheline micheline
 

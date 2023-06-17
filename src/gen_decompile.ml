@@ -1566,9 +1566,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       A.ematchwith (f e) [
         ([dumloc (A.Pref (dumloc A.PLeft , [snd xl]))], f bl);
         ([dumloc (A.Pref (dumloc A.PRight, [snd xr]))], f br)
-      ]
+      ] MKbasic
 
     | Minstrmatchlist   _        -> assert false
+    | Minstrmatchdetach  _       -> assert false
     | Mfor (_i, _c, _b)          -> assert false
     | Miter (_i, _a, _b, _c, _n) -> assert false
     | Mwhile (_c, _b)            -> assert false

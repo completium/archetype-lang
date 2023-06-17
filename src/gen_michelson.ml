@@ -739,6 +739,9 @@ let to_ir (model : M.model) : T.ir =
         let b = f b in
         T.Iiter (ids, c, b)
       end
+    | Minstrmatchdetach (_dk, _i, _ve, _ne) -> begin
+        assert false
+      end
     | Miter (_i, _a, _b, _c, _) -> emit_error (UnsupportedTerm ("Miter"))
     | Mwhile (c, b)             -> T.Iloop (f c, f b)
     | Mseq is                   -> T.Iseq (List.map f is)
@@ -2416,9 +2419,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Imicheline (micheline, ts, args) -> begin
       let env, l = List.fold_left (fun (env, accu) x -> begin
-        let x, env = fe env x in
-        (env, accu @ [x])
-      end) (env, []) args in
+            let x, env = fe env x in
+            (env, accu @ [x])
+          end) (env, []) args in
       let env = List.fold_left (fun env _x -> dec_env env) env args in
       let env = List.fold_left (fun env _x -> inc_env env) env ts in
       T.cseq (l @ (List.map T.ccustom (T.remove_seq_obj_micheline micheline))), env

@@ -154,6 +154,10 @@ let pp_assign_kind f fmt = function
   | Astate                -> Format.fprintf fmt "state"
   | Aoperations           -> Format.fprintf fmt "operations"
 
+let pp_dk fmt = function
+  | DK_option (_, id) -> Format.pp_print_string fmt id
+  | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -294,6 +298,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, hid, tid, hte, ee)
 
+    | Minstrmatchdetach (dk, i, ve, ne) ->
+      let pp fmt (dk, i, ve, ne) =
+        Format.fprintf fmt "match_detach %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]@\nend"
+          pp_dk dk
+          pp_mid i
+          f ve
+          f ne
+      in
+      pp fmt (dk, i, ve, ne)
+
     | Mfor (i, c, b) ->
       Format.fprintf fmt "for %a in %a do@\n  @[%a@]@\ndone"
         (fun fmt i -> match i with FIsimple x -> pp_mid fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_mid x pp_mid y) i
@@ -360,10 +374,6 @@ let pp_mterm fmt (mt : mterm) =
         f x
 
     | Mdetach (id, dk, _ty, fa) ->
-      let pp_dk fmt = function
-        | DK_option (_, id) -> Format.pp_print_string fmt id
-        | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
-      in
       Format.fprintf fmt "detach %a as %a : %a"
         pp_dk dk
         pp_mid id

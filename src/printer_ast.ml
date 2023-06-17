@@ -682,9 +682,9 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Pmicheline_expr (t, m, a) -> begin
         let pp fmt (t, m, a) =
           Format.fprintf fmt "michelson<%a> @[%a@] [%a]"
-          pp_type t
-          Micheline_printer.print_expr (Micheline_tools.obj_to_micheline m)
-          (pp_list " : " pp_pterm) a
+            pp_type t
+            Micheline_printer.print_expr (Micheline_tools.obj_to_micheline m)
+            (pp_list " : " pp_pterm) a
         in
         (pp_no_paren pp) fmt (t, m, a)
       end
@@ -722,6 +722,10 @@ and pp_term_arg fmt = function
 
 let pp_instruction_poly pp fmt i =
   pp fmt i.node
+
+let pp_dk fmt = function
+  | DK_option (_, id) -> Format.pp_print_string fmt id
+  | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
 
 let rec pp_instruction fmt (i : instruction) =
   let pp_node fmt = function
@@ -855,6 +859,16 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
+    | Imatchdetach (dk, id, ve, ne) ->
+      let pp fmt (dk, id, ve, ne) =
+        Format.fprintf fmt "match_detach %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+          pp_dk dk
+          pp_id id
+          pp_instruction ve
+          pp_instruction ne
+      in
+      (pp_with_paren pp) fmt (dk, id, ve, ne)
+
     | Iassign (op, _, `Var id, value, fa) ->
       let pp fmt (op, id, value, fa) =
         Format.fprintf fmt "%a %a %a%a"
@@ -956,10 +970,6 @@ let rec pp_instruction fmt (i : instruction) =
       (pp_with_paren pp) fmt pt
 
     | Idetach (id, dk, ty, f) ->
-      let pp_dk fmt = function
-        | DK_option (_, id) -> Format.pp_print_string fmt id
-        | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_pterm k
-      in
       let pp fmt (id, dk, _ty, f) =
         Format.fprintf fmt "detach %a as %a : %a"
           pp_dk dk
