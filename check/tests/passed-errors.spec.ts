@@ -3317,6 +3317,14 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/map_asset.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('match_detach_big_map', async () => {
+    const stat = compile("../tests/passed/match_detach_big_map.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('match_detach_option', async () => {
+    const stat = compile("../tests/passed/match_detach_option.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('match_entrypoint', async () => {
     const stat = compile("../tests/passed/match_entrypoint.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

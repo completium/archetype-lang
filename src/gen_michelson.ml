@@ -720,6 +720,14 @@ let to_ir (model : M.model) : T.ir =
     | Minstrmatchoption (x, i, ve, ne)       -> T.Iifnone (f x, f ne, M.unloc_mident i, f ve, T.tunit)
     | Minstrmatchor (x, lid, le, rid, re)    -> T.Iifleft (f x, M.unloc_mident lid, f le, M.unloc_mident rid, f re, T.tunit)
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.Iifcons (f x, M.unloc_mident hid, M.unloc_mident tid, f hte, f ee, T.tunit)
+    | Minstrmatchdetach (dk, i, ve, ne) -> begin
+        let id, klv =
+          match dk with
+          | DK_option (ty, id) -> id, (T.KLVoption (ft ty))
+          | DK_map (ty, id, k) -> id, (T.KLVmap (ft ty, f k))
+        in
+        T.Iifnone (T.Irep (id, klv), f ne, M.unloc_mident i, f ve, T.tunit)
+      end
     | Mfor (id, c, b)         -> begin
         let ids =
           match id with
@@ -738,9 +746,6 @@ let to_ir (model : M.model) : T.ir =
         in
         let b = f b in
         T.Iiter (ids, c, b)
-      end
-    | Minstrmatchdetach (_dk, _i, _ve, _ne) -> begin
-        assert false
       end
     | Miter (_i, _a, _b, _c, _) -> emit_error (UnsupportedTerm ("Miter"))
     | Mwhile (c, b)             -> T.Iloop (f c, f b)
@@ -2387,7 +2392,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       (* print_env ~str:"Ireplace after" nenv; *)
       let b =
         match k with
-        | KLVoption ty -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
+        | KLVoption (ty) -> [T.cifnone ([a; T.cfailwith], [T.cnone ty; T.cswap])]
         | KLVmap (ty, k) -> begin
             let k, _ = fe (inc_env env) k in
             [T.cnone ty; k; T.cget_and_update; T.cifnone ([T.cpush (T.tstring, (Dstring M.fail_msg_KEY_NOT_FOUND)); T.cfailwith], [])]
@@ -2425,6 +2430,19 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let env = List.fold_left (fun env _x -> dec_env env) env args in
       let env = List.fold_left (fun env _x -> inc_env env) env ts in
       T.cseq (l @ (List.map T.ccustom (T.remove_seq_obj_micheline micheline))), env
+    end
+
+  | Irep (id, klv) -> begin
+      let n = get_sp_for_id env id in
+
+      let seq =
+        match klv with
+        | KLVoption ty -> [T.cdig n; T.cnone ty; T.cdug (n + 1)]
+        | KLVmap (ty, k) ->
+          let k, _ = fe (inc_env env) k in
+          [T.cdig n; T.cnone ty; k; T.cget_and_update; T.cswap; T.cdug (n + 1)]
+      in
+      T.cseq seq, inc_env env
     end
 
 and process_data (d : T.data) : T.data =

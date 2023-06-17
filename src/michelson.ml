@@ -412,6 +412,7 @@ and instruction =
   | Ireplace     of ident * ident * klv * instruction
   | Ireadticket  of instruction
   | Imicheline   of obj_micheline * type_ list * instruction list
+  | Irep         of ident * klv
 [@@deriving show {with_path = false}]
 
 and ritem =
