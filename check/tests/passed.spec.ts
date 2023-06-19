@@ -832,6 +832,7 @@ import * as lit_tez_underscore from '../bindings/passed/lit_tez_underscore'
 import * as literal_in_argument from '../bindings/passed/literal_in_argument'
 import * as map_asset from '../bindings/passed/map_asset'
 import * as match_detach_big_map from '../bindings/passed/match_detach_big_map'
+import * as match_detach_map from '../bindings/passed/match_detach_map'
 import * as match_detach_option from '../bindings/passed/match_detach_option'
 import * as match_entrypoint from '../bindings/passed/match_entrypoint'
 import * as max_tez from '../bindings/passed/max_tez'
@@ -15001,6 +15002,27 @@ describe('passed', async () => {
 
     const ticket_alice_after = await match_detach_big_map.match_detach_big_map.get_mt_value(alice.get_address());
     assert(ticket_alice_after?.equals(new Ticket<Unit>(match_detach_big_map.match_detach_big_map.get_address(), new Unit(), new Nat(3))))
+  })
+
+  it('match_detach_map', async () => {
+    await match_detach_map.match_detach_map.deploy({ as: alice })
+
+    const mt_before = await match_detach_map.match_detach_map.get_mt();
+    assert(mt_before.length == 0)
+
+    await match_detach_map.match_detach_map.init({ as: alice })
+
+    const mt_init = await match_detach_map.match_detach_map.get_mt();
+    assert(mt_init.length == 1)
+    assert(mt_init[0][0].equals(alice.get_address()))
+    assert(mt_init[0][1].equals(new Ticket(match_detach_map.match_detach_map.get_address(), new Unit(), new Nat(1))))
+
+    await match_detach_map.match_detach_map.exec({ as: alice })
+
+    const mt_after = await match_detach_map.match_detach_map.get_mt();
+    assert(mt_after.length == 1)
+    assert(mt_after[0][0].equals(alice.get_address()))
+    assert(mt_after[0][1].equals(new Ticket(match_detach_map.match_detach_map.get_address(), new Unit(), new Nat(3))))
   })
 
   it('match_detach_option', async () => {

@@ -1,4 +1,4 @@
-{ storage (big_map address (ticket unit)) ;
+{ storage (map address (ticket unit)) ;
   parameter (or (or (unit %init) (ticket %import unit)) (unit %exec)) ;
   code { NIL operation ;
          SWAP ;

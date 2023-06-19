@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - New feature
+  - `match_detach` instruction
 
 ## [1.4.3] - 2023-06-02
 ### Added
