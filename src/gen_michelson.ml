@@ -295,8 +295,6 @@ let to_ir (model : M.model) : T.ir =
     | T.BlistNth       _ -> false
     | T.BlistHead      _ -> false
     | T.BlistTail      _ -> false
-    | T.Bbytestonat      -> false
-    | T.Bnattobytes      -> false
     | T.Bratcmp          -> false
     | T.Bratnorm         -> true
     | T.Brataddsub       -> true
@@ -350,16 +348,6 @@ let to_ir (model : M.model) : T.ir =
     | BlistTail t -> begin
         let targ = T.tpair [(T.tlist t); T.tnat] in
         let tret = T.tlist t in
-        T.mk_func name targ tret ctx (T.Abstract b) loc
-      end
-    | Bbytestonat -> begin
-        let targ = T.tbytes in
-        let tret = T.tnat in
-        T.mk_func name targ tret ctx (T.Abstract b) loc
-      end
-    | Bnattobytes -> begin
-        let targ = T.tnat in
-        let tret = T.tbytes in
         T.mk_func name targ tret ctx (T.Abstract b) loc
       end
     | Bratcmp -> begin
@@ -1300,8 +1288,6 @@ let to_ir (model : M.model) : T.ir =
         | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
         | Mlisthead (t, _, _)     -> (doit accu mt (T.BlistHead (to_type model t)))
         | Mlisttail (t, _, _)     -> (doit accu mt (T.BlistTail (to_type model t)))
-        | Mbytestonat _           -> (doit accu mt (T.Bbytestonat))
-        | Mnattobytes _           -> (doit accu mt (T.Bnattobytes))
         | Msimplify_rational _    -> (doit accu mt (T.Bsimplify_rational))
 
         | Mrateq _
@@ -1498,69 +1484,6 @@ let map_implem : (string * T.code list) list = [
       cdug 1;
       cdrop 1
     ];
-  get_fun_name T.Bbytestonat, T.[
-      cpush (tmap tbytes tnat, Dlist data_map_bytes_nat);
-      cpush (tnat, T.Dint Big_int.zero_big_int);
-      cdup_n 3;
-      csize ();
-      cpush (tnat, T.Dint Big_int.zero_big_int);
-      cdup_n 2;
-      cdup_n 2;
-      ccompare ();
-      clt ();
-      cloop [
-        cpush (tnat, T.Dint (Big_int.big_int_of_int 256));
-        cdig 3;
-        cmul ();
-        cdug 2;
-        cdup_n 5;
-        cpush (tnat, T.Dint (Big_int.unit_big_int));
-        cdup_n 3;
-        cslice ();
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
-        cdup_n 5;
-        cswap ();
-        cget ();
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
-        cdig 3;
-        cadd ();
-        cdug 2;
-        cpush (tnat, T.Dint (Big_int.unit_big_int));
-        cadd ();
-        cdup_n 2;
-        cdup_n 2;
-        ccompare ();
-        clt ()
-      ];
-      cdig 2;
-      cdip (1, [cdrop 4])
-    ];
-  get_fun_name T.Bnattobytes, T.[
-      cpush (tmap tnat tbytes, Dlist data_map_nat_bytes);
-      cpush (tlist tbytes, Dlist []);
-      cdup_n 3;
-      cpush (tnat, Dint Big_int.zero_big_int);
-      ccompare ();
-      cneq ();
-      cloop [
-        cpush (tnat, Dint (Big_int.big_int_of_int 256));
-        cdig 3;
-        cediv ();
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
-        cunpair ();
-        cdug 3;
-        cdup_n 3;
-        cswap ();
-        cget ();
-        cifnone ([cpush (tstring, Dstring "ERROR"); cfailwith ()], []);
-        ccons ();
-        cdup_n 3;
-        cpush (tnat, Dint Big_int.zero_big_int);
-        ccompare ();
-        cneq ()];
-      cconcat ();
-      cdip (1, [cdrop 2])
-    ];
   get_fun_name T.Bis_implicit_address, T.[
       cpack ();
       cpush (tnat, Dint Big_int.unit_big_int);
@@ -1674,8 +1597,6 @@ let concrete_michelson b : T.code =
       cdrop 2;
       cdip (1, [cdrop 3])
     ]
-  | T.Bbytestonat     -> T.cseq (get_implem b)
-  | T.Bnattobytes     -> T.cseq (get_implem b)
   | T.Bratcmp         -> T.cseq T.[cunpair (); cunpair (); cdip (1, [cunpair ()]); cunpair (); cdug 3; cmul (); cdip (1, [cmul ()]); cswap (); ccompare (); cswap ();
                                    cifleft ([cdrop 1; ceq ()], [cifleft ([cifleft ([cdrop 1; clt ()], [cdrop 1; cle ()])],
                                                                          [cifleft ([cdrop 1; cgt ()], [cdrop 1; cge ()])])])]
