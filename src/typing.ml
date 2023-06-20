@@ -756,6 +756,7 @@ type error_desc =
   | InvalidFormula
   | InvalidInstruction
   | InvalidKeyFieldInAssetValueType
+  | InvalidLiteralBytes
   | InvalidLValue
   | InvalidMapType
   | InvalidMethodInExec
@@ -1031,6 +1032,7 @@ let pp_error_desc fmt e =
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidKeyFieldInAssetValueType    -> pp "Key field asset is not in asset_value type"
   | InvalidLValue                      -> pp "Invalid left-value"
+  | InvalidLiteralBytes                -> pp "Invalid bytes literal"
   | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
@@ -3143,6 +3145,7 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
     mk_sp A.vtdate (A.BVdate (Core.string_to_date d))
 
   | Lbytes s ->
+    if String.length s mod 2 <> 0 then Env.emit_error env (loc topv, InvalidLiteralBytes);
     mk_sp A.vtbytes (A.BVbytes (s))
 
   | Lpercent n -> begin

@@ -385,6 +385,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/import_arl_fun_error_unknown_namespace.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('invalid_bytes_literal', async () => {
+    const stat = compile("../tests/type-errors/invalid_bytes_literal.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
