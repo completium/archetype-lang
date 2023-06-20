@@ -722,6 +722,14 @@ let to_ir (model : M.model) : T.ir =
     | Minstrmatchoption (x, i, ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
     | Minstrmatchor (x, lid, le, rid, re)    -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
+    | Minstrmatchdetach (dk, i, ve, ne) -> begin
+        let id, klv =
+          match dk with
+          | DK_option (ty, id) -> id, (T.KLVoption (ft ty))
+          | DK_map (ty, id, k) -> id, (T.KLVmap (ft ty, f k))
+        in
+        T.iifnone ~loc:mtt.loc (T.irep id klv) (f ne) (M.unloc_mident i) (f ve) T.tunit
+      end
     | Mfor (id, c, b) -> begin
         let ids =
           match id with
@@ -2451,6 +2459,19 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let env = List.fold_left (fun env _x -> dec_env env) env args in
       let env = List.fold_left (fun env _x -> inc_env env) env ts in
       T.cseq (l @ (List.map T.ccustom (T.remove_seq_obj_micheline micheline))), env
+    end
+
+  | Irep (id, klv) -> begin
+      let n = get_sp_for_id env id in
+
+      let seq =
+        match klv with
+        | KLVoption ty -> [T.cdig n; T.cnone ty; T.cdug (n + 1)]
+        | KLVmap (ty, k) ->
+          let k, _ = fe (inc_env env) k in
+          [T.cdig n; T.cnone ty; k; T.cget_and_update (); T.cswap (); T.cdug (n + 1)]
+      in
+      T.cseq seq, inc_env env
     end
 
 and process_data (d : T.data) : T.data =

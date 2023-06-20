@@ -124,6 +124,10 @@ and method_kind =
   | MKexpr of expr
   | MKself
 
+and match_kind =
+  | MKbasic
+  | MKdetach
+
 and expr_unloc =
   | Eterm          of (id_scope * lident)
   | Eliteral       of literal
@@ -153,7 +157,7 @@ and expr_unloc =
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident * type_t option * expr * bool (* const or not *)
   | Evaropt        of lident * type_t option * expr * expr option * bool (* const or not *)
-  | Ematchwith     of expr * branch list
+  | Ematchwith     of expr * branch list * match_kind
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
@@ -498,7 +502,7 @@ let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
 let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
 let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c))
 let evaropt       ?(loc=dummy) ?t id e c f        = mkloc loc (Evaropt(id, t, e, f, c))
-let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
+let ematchwith    ?(loc=dummy) e l k              = mkloc loc (Ematchwith(e, l, k))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
 let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)

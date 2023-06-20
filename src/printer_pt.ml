@@ -623,10 +623,11 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt (cond, then_, else_)
 
 
-  | Ematchwith (x, xs) ->
+  | Ematchwith (x, xs, k) ->
 
     let pp fmt (x, xs) =
-      Format.fprintf fmt "match %a with@\n%a@\nend"
+      Format.fprintf fmt "%s %a with@\n%a@\nend"
+        (match k with | MKbasic -> "match" | MKdetach -> "match_detach")
         (pp_expr e_default PNone) x
         (pp_list "@\n" (fun fmt (pts, e) ->
              Format.fprintf fmt "%a -> %a"

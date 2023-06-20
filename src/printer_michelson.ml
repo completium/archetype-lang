@@ -660,6 +660,11 @@ let rec pp_instruction fmt (i : instruction) =
         Micheline_printer.print_expr (Micheline_tools.obj_to_micheline micheline)
         (pp_list "; " f) args
     end
+  | Irep (id, klv) -> begin
+      match klv with
+      | KLVoption _ -> pp "%s" id
+      | KLVmap (_, k) -> pp "%s[%a]" id f k
+    end
 
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l
@@ -695,6 +700,7 @@ let pp_ir fmt (ir : ir) =
   Format.fprintf fmt "storage_type: %a@\n@\n" pp_type ir.storage_type;
   Format.fprintf fmt "storage_data: %a@\n@\n" pp_data ir.storage_data;
   (pp_list "@\n@\n" pp_func) fmt ir.funs;
+  (pp_list "@\n@\n" pp_entry) fmt ir.entries;
   (pp_list "@\n@\n" pp_func) fmt ir.views;
   (if (List.is_not_empty ir.views) then (pp "@\n"))
 

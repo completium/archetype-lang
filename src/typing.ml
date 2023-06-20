@@ -703,6 +703,7 @@ type error_desc =
   | CreateContractStorageUnknownField of ident
   | DetachInvalidExprFrom
   | DetachInvalidType                       of ident
+  | DetachMatchInvalidPattern
   | DifferentMemoSizeForSaplingVerifyUpdate of int * int
   | DivergentExpr
   | DoesNotSupportMethodCall
@@ -976,6 +977,7 @@ let pp_error_desc fmt e =
   | CreateContractStorageUnknownField i        -> pp "Unknown field for `create_contract` storage: %a" pp_ident i
   | DetachInvalidExprFrom              -> pp "Invalid 'from' expression"
   | DetachInvalidType id               -> pp "Invalid type of `%s' for `detach' variable" id
+  | DetachMatchInvalidPattern          -> pp "Invalid pattern for `match_detach', only option patterns are allowed"
   | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
   | DivergentExpr                      -> pp "Divergent expression"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
@@ -4448,7 +4450,7 @@ let rec for_xexpr
         let body = Micheline_tools.pt_to_obj body in
         mk_sp (Some (A.Tlambda (it, rt))) (A.Plambda_michelson (it, rt, body))
       end
-    | Ematchwith (e, bs) -> begin
+    | Ematchwith (e, bs, MKbasic) -> begin
         match for_gen_matchwith mode capture env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
           let es = List.map2 (fun e xs ->
@@ -4646,6 +4648,7 @@ let rec for_xexpr
     | Eseq       _
     | Etransfer  _
     | Edetach    _
+    | Ematchwith (_, _, MKdetach)
     | Eemit      _
     | Emicheline _
     | Eany
@@ -5206,10 +5209,10 @@ and for_assign_expr ?autoview ?(asset = false) ?(t : A.ptyp option) mode env orl
             select_operator env ~asset orloc (op, [lfty; ety]))
         |> Option.map (fun sig_ ->
             Option.iter (fun ty ->
-              match op, sig_.osl_ret, ty with
-              | PT.Arith PT.Minus, A.Tbuiltin VTint, A.Tbuiltin VTnat -> ()
-              | _, from_, to_ when not (Type.compatible ~autoview:false ~for_eq:false ~from_ ~to_) -> Env.emit_error env (e.loc, IncompatibleTypes (from_, to_))
-              | _, _, _ -> ()) t;
+                match op, sig_.osl_ret, ty with
+                | PT.Arith PT.Minus, A.Tbuiltin VTint, A.Tbuiltin VTnat -> ()
+                | _, from_, to_ when not (Type.compatible ~autoview:false ~for_eq:false ~from_ ~to_) -> Env.emit_error env (e.loc, IncompatibleTypes (from_, to_))
+                | _, _, _ -> ()) t;
             cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e))
   )
 
@@ -5460,6 +5463,28 @@ let rec for_instruction_r
     | [i] -> i
     | is  -> mki (Iseq is) in
 
+  let to_dk_type (v : A.pterm) =
+    match v.node with
+    | A.Pvar lid -> begin
+        let ty = match v.type_ with
+          | Some (A.Toption (tty)) -> tty
+          | _ -> (Env.emit_error env (v.loc, DetachInvalidType (unloc_longident lid)); bailout())
+        in
+        A.DK_option (ty, unloc_longident lid), ty
+      end
+    | A.Pcall (None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
+        (match m with
+         | {
+           node = Pvar (_, id); (* FIXME:NM *)
+           type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
+         } -> begin
+             A.DK_map (tty, unloc id, k), tty
+           end
+         | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
+      end
+    | _ -> (Env.emit_error env (v.loc, DetachInvalidExprFrom); bailout())
+  in
+
   try
     match unloc i with
     | Emethod (MKexpr pthe, m, args) -> begin
@@ -5705,25 +5730,8 @@ let rec for_instruction_r
         let _ = check_and_emit_name_free env id in
         let dk, ticket_type =
           let v = for_expr kind env v in
-          match v.node with
-          | A.Pvar lid -> begin
-              let ty = match v.type_ with
-                | Some (A.Toption (tty)) -> tty
-                | _ -> (Env.emit_error env (v.loc, DetachInvalidType (unloc_longident lid)); bailout())
-              in
-              A.DK_option (ty, unloc_longident lid), ty
-            end
-          | A.Pcall (None, Cconst Cmgetopt, [], [AExpr m; AExpr k]) -> begin
-              (match m with
-               | {
-                 node = Pvar (_, id); (* FIXME:NM *)
-                 type_ = Some ((A.Tmap(_, tty) | A.Tbig_map(_, tty)));
-               } -> begin
-                   A.DK_map (tty, unloc id, k), tty
-                 end
-               | _ -> (Env.emit_error env (v.loc, DetachInvalidType ("_")); bailout()))
-            end
-          | _ -> (Env.emit_error env (v.loc, DetachInvalidExprFrom); bailout())
+          to_dk_type v
+
         in
         let env = Env.Local.push env (id, ticket_type) ~kind:`Const in
         env, mki (A.Idetach (id, dk, ticket_type, for_expr kind env f))
@@ -5865,7 +5873,7 @@ let rec for_instruction_r
 
       env, mki (A.Ifailsome e)
 
-    | Ematchwith (e, bs) -> begin
+    | Ematchwith (e, bs, k) -> begin
         let mode = { em_pred = false; em_kind = kind; } in
         match for_gen_matchwith mode capture0 env (loc i) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), is) ->
@@ -5894,17 +5902,29 @@ let rec for_instruction_r
               aout (Option.map (List.nth is) wd) in
 
           let aout =
-            match decompile_match_with kd aout with
-            | Some (`List ((x, xs, bcons), bnil)) ->
-              A.Imatchlist (me, x, xs, bcons, bnil)
+            match k with
+            | MKbasic -> begin
+                match decompile_match_with kd aout with
+                | Some (`List ((x, xs, bcons), bnil)) ->
+                  A.Imatchlist (me, x, xs, bcons, bnil)
 
-            | Some (`Or ((xl, bl), (xr, br))) ->
-              A.Imatchor (me, xl, bl, xr, br)
+                | Some (`Or ((xl, bl), (xr, br))) ->
+                  A.Imatchor (me, xl, bl, xr, br)
 
-            | Some (`Option ((x, bsome), bnone)) ->
-              A.Imatchoption (me, x, bsome, bnone)
+                | Some (`Option ((x, bsome), bnone)) ->
+                  A.Imatchoption (me, x, bsome, bnone)
 
-            | None -> A.Imatchwith (me, aout)
+                | None -> A.Imatchwith (me, aout)
+              end
+            | MKdetach -> begin
+                let dk, _ = to_dk_type me in
+                match decompile_match_with kd aout with
+
+                | Some (`Option ((x, bsome), bnone)) ->
+                  A.Imatchdetach (dk, x, bsome, bnone)
+
+                | _ -> (Env.emit_error env (loc i, DetachMatchInvalidPattern); (Iseq []))
+              end
 
           in env, mki aout
       end

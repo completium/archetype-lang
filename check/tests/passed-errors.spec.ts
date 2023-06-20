@@ -669,6 +669,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/detach_big_map_string.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('detach_big_map_unit', async () => {
+    const stat = compile("../tests/passed/detach_big_map_unit.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('detach_map_string', async () => {
     const stat = compile("../tests/passed/detach_map_string.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -3315,6 +3319,18 @@ describe('passed-errors', async () => {
   })
   it('map_asset', async () => {
     const stat = compile("../tests/passed/map_asset.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('match_detach_big_map', async () => {
+    const stat = compile("../tests/passed/match_detach_big_map.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('match_detach_map', async () => {
+    const stat = compile("../tests/passed/match_detach_map.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('match_detach_option', async () => {
+    const stat = compile("../tests/passed/match_detach_option.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
   it('match_entrypoint', async () => {

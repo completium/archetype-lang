@@ -1,0 +1,21 @@
+archetype match_detach_option
+
+variable ot : option<ticket<unit>> = none
+
+entry init() {
+  ot := create_ticket(Unit, 1)
+}
+
+entry %import(param : ticket<unit>) {
+  match_detach ot with
+  | some(t) -> begin
+      ot := join_tickets(t, param);
+    end
+  | none -> ot := some(param)
+  end
+}
+
+entry exec() {
+  const t ?= create_ticket(Unit, 2);
+  transfer 0tz to entry self.%import(t)
+}

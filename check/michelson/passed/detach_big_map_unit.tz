@@ -1,0 +1,55 @@
+{ storage (big_map address (ticket unit)) ;
+  parameter (or (or (address %init) (ticket %import unit)) (unit %exec)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         IF_LEFT
+           { IF_LEFT
+               { PUSH nat 1 ;
+                 PUSH unit Unit ;
+                 TICKET ;
+                 IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+                 DIG 2 ;
+                 SWAP ;
+                 SOME ;
+                 DUP 3 ;
+                 UPDATE ;
+                 SWAP ;
+                 DROP 1 ;
+                 SWAP ;
+                 PAIR }
+               { SWAP ;
+                 NONE (ticket unit) ;
+                 SOURCE ;
+                 GET_AND_UPDATE ;
+                 IF_NONE { PUSH string "KEY_NOT_FOUND" ; FAILWITH } {} ;
+                 DIP 1 { SWAP } ;
+                 PAIR ;
+                 JOIN_TICKETS ;
+                 IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+                 SOME ;
+                 SOURCE ;
+                 UPDATE ;
+                 SWAP ;
+                 PAIR } }
+           { DROP 1 ;
+             PUSH nat 2 ;
+             PUSH unit Unit ;
+             TICKET ;
+             IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+             NIL operation ;
+             NIL operation ;
+             DUP 5 ;
+             ITER { CONS } ;
+             SELF_ADDRESS ;
+             CONTRACT %import (ticket unit) ;
+             IF_NONE
+               { PUSH string "import" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+               {} ;
+             PUSH mutez 0 ;
+             DIG 4 ;
+             TRANSFER_TOKENS ;
+             CONS ;
+             ITER { CONS } ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             PAIR } } }

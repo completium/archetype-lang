@@ -77,6 +77,7 @@
       "list"                , LIST                ;
       "map"                 , MAP                 ;
       "match"               , MATCH               ;
+      "match_detach"        , MATCH_DETACH        ;
       "make_asset"          , MAKE_ASSET          ;
       "make_big_map"        , MAKE_BIG_MAP        ;
       "make_event"          , MAKE_EVENT          ;

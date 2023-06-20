@@ -433,6 +433,7 @@ and instruction_node =
   | Imatchoption of pterm * lident * instruction * instruction
   | Imatchor     of pterm * lident * instruction * lident * instruction
   | Imatchlist   of pterm * lident * lident * instruction * instruction
+  | Imatchdetach of detach_kind * lident * instruction * instruction
   | Iassign of (assignment_operator * type_ * lvalue * pterm * pterm option) (* $2 assignment_operator $3 [ : $4]*)
   | Irequire of (bool * pterm * pterm)                                       (* $1 ? require : failif *)
   | Itransfer of transfer_t
