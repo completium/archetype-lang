@@ -781,6 +781,7 @@ let iwildcard         ?loc a b         = mk_instruction ?loc (Iwildcard (a, b))
 let ireplace          ?loc a b c d     = mk_instruction ?loc (Ireplace (a, b, c, d))
 let ireadticket       ?loc a           = mk_instruction ?loc (Ireadticket a)
 let imicheline        ?loc a b c       = mk_instruction ?loc (Imicheline (a, b, c))
+let irep              ?loc a b         = mk_instruction ?loc (Irep (a, b))
 
 (* -- *)
 
