@@ -1,0 +1,3 @@
+archetype invalid_bytes_literal
+
+variable res : bytes = 0x100
