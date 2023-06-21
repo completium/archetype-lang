@@ -1,0 +1,11 @@
+archetype var_mult_ids
+
+variable x : option<ticket<unit>> = none
+variable y : option<ticket<unit>> = none
+
+entry exec() {
+  const t ?= create_ticket(Unit, 3);
+  const t1, t2 ?= split_ticket(t, 1, 2);
+  x := t1;
+  y := t2
+}

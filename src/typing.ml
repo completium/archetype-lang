@@ -5999,7 +5999,8 @@ let rec for_instruction_r
 
       end
 
-    | Evaropt (x, ty, v, fa, c) ->
+    | Evaropt (xs, ty, v, fa, c) ->
+      let x = match xs with | [x] -> x | _ -> assert false in
       let ty = Option.bind (for_type env) ty in
       let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
       let v  = for_expr kind env ?ety:oty v in

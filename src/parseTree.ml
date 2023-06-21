@@ -156,7 +156,7 @@ and expr_unloc =
   | Eseq           of expr * expr
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident list * type_t option * expr * bool (* const or not *)
-  | Evaropt        of lident * type_t option * expr * expr option * bool (* const or not *)
+  | Evaropt        of lident list * type_t option * expr * expr option * bool (* const or not *)
   | Ematchwith     of expr * branch list * match_kind
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr

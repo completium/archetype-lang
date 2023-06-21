@@ -765,10 +765,16 @@ expr_r:
      { Evar (is, t, e, c) }
 
  | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
-     { Evaropt (i, t, e, Some f, c) }
+     { Evaropt ([i], t, e, Some f, c) }
+
+ | c=get_const is=snl2(COMMA, ident) t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
+     { Evaropt (is, t, e, Some f, c) }
 
  | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
-     { Evaropt (i, t, e, None, c) }
+     { Evaropt ([i], t, e, None, c) }
+
+ | c=get_const is=snl2(COMMA, ident) t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
+     { Evaropt (is, t, e, None, c) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
