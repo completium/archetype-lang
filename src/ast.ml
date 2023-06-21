@@ -420,14 +420,17 @@ and detach_kind =
   | DK_option of type_ * ident
   | DK_map of type_ * ident * pterm
 
+and var_decl_kind =
+  | VDKbasic
+  | VDKoption of pterm option
+
 and instruction_node =
   | Iif of (pterm * instruction * instruction)                               (* condition * then_ * else_ *)
   | Ifor of (for_ident * pterm * instruction)                                (* id * collection * body *)
   | Iiter of (lident * pterm * pterm * instruction)                          (* id * bound_min * bound_max * body *)
   | Iwhile of (pterm * instruction)                                          (* condition * body *)
   | Iletin of (lident * pterm * instruction)                                 (* id * init * body *)
-  | Ideclvar of (lident * type_) list * pterm * bool                         (* (id * type_) list * init * constant *)
-  | Ideclvaropt of (lident * type_) list * pterm * pterm option * bool       (* (id * type_) list * init * expr fail * constant *)
+  | Ideclvar of (lident * type_) list * pterm * var_decl_kind *  bool        (* (id * type_) list * init * var_decl_kind * constant *)
   | Iseq of instruction list                                                 (* lhs ; rhs *)
   | Imatchwith   of pterm * (pattern * instruction) list                     (* match term with ('pattern * instruction) list *)
   | Imatchoption of pterm * lident * instruction * instruction

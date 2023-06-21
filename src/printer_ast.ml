@@ -787,7 +787,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (id, init, body)
 
-    | Ideclvar (ids, v, c) ->
+    | Ideclvar (ids, v, VDKbasic, c) ->
       let pp fmt (ids, v, c) =
         Format.fprintf fmt "%s %a%a = %a"
           (if c then "const" else "var")
@@ -797,7 +797,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (ids, v, c)
 
-    | Ideclvaropt (ids, v, fa, c) ->
+    | Ideclvar (ids, v, VDKoption fa, c) ->
       let pp fmt (ids, v, fa, c) =
         Format.fprintf fmt "%s %a%a ?= %a%a"
           (if c then "const" else "var")

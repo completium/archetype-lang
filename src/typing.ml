@@ -5966,7 +5966,7 @@ let rec for_instruction_r
             match oty with
             | Some ty -> begin
                 let env, idts = process env x ty in
-                env, mki (A.Ideclvar ([idts], v, c))
+                env, mki (A.Ideclvar ([idts], v, VDKbasic, c))
               end
             | None -> env, mki (A.Iseq [])
           end
@@ -5988,7 +5988,7 @@ let rec for_instruction_r
                 let env, id_ty_s = List.fold_left (fun (env, accu) (id, ty) ->
                     let env, idts = process env id ty in
                     (env, accu @ [idts])) (env, []) id_ty_s in
-                env, mki (A.Ideclvar (id_ty_s, v, c))
+                env, mki (A.Ideclvar (id_ty_s, v, VDKbasic, c))
               end
             | Some (A.Ttuple ls) -> begin
                 Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidTupleType (List.length ls));
@@ -6031,7 +6031,7 @@ let rec for_instruction_r
             match v.A.type_ with
             | Some (A.Toption ty) -> begin
                 let env, idts = process env x ty in
-                env, mki (A.Ideclvaropt ([idts], v, fa, c))
+                env, mki (A.Ideclvar ([idts], v, VDKoption fa, c))
               end
             | _ -> begin
                 Env.emit_error env (v.loc, InvalidTypeDeclOpt);
@@ -6056,7 +6056,7 @@ let rec for_instruction_r
                 let env, id_ty_s = List.fold_left (fun (env, accu) (id, ty) ->
                     let env, idts = process env id ty in
                     (env, accu @ [idts])) (env, []) id_ty_s in
-                env, mki (A.Ideclvaropt (id_ty_s, v, fa, c))
+                env, mki (A.Ideclvar (id_ty_s, v, VDKoption fa, c))
               end
             | Some (A.Toption (A.Ttuple ls)) -> begin
                 Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidTupleType (List.length ls));
