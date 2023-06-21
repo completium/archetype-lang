@@ -5999,32 +5999,76 @@ let rec for_instruction_r
 
       end
 
-    | Evaropt (xs, ty, v, fa, c) ->
-      let x = match xs with | [x] -> x | _ -> assert false in
-      let ty = Option.bind (for_type env) ty in
-      let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
-      let v  = for_expr kind env ?ety:oty v in
-      let fa  = Option.map (for_expr kind env) fa in
+    | Evaropt (xs, ty, v, fa, c) -> begin
+        let ty = Option.bind (for_type env) ty in
+        let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
+        let v  = for_expr kind env ?ety:oty v in
+        let fa  = Option.map (for_expr kind env) fa in
 
-      Option.iter (fun (fa : A.pterm) -> Option.iter (fun ty ->
-          if (not (Type.Michelson.is_packable ty))
-          then (Env.emit_error env (fa.loc, InvalidTypeForFail))) fa.type_) fa;
+        Option.iter (fun (fa : A.pterm) -> Option.iter (fun ty ->
+            if (not (Type.Michelson.is_packable ty))
+            then (Env.emit_error env (fa.loc, InvalidTypeForFail))) fa.type_) fa;
 
-      let env =
-        let _ : bool = check_and_emit_name_free env x in
-        match v.A.type_ with
-        | Some A.Toption ty -> begin
-            let kind = if c then `Const else `Standard in
-            Env.Local.push env (x, ty) ~kind
-          end
-        | _ -> (Env.emit_error env (v.loc, InvalidTypeDeclOpt); env)
-      in
 
-      Option.iter (fun ty ->
+        let oty = v.type_ in
+
+        let process env id ty =
+          let _ : bool = check_and_emit_name_free env id in
+          let kind = if c then `Const else `Standard in
+          let env = Env.Local.push env (id, ty) ~kind in
           if not (valid_var_or_arg_type ty) then
-            Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
+            Env.emit_error env (loc id, InvalidVarOrArgType);
 
-      env, mki (A.Ideclvaropt (x, v, fa, c))
+          env, (id, ty)
+        in
+
+        match xs with
+        | [] -> assert false
+        | [x] -> begin
+            match v.A.type_ with
+            | Some (A.Toption ty) -> begin
+                let env, idts = process env x ty in
+                env, mki (A.Ideclvaropt ([idts], v, fa, c))
+              end
+            | _ -> begin
+                Env.emit_error env (v.loc, InvalidTypeDeclOpt);
+                env, mki (A.Iseq [])
+              end
+          end
+        | _ -> begin
+            let card = List.length xs in
+            match oty with
+            | Some (A.Toption (A.Ttuple ls)) when List.length ls >= card -> begin
+                let id_ty_s : (A.lident * A.type_) list =
+                  let rec aux lids ltypes : (A.lident * A.type_) list =
+                    match lids, ltypes with
+                    | [x], [ty] -> [x, ty]
+                    | [x], tys -> [x, A.Ttuple tys]
+                    | x::tx, ty::tys -> (x, ty)::(aux tx tys)
+                    | [], _ -> assert false
+                    | _, [] -> assert false
+                  in
+                  aux xs ls
+                in
+                let env, id_ty_s = List.fold_left (fun (env, accu) (id, ty) ->
+                    let env, idts = process env id ty in
+                    (env, accu @ [idts])) (env, []) id_ty_s in
+                env, mki (A.Ideclvaropt (id_ty_s, v, fa, c))
+              end
+            | Some (A.Toption (A.Ttuple ls)) -> begin
+                Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidTupleType (List.length ls));
+                env, mki (A.Iseq [])
+              end
+            | Some (A.Toption _) -> begin
+                Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidType);
+                env, mki (A.Iseq [])
+              end
+            | _ -> begin
+                Env.emit_error env (Location.mergeall (List.map loc xs), InvalidTypeDeclOpt);
+                env, mki (A.Iseq [])
+              end
+          end
+      end
 
     | Eapp (Fident f, args) -> begin
         let lid : A.lident = f |> snd in

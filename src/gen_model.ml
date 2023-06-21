@@ -1144,7 +1144,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body)
       | A.Iletin (i, init, cont)  -> M.Mletin ([M.mk_mident i], LVsimple (f init), Option.map type_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (ids, v, c)    -> M.Mdeclvar (List.map (fun x -> M.mk_mident (fst x)) ids, Option.map type_to_type v.type_, f v, c) (* TODO *)
-      | A.Ideclvaropt (i, v, fa, c)-> M.Mdeclvaropt ([M.mk_mident i], Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
+      | A.Ideclvaropt (ids, v, fa, c) -> M.Mdeclvaropt (List.map (fun x -> M.mk_mident (fst x)) ids, Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
       | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, M.mk_mident id, g ve, g ne)

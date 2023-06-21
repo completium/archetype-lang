@@ -6,6 +6,6 @@ variable y : option<ticket<unit>> = none
 entry exec() {
   const t ?= create_ticket(Unit, 3);
   const t1, t2 ?= split_ticket(t, 1, 2);
-  x := t1;
-  y := t2
+  x := some(t1);
+  y := some(t2)
 }
