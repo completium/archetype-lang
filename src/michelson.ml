@@ -419,7 +419,7 @@ and access_value = {
 
 and instruction_node =
   | Iseq         of instruction list
-  | IletIn       of ident * instruction * instruction * bool
+  | IletIn       of ident list * instruction * instruction * bool
   | Ivar_access  of access_value
   | Icall        of ident * instruction list * bool
   | Iassign      of ident * instruction

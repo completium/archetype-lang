@@ -515,7 +515,7 @@ let rec pp_instruction fmt (i : instruction) =
   match i.node with
   | Iseq [] -> pp "{ }"
   | Iseq l -> (pp_list ";@\n" f) fmt l
-  | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
+  | IletIn (ids, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" (pp_list ", " pp_id) ids f v f b
   | Ivar_access av -> Format.fprintf fmt "%s%a" av.av_ident (pp_list "" (fun fmt x -> Format.fprintf fmt "[%d/%d]" x.ai_index x.ai_length)) av.av_path
   | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v

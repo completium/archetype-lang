@@ -657,17 +657,20 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> begin
+    | Mletin (ids, LVsimple v, _, b, _) -> begin
+        let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
+        T.iletIn ~loc:mtt.loc (List.map M.unloc_mident ids) (f v) (f b) is_unit
+      end
+    | Mletin ([id], LVreplace (idv, dk, fa), _, b, _) -> begin
         let to_dk = function
           | M.DK_option (ty, _) -> T.KLVoption (ft ty)
           | M.DK_map (kt, _, k) -> T.KLVmap (ft kt, f k)
         in
         let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in
 
-        let v = match v with | M.LVsimple v -> f v | M.LVreplace (idv, dk, fa) -> T.ireplace ~loc:mtt.loc (M.unloc_mident id) (M.unloc_mident idv) (to_dk dk) (f fa) in
-        T.iletIn ~loc:mtt.loc (M.unloc_mident id) v (f b) is_unit
-      end
-    | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
+        let v = T.ireplace ~loc:mtt.loc (M.unloc_mident id) (M.unloc_mident idv) (to_dk dk) (f fa) in
+        T.iletIn ~loc:mtt.loc [M.unloc_mident id] v (f b) is_unit
+      end    | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mdeclvaropt _             -> emit_error (UnsupportedTerm ("Mdeclvaropt"))
     | Mapp (e, args)            -> begin
@@ -1889,26 +1892,34 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   match i.node with
   | Iseq l               -> seq env l
 
-  | IletIn (id, v, b, _u)    -> begin
+  | IletIn (ids, v, b, _u)    -> begin
+      let n = List.length ids in
       let v, env = f v in
-      let env = add_var_env (dec_env env) id in
+      (* Format.eprintf "%a@\n" (pp_list "," pp_str) ids; *)
+      let v = if n <= 1 then v else T.cseq [v; T.cunpair_n n] in
+      let env = List.fold_right (fun x env -> add_var_env env x) ids (dec_env env) in
       let debug = process_debug ?loc:i.loc env in
       let v = {v with debug = Some debug} in
       (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
       (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
-      let idx, si = get_pos_stack_item env id in
-      (* Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si; *)
-      let nenv = rm_var_env env id in
-      let c =
-        match idx with
-        | -1 -> T.cseq [v; b]
-        | 0  -> T.cseq ([v; b] @ (if si.populated then [T.cdrop 1] else []))
-        | 1  -> T.cseq ([v; b] @ (if si.populated then [T.cswap (); T.cdrop 1 ] else []))
-        | _  -> T.cseq ([v; b] @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else []))
+      let cs, nenv =
+        List.fold_left (fun (b, env) id -> begin
+              let idx, si = get_pos_stack_item env id in
+              let env = rm_var_env env id in
+              (* Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si; *)
+              let c =
+                match idx with
+                | -1 -> b
+                | 0  -> b @ (if si.populated then [T.cdrop 1] else [])
+                | 1  -> b @ (if si.populated then [T.cswap (); T.cdrop 1 ] else [])
+                | _  -> b @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else [])
+              in
+              (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
+              c, env
+            end ) ([v; b], env) ids
       in
-      (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
-      c, nenv
+      T.cseq cs, nenv
     end
 
   | Ivar_access av -> begin
