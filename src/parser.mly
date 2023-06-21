@@ -745,6 +745,11 @@ pname:
 %inline tentry_postfix:
 | DOT ida=ident arga=paren(expr) { (ida, arga) }
 
+%inline idents:
+| i=ident                      { [i] }
+| is=snl2(COMMA, ident)        { is }
+| is=paren(snl2(COMMA, ident)) { is }
+
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -758,22 +763,13 @@ expr_r:
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
      { Eletin (i, t, e, y, None) }
 
- | c=get_const i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar ([i], t, e, c) }
-
- | c=get_const is=snl2(COMMA, ident) t=colon_type_opt EQUAL e=expr %prec prec_var
+ | c=get_const is=idents t=colon_type_opt EQUAL e=expr %prec prec_var
      { Evar (is, t, e, c) }
 
- | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
-     { Evaropt ([i], t, e, Some f, c) }
-
- | c=get_const is=snl2(COMMA, ident) t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
+ | c=get_const is=idents t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
      { Evaropt (is, t, e, Some f, c) }
 
- | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
-     { Evaropt ([i], t, e, None, c) }
-
- | c=get_const is=snl2(COMMA, ident) t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
+ | c=get_const is=idents t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
      { Evaropt (is, t, e, None, c) }
 
  | e1=expr SEMI_COLON e2=expr
