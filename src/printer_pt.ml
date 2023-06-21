@@ -727,38 +727,28 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
-  | Evar (ids, t, e, VDKbasic, c) ->
+  | Evar (ids, t, e, k, c) ->
 
-    let pp fmt (ids, t, e) =
+    let pp fmt (ids, t, e, k, c) =
+      let pp_vdk fmt k =
+        match k with
+        | VDKbasic -> ()
+        | VDKoption x -> (pp_option (fun fmt x -> Format.fprintf fmt " : %a" (pp_expr e_in PLeft) x)) fmt x
+      in
       let f =
         match t with
         | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
         | _ -> pp_neutral
       in
-      Format.fprintf fmt "%s %a%a = %a"
+      Format.fprintf fmt "%s %a%a %s %a%a"
         (if c then "const" else "var")
         (pp_list ", " pp_id) ids
         (pp_option (pp_prefix " : " (f pp_type))) t
+        (match k with | VDKbasic -> "=" | VDKoption _ -> "?=")
         (pp_expr e_in PLeft) e
+        pp_vdk k
     in
-    (maybe_paren outer e_default pos pp) fmt (ids, t, e)
-
-  | Evar (ids, t, e, VDKoption f, c) ->
-
-    let pp fmt (ids, t, e, fa) =
-      let f =
-        match t with
-        | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
-        | _ -> pp_neutral
-      in
-      Format.fprintf fmt "%s %a%a ?= %a%a"
-        (if c then "const" else "var")
-        (pp_list ", " pp_id) ids
-        (pp_option (pp_prefix " : " (f pp_type))) t
-        (pp_expr e_in PLeft) e
-        (pp_option (fun fmt x -> Format.fprintf fmt " : %a" (pp_expr e_in PLeft) x)) fa
-    in
-    (maybe_paren outer e_default pos pp) fmt (ids, t, e, f)
+    (maybe_paren outer e_default pos pp) fmt (ids, t, e, k, c)
 
   | Eunpack (t, arg) ->
     let pp fmt (t, arg) =

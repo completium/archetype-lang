@@ -787,26 +787,22 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (id, init, body)
 
-    | Ideclvar (ids, v, VDKbasic, c) ->
-      let pp fmt (ids, v, c) =
-        Format.fprintf fmt "%s %a%a = %a"
+    | Ideclvar (ids, v, k, c) ->
+      let pp fmt (ids, v, k, c) =
+        let pp_vdk fmt k =
+          match k with
+          | VDKbasic -> ()
+          | VDKoption x -> (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fmt x
+        in
+        Format.fprintf fmt "%s %a%a %s %a%a"
           (if c then "const" else "var")
           (pp_list ", " (fun fmt (id, ty) -> Format.fprintf fmt "(%a : %a)" pp_id id pp_type ty)) ids
           (pp_option (pp_prefix " : " pp_type)) v.type_
+          (match k with | VDKbasic -> "=" | VDKoption _ -> "?=")
           pp_pterm v
+          pp_vdk k
       in
-      (pp_with_paren pp) fmt (ids, v, c)
-
-    | Ideclvar (ids, v, VDKoption fa, c) ->
-      let pp fmt (ids, v, fa, c) =
-        Format.fprintf fmt "%s %a%a ?= %a%a"
-          (if c then "const" else "var")
-          (pp_list ", " (fun fmt (id, ty) -> Format.fprintf fmt "(%a : %a)" pp_id id pp_type ty)) ids
-          (pp_option (pp_prefix " : " pp_type)) v.type_
-          pp_pterm v
-          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
-      in
-      (pp_with_paren pp) fmt (ids, v, fa, c)
+      (pp_with_paren pp) fmt (ids, v, k, c)
 
     | Iseq l ->
       let pp fmt l =
