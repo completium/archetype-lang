@@ -1,14 +1,6 @@
 { storage unit ;
   parameter (unit %exec) ;
   code { LAMBDA
-           (pair (list string) string)
-           bool
-           { UNPAIR ;
-             PUSH bool False ;
-             SWAP ;
-             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
-             DIP 1 { DROP 1 } } ;
-         LAMBDA
            (pair (list string) nat)
            (option string)
            { UNPAIR ;
@@ -25,6 +17,14 @@
                     ADD ;
                     SWAP } ;
              DIP 1 { DROP 2 } } ;
+         LAMBDA
+           (pair (list string) string)
+           bool
+           { UNPAIR ;
+             PUSH bool False ;
+             SWAP ;
+             ITER { DIG 2 ; DUP ; DUG 3 ; COMPARE ; EQ ; OR } ;
+             DIP 1 { DROP 1 } } ;
          DIG 2 ;
          CDR ;
          NIL string ;
@@ -39,12 +39,12 @@
          CONS ;
          DUP 2 ;
          SIZE ;
-         DUP 6 ;
+         DUP 5 ;
          PUSH string "2" ;
          DUP 5 ;
          PAIR ;
          EXEC ;
-         DUP 6 ;
+         DUP 7 ;
          PUSH nat 0 ;
          DUP 6 ;
          PAIR ;

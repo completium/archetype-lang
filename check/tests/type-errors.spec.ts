@@ -573,6 +573,14 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/update_type_error.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('var_mult_ids_errors_invalid_card', async () => {
+    const stat = compile("../tests/type-errors/var_mult_ids_errors_invalid_card.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('var_mult_ids_errors_invalid_type', async () => {
+    const stat = compile("../tests/type-errors/var_mult_ids_errors_invalid_type.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('view_error_bad_arguments_0', async () => {
     const stat = compile("../tests/type-errors/view_error_bad_arguments_0.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

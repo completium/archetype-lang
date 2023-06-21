@@ -5964,8 +5964,12 @@ let rec for_instruction_r
         match xs with
         | [] -> assert false
         | [x] -> begin
-            let env, idts = process env x (Option.get v.A.type_) in
-            env, mki (A.Ideclvar ([idts], v, c))
+            match oty with
+            | Some ty -> begin
+                let env, idts = process env x ty in
+                env, mki (A.Ideclvar ([idts], v, c))
+              end
+            | None -> env, mki (A.Iseq [])
           end
         | _ -> begin
             let card = List.length xs in

@@ -1242,6 +1242,10 @@ import * as unused_argument from '../bindings/passed/unused_argument'
 import * as unused_variable from '../bindings/passed/unused_variable'
 import * as unused_variable_opt from '../bindings/passed/unused_variable_opt'
 import * as update_minus_equal from '../bindings/passed/update_minus_equal'
+import * as var_mult_ids from '../bindings/passed/var_mult_ids'
+import * as var_mult_ids_3 from '../bindings/passed/var_mult_ids_3'
+import * as var_mult_ids_complex from '../bindings/passed/var_mult_ids_complex'
+import * as var_mult_tickets from '../bindings/passed/var_mult_tickets'
 import * as var_without_effect from '../bindings/passed/var_without_effect'
 import * as variable_in_container from '../bindings/passed/variable_in_container'
 import * as very_simple from '../bindings/passed/very_simple'
@@ -24152,6 +24156,86 @@ describe('passed', async () => {
     assert(my_asset_after[2][1].equals(new Nat(12)))
     const res_after = await update_minus_equal.update_minus_equal.get_res()
     assert(res_after.equals(new Int(0)))
+  })
+
+  it('var_mult_ids', async () => {
+    await var_mult_ids.var_mult_ids.deploy({ as: alice })
+
+    const x_before = await var_mult_ids.var_mult_ids.get_x()
+    assert(x_before.equals(new Nat(0)))
+
+    const y_before = await var_mult_ids.var_mult_ids.get_y()
+    assert(y_before.equals(new Nat(0)))
+
+    await var_mult_ids.var_mult_ids.exec({ as: alice })
+
+    const x_after = await var_mult_ids.var_mult_ids.get_x()
+    assert(x_after.equals(new Nat(1)))
+
+    const y_after = await var_mult_ids.var_mult_ids.get_y()
+    assert(y_after.equals(new Nat(2)))
+  })
+
+  it('var_mult_ids_3', async () => {
+    await var_mult_ids_3.var_mult_ids_3.deploy({ as: alice })
+
+    const x_before = await var_mult_ids_3.var_mult_ids_3.get_x()
+    assert(x_before.equals(new Nat(0)))
+
+    const y_before = await var_mult_ids_3.var_mult_ids_3.get_y()
+    assert(y_before.equals(new Nat(0)))
+
+    const z_before = await var_mult_ids_3.var_mult_ids_3.get_z()
+    assert(z_before.equals(new Nat(0)))
+
+    await var_mult_ids_3.var_mult_ids_3.exec({ as: alice })
+
+    const x_after = await var_mult_ids_3.var_mult_ids_3.get_x()
+    assert(x_after.equals(new Nat(1)))
+
+    const y_after = await var_mult_ids_3.var_mult_ids_3.get_y()
+    assert(y_after.equals(new Nat(2)))
+
+    const z_after = await var_mult_ids_3.var_mult_ids_3.get_z()
+    assert(z_after.equals(new Nat(3)))
+  })
+
+  it('var_mult_ids_complex', async () => {
+    await var_mult_ids_complex.var_mult_ids_complex.deploy({ as: alice })
+
+    const x_before = await var_mult_ids_complex.var_mult_ids_complex.get_x()
+    assert(x_before.equals(new Nat(0)))
+
+    const y_before = await var_mult_ids_complex.var_mult_ids_complex.get_y()
+    assert(y_before[0].equals(new Nat(0)))
+    assert(y_before[1].equals(new Nat(0)))
+
+    await var_mult_ids_complex.var_mult_ids_complex.exec({ as: alice })
+
+    const x_after = await var_mult_ids_complex.var_mult_ids_complex.get_x()
+    assert(x_after.equals(new Nat(1)))
+
+    const y_after = await var_mult_ids_complex.var_mult_ids_complex.get_y()
+    assert(y_after[0].equals(new Nat(2)))
+    assert(y_after[1].equals(new Nat(3)))
+  })
+
+  it('var_mult_tickets', async () => {
+    await var_mult_tickets.var_mult_tickets.deploy({ as: alice })
+
+    const x_before = await var_mult_tickets.var_mult_tickets.get_x()
+    assert(x_before.equals(Option.None()))
+
+    const y_before = await var_mult_tickets.var_mult_tickets.get_y()
+    assert(y_before.equals(Option.None()))
+
+    await var_mult_tickets.var_mult_tickets.exec({ as: alice })
+
+    const x_after = await var_mult_tickets.var_mult_tickets.get_x()
+    assert(x_after.equals(Option.Some(new Ticket(var_mult_tickets.var_mult_tickets.get_address(), new Unit(), new Nat(1)))))
+
+    const y_after = await var_mult_tickets.var_mult_tickets.get_y()
+    assert(y_after.equals(Option.Some(new Ticket(var_mult_tickets.var_mult_tickets.get_address(), new Unit(), new Nat(2)))))
   })
 
   it('var_without_effect', async () => {

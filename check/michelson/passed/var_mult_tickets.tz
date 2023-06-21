@@ -1,0 +1,25 @@
+{ storage (pair (option %x (ticket unit)) (option %y (ticket unit))) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DROP 1 ;
+         PUSH nat 3 ;
+         PUSH unit Unit ;
+         TICKET ;
+         IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+         PUSH nat 2 ;
+         PUSH nat 1 ;
+         PAIR ;
+         SWAP ;
+         SPLIT_TICKET ;
+         IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+         UNPAIR ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         SOME ;
+         DIP 1 { SWAP ; DROP 1 } ;
+         SWAP ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

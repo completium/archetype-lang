@@ -1,4 +1,4 @@
-archetype var_mult_ids
+archetype var_mult_tickets
 
 variable x : option<ticket<unit>> = none
 variable y : option<ticket<unit>> = none

@@ -4961,6 +4961,22 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/update_minus_equal.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('var_mult_ids', async () => {
+    const stat = compile("../tests/passed/var_mult_ids.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('var_mult_ids_3', async () => {
+    const stat = compile("../tests/passed/var_mult_ids_3.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('var_mult_ids_complex', async () => {
+    const stat = compile("../tests/passed/var_mult_ids_complex.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('var_mult_tickets', async () => {
+    const stat = compile("../tests/passed/var_mult_tickets.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('var_without_effect', async () => {
     const stat = compile("../tests/passed/var_without_effect.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
