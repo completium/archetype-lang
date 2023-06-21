@@ -764,13 +764,13 @@ expr_r:
      { Eletin (i, t, e, y, None) }
 
  | c=get_const is=idents t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar (is, t, e, c) }
+     { Evar (is, t, e, VDKbasic, c) }
 
  | c=get_const is=idents t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
-     { Evaropt (is, t, e, Some f, c) }
+     { Evar (is, t, e, VDKoption (Some f), c) }
 
  | c=get_const is=idents t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
-     { Evaropt (is, t, e, None, c) }
+     { Evar (is, t, e, VDKoption None, c) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }

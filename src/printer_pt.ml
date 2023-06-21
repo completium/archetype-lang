@@ -727,7 +727,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
-  | Evar (ids, t, e, c) ->
+  | Evar (ids, t, e, VDKbasic, c) ->
 
     let pp fmt (ids, t, e) =
       let f =
@@ -743,7 +743,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (ids, t, e)
 
-  | Evaropt (ids, t, e, f, c) ->
+  | Evar (ids, t, e, VDKoption f, c) ->
 
     let pp fmt (ids, t, e, fa) =
       let f =

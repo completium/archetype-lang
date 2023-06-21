@@ -128,6 +128,10 @@ and match_kind =
   | MKbasic
   | MKdetach
 
+and var_decl_kind =
+  | VDKbasic
+  | VDKoption of expr option
+
 and expr_unloc =
   | Eterm          of (id_scope * lident)
   | Eliteral       of literal
@@ -155,8 +159,7 @@ and expr_unloc =
   | Ewhile         of expr * expr
   | Eseq           of expr * expr
   | Eletin         of lident * type_t option * expr * expr * expr option
-  | Evar           of lident list * type_t option * expr * bool (* const or not *)
-  | Evaropt        of lident list * type_t option * expr * expr option * bool (* const or not *)
+  | Evar           of lident list * type_t option * expr * var_decl_kind * bool (* const or not *)
   | Ematchwith     of expr * branch list * match_kind
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
@@ -500,8 +503,7 @@ let eiter         ?(loc=dummy) ?min id max e      = mkloc loc (Eiter(id, min, ma
 let ewhile        ?(loc=dummy) c b                = mkloc loc (Ewhile(c, b))
 let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
 let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
-let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c))
-let evaropt       ?(loc=dummy) ?t id e c f        = mkloc loc (Evaropt(id, t, e, f, c))
+let evar          ?(loc=dummy) ?t id e k c        = mkloc loc (Evar(id, t, e, k, c))
 let ematchwith    ?(loc=dummy) e l k              = mkloc loc (Ematchwith(e, l, k))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)

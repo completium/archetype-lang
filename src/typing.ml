@@ -4640,7 +4640,6 @@ let rec for_xexpr
         mk_sp (Some t) (A.Pmicheline_expr (t, m, a))
       end
     | Evar       _
-    | Evaropt    _
     | Efail      _
     | Efailsome  _
     | Eassign    _
@@ -5945,7 +5944,7 @@ let rec for_instruction_r
       let env = Env.FunctionProperties.set_return env true in
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
-    | Evar (xs, ty, v, c) -> begin
+    | Evar (xs, ty, v, VDKbasic, c) -> begin
         let ty = Option.bind (for_type env) ty in
         let v  = for_expr kind env ?ety:ty v in
 
@@ -6003,7 +6002,7 @@ let rec for_instruction_r
 
       end
 
-    | Evaropt (xs, ty, v, fa, c) -> begin
+    | Evar (xs, ty, v, VDKoption fa, c) -> begin
         let ty = Option.bind (for_type env) ty in
         let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
         let v  = for_expr kind env ?ety:oty v in
