@@ -426,7 +426,7 @@ and instruction_node =
   | Iiter of (lident * pterm * pterm * instruction)                          (* id * bound_min * bound_max * body *)
   | Iwhile of (pterm * instruction)                                          (* condition * body *)
   | Iletin of (lident * pterm * instruction)                                 (* id * init * body *)
-  | Ideclvar of lident * pterm * bool                                        (* id * init * constant *)
+  | Ideclvar of (lident * type_) list * pterm * bool                         (* (id * type_) list * init * constant *)
   | Ideclvaropt of lident * pterm * pterm option * bool                      (* id * init * expr fail * constant *)
   | Iseq of instruction list                                                 (* lhs ; rhs *)
   | Imatchwith   of pterm * (pattern * instruction) list                     (* match term with ('pattern * instruction) list *)

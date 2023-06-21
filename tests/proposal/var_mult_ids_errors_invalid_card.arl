@@ -1,0 +1,5 @@
+archetype var_mult_ids_errors_invalid_card
+
+entry exec() {
+  var a, b, c = (1, 2);
+}

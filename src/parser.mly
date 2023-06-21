@@ -759,7 +759,10 @@ expr_r:
      { Eletin (i, t, e, y, None) }
 
  | c=get_const i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar (i, t, e, c) }
+     { Evar ([i], t, e, c) }
+
+ | c=get_const is=snl2(COMMA, ident) t=colon_type_opt EQUAL e=expr %prec prec_var
+     { Evar (is, t, e, c) }
 
  | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
      { Evaropt (i, t, e, Some f, c) }

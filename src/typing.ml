@@ -885,6 +885,8 @@ type error_desc =
   | UpdateEffectWithoutDefault
   | UselessPattern
   | UsePkeyOfInsteadOfAsset
+  | VarMultiInvalidTupleType           of int
+  | VarMultiInvalidType
   | ViewInvalidFsType                  of ident * ident
   | ViewInvalidReturnType
   | ViewInvalidVisibility
@@ -1157,6 +1159,8 @@ let pp_error_desc fmt e =
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UselessPattern                     -> pp "Useless match branch"
   | UsePkeyOfInsteadOfAsset            -> pp "Cannot reference assets directly, use `pkey of` instead"
+  | VarMultiInvalidTupleType n         -> pp "Invalid multiple variable declaration, expected %d or less identifiers" n
+  | VarMultiInvalidType                -> pp "Invalid multiple variable declaration, expected tuple type"
   | ViewInvalidFsType (id, k)          -> pp "Invalid declaration kind, `%s' is %s, expected view" id k
   | ViewInvalidReturnType              -> pp "Invalid view returned type"
   | ViewInvalidVisibility              -> pp "Invalid view visibility, must be on-chain"
@@ -5941,21 +5945,59 @@ let rec for_instruction_r
       let env = Env.FunctionProperties.set_return env true in
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
-    | Evar (x, ty, v, c) ->
-      let ty = Option.bind (for_type env) ty in
-      let v  = for_expr kind env ?ety:ty v in
-      let env =
-        let _ : bool = check_and_emit_name_free env x in
-        if Option.is_some v.A.type_ then
+    | Evar (xs, ty, v, c) -> begin
+        let ty = Option.bind (for_type env) ty in
+        let v  = for_expr kind env ?ety:ty v in
+
+        let oty = v.type_ in
+
+        let process env id ty =
+          let _ : bool = check_and_emit_name_free env id in
           let kind = if c then `Const else `Standard in
-          Env.Local.push env (x, Option.get v.A.type_) ~kind
-        else env in
-
-      Option.iter (fun ty ->
+          let env = Env.Local.push env (id, ty) ~kind in
           if not (valid_var_or_arg_type ty) then
-            Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
+            Env.emit_error env (loc id, InvalidVarOrArgType);
 
-      env, mki (A.Ideclvar (x, v, c))
+          env, (id, ty)
+        in
+
+        match xs with
+        | [] -> assert false
+        | [x] -> begin
+            let env, idts = process env x (Option.get v.A.type_) in
+            env, mki (A.Ideclvar ([idts], v, c))
+          end
+        | _ -> begin
+            let card = List.length xs in
+            match oty with
+            | Some (A.Ttuple ls) when List.length ls >= card -> begin
+                let id_ty_s : (A.lident * A.type_) list =
+                  let rec aux lids ltypes : (A.lident * A.type_) list =
+                    match lids, ltypes with
+                    | [x], [ty] -> [x, ty]
+                    | [x], tys -> [x, A.Ttuple tys]
+                    | x::tx, ty::tys -> (x, ty)::(aux tx tys)
+                    | [], _ -> assert false
+                    | _, [] -> assert false
+                  in
+                  aux xs ls
+                in
+                let env, id_ty_s = List.fold_left (fun (env, accu) (id, ty) ->
+                    let env, idts = process env id ty in
+                    (env, accu @ [idts])) (env, []) id_ty_s in
+                env, mki (A.Ideclvar (id_ty_s, v, c))
+              end
+            | Some (A.Ttuple ls) -> begin
+                Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidTupleType (List.length ls));
+                env, mki (A.Iseq [])
+              end
+            | _ -> begin
+                Env.emit_error env (Location.mergeall (List.map loc xs), VarMultiInvalidType);
+                env, mki (A.Iseq [])
+              end
+          end
+
+      end
 
     | Evaropt (x, ty, v, fa, c) ->
       let ty = Option.bind (for_type env) ty in

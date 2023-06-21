@@ -1,0 +1,12 @@
+archetype var_mult_ids_3
+
+variable x : nat = 0
+variable y : nat = 0
+variable z : nat = 0
+
+entry exec() {
+  var a, b, c = (1, 2, 3);
+  x := a;
+  y := b;
+  z := c;
+}

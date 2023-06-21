@@ -1,4 +1,4 @@
-archetype several_ids
+archetype var_mult_ids
 
 variable x : nat = 0
 variable y : nat = 0

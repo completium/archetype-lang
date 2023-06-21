@@ -787,15 +787,15 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (id, init, body)
 
-    | Ideclvar (i, v, c) ->
-      let pp fmt (i, v, c) =
+    | Ideclvar (ids, v, c) ->
+      let pp fmt (ids, v, c) =
         Format.fprintf fmt "%s %a%a = %a"
           (if c then "const" else "var")
-          pp_id i
+          (pp_list ", " (fun fmt (id, ty) -> Format.fprintf fmt "(%a : %a)" pp_id id pp_type ty)) ids
           (pp_option (pp_prefix " : " pp_type)) v.type_
           pp_pterm v
       in
-      (pp_with_paren pp) fmt (i, v, c)
+      (pp_with_paren pp) fmt (ids, v, c)
 
     | Ideclvaropt (i, v, fa, c) ->
       let pp fmt (i, v, fa, c) =
