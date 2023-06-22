@@ -45,7 +45,7 @@
              DUG 5 ;
              DIG 5 ;
              NONE (ticket unit) ;
-             DUP 5 ;
+             DUP 6 ;
              GET_AND_UPDATE ;
              SWAP ;
              DUG 6 ;
