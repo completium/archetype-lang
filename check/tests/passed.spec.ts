@@ -1175,6 +1175,7 @@ import * as test_removeif_part_0 from '../bindings/passed/test_removeif_part_0'
 import * as test_removeif_part_1 from '../bindings/passed/test_removeif_part_1'
 import * as test_removeif_part_2 from '../bindings/passed/test_removeif_part_2'
 import * as test_result from '../bindings/passed/test_result'
+import * as test_split_ticket from '../bindings/passed/test_split_ticket'
 import * as test_tez from '../bindings/passed/test_tez'
 import * as test_transfer from '../bindings/passed/test_transfer'
 import * as test_transition from '../bindings/passed/test_transition'
@@ -4403,18 +4404,18 @@ describe('passed', async () => {
 
     await detach_big_map_unit.detach_big_map_unit.init(alice.get_address(), { as: alice })
 
-    const ticket_alice_before =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
+    const ticket_alice_before = await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
     assert(ticket_alice_before?.equals(new Ticket<Unit>(detach_big_map_unit.detach_big_map_unit.get_address(), new Unit(), new Nat(1))))
 
-    const ticket_bob_before =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
+    const ticket_bob_before = await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
     assert(ticket_bob_before === undefined)
 
     await detach_big_map_unit.detach_big_map_unit.exec({ as: alice })
 
-    const ticket_alice_after =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
+    const ticket_alice_after = await detach_big_map_unit.detach_big_map_unit.get_mt_value(alice.get_address());
     assert(ticket_alice_after?.equals(new Ticket<Unit>(detach_big_map_unit.detach_big_map_unit.get_address(), new Unit(), new Nat(3))))
 
-    const ticket_bob_after =  await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
+    const ticket_bob_after = await detach_big_map_unit.detach_big_map_unit.get_mt_value(bob.get_address());
     assert(ticket_bob_after === undefined)
   })
 
@@ -13584,10 +13585,10 @@ describe('passed', async () => {
     await getter_called_by.getter_called_by.deploy({ as: alice })
 
     await expect_to_fail(async () => {
-      await getter_called_by.getter_called_by.get({as : bob })
+      await getter_called_by.getter_called_by.get({ as: bob })
     }, { "string": "INVALID_CALLER" })
 
-    const res = await getter_called_by.getter_called_by.get({as : alice})
+    const res = await getter_called_by.getter_called_by.get({ as: alice })
     assert(res.equals(new Nat(2)))
   })
 
@@ -14023,7 +14024,7 @@ describe('passed', async () => {
     assert(res_before.equals(new Nat(0)))
 
     await expect_to_fail(async () => {
-     await import_arl_fun_instr_pure_use.import_arl_fun_instr_pure_use.exec({ as: alice })
+      await import_arl_fun_instr_pure_use.import_arl_fun_instr_pure_use.exec({ as: alice })
     }, { string: "ok" })
   })
 
@@ -15044,17 +15045,17 @@ describe('passed', async () => {
     await match_detach_option.match_detach_option.deploy({ as: alice })
 
     const ot_before = await match_detach_option.match_detach_option.get_ot()
-    assert(ot_before.equals(Option.None<Ticket<Unit>> ()))
+    assert(ot_before.equals(Option.None<Ticket<Unit>>()))
 
     await match_detach_option.match_detach_option.init({ as: alice })
 
     const ot_init = await match_detach_option.match_detach_option.get_ot()
-    assert(ot_init.equals(Option.Some<Ticket<Unit>> (new Ticket<Unit>(match_detach_option.match_detach_option.get_address(), new Unit(), new Nat(1)))))
+    assert(ot_init.equals(Option.Some<Ticket<Unit>>(new Ticket<Unit>(match_detach_option.match_detach_option.get_address(), new Unit(), new Nat(1)))))
 
     await match_detach_option.match_detach_option.exec({ as: alice })
 
     const ot_after = await match_detach_option.match_detach_option.get_ot()
-    assert(ot_after.equals(Option.Some<Ticket<Unit>> (new Ticket<Unit>(match_detach_option.match_detach_option.get_address(), new Unit(), new Nat(3)))))
+    assert(ot_after.equals(Option.Some<Ticket<Unit>>(new Ticket<Unit>(match_detach_option.match_detach_option.get_address(), new Unit(), new Nat(3)))))
   })
 
   it('match_entrypoint', async () => {
@@ -23242,6 +23243,40 @@ describe('passed', async () => {
     assert(res_after.equals(new Int(2)))
   })
 
+  it('test_split_ticket', async () => {
+    await test_split_ticket.test_split_ticket.deploy({ as: alice })
+
+    const ticket_alice_before = await test_split_ticket.test_split_ticket.get_mt_value(alice.get_address());
+    assert(ticket_alice_before === undefined)
+
+    const ticket_bob_before = await test_split_ticket.test_split_ticket.get_mt_value(bob.get_address());
+    assert(ticket_bob_before === undefined)
+
+    await test_split_ticket.test_split_ticket.create(new Nat(20), { as: alice })
+
+    const ticket_alice_create = await test_split_ticket.test_split_ticket.get_mt_value(alice.get_address());
+    assert(ticket_alice_create?.equals(new Ticket(test_split_ticket.test_split_ticket.get_address(), new Unit(), new Nat(20))))
+
+    const ticket_bob_create = await test_split_ticket.test_split_ticket.get_mt_value(bob.get_address());
+    assert(ticket_bob_create === undefined)
+
+    await test_split_ticket.test_split_ticket.split(new Nat(10), bob.get_address(), { as: alice })
+
+    const ticket_alice_1 = await test_split_ticket.test_split_ticket.get_mt_value(alice.get_address());
+    assert(ticket_alice_1?.equals(new Ticket(test_split_ticket.test_split_ticket.get_address(), new Unit(), new Nat(10))))
+
+    const ticket_bob_1 = await test_split_ticket.test_split_ticket.get_mt_value(bob.get_address());
+    assert(ticket_bob_1?.equals(new Ticket(test_split_ticket.test_split_ticket.get_address(), new Unit(), new Nat(10))))
+
+    await test_split_ticket.test_split_ticket.split(new Nat(5), bob.get_address(), { as: alice })
+
+    const ticket_alice_2 = await test_split_ticket.test_split_ticket.get_mt_value(alice.get_address());
+    assert(ticket_alice_2?.equals(new Ticket(test_split_ticket.test_split_ticket.get_address(), new Unit(), new Nat(5))))
+
+    const ticket_bob_2 = await test_split_ticket.test_split_ticket.get_mt_value(bob.get_address());
+    assert(ticket_bob_2?.equals(new Ticket(test_split_ticket.test_split_ticket.get_address(), new Unit(), new Nat(15))))
+  })
+
   it('test_tez', async () => {
     await test_tez.test_tez.deploy({ as: alice })
 
@@ -24710,10 +24745,10 @@ describe('passed', async () => {
   it('view_with_nat_to_string', async () => {
     await view_with_nat_to_string.view_with_nat_to_string.deploy({ as: alice })
 
-    const res_123 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(123), {as: alice})
+    const res_123 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(123), { as: alice })
     assert(res_123 == "123")
 
-    const res_0 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(0), {as: alice})
+    const res_0 = await view_with_nat_to_string.view_with_nat_to_string.view_my_view(new Nat(0), { as: alice })
     assert(res_0 == "0")
   })
 

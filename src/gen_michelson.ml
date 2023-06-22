@@ -2400,7 +2400,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         match klv with
         | KLVoption ty -> [T.cdig n; T.cnone ty; T.cdug (n + 1)]
         | KLVmap (ty, k) ->
-          let k, _ = fe (inc_env env) k in
+          let k, _ = fe (inc_env (dig_env env id)) k in
           [T.cdig n; T.cnone ty; k; T.cget_and_update (); T.cswap (); T.cdug (n + 1)]
       in
       T.cseq seq, inc_env env

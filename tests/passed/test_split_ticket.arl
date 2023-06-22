@@ -1,0 +1,23 @@
+archetype test_split_ticket
+
+variable mt : big_map<address, ticket<unit>> = []
+
+entry create(amount : nat) {
+  const t ?= create_ticket(Unit, amount);
+  mt.put(caller, t)
+}
+
+entry split(amount : nat, destination : address) {
+  detach mt[caller] as caller_ticket : "NO_TICKER";
+  const ticket_info : (address * unit * nat) = read_ticket(caller_ticket);
+  const new_amount : nat ?= sub_nat(ticket_info[2], amount);
+  const nt0, nt1 ?= split_ticket(caller_ticket, new_amount, amount);
+  mt.put(caller, nt0);
+  match_detach mt[destination] with
+  | some(t) -> begin
+      const joined_ticket ?= join_tickets(t, nt1);
+      mt.put(destination, joined_ticket)
+    end
+  | none -> mt.put(destination, nt1)
+  end
+}

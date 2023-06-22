@@ -4693,6 +4693,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/test_result.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_split_ticket', async () => {
+    const stat = compile("../tests/passed/test_split_ticket.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_tez', async () => {
     const stat = compile("../tests/passed/test_tez.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

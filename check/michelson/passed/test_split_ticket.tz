@@ -1,0 +1,65 @@
+{ storage (big_map address (ticket unit)) ;
+  parameter (or (nat %create) (pair %split (nat %amount) (address %destination))) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DUP ;
+             PUSH unit Unit ;
+             TICKET ;
+             IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+             DIG 2 ;
+             SWAP ;
+             SOME ;
+             SENDER ;
+             UPDATE ;
+             SWAP ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR }
+           { UNPAIR ;
+             SWAP ;
+             DIG 2 ;
+             NONE (ticket unit) ;
+             SENDER ;
+             GET_AND_UPDATE ;
+             IF_NONE { PUSH string "KEY_NOT_FOUND" ; FAILWITH } {} ;
+             DIP 1 { DUG 2 } ;
+             READ_TICKET ;
+             DUP 4 ;
+             DUP 2 ;
+             GET 4 ;
+             SUB ;
+             ISNAT ;
+             IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+             DUP 5 ;
+             DUP 2 ;
+             PAIR ;
+             DIG 3 ;
+             SPLIT_TICKET ;
+             IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+             UNPAIR ;
+             DIG 6 ;
+             SWAP ;
+             SOME ;
+             SENDER ;
+             UPDATE ;
+             DUG 5 ;
+             DIG 5 ;
+             NONE (ticket unit) ;
+             DUP 5 ;
+             GET_AND_UPDATE ;
+             SWAP ;
+             DUG 6 ;
+             IF_NONE
+               { DIG 5 ; SWAP ; SOME ; DUP 5 ; UPDATE ; DUG 4 }
+               { PAIR ;
+                 JOIN_TICKETS ;
+                 IF_NONE { PUSH string "OPTION_IS_NONE" ; FAILWITH } {} ;
+                 DIG 5 ;
+                 SWAP ;
+                 SOME ;
+                 DUP 5 ;
+                 UPDATE ;
+                 DUG 4 } ;
+             DROP 4 ;
+             NIL operation ;
+             PAIR } } }
