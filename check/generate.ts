@@ -130,12 +130,12 @@ ${(items.map(x => x)).join('')}
   fs.writeFileSync('./tests/passed.spec.ts', output)
 }
 
-const generate_spec_error = (input: Array<string>, name: string, path: string, code: number) => {
+const generate_spec_error = (input: Array<string>, name: string, path: string, code: number, ext: string, args: string) => {
   let items: Array<string> = []
   for (const id of input) {
     items.push(`
   it('${id}', async () => {
-    const stat = compile("${path}/${id}.arl")
+    const stat = compile("${path}/${id}${ext}")
     assert(stat.status == ${code}, "Invalid status code, actual: " + stat.status + ", expected: ${code}")
   })`);
   }
@@ -147,7 +147,7 @@ import assert from 'assert'
 const compile = (p : string) => {
   const spawn = require('cross-spawn');
   const bin = '../_build/default/src/compiler.exe'
-  const res = spawn.sync(bin, [p], { });
+  const res = spawn.sync(bin, [${args}p], { });
   return res
 }
 
@@ -217,22 +217,26 @@ describe('Generate binding', async () => {
   })
 
   describe('Generate spec.ts files', async () => {
-    const items: Array<[string, string, number]> = [
-      ['passed-errors', '../tests/passed', 0],
-      ['syntax-errors', '../tests/syntax-errors', 1],
-      ['type-errors', '../tests/type-errors', 3],
-      ['model-errors', '../tests/model-errors', 5],
-      ['proposal-type-errors', '../tests/proposal-type-errors', 3],
-      ['proposal-model-errors', '../tests/proposal-model-errors', 5]
+    const items: Array<[string, string, string, string, number]> = [
+      ['.arl', 'passed-errors', '../tests/passed', '', 0],
+      ['.arl', 'syntax-errors', '../tests/syntax-errors', '', 1],
+      ['.arl', 'type-errors', '../tests/type-errors', '', 3],
+      ['.arl', 'model-errors', '../tests/model-errors', '', 5],
+      ['.arl', 'proposal-type-errors', '../tests/proposal-type-errors', '', 3],
+      ['.arl', 'proposal-model-errors', '../tests/proposal-model-errors', '', 5],
+      ['.tz', 'decomp-dir-passed', 'michelson/passed', "'-d', '-dir', ", 0],
+      ['.tz', 'decomp-dir-mainnet', '../mainnet/mainnet_contracts_2021-04-01/tz', "'-d', '-dir', ", 0]
     ]
     for (const item of items) {
-      const name = item[0]
-      const path = item[1]
-      const code = item[2]
+      const ext  = item[0]
+      const name = item[1]
+      const path = item[2]
+      const args = item[3]
+      const code = item[4]
 
       it(name, () => {
-        const filenames = extract_file_dir(path, ".arl")
-        generate_spec_error(filenames, name, path, code)
+        const filenames = extract_file_dir(path, ext)
+        generate_spec_error(filenames, name, path, code, ext, args)
       })
     }
   })
