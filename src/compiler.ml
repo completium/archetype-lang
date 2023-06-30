@@ -82,6 +82,7 @@ let main () : unit =
       "-sdir", Arg.Set Options.opt_sdir, " ";
       "-mici", Arg.Set Options.opt_mici, " Output micheline";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
+      "-mit", Arg.Set Options.opt_mit, " Output typed michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";

@@ -114,6 +114,10 @@ let output_obj_micheline (x : Michelson.obj_micheline) =
   then Format.printf "%a@." Michelson.pp_obj_micheline x
   else Format.printf "%a@." (Printer_michelson.pp_obj_micheline ~var_dynamic:false) x
 
+let output_tz_micheline (input : Michelson.obj_micheline) =
+  let tz_micheline = Michelson.to_tz_micheline input in
+  Micheline_printer.print_expr Format.std_formatter tz_micheline
+
 let remove_newline (input : string) : string =
   let a : string ref = ref "" in
   let w : bool ref = ref false in
@@ -407,10 +411,11 @@ let decompile input : string =
 
   input
   |> parse_micheline
-  |> cont !Options.opt_mici output_obj_micheline
+  |> cont !Options.opt_mici output_tz_micheline
   |> to_michelson
-  |> tycheck_michelson
   |> cont !Options.opt_mic output_michelson
+  |> tycheck_michelson
+  |> cont !Options.opt_mit output_michelson
   |> to_dir
   |> cont !Options.opt_dir output_dprogram
   |> dir_to_model

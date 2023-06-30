@@ -45,6 +45,7 @@ let opt_typed   = ref false
 let opt_ir      = ref false
 let opt_dir     = ref false
 let opt_mic     = ref false
+let opt_mit     = ref false
 let opt_mici    = ref false
 let opt_all_parenthesis = ref false
 let opt_m     = ref false
