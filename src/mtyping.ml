@@ -340,6 +340,13 @@ and op_CONTRACT (stack : stack) (cty : stack1) =
   Some (M.toption (M.tcontract cty) :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_CREATE_CONTRACT (stack : stack) =
+  let (dty, aty), stack = Stack.pop2 stack in
+  let () = Ty.check_eq (M.toption M.tkey_hash) dty in
+  let () = Ty.check_mutez aty in
+  Some (M.toperation :: M.taddress :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_DIG (stack : stack) (n : int) =
   let pre, post = Stack.split n stack in
   let x, post   = Stack.pop post in
@@ -855,7 +862,7 @@ and op_SAPLING_VERIFY_UPDATE (stack : stack) =
   let ms2 = Ty.check_sapling_st st in
   if ms1 <> ms2 then
     raise MichelsonTypingError;
-  Some (M.toption (M.tpair [M.tint; st]) :: stack)
+  Some (M.toption (M.tpair [M.tbytes; M.tint; st]) :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_SELF_ADDRESS (stack : stack) =
@@ -1263,7 +1270,7 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
     op_CONTRACT stack ty
 
   | CREATE_CONTRACT _  ->
-    assert false
+    op_CREATE_CONTRACT stack
 
   | EMIT _ ->
     op_EMIT stack
