@@ -47,6 +47,7 @@ module Ty : sig
   val check_option       : stack1 -> stack1
   val check_or           : stack1 -> stack1 * stack1
   val check_pair         : stack1 -> stack1 * stack1
+  val check_list_pair    : stack1 -> stack1 * stack1
   val check_set          : stack1 -> stack1
   val check_sapling_tx   : stack1 -> int
   val check_sapling_st   : stack1 -> int
@@ -135,6 +136,11 @@ end = struct
   let check_pair (ty : stack1) =
     match ty.node with
     | M.Tpair [ty1; ty2] -> (ty1, ty2)
+    | _ -> raise MichelsonTypingError
+
+  let check_list_pair (ty : stack1) =
+    match ty.node with
+    | M.Tlist {node = M.Tpair [ty1; ty2]} -> (ty1, ty2)
     | _ -> raise MichelsonTypingError
 
   let check_sapling_tx (ty : stack1) =
@@ -449,6 +455,10 @@ and op_GET_N (stack : stack) (n : int) =
   let ty = if n mod 2 <> 0 then fst (Ty.check_pair ty) else ty in
 
   Some (ty :: stack)
+
+(* -------------------------------------------------------------------- *)
+and op_GET_AND_UPDATE (_stack : stack) =
+  assert false
 
 (* -------------------------------------------------------------------- *)
 and op_GT (stack : stack) =
@@ -789,7 +799,7 @@ and op_PAIR_N (stack : stack) (n : int) =
 (* -------------------------------------------------------------------- *)
 and op_PAIRING_CHECK (stack : stack) =
   let ty, stack = Stack.pop stack in
-  let ty1, ty2 = Ty.check_pair ty in
+  let ty1, ty2 = Ty.check_list_pair ty in
   let () = Ty.check_bls12_381_g1 ty1 in
   let () = Ty.check_bls12_381_g2 ty2 in
   Some (M.tbool :: stack)
@@ -1194,17 +1204,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | HASH_KEY ->
       op_HASH_KEY stack
 
-  | SHA256 ->
-      op_SHA256 stack
-
-  | SHA512 ->
-      op_SHA512 stack
-
   | KECCAK ->
       op_KECCAK stack
-
-  | SHA3 ->
-      op_SHA3 stack
 
   | PAIRING_CHECK ->
       op_PAIRING_CHECK stack
@@ -1214,6 +1215,15 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | SAPLING_VERIFY_UPDATE ->
       op_SAPLING_VERIFY_UPDATE stack
+
+  | SHA256 ->
+      op_SHA256 stack
+
+  | SHA512 ->
+      op_SHA512 stack
+
+  | SHA3 ->
+      op_SHA3 stack
 
   (* Blockchain operations *)
   | ADDRESS ->
@@ -1301,7 +1311,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | GET_N n ->
       op_GET_N stack n
 
-  | GET_AND_UPDATE -> assert false (* TODO *)
+  | GET_AND_UPDATE ->
+      op_GET_AND_UPDATE stack
 
   | LEFT tyr ->
       op_LEFT stack tyr
@@ -1378,6 +1389,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | CAST _ ->
       Some stack                (* ? *)
 
+  | RENAME                   -> (* Unused? *) assert false
+
   | VIEW (_, _) -> assert false (* TODO *)
 
   | OPEN_CHEST -> assert false (* TODO *)
@@ -1392,8 +1405,6 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | CUSTOM _ -> assert false
 
-    (* Unused? *)
-  | RENAME                   -> assert false
 
 (* -------------------------------------------------------------------- *)
 and tycheck (stack : stack) (code : M.code) : stack option =
