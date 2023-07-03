@@ -93,6 +93,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
     let to_data = T.to_data in
 
     let to_int = function | T.Oint x -> int_of_string x | o -> Format.eprintf "to_int unknown %a@." T.pp_obj_micheline o; assert false in
+    let to_string = function | T.Ostring x -> x | o -> Format.eprintf "to_string unknown %a@." T.pp_obj_micheline o; assert false in
 
     let is_dup input =
       let r = Str.regexp "D[U]+P" in
@@ -170,7 +171,9 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "EQ"; _})                             -> T.mk_code T.EQ
       | Oprim ({prim = "GE"; _})                             -> T.mk_code T.GE
       | Oprim ({prim = "GT"; _})                             -> T.mk_code T.GT
+      | Oprim ({prim = "NAT"; _})                            -> T.mk_code T.NAT
       | Oprim ({prim = "INT"; _})                            -> T.mk_code T.INT
+      | Oprim ({prim = "BYTES"; _})                          -> T.mk_code T.BYTES
       | Oprim ({prim = "ISNAT"; _})                          -> T.mk_code T.ISNAT
       | Oprim ({prim = "LE"; _})                             -> T.mk_code T.LE
       | Oprim ({prim = "LSL"; _})                            -> T.mk_code T.LSL
@@ -180,6 +183,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "NEG"; _})                            -> T.mk_code T.NEG
       | Oprim ({prim = "NEQ"; _})                            -> T.mk_code T.NEQ
       | Oprim ({prim = "SUB"; _})                            -> T.mk_code T.SUB
+      | Oprim ({prim = "SUB_MUTEZ"; _})                      -> T.mk_code T.SUB_MUTEZ
       (* Boolean operations *)
       | Oprim ({prim = "AND"; _})                            -> T.mk_code T.AND
       | Oprim ({prim = "NOT"; _})                            -> T.mk_code T.NOT
@@ -189,39 +193,33 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "BLAKE2B"; _})                        -> T.mk_code T.BLAKE2B
       | Oprim ({prim = "CHECK_SIGNATURE"; _})                -> T.mk_code T.CHECK_SIGNATURE
       | Oprim ({prim = "HASH_KEY"; _})                       -> T.mk_code T.HASH_KEY
+      | Oprim ({prim = "KECCAK"; _})                         -> T.mk_code T.KECCAK
+      | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.mk_code T.PAIRING_CHECK
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = [n]})   -> T.mk_code (T.SAPLING_EMPTY_STATE (to_int n))
+      | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
       | Oprim ({prim = "SHA256"; _})                         -> T.mk_code T.SHA256
       | Oprim ({prim = "SHA512"; _})                         -> T.mk_code T.SHA512
+      | Oprim ({prim = "SHA3"; _})                           -> T.mk_code T.SHA3
       (* Blockchain operations *)
       | Oprim ({prim = "ADDRESS"; _})                        -> T.mk_code T.ADDRESS
       | Oprim ({prim = "AMOUNT"; _})                         -> T.mk_code T.AMOUNT
       | Oprim ({prim = "BALANCE"; _})                        -> T.mk_code T.BALANCE
       | Oprim ({prim = "CHAIN_ID"; _})                       -> T.mk_code T.CHAIN_ID
       | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.mk_code (T.CONTRACT (to_type t, fa a))
-      | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> begin
-          (* let seek tag a =
-             let rec aux tag accu (a : T.obj_micheline) =
-              match a with
-              | Oprim {prim=a; args=arg::_; _} when String.equal tag a -> Some arg
-              | Oarray l -> List.fold_left (fun accu x -> match accu with | Some _ -> accu | None -> aux tag accu x) accu l
-              | _ -> None
-             in
-             match aux tag None a with
-             | Some a -> a
-             | None -> assert false
-             in
-             let p = seek "parameter" a in
-             let s = seek "storage" a in
-             let c = seek "code" a in *)
-          T.mk_code (T.CREATE_CONTRACT a)
-        end
+      | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> T.mk_code (T.CREATE_CONTRACT a)
+      | Oprim ({prim = "EMIT"; args = t::_; annots = a})     -> T.mk_code (T.EMIT (to_type t, fa a))
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.mk_code T.IMPLICIT_ACCOUNT
+      | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
+      | Oprim ({prim = "MIN_BLOCK_TIME"; _})                 -> T.mk_code T.MIN_BLOCK_TIME
       | Oprim ({prim = "NOW"; _})                            -> T.mk_code T.NOW
       | Oprim ({prim = "SELF"; annots = a; _})               -> T.mk_code (T.SELF (fa a))
+      | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
       | Oprim ({prim = "SENDER"; _})                         -> T.mk_code T.SENDER
       | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.mk_code T.SET_DELEGATE
       | Oprim ({prim = "SOURCE"; _})                         -> T.mk_code T.SOURCE
+      | Oprim ({prim = "TOTAL_VOTING_POWER"; _})             -> T.mk_code T.TOTAL_VOTING_POWER
       | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.mk_code T.TRANSFER_TOKENS
-      | Oprim ({prim = "EMIT"; args = t::_; annots = a})     -> T.mk_code (T.EMIT (to_type t, fa a))
+      | Oprim ({prim = "VOTING_POWER"; _})                   -> T.mk_code T.VOTING_POWER
       (* Operations on data structures *)
       | Oprim ({prim = "CAR"; args=[]; _})                   -> T.mk_code (T.CAR)
       | Oprim ({prim = "CDR"; args=[]; _})                   -> T.mk_code (T.CDR)
@@ -232,9 +230,11 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "EMPTY_SET" ; args = t::_})           -> T.mk_code (T.EMPTY_SET (to_type t))
       | Oprim ({prim = "GET"; args = n::_})                  -> T.mk_code (T.GET_N (to_int n))
       | Oprim ({prim = "GET"; _})                            -> T.mk_code (T.GET)
+      | Oprim ({prim = "GET_AND_UPDATE"; _})                 -> T.mk_code (T.GET_AND_UPDATE)
       | Oprim ({prim = "LEFT" ; args = t::_})                -> T.mk_code (T.LEFT (to_type t))
       | Oprim ({prim = "MAP"; args = s::_})                  -> T.mk_code (T.MAP (seq s))
       | Oprim ({prim = "MEM"; _})                            -> T.mk_code (T.MEM)
+      | Oprim ({prim = "NEVER"; _})                          -> T.mk_code (T.NEVER)
       | Oprim ({prim = "NIL" ; args = t::_})                 -> T.mk_code (T.NIL (to_type t))
       | Oprim ({prim = "NONE" ; args = t::_})                -> T.mk_code (T.NONE (to_type t))
       | Oprim ({prim = "PACK"; _})                           -> T.mk_code (T.PACK)
@@ -246,24 +246,20 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SOME"; _})                           -> T.mk_code (T.SOME)
       | Oprim ({prim = "UNIT"; _})                           -> T.mk_code (T.UNIT)
       | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.mk_code (T.UNPACK (to_type t))
-      | Oprim ({prim = "UPDATE"; args = n::_})               -> T.mk_code (T.UPDATE_N (to_int n))
-      | Oprim ({prim = "UPDATE"; _})                         -> T.mk_code (T.UPDATE)
-      (* Other *)
       | Oprim ({prim = "UNPAIR"; args = n::_})               -> T.mk_code (T.UNPAIR_N (to_int n))
       | Oprim ({prim = "UNPAIR"; _})                         -> T.mk_code T.UNPAIR
-      | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
+      | Oprim ({prim = "UPDATE"; args = n::_})               -> T.mk_code (T.UPDATE_N (to_int n))
+      | Oprim ({prim = "UPDATE"; _})                         -> T.mk_code (T.UPDATE)
+      (* Operations on tickets *)
+      | Oprim ({prim = "JOIN_TICKETS"; _})                   -> T.mk_code (T.JOIN_TICKETS)
+      | Oprim ({prim = "READ_TICKET"; _})                    -> T.mk_code (T.READ_TICKET)
+      | Oprim ({prim = "SPLIT_TICKET"; _})                   -> T.mk_code (T.SPLIT_TICKET)
+      | Oprim ({prim = "TICKET"; _})                         -> T.mk_code (T.TICKET)
+      (* Other *)
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
       | Oprim ({prim = "RENAME"; _})                         -> T.mk_code T.RENAME
-      | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
-      | Oprim ({prim = "MIN_BLOCK_TIME"; _})                 -> T.mk_code T.MIN_BLOCK_TIME
-      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.mk_code (T.SAPLING_EMPTY_STATE (int_of_string n))
-      | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
-      | Oprim ({prim = "NEVER"; _})                          -> T.mk_code T.NEVER
-      | Oprim ({prim = "VOTING_POWER"; _})                   -> T.mk_code T.VOTING_POWER
-      | Oprim ({prim = "TOTAL_VOTING_POWER"; _})             -> T.mk_code T.TOTAL_VOTING_POWER
-      | Oprim ({prim = "KECCAK"; _})                         -> T.mk_code T.KECCAK
-      | Oprim ({prim = "SHA3"; _})                           -> T.mk_code T.SHA3
-      | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.mk_code T.PAIRING_CHECK
+      | Oprim ({prim = "VIEW"; args = s::t::_})              -> T.mk_code (T.VIEW (to_string s, to_type t))
+      | Oprim ({prim = "OPEN_CHEST"; _})                     -> T.mk_code T.OPEN_CHEST
       (* Macro *)
       | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ;  T.mk_code (T.IF (seq l, seq r))])
       | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ; T.mk_code (T.IF (seq l, seq r))])

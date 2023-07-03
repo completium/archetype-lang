@@ -2340,7 +2340,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iwildcard (ty, id) -> begin
-      let id = "const_" ^ id ^ "__" in
+      let id = T.id_to_const_id id in
       let data : T.data = T.Dvar(id, ty, true) in
       T.cpush (ty, data), inc_env env
     end

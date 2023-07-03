@@ -2063,6 +2063,12 @@ let rec to_type (o : obj_micheline) : type_ =
   | Oprim ({prim = "chest_key"; annots; _})                               -> mk_type ?annotation:(fa annots)  Tchest_key
   | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
 
+let param_const_check id =
+  String.length id > 8 && String.equal "const_" (String.sub id 0 6) && String.equal "__" (String.sub id ((String.length id) - 2) 2)
+
+let id_to_const_id id = "const_" ^ id ^ "__"
+
+let const_id_to_id id : string = String.sub id 6 ((String.length id) - 8)
 
 let rec to_data (o : obj_micheline) : data =
   let f = to_data in
@@ -2070,6 +2076,7 @@ let rec to_data (o : obj_micheline) : data =
   | Oint x                                    -> Dint (Big_int.big_int_of_string x)
   | Ostring s                                 -> Dstring s
   | Obytes  s                                 -> Dbytes s
+  | Oprim ({prim = s;  _ }) when param_const_check s -> Dvar (const_id_to_id s, tunit, false)
   | Oprim ({prim = "Unit";  _ })              -> Dunit
   | Oprim ({prim = "True";  _ })              -> Dtrue
   | Oprim ({prim = "False"; _ })              -> Dfalse
@@ -2081,6 +2088,7 @@ let rec to_data (o : obj_micheline) : data =
   | Oarray l                                  -> Dlist (List.map f l)
   | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
   | Oprim ({prim = "Lambda_rec"; args = _a::_ }) -> Format.eprintf "TODO Lambda_rec"; assert false
+  | Oprim ({prim = "constant"; args = [Ostring s] }) -> Dconstant s
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
 
 type tz_micheline = Micheline_printer.node

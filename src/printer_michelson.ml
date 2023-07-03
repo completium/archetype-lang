@@ -73,11 +73,11 @@ let rec pp_data fmt (d : data) =
   | Dnone             -> pp "None"
   | Dlist l           -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)       -> pp "Elt %a %a" pp_data x pp_data y
-  | Dvar (x, _, _)    -> pp "%s" x
+  | Dvar (x, _, _)    -> pp "%s" (id_to_const_id x)
   | DIrCode (_id, _c) -> pp "IrCode"
   | Dcode c           -> pp "{ %a }" pp_code c
   | Dlambda_rec c     -> pp "(Lambda_rec { %a })" pp_code c
-  | Dconstant v       -> pp "(constant %s)" v
+  | Dconstant v       -> pp "(constant \"%s\")" v
 
 and pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
