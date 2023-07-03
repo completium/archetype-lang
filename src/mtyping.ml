@@ -461,8 +461,20 @@ and op_GET_N (stack : stack) (n : int) =
   Some (ty :: stack)
 
 (* -------------------------------------------------------------------- *)
-and op_GET_AND_UPDATE (_stack : stack) =
-  assert false
+and op_GET_AND_UPDATE (stack : stack) =
+  let kty, stack = Stack.pop stack in
+  let vty, stack = Stack.pop stack in
+  let cty, stack = Stack.pop stack in
+
+  begin
+    match kty.node, vty.node, cty.node with
+    | _, M.Toption ovty, (M.Tmap (kty', vty') | M.Tbig_map (kty', vty')) ->
+      Ty.check_eq kty kty';
+      Ty.check_eq ovty vty'
+    | _ -> raise MichelsonTypingError
+  end;
+
+  Some (vty :: cty :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_GT (stack : stack) =
@@ -951,7 +963,7 @@ and op_SUB_MUTEZ (stack : stack) =
 and op_TICKET (stack : stack) =
   let (ty, tl), stack = Stack.pop2 stack in
   let () = Ty.check_nat tl in
-  Some (M.tticket ty :: stack)
+  Some (M.toption (M.tticket ty) :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_TOTAL_VOTING_POWER (stack : stack) =
