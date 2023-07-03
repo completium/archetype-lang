@@ -262,9 +262,10 @@ and op_AND (stack : stack) =
 
   let aout =
     match ty1.node, ty2.node with
-    | M.Tbool, M.Tbool -> M.Tbool
-    | M.Tnat , M.Tnat  -> M.Tnat
-    | M.Tint , M.Tnat  -> M.Tnat
+    | M.Tbool , M.Tbool  -> M.Tbool
+    | M.Tbytes, M.Tbytes -> M.Tbytes
+    | M.Tnat  , M.Tnat   -> M.Tnat
+    | M.Tint  , M.Tnat   -> M.Tnat
     | _, _ -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
@@ -462,9 +463,7 @@ and op_GET_N (stack : stack) (n : int) =
 
 (* -------------------------------------------------------------------- *)
 and op_GET_AND_UPDATE (stack : stack) =
-  let kty, stack = Stack.pop stack in
-  let vty, stack = Stack.pop stack in
-  let cty, stack = Stack.pop stack in
+  let (kty, vty, cty), stack = Stack.pop3 stack in
 
   begin
     match kty.node, vty.node, cty.node with
@@ -664,16 +663,26 @@ and op_LOOP_LEFT (stack : stack) (code : M.code list) =
 (* -------------------------------------------------------------------- *)
 and op_LSL (stack : stack) =
   let (ty1, ty2), stack = Stack.pop2 stack in
-  let () = Ty.check_nat ty1 in
-  let () = Ty.check_nat ty2 in
-  Some (M.tnat :: stack)
+
+  let aout =
+    match ty1.node, ty2.node with
+    | M.Tnat, M.Tnat -> M.Tnat
+    | M.Tbytes, M.Tnat -> M.Tbytes
+    | _ -> raise MichelsonTypingError in
+
+  Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_LSR (stack : stack) =
   let (ty1, ty2), stack = Stack.pop2 stack in
-  let () = Ty.check_nat ty1 in
-  let () = Ty.check_nat ty2 in
-  Some (M.tnat :: stack)
+
+  let aout =
+    match ty1.node, ty2.node with
+    | M.Tnat, M.Tnat -> M.Tnat
+    | M.Tbytes, M.Tnat -> M.Tbytes
+    | _ -> raise MichelsonTypingError in
+
+  Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_MAP (stack : stack) (code : M.code list) =
@@ -684,6 +693,8 @@ and op_MAP (stack : stack) (code : M.code list) =
       (ty, M.tlist)
     | M.Tmap (kty, vty) ->
       (M.tpair [kty; vty], (M.tmap kty))
+    | M.Toption ty ->
+      (ty, M.toption)
     | _ -> raise MichelsonTypingError in
   let substack = tycheck (inty :: stack) (M.cseq code) in
   let outty, substack =
@@ -767,10 +778,11 @@ and op_NOT (stack : stack) =
 
   let aout =
     match ty.node with
-    | M.Tbool -> M.Tbool
-    | M.Tnat  -> M.Tnat
-    | M.Tint  -> M.Tint
-    | _       -> raise MichelsonTypingError in
+    | M.Tbool  -> M.Tbool
+    | M.Tbytes -> M.Tbytes
+    | M.Tnat   -> M.Tnat
+    | M.Tint   -> M.Tint
+    | _        -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
 
@@ -784,8 +796,9 @@ and op_OR (stack : stack) =
 
   let aout =
     match ty1.node, ty2.node with
-    | M.Tbool, M.Tbool -> M.Tbool
-    | M.Tnat , M.Tnat  -> M.Tnat
+    | M.Tbool , M.Tbool  -> M.Tbool
+    | M.Tbytes, M.Tbytes -> M.Tbytes
+    | M.Tnat  , M.Tnat   -> M.Tnat
     | _, _ -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
@@ -1008,9 +1021,7 @@ and op_UNPAIR_N (stack : stack) (n : int) =
 
 (* -------------------------------------------------------------------- *)
 and op_UPDATE (stack : stack) =
-  let kty, stack = Stack.pop stack in
-  let vty, stack = Stack.pop stack in
-  let cty, stack = Stack.pop stack in
+  let (kty, vty, cty), stack = Stack.pop3 stack in
 
   begin
     match kty.node, vty.node, cty.node with
