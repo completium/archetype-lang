@@ -224,6 +224,8 @@ describe('Generate binding', async () => {
       ['.arl', 'model-errors', '../tests/model-errors', '', 5],
       ['.arl', 'proposal-type-errors', '../tests/proposal-type-errors', '', 3],
       ['.arl', 'proposal-model-errors', '../tests/proposal-model-errors', '', 5],
+      ['.tz', 'decomp-mic-passed', 'michelson/passed', "'-d', '-mi', ", 0],
+      ['.tz', 'decomp-mit-passed', 'michelson/passed', "'-d', '-mit', ", 0],
       ['.tz', 'decomp-dir-passed', 'michelson/passed', "'-d', '-dir', ", 0],
       ['.tz', 'decomp-mic-mainnet', '../mainnet/mainnet_contracts_2021-04-01/tz', "'-d', '-mi', ", 0],
       ['.tz', 'decomp-mit-mainnet', '../mainnet/mainnet_contracts_2021-04-01/tz', "'-d', '-mit', ", 0],

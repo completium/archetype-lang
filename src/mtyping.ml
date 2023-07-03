@@ -1034,8 +1034,9 @@ and op_XOR (stack : stack) =
 
   let aout =
     match ty1.node, ty2.node with
-    | M.Tbool, M.Tbool -> M.Tbool
-    | M.Tnat , M.Tnat  -> M.Tnat
+    | M.Tbool , M.Tbool  -> M.Tbool
+    | M.Tnat  , M.Tnat   -> M.Tnat
+    | M.Tbytes, M.Tbytes -> M.Tbytes
     | _, _ -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
