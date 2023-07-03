@@ -3,6 +3,8 @@ open Tools
 
 module M = Michelson
 
+let pp_type = Printer_michelson.pp_type
+
 (* -------------------------------------------------------------------- *)
 type stack1 = M.type_ [@@deriving  show {with_path = false}]
 
@@ -1024,6 +1026,14 @@ and op_UPDATE_N (stack : stack) (n : int) =
   Ty.check_eq tys tyd; Some aout
 
 (* -------------------------------------------------------------------- *)
+and op_VIEW (stack : stack) (ty : stack1) =
+  let _arg_ty, stack = Stack.pop stack in
+  let addr_ty, stack = Stack.pop stack in
+
+  let _ = Ty.check_address addr_ty in
+  Some (M.toption ty :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_VOTING_POWER (stack : stack) =
   let kty, stack = Stack.pop stack in
   let () = Ty.check_key_hash kty in
@@ -1383,7 +1393,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | RENAME                   -> (* Unused? *) assert false
 
-  | VIEW (_, _) -> assert false (* TODO *)
+  | VIEW (_, ty) ->
+    op_VIEW stack ty
 
   | OPEN_CHEST -> assert false (* TODO *)
 
