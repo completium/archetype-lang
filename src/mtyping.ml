@@ -7,9 +7,9 @@ module M = Michelson
 type stack1 = M.type_ [@@deriving  show {with_path = false}]
 
 type arg1 = [
-| `Int  of int
-| `Code of M.code list
-| `Type of M.type_
+  | `Int  of int
+  | `Code of M.code list
+  | `Type of M.type_
 ]
 
 type stack = stack1 list [@@deriving  show {with_path = false}]
@@ -195,16 +195,16 @@ end = struct
   let merge (stk1 : stack option) (stk2 : stack option) =
     match stk1, stk2 with
     | None, None ->
-        None
+      None
     | Some stk1, None ->
-        Some stk1
+      Some stk1
     | None, Some stk2 ->
-        Some stk2
+      Some stk2
     | Some stk1, Some stk2 ->
-        if List.length stk1 <> List.length stk2 then
-          raise MichelsonTypingError;
-        let () = List.iter2 Ty.check_eq stk1 stk2 in
-        Some stk2
+      if List.length stk1 <> List.length stk2 then
+        raise MichelsonTypingError;
+      let () = List.iter2 Ty.check_eq stk1 stk2 in
+      Some stk2
 
   let split n stack =
     if List.length stack < n then
@@ -319,11 +319,11 @@ and op_CONCAT (stack : stack) =
   let aout, stack =
     match ty.node with
     | M.Tlist ({ node = (M.Tstring | M.Tbytes) as aout }) ->
-        aout, stack
+      aout, stack
     | (M.Tstring | M.Tbytes) as aout ->
-        let ty2, stack = Stack.pop stack in
-        let () = Ty.check_eq ty ty2 in
-        aout, stack
+      let ty2, stack = Stack.pop stack in
+      let () = Ty.check_eq ty ty2 in
+      aout, stack
     | _ -> raise MichelsonTypingError in
   Some (M.mk_type aout :: stack)
 
@@ -526,24 +526,24 @@ and op_IMPLICIT_ACCOUNT (stack : stack) =
 and op_NAT (stack : stack) =
   let ty, stack = Stack.pop stack in
   begin match ty.node with
-  | M.Tbytes -> ()
-  | _ -> raise MichelsonTypingError end;
+    | M.Tbytes -> ()
+    | _ -> raise MichelsonTypingError end;
   Some (M.tnat :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_INT (stack : stack) =
   let ty, stack = Stack.pop stack in
   begin match ty.node with
-  | M.Tbytes | M.Tnat | M.Tbls12_381_fr -> ()
-  | _ -> raise MichelsonTypingError end;
+    | M.Tbytes | M.Tnat | M.Tbls12_381_fr -> ()
+    | _ -> raise MichelsonTypingError end;
   Some (M.tint :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_BYTES (stack : stack) =
   let ty, stack = Stack.pop stack in
   begin match ty.node with
-  | M.Tnat | M.Tint -> ()
-  | _ -> raise MichelsonTypingError end;
+    | M.Tnat | M.Tint -> ()
+    | _ -> raise MichelsonTypingError end;
   Some (M.tbytes :: stack)
 
 (* -------------------------------------------------------------------- *)
@@ -558,11 +558,11 @@ and op_ITER (stack : stack) (code : M.code list) =
   let inty =
     match ty.node with
     | M.Tlist ty ->
-        ty
+      ty
     | M.Tset kty ->
-        kty
+      kty
     | M.Tmap (kty, vty) ->
-        M.tpair [kty; vty]
+      M.tpair [kty; vty]
     | _ -> raise MichelsonTypingError in
   let substack = tycheck (inty :: stack) (M.cseq code) in
   Stack.merge (Some stack) substack
@@ -584,12 +584,12 @@ and op_KECCAK (stack : stack) =
 
 (* -------------------------------------------------------------------- *)
 and op_LAMBDA
-  (stack : stack) (dom : stack1) (codom : stack1) (code : M.code list)
-=
+    (stack : stack) (dom : stack1) (codom : stack1) (code : M.code list)
+  =
   let substack = tycheck [dom] (M.cseq code) in
   begin match substack with
-  | Some [codom'] -> Ty.check_eq codom codom'
-  | _ -> raise MichelsonTypingError end;
+    | Some [codom'] -> Ty.check_eq codom codom'
+    | _ -> raise MichelsonTypingError end;
   Some (M.mk_type (M.Tlambda (dom, codom)) :: stack)
 
 (* -------------------------------------------------------------------- *)
@@ -626,9 +626,9 @@ and op_LOOP (stack : stack) (code : M.code list) =
     match substack with
     | None -> None
     | Some substack ->
-        let cond2, substack = Stack.pop substack in
-        let () = Ty.check_bool cond2 in
-        Some substack in
+      let cond2, substack = Stack.pop substack in
+      let () = Ty.check_bool cond2 in
+      Some substack in
   Stack.merge (Some stack) substack
 
 (* -------------------------------------------------------------------- *)
@@ -640,9 +640,9 @@ and op_LOOP_LEFT (stack : stack) (code : M.code list) =
     match substack with
     | None -> None
     | Some substack ->
-        let cond2, substack = Stack.pop substack in
-        let () = Ty.check_eq cond cond2 in
-        Some (ty2 :: substack) in
+      let cond2, substack = Stack.pop substack in
+      let () = Ty.check_eq cond cond2 in
+      Some (ty2 :: substack) in
   Stack.merge (Some (ty2 :: stack)) substack
 
 (* -------------------------------------------------------------------- *)
@@ -665,9 +665,9 @@ and op_MAP (stack : stack) (code : M.code list) =
   let inty, mkaout =
     match ty.node with
     | M.Tlist ty ->
-        (ty, M.tlist)
+      (ty, M.tlist)
     | M.Tmap (kty, vty) ->
-        (M.tpair [kty; vty], (M.tmap kty))
+      (M.tpair [kty; vty], (M.tmap kty))
     | _ -> raise MichelsonTypingError in
   let substack = tycheck (inty :: stack) (M.cseq code) in
   let outty, substack =
@@ -814,7 +814,7 @@ and op_READ_TICKET (stack : stack) =
   let ty = Ty.check_ticket ty in
   Some (
     M.tpair [M.taddress; (M.tpair [ty; M.tnat])]
-      :: M.tticket ty :: stack)
+    :: M.tticket ty :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_RIGHT (stack : stack) (tyl : stack1) =
@@ -875,8 +875,8 @@ and op_SIZE (stack : stack) =
   let ty, stack = Stack.pop stack in
 
   begin match ty.node with
-  | M.Tset _ | M.Tmap _ | M.Tlist _ | M.Tstring | M.Tbytes -> ()
-  | _ -> raise MichelsonTypingError end;
+    | M.Tset _ | M.Tmap _ | M.Tlist _ | M.Tstring | M.Tbytes -> ()
+    | _ -> raise MichelsonTypingError end;
 
   Some (M.tnat :: stack)
 
@@ -886,8 +886,8 @@ and op_SLICE (stack : stack) =
   let () = Ty.check_nat i1 in
   let () = Ty.check_nat i2 in
   begin match ty.node with
-  | M.Tstring | M.Tbytes -> ()
-  | _ -> raise MichelsonTypingError end;
+    | M.Tstring | M.Tbytes -> ()
+    | _ -> raise MichelsonTypingError end;
   Some (M.toption ty :: stack)
 
 (* -------------------------------------------------------------------- *)
@@ -993,28 +993,20 @@ and op_UNPAIR_N (stack : stack) (n : int) =
 (* -------------------------------------------------------------------- *)
 and op_UPDATE (stack : stack) =
   let kty, stack = Stack.pop stack in
+  let vty, stack = Stack.pop stack in
+  let cty, stack = Stack.pop stack in
 
-  let aout, stack =
-    match kty.node with
-    | M.Tbool ->
-        let cty, stack = Stack.pop stack in
-        let _ : stack1 = Ty.check_set cty in
-        cty.node, stack
+  begin
+    match kty.node, vty.node, cty.node with
+    | M.Tbool, _, M.Tset vty' ->
+      Ty.check_eq vty vty'
+    | _, M.Toption ovty, (M.Tmap (kty', vty') | M.Tbig_map (kty', vty')) ->
+      Ty.check_eq kty kty';
+      Ty.check_eq ovty vty'
+    | _ -> raise MichelsonTypingError
+  end;
 
-    | M.Toption kty -> begin
-        let mty, stack = Stack.pop stack in
-        match mty.node with
-        | M.Tmap (kty', _)
-        | M.Tbig_map (kty', _) ->
-            let () = Ty.check_eq kty kty' in
-            mty.node, stack
-        | _ -> raise MichelsonTypingError
-      end
-
-    | _ ->
-        raise MichelsonTypingError in
-
-  Some (M.mk_type aout :: stack)
+  Some (cty :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_UPDATE_N (stack : stack) (n : int) =
@@ -1057,337 +1049,337 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   match code with
   | SEQ cs ->
-      List.fold_left (fun stack c ->
+    List.fold_left (fun stack c ->
         match stack with
         | None -> None
         | Some stack -> tycheck stack c) (Some stack) cs
 
   | APPLY ->
-      op_APPLY stack
+    op_APPLY stack
 
   | EXEC ->
-      op_EXEC stack
+    op_EXEC stack
 
   | FAILWITH ->
-      op_FAILWITH stack
+    op_FAILWITH stack
 
   | IF (ct, ce) ->
-      op_IF stack ct ce
+    op_IF stack ct ce
 
   | IF_CONS (ccons, cnil) ->
-      op_IF_CONS stack ccons cnil
+    op_IF_CONS stack ccons cnil
 
   | IF_LEFT (cl, cr) ->
-      op_IF_LEFT stack cl cr
+    op_IF_LEFT stack cl cr
 
   | IF_NONE (cnone, csome) ->
-      op_IF_NONE stack cnone csome
+    op_IF_NONE stack cnone csome
 
   | ITER c ->
-      op_ITER stack c
+    op_ITER stack c
 
   | LAMBDA (dom, codom, c) ->
-      op_LAMBDA stack dom codom c
+    op_LAMBDA stack dom codom c
 
   | LOOP c ->
-      op_LOOP stack c
+    op_LOOP stack c
 
   | LOOP_LEFT c ->
-      op_LOOP_LEFT stack c
+    op_LOOP_LEFT stack c
 
   (* Stack manipulation *)
   | DIG n ->
-      op_DIG stack n
+    op_DIG stack n
 
   | DIP (n, c) ->
-      op_DIP stack n c
+    op_DIP stack n c
 
   | DROP n ->
-      op_DROP stack n
+    op_DROP stack n
 
   | DUG n ->
-      op_DUG stack n
+    op_DUG stack n
 
   | DUP ->
-      op_DUP stack
+    op_DUP stack
 
   | DUP_N n ->
-      op_DUP_N stack n
+    op_DUP_N stack n
 
   | PUSH (ty, v) ->
-      op_PUSH stack (ty, v)
+    op_PUSH stack (ty, v)
 
   | SWAP ->
-      op_SWAP stack
+    op_SWAP stack
 
   (* Arthmetic operations *)
   | ABS ->
-      op_ABS stack
+    op_ABS stack
 
   | ADD ->
-      op_ADD stack
+    op_ADD stack
 
   | COMPARE ->
-      op_COMPARE stack
+    op_COMPARE stack
 
   | EDIV ->
-      op_EDIV stack
+    op_EDIV stack
 
   | EQ ->
-      op_EQ stack
+    op_EQ stack
 
   | GE ->
-      op_GE stack
+    op_GE stack
 
   | GT ->
-      op_GT stack
+    op_GT stack
 
   | NAT ->
-      op_NAT stack
+    op_NAT stack
 
   | INT ->
-      op_INT stack
+    op_INT stack
 
   | BYTES ->
-      op_BYTES stack
+    op_BYTES stack
 
   | ISNAT ->
-      op_ISNAT stack
+    op_ISNAT stack
 
   | LE ->
-      op_LE stack
+    op_LE stack
 
   | LSL ->
-      op_LSL stack
+    op_LSL stack
 
   | LSR ->
-      op_LSR stack
+    op_LSR stack
 
   | LT ->
-      op_LT stack
+    op_LT stack
 
   | MUL ->
-      op_MUL stack
+    op_MUL stack
 
   | NEG ->
-      op_NEG stack
+    op_NEG stack
 
   | NEQ ->
-      op_NEQ stack
+    op_NEQ stack
 
   | SUB ->
-      op_SUB stack
+    op_SUB stack
 
   | SUB_MUTEZ ->
-      op_SUB_MUTEZ stack
+    op_SUB_MUTEZ stack
 
   (* Boolean operations *)
   | AND ->
-      op_AND stack
+    op_AND stack
 
   | NOT ->
-      op_NOT stack
+    op_NOT stack
 
   | OR ->
-      op_OR stack
+    op_OR stack
 
   | XOR ->
-      op_XOR stack
+    op_XOR stack
 
   (* Cryptographic operations *)
   | BLAKE2B ->
-      op_BLAKE2B stack
+    op_BLAKE2B stack
 
   | CHECK_SIGNATURE ->
-      op_CHECK_SIGNATURE stack
+    op_CHECK_SIGNATURE stack
 
   | HASH_KEY ->
-      op_HASH_KEY stack
+    op_HASH_KEY stack
 
   | KECCAK ->
-      op_KECCAK stack
+    op_KECCAK stack
 
   | PAIRING_CHECK ->
-      op_PAIRING_CHECK stack
+    op_PAIRING_CHECK stack
 
   | SAPLING_EMPTY_STATE ty ->
-      op_SAPLING_EMPTY_STATE stack ty
+    op_SAPLING_EMPTY_STATE stack ty
 
   | SAPLING_VERIFY_UPDATE ->
-      op_SAPLING_VERIFY_UPDATE stack
+    op_SAPLING_VERIFY_UPDATE stack
 
   | SHA256 ->
-      op_SHA256 stack
+    op_SHA256 stack
 
   | SHA512 ->
-      op_SHA512 stack
+    op_SHA512 stack
 
   | SHA3 ->
-      op_SHA3 stack
+    op_SHA3 stack
 
   (* Blockchain operations *)
   | ADDRESS ->
-      op_ADDRESS stack
+    op_ADDRESS stack
 
   | AMOUNT ->
-      op_AMOUNT stack
+    op_AMOUNT stack
 
   | BALANCE ->
-      op_BALANCE stack
+    op_BALANCE stack
 
   | CHAIN_ID ->
-      op_CHAIN_ID stack
+    op_CHAIN_ID stack
 
   | CONTRACT (ty, _) ->
-      op_CONTRACT stack ty
+    op_CONTRACT stack ty
 
   | CREATE_CONTRACT _  ->
-      assert false
+    assert false
 
   | EMIT _ ->
-      op_EMIT stack
+    op_EMIT stack
 
   | IMPLICIT_ACCOUNT ->
-      op_IMPLICIT_ACCOUNT stack
+    op_IMPLICIT_ACCOUNT stack
 
   | LEVEL ->
-      op_LEVEL stack
+    op_LEVEL stack
 
   | MIN_BLOCK_TIME ->
-      op_MIN_BLOCK_TIME stack
+    op_MIN_BLOCK_TIME stack
 
   | NOW ->
-      op_NOW stack
+    op_NOW stack
 
   | SELF _ ->
-      assert false
+    assert false
 
   | SELF_ADDRESS ->
-      op_SELF_ADDRESS stack
+    op_SELF_ADDRESS stack
 
   | SENDER ->
-      op_SENDER stack
+    op_SENDER stack
 
   | SET_DELEGATE ->
-      op_SET_DELEGATE stack
+    op_SET_DELEGATE stack
 
   | SOURCE ->
-      op_SOURCE stack
+    op_SOURCE stack
 
   | TOTAL_VOTING_POWER ->
-      op_TOTAL_VOTING_POWER stack
+    op_TOTAL_VOTING_POWER stack
 
   | TRANSFER_TOKENS ->
-      op_TRANSFER_TOKENS stack
+    op_TRANSFER_TOKENS stack
 
   | VOTING_POWER ->
-      op_VOTING_POWER stack
+    op_VOTING_POWER stack
 
   (* Operations on data structures *)
   | CAR ->
-      op_CAR stack
+    op_CAR stack
 
   | CDR ->
-      op_CDR stack
+    op_CDR stack
 
   | CONCAT ->
-      op_CONCAT stack
+    op_CONCAT stack
 
   | CONS ->
-      op_CONS stack
+    op_CONS stack
 
   | EMPTY_BIG_MAP (kty, vty) ->
-      op_EMPTY_BIG_MAP stack kty vty
+    op_EMPTY_BIG_MAP stack kty vty
 
   | EMPTY_MAP (kty, vty) ->
-      op_EMPTY_MAP stack kty vty
+    op_EMPTY_MAP stack kty vty
 
   | EMPTY_SET ty ->
-      op_SET stack ty
+    op_SET stack ty
 
   | GET ->
-      op_GET stack
+    op_GET stack
 
   | GET_N n ->
-      op_GET_N stack n
+    op_GET_N stack n
 
   | GET_AND_UPDATE ->
-      op_GET_AND_UPDATE stack
+    op_GET_AND_UPDATE stack
 
   | LEFT tyr ->
-      op_LEFT stack tyr
+    op_LEFT stack tyr
 
   | MAP c  ->
-      op_MAP stack c
+    op_MAP stack c
 
   | MEM ->
-      op_MEM stack
+    op_MEM stack
 
   | NEVER ->
-      None
+    None
 
   | NIL ty ->
-      op_NIL stack ty
+    op_NIL stack ty
 
   | NONE ty ->
-      op_NONE stack ty
+    op_NONE stack ty
 
   | PACK ->
-      op_PACK stack
+    op_PACK stack
 
   | PAIR ->
-      op_PAIR stack
+    op_PAIR stack
 
   | PAIR_N n ->
-      op_PAIR_N stack n
+    op_PAIR_N stack n
 
   | RIGHT tyl ->
-      op_RIGHT stack tyl
+    op_RIGHT stack tyl
 
   | SIZE ->
-      op_SIZE stack
+    op_SIZE stack
 
   | SLICE ->
-      op_SLICE stack
+    op_SLICE stack
 
   | SOME ->
-      op_SOME stack
+    op_SOME stack
 
   | UNIT ->
-      op_UNIT stack
+    op_UNIT stack
 
   | UNPACK ty ->
-      op_UNPACK stack ty
+    op_UNPACK stack ty
 
   | UNPAIR ->
-      op_UNPAIR stack
+    op_UNPAIR stack
 
   | UNPAIR_N n ->
-      op_UNPAIR_N stack n
+    op_UNPAIR_N stack n
 
   | UPDATE ->
-      op_UPDATE stack
+    op_UPDATE stack
 
   | UPDATE_N n ->
-      op_UPDATE_N stack n
+    op_UPDATE_N stack n
 
   (* Operations on tickets *)
   | JOIN_TICKETS ->
-      op_JOIN_TICKETS stack
+    op_JOIN_TICKETS stack
 
   | READ_TICKET ->
-      op_READ_TICKET stack
+    op_READ_TICKET stack
 
   | SPLIT_TICKET ->
-      op_SPLIT_TICKET stack
+    op_SPLIT_TICKET stack
 
   | TICKET ->
-      op_TICKET stack
+    op_TICKET stack
 
   (* Other *)
 
   | CAST _ ->
-      Some stack                (* ? *)
+    Some stack                (* ? *)
 
   | RENAME                   -> (* Unused? *) assert false
 
