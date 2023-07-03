@@ -998,8 +998,8 @@ and op_UPDATE (stack : stack) =
 
   begin
     match kty.node, vty.node, cty.node with
-    | M.Tbool, _, M.Tset vty' ->
-      Ty.check_eq vty vty'
+    | _, M.Tbool, M.Tset kty' ->
+      Ty.check_eq kty kty'
     | _, M.Toption ovty, (M.Tmap (kty', vty') | M.Tbig_map (kty', vty')) ->
       Ty.check_eq kty kty';
       Ty.check_eq ovty vty'
