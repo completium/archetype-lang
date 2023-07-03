@@ -49,7 +49,6 @@ module Ty : sig
   val check_option       : stack1 -> stack1
   val check_or           : stack1 -> stack1 * stack1
   val check_pair         : stack1 -> stack1 * stack1
-  val check_list_pair    : stack1 -> stack1 * stack1
   val check_set          : stack1 -> stack1
   val check_sapling_tx   : stack1 -> int
   val check_sapling_st   : stack1 -> int
@@ -57,7 +56,7 @@ module Ty : sig
   val check_ticket       : stack1 -> stack1
 end = struct
   let check_eq (ty1 : stack1) (ty2 : stack1) =
-    if not (M.cmp_type ty1 ty2) then
+    if not (M.cmp_type (M.normalize_type ty1) (M.normalize_type ty2)) then
       raise MichelsonTypingError
 
   let check_address (ty : stack1) =
@@ -140,11 +139,6 @@ end = struct
     | M.Tpair [ty1; ty2] -> (ty1, ty2)
     | M.Tpair (_::[]) -> raise MichelsonTypingError
     | M.Tpair (ty1::l) -> (ty1, M.tpair l)
-    | _ -> raise MichelsonTypingError
-
-  let check_list_pair (ty : stack1) =
-    match ty.node with
-    | M.Tlist ty -> check_pair ty
     | _ -> raise MichelsonTypingError
 
   let check_sapling_tx (ty : stack1) =
@@ -828,7 +822,7 @@ and op_PAIR_N (stack : stack) (n : int) =
 (* -------------------------------------------------------------------- *)
 and op_PAIRING_CHECK (stack : stack) =
   let ty, stack = Stack.pop stack in
-  let ty1, ty2 = Ty.check_list_pair ty in
+  let ty1, ty2 = ty |> Ty.check_list |> Ty.check_pair in
   let () = Ty.check_bls12_381_g1 ty1 in
   let () = Ty.check_bls12_381_g2 ty2 in
   Some (M.tbool :: stack)

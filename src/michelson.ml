@@ -1293,6 +1293,19 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
   in
   {node = node; annotation = t.annotation}
 
+let normalize_type (ty : type_) : type_ =
+  let get_opt_last_pair (tys : type_ list) : type_ list option =
+    match List.rev tys with
+    | {node = Tpair l}::tl -> Some (List.rev tl @ l)
+    | _ -> None
+  in
+  let is_last_pair x = x |> get_opt_last_pair |> Tools.Option.is_some in
+  let rec aux (ty : type_) : type_ =
+    match ty.node with
+    | Tpair l when is_last_pair l -> aux {ty with node = Tpair (l |> get_opt_last_pair |> Option.get)}
+    | _ -> map_type aux ty
+  in
+  aux ty
 
 (* -------------------------------------------------------------------- *)
 
