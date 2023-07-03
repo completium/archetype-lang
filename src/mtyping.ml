@@ -138,11 +138,13 @@ end = struct
   let check_pair (ty : stack1) =
     match ty.node with
     | M.Tpair [ty1; ty2] -> (ty1, ty2)
+    | M.Tpair (_::[]) -> raise MichelsonTypingError
+    | M.Tpair (ty1::l) -> (ty1, M.tpair l)
     | _ -> raise MichelsonTypingError
 
   let check_list_pair (ty : stack1) =
     match ty.node with
-    | M.Tlist {node = M.Tpair [ty1; ty2]} -> (ty1, ty2)
+    | M.Tlist ty -> check_pair ty
     | _ -> raise MichelsonTypingError
 
   let check_sapling_tx (ty : stack1) =
