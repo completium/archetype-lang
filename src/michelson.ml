@@ -2143,3 +2143,18 @@ let micheline_to_tz_micheline (input : micheline) : tz_micheline =
 let remove_seq_obj_micheline = function
   | Oarray v -> v
   | v -> [v]
+
+let seek_type_from_annot (annot : string) (ty : type_) : type_ option =
+
+  let rec aux (ty : type_) : type_ option =
+    match ty with
+    | {annotation = a} when Option.cmp String.equal (Some annot) a -> Some ty
+    | {node = Tor (l, r)} -> begin
+      match aux l with
+      | Some v -> Some v
+      | None -> aux r
+    end
+    | _ -> None
+  in
+
+  aux ty

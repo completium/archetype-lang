@@ -332,7 +332,8 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
 
 let tycheck_michelson ((input, env) : T.michelson * env) : T.michelson * env =
   let stack = [T.tpair [input.parameter; input.storage]] in
-  let _ : Mtyping.stack option = Mtyping.tycheck stack input.code in
+  let mt_env = Mtyping.Env.create input in
+  let _ : Mtyping.stack option = Mtyping.tycheck mt_env stack input.code in
   input, env
 
 (* -------------------------------------------------------------------- *)

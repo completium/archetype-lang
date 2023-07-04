@@ -6,6 +6,44 @@ module M = Michelson
 let pp_type = Printer_michelson.pp_type
 
 (* -------------------------------------------------------------------- *)
+module Env : sig
+  type t
+
+  val create : M.michelson -> t
+
+  module Contract : sig
+    val get_parameter : t -> M.type_
+    val get_storage   : t -> M.type_
+    val get_code      : t -> M.code
+  end
+
+end = struct
+  type t = {
+    env_contract : M.michelson
+  }
+
+  let create (contract :  M.michelson) = {
+    env_contract = contract
+  }
+
+  module Contract = struct
+
+    let get_parameter (env : t) : M.type_ =
+      env.env_contract.parameter
+
+    let get_storage (env : t) : M.type_ =
+      env.env_contract.storage
+
+    let get_code (env : t) : M.code =
+      env.env_contract.code
+  end
+
+
+end
+
+type env = Env.t
+
+(* -------------------------------------------------------------------- *)
 type stack1 = M.type_ [@@deriving  show {with_path = false}]
 
 type arg1 = [
@@ -353,9 +391,9 @@ and op_DIG (stack : stack) (n : int) =
   Some (x :: (pre @ post))
 
 (* -------------------------------------------------------------------- *)
-and op_DIP (stack : stack) (n : int) (code : M.code list) =
+and op_DIP (env : env) (stack : stack) (n : int) (code : M.code list) =
   let pre, stack = Stack.split n stack in
-  match tycheck stack (M.cseq code) with
+  match tycheck env stack (M.cseq code) with
   | None -> None
   | Some substack -> Some (pre @ substack)
 
@@ -489,46 +527,46 @@ and op_HASH_KEY (stack : stack) =
   Some (M.tkey_hash :: stack)
 
 (* -------------------------------------------------------------------- *)
-and op_IF (stack : stack) (ct : M.code list) (ce : M.code list) =
+and op_IF (env : env) (stack : stack) (ct : M.code list) (ce : M.code list) =
   let cond, stack = Stack.pop stack in
 
   Ty.check_bool cond;
 
-  let stt = tycheck stack (M.cseq ct) in
-  let ste = tycheck stack (M.cseq ce) in
+  let stt = tycheck env stack (M.cseq ct) in
+  let ste = tycheck env stack (M.cseq ce) in
 
   Stack.merge stt ste
 
 (* -------------------------------------------------------------------- *)
-and op_IF_CONS (stack : stack) (ccons : M.code list) (cnil : M.code list) =
+and op_IF_CONS (env : env) (stack : stack) (ccons : M.code list) (cnil : M.code list) =
   let cond, stack = Stack.pop stack in
 
   let ty = Ty.check_list cond in
 
-  let scons = tycheck (ty :: M.tlist ty :: stack) (M.cseq ccons) in
-  let snil  = tycheck stack (M.cseq cnil) in
+  let scons = tycheck env (ty :: M.tlist ty :: stack) (M.cseq ccons) in
+  let snil  = tycheck env stack (M.cseq cnil) in
 
   Stack.merge scons snil
 
 (* -------------------------------------------------------------------- *)
-and op_IF_LEFT (stack : stack) (cl : M.code list) (cr : M.code list) =
+and op_IF_LEFT (env : env) (stack : stack) (cl : M.code list) (cr : M.code list) =
   let cond, stack = Stack.pop stack in
 
   let tyl, tyr = Ty.check_or cond in
 
-  let sl = tycheck (tyl :: stack) (M.cseq cl) in
-  let sr = tycheck (tyr :: stack) (M.cseq cr) in
+  let sl = tycheck env (tyl :: stack) (M.cseq cl) in
+  let sr = tycheck env (tyr :: stack) (M.cseq cr) in
 
   Stack.merge sl sr
 
 (* -------------------------------------------------------------------- *)
-and op_IF_NONE (stack : stack) (cnone : M.code list) (csome : M.code list) =
+and op_IF_NONE (env : env) (stack : stack) (cnone : M.code list) (csome : M.code list) =
   let cond, stack = Stack.pop stack in
 
   let ty = Ty.check_option cond in
 
-  let snone = tycheck stack (M.cseq cnone) in
-  let ssome = tycheck (ty :: stack) (M.cseq csome) in
+  let snone = tycheck env stack (M.cseq cnone) in
+  let ssome = tycheck env (ty :: stack) (M.cseq csome) in
 
   Stack.merge snone ssome
 
@@ -569,7 +607,7 @@ and op_ISNAT (stack : stack) =
   Some (M.toption M.tnat :: stack)
 
 (* -------------------------------------------------------------------- *)
-and op_ITER (stack : stack) (code : M.code list) =
+and op_ITER (env : env) (stack : stack) (code : M.code list) =
   let ty, stack = Stack.pop stack in
   let inty =
     match ty.node with
@@ -580,7 +618,7 @@ and op_ITER (stack : stack) (code : M.code list) =
     | M.Tmap (kty, vty) ->
       M.tpair [kty; vty]
     | _ -> raise MichelsonTypingError in
-  let substack = tycheck (inty :: stack) (M.cseq code) in
+  let substack = tycheck env (inty :: stack) (M.cseq code) in
   Stack.merge (Some stack) substack
 
 (* -------------------------------------------------------------------- *)
@@ -600,9 +638,9 @@ and op_KECCAK (stack : stack) =
 
 (* -------------------------------------------------------------------- *)
 and op_LAMBDA
-    (stack : stack) (dom : stack1) (codom : stack1) (code : M.code list)
+    (env : env) (stack : stack) (dom : stack1) (codom : stack1) (code : M.code list)
   =
-  let substack = tycheck [dom] (M.cseq code) in
+  let substack = tycheck env [dom] (M.cseq code) in
   begin match substack with
     | Some [codom'] -> Ty.check_eq codom codom'
     | _ -> raise MichelsonTypingError end;
@@ -634,10 +672,10 @@ and op_MIN_BLOCK_TIME (stack : stack) =
   Some (M.tnat :: stack)
 
 (* -------------------------------------------------------------------- *)
-and op_LOOP (stack : stack) (code : M.code list) =
+and op_LOOP (env : env) (stack : stack) (code : M.code list) =
   let cond, stack = Stack.pop stack in
   let () = Ty.check_bool cond in
-  let substack = tycheck stack (M.cseq code) in
+  let substack = tycheck env stack (M.cseq code) in
   let substack =
     match substack with
     | None -> None
@@ -648,10 +686,10 @@ and op_LOOP (stack : stack) (code : M.code list) =
   Stack.merge (Some stack) substack
 
 (* -------------------------------------------------------------------- *)
-and op_LOOP_LEFT (stack : stack) (code : M.code list) =
+and op_LOOP_LEFT (env : env) (stack : stack) (code : M.code list) =
   let cond, stack = Stack.pop stack in
   let ty1, ty2 = Ty.check_or cond in
-  let substack = tycheck (ty1 :: stack) (M.cseq code) in
+  let substack = tycheck env (ty1 :: stack) (M.cseq code) in
   let substack =
     match substack with
     | None -> None
@@ -686,7 +724,7 @@ and op_LSR (stack : stack) =
   Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
-and op_MAP (stack : stack) (code : M.code list) =
+and op_MAP (env : env) (stack : stack) (code : M.code list) =
   let ty, stack = Stack.pop stack in
   let inty, mkaout =
     match ty.node with
@@ -697,7 +735,7 @@ and op_MAP (stack : stack) (code : M.code list) =
     | M.Toption ty ->
       (ty, M.toption)
     | _ -> raise MichelsonTypingError in
-  let substack = tycheck (inty :: stack) (M.cseq code) in
+  let substack = tycheck env (inty :: stack) (M.cseq code) in
   let outty, substack =
     match substack with
     | None -> raise MichelsonTypingError
@@ -863,6 +901,21 @@ and op_SAPLING_VERIFY_UPDATE (stack : stack) =
   if ms1 <> ms2 then
     raise MichelsonTypingError;
   Some (M.toption (M.tpair [M.tbytes; M.tint; st]) :: stack)
+
+(* -------------------------------------------------------------------- *)
+and op_SELF (env : env) (stack : stack) annot =
+  let tparameter = Env.Contract.get_parameter env in
+  let aout =
+    match annot with
+    | None
+    | Some "%default" -> tparameter
+    | Some annot -> begin
+        match M.seek_type_from_annot annot tparameter with
+        | Some ty -> ty
+        | None -> raise MichelsonTypingError
+      end
+  in
+  Some (M.tcontract aout :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_SELF_ADDRESS (stack : stack) =
@@ -1080,7 +1133,7 @@ and op_XOR (stack : stack) =
   Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
-and tycheck_r (stack : stack) (code : M.code_node) : stack option =
+and tycheck_r (env : env) (stack : stack) (code : M.code_node) : stack option =
   (* Format.eprintf "%a@." pp_stack stack; *)
 
   match code with
@@ -1088,7 +1141,7 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
     List.fold_left (fun stack c ->
         match stack with
         | None -> None
-        | Some stack -> tycheck stack c) (Some stack) cs
+        | Some stack -> tycheck env stack c) (Some stack) cs
 
   | APPLY ->
     op_APPLY stack
@@ -1100,35 +1153,35 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
     op_FAILWITH stack
 
   | IF (ct, ce) ->
-    op_IF stack ct ce
+    op_IF env stack ct ce
 
   | IF_CONS (ccons, cnil) ->
-    op_IF_CONS stack ccons cnil
+    op_IF_CONS env stack ccons cnil
 
   | IF_LEFT (cl, cr) ->
-    op_IF_LEFT stack cl cr
+    op_IF_LEFT env stack cl cr
 
   | IF_NONE (cnone, csome) ->
-    op_IF_NONE stack cnone csome
+    op_IF_NONE env stack cnone csome
 
   | ITER c ->
-    op_ITER stack c
+    op_ITER env stack c
 
   | LAMBDA (dom, codom, c) ->
-    op_LAMBDA stack dom codom c
+    op_LAMBDA env stack dom codom c
 
   | LOOP c ->
-    op_LOOP stack c
+    op_LOOP env stack c
 
   | LOOP_LEFT c ->
-    op_LOOP_LEFT stack c
+    op_LOOP_LEFT env stack c
 
   (* Stack manipulation *)
   | DIG n ->
     op_DIG stack n
 
   | DIP (n, c) ->
-    op_DIP stack n c
+    op_DIP env stack n c
 
   | DROP n ->
     op_DROP stack n
@@ -1287,8 +1340,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | NOW ->
     op_NOW stack
 
-  | SELF _ ->
-    assert false
+  | SELF a ->
+    op_SELF env stack a
 
   | SELF_ADDRESS ->
     op_SELF_ADDRESS stack
@@ -1346,7 +1399,7 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
     op_LEFT stack tyr
 
   | MAP c  ->
-    op_MAP stack c
+    op_MAP env stack c
 
   | MEM ->
     op_MEM stack
@@ -1436,7 +1489,7 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
 
 (* -------------------------------------------------------------------- *)
-and tycheck (stack : stack) (code : M.code) : stack option =
-  let stk = tycheck_r stack code.node in
+and tycheck (env : env) (stack : stack) (code : M.code) : stack option =
+  let stk = tycheck_r env stack code.node in
   let stk = Stack.merge stk !(code.type_) in
   code.type_ := stk; stk
