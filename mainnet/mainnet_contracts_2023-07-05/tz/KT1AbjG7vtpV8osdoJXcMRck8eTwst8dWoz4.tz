@@ -1,0 +1,3 @@
+{ parameter (pair string nat) ;
+  storage (list (pair string nat)) ;
+  code { { { DUP ; CAR ; DIP { CDR } } } ; CONS ; NIL operation ; PAIR } }

@@ -1,0 +1,46 @@
+{ parameter (or (address %change_manager) (string %set_merkle_hash)) ;
+  storage (pair (address %manager) (pair (string %merkle_hash) (address %spare))) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             { CDR ; CDR } ;
+             PACK ;
+             SENDER ;
+             PACK ;
+             COMPARE ;
+             EQ ;
+             IF {}
+                { PUSH string "Unauthorized account. Only spare can peform this action." ;
+                  FAILWITH } ;
+             SWAP ;
+             CDR ;
+             SWAP ;
+             PAIR }
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             PACK ;
+             SENDER ;
+             PACK ;
+             COMPARE ;
+             EQ ;
+             IF {}
+                { PUSH string "Unauthorized account. Only manager can peform this action." ;
+                  FAILWITH } ;
+             SWAP ;
+             DUP ;
+             CAR ;
+             SWAP ;
+             { CDR ; CDR } ;
+             DIG 2 ;
+             PAIR ;
+             SWAP ;
+             PAIR } ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,89 @@
+{ parameter
+    (or (or (unit %default) (unit %reRoll))
+        (or (key_hash %updateDelegator) (mutez %withdraw))) ;
+  storage (pair (address %guildContract) (address %owner)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP ;
+                 PUSH mutez 0 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 GT ;
+                 IF {} { PUSH int 400 ; FAILWITH } ;
+                 NIL operation }
+               { DROP ;
+                 PUSH mutez 0 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 EQ ;
+                 IF {} { PUSH int 403 ; FAILWITH } ;
+                 DUP ;
+                 CDR ;
+                 SOURCE ;
+                 COMPARE ;
+                 EQ ;
+                 IF {} { PUSH int 401 ; FAILWITH } ;
+                 DUP ;
+                 CAR ;
+                 CONTRACT %reRoll mutez ;
+                 NIL operation ;
+                 SWAP ;
+                 IF_NONE { PUSH int 45 ; FAILWITH } {} ;
+                 AMOUNT ;
+                 BALANCE ;
+                 TRANSFER_TOKENS ;
+                 CONS } }
+           { IF_LEFT
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF {} { PUSH int 401 ; FAILWITH } ;
+                 SOME ;
+                 SET_DELEGATE ;
+                 NIL operation ;
+                 SWAP ;
+                 CONS }
+               { PUSH mutez 0 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 EQ ;
+                 IF {} { PUSH int 403 ; FAILWITH } ;
+                 DUP ;
+                 PUSH mutez 0 ;
+                 COMPARE ;
+                 LT ;
+                 IF {} { PUSH int 422 ; FAILWITH } ;
+                 SOURCE ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 COMPARE ;
+                 EQ ;
+                 IF {} { PUSH int 401 ; FAILWITH } ;
+                 DUP ;
+                 BALANCE ;
+                 SWAP ;
+                 COMPARE ;
+                 LE ;
+                 IF {} { PUSH int 403 ; FAILWITH } ;
+                 NIL operation ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CONTRACT %withdraw mutez ;
+                 IF_NONE { PUSH int 37 ; FAILWITH } {} ;
+                 DIG 2 ;
+                 DUP ;
+                 TRANSFER_TOKENS ;
+                 CONS } } ;
+         PAIR } }

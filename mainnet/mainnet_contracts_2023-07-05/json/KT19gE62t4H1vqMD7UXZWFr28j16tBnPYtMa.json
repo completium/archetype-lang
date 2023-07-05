@@ -1,0 +1,69 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "list",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "nat",
+                  "annots": [
+                    "%balance"
+                  ]
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "address",
+                      "annots": [
+                        "%owner"
+                      ]
+                    },
+                    {
+                      "prim": "nat",
+                      "annots": [
+                        "%token_id"
+                      ]
+                    }
+                  ],
+                  "annots": [
+                    "%request"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "unit"
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "CAR"
+          },
+          {
+            "prim": "FAILWITH"
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "prim": "Unit"
+  }
+}

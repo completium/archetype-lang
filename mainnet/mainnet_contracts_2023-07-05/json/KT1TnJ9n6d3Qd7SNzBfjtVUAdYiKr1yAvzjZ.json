@@ -1,0 +1,2768 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "or",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "nat",
+                      "annots": [
+                        "%min_increase"
+                      ]
+                    },
+                    {
+                      "prim": "mutez",
+                      "annots": [
+                        "%reserve_price"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "int",
+                      "annots": [
+                        "%round_time"
+                      ]
+                    },
+                    {
+                      "prim": "nat",
+                      "annots": [
+                        "%token_id"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "annots": [
+                "%create_auction"
+              ]
+            },
+            {
+              "prim": "or",
+              "args": [
+                {
+                  "prim": "address",
+                  "annots": [
+                    "%set_administrator"
+                  ]
+                },
+                {
+                  "prim": "address",
+                  "annots": [
+                    "%set_dex_contract"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "pair",
+          "args": [
+            {
+              "prim": "address",
+              "annots": [
+                "%administrator"
+              ]
+            },
+            {
+              "prim": "address",
+              "annots": [
+                "%nft_dex_contract"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "DUP"
+          },
+          {
+            "prim": "CDR"
+          },
+          {
+            "prim": "SWAP"
+          },
+          {
+            "prim": "CAR"
+          },
+          {
+            "prim": "IF_LEFT",
+            "args": [
+              [
+                {
+                  "prim": "SOURCE"
+                },
+                {
+                  "prim": "SENDER"
+                },
+                {
+                  "prim": "COMPARE"
+                },
+                {
+                  "prim": "EQ"
+                },
+                {
+                  "prim": "IF",
+                  "args": [
+                    [],
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "string"
+                          },
+                          {
+                            "string": "WrongCondition: sp.sender == sp.source"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "PUSH",
+                  "args": [
+                    {
+                      "prim": "bool"
+                    },
+                    {
+                      "prim": "True"
+                    }
+                  ]
+                },
+                {
+                  "prim": "NOW"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%start_time",
+                    "%started"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%round_time"
+                  ]
+                },
+                {
+                  "prim": "SENDER"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "3"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%min_increase",
+                    "%owner"
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "3"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%master_auction_contract"
+                  ]
+                },
+                {
+                  "prim": "PAIR"
+                },
+                {
+                  "prim": "SELF"
+                },
+                {
+                  "prim": "ADDRESS"
+                },
+                {
+                  "prim": "PUSH",
+                  "args": [
+                    {
+                      "prim": "bool"
+                    },
+                    {
+                      "prim": "False"
+                    }
+                  ]
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%first_bid_placed",
+                    "%highest_bidder"
+                  ]
+                },
+                {
+                  "prim": "PUSH",
+                  "args": [
+                    {
+                      "prim": "bool"
+                    },
+                    {
+                      "prim": "False"
+                    }
+                  ]
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%ended"
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%asset_id",
+                    "%current_bid"
+                  ]
+                },
+                {
+                  "prim": "PAIR"
+                },
+                {
+                  "prim": "PAIR"
+                },
+                {
+                  "prim": "PUSH",
+                  "args": [
+                    {
+                      "prim": "mutez"
+                    },
+                    {
+                      "int": "0"
+                    }
+                  ]
+                },
+                {
+                  "prim": "NONE",
+                  "args": [
+                    {
+                      "prim": "key_hash"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CREATE_CONTRACT",
+                  "args": [
+                    [
+                      {
+                        "prim": "parameter",
+                        "args": [
+                          {
+                            "prim": "or",
+                            "args": [
+                              {
+                                "prim": "unit",
+                                "annots": [
+                                  "%bid"
+                                ]
+                              },
+                              {
+                                "prim": "or",
+                                "args": [
+                                  {
+                                    "prim": "unit",
+                                    "annots": [
+                                      "%cancel_auction"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "unit",
+                                    "annots": [
+                                      "%resolve_auction"
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "storage",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "nat",
+                                        "annots": [
+                                          "%asset_id"
+                                        ]
+                                      },
+                                      {
+                                        "prim": "mutez",
+                                        "annots": [
+                                          "%current_bid"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "bool",
+                                        "annots": [
+                                          "%ended"
+                                        ]
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "bool",
+                                            "annots": [
+                                              "%first_bid_placed"
+                                            ]
+                                          },
+                                          {
+                                            "prim": "address",
+                                            "annots": [
+                                              "%highest_bidder"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "address",
+                                        "annots": [
+                                          "%master_auction_contract"
+                                        ]
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "nat",
+                                            "annots": [
+                                              "%min_increase"
+                                            ]
+                                          },
+                                          {
+                                            "prim": "address",
+                                            "annots": [
+                                              "%owner"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "int",
+                                        "annots": [
+                                          "%round_time"
+                                        ]
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "timestamp",
+                                            "annots": [
+                                              "%start_time"
+                                            ]
+                                          },
+                                          {
+                                            "prim": "bool",
+                                            "annots": [
+                                              "%started"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "code",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "IF_LEFT",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "WrongCondition: self.data.started"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "WrongCondition: ~ self.data.ended"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ],
+                                      []
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SOURCE"
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "EQ"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "bidder matches NFT owner"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ],
+                                      []
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SOURCE"
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "EQ"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "bidder matches highest bidder of current round"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ],
+                                      []
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "mutez"
+                                      },
+                                      {
+                                        "int": "1"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "MUL"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "AMOUNT"
+                                  },
+                                  {
+                                    "prim": "SUB"
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "GE"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "WrongCondition: (sp.amount - self.data.current_bid) >= sp.mutez(self.data.min_increase)"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SENDER"
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "EQ"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "WrongCondition: sp.sender == self.data.master_auction_contract"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "ADD"
+                                  },
+                                  {
+                                    "prim": "NOW"
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "LT"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "auction finished"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CONTRACT",
+                                          "args": [
+                                            {
+                                              "prim": "unit"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "IF_NONE",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "int"
+                                                  },
+                                                  {
+                                                    "int": "1098"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "NIL",
+                                          "args": [
+                                            {
+                                              "prim": "operation"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "2"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "3"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "UNIT"
+                                        },
+                                        {
+                                          "prim": "TRANSFER_TOKENS"
+                                        },
+                                        {
+                                          "prim": "CONS"
+                                        }
+                                      ],
+                                      [
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "bool"
+                                            },
+                                            {
+                                              "prim": "True"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "NIL",
+                                          "args": [
+                                            {
+                                              "prim": "operation"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "AMOUNT"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SOURCE"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "IF_LEFT",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DROP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: self.data.started"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: ~ self.data.ended"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SENDER"
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "EQ"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: sp.sender == self.data.master_auction_contract"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SOURCE"
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "EQ"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "only nft owner can cancel auction"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "SWAP"
+                                              },
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "DUG",
+                                                "args": [
+                                                  {
+                                                    "int": "2"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "ADD"
+                                              },
+                                              {
+                                                "prim": "NOW"
+                                              },
+                                              {
+                                                "prim": "COMPARE"
+                                              },
+                                              {
+                                                "prim": "LT"
+                                              },
+                                              {
+                                                "prim": "IF",
+                                                "args": [
+                                                  [],
+                                                  [
+                                                    {
+                                                      "prim": "PUSH",
+                                                      "args": [
+                                                        {
+                                                          "prim": "string"
+                                                        },
+                                                        {
+                                                          "string": "round has finished with bids placed"
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "prim": "FAILWITH"
+                                                    }
+                                                  ]
+                                                ]
+                                              },
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CONTRACT",
+                                                "args": [
+                                                  {
+                                                    "prim": "unit"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "IF_NONE",
+                                                "args": [
+                                                  [
+                                                    {
+                                                      "prim": "PUSH",
+                                                      "args": [
+                                                        {
+                                                          "prim": "int"
+                                                        },
+                                                        {
+                                                          "int": "1157"
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "prim": "FAILWITH"
+                                                    }
+                                                  ],
+                                                  []
+                                                ]
+                                              },
+                                              {
+                                                "prim": "NIL",
+                                                "args": [
+                                                  {
+                                                    "prim": "operation"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "SWAP"
+                                              },
+                                              {
+                                                "prim": "DIG",
+                                                "args": [
+                                                  {
+                                                    "int": "2"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "DUG",
+                                                "args": [
+                                                  {
+                                                    "int": "3"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "UNIT"
+                                              },
+                                              {
+                                                "prim": "TRANSFER_TOKENS"
+                                              },
+                                              {
+                                                "prim": "CONS"
+                                              }
+                                            ],
+                                            [
+                                              {
+                                                "prim": "NIL",
+                                                "args": [
+                                                  {
+                                                    "prim": "operation"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "mutez"
+                                            },
+                                            {
+                                              "int": "0"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SENDER"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "bool"
+                                            },
+                                            {
+                                              "prim": "True"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        }
+                                      ],
+                                      [
+                                        {
+                                          "prim": "DROP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: self.data.started"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: self.data.first_bid_placed"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: ~ self.data.ended"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SENDER"
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "EQ"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "WrongCondition: sp.sender == self.data.master_auction_contract"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SOURCE"
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "EQ"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "bool"
+                                                  },
+                                                  {
+                                                    "prim": "True"
+                                                  }
+                                                ]
+                                              }
+                                            ],
+                                            [
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "SOURCE"
+                                              },
+                                              {
+                                                "prim": "COMPARE"
+                                              },
+                                              {
+                                                "prim": "EQ"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [],
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "only nft owner or highest_bidder can resolve auction"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SOURCE"
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "EQ"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "SWAP"
+                                              },
+                                              {
+                                                "prim": "DUP"
+                                              },
+                                              {
+                                                "prim": "DUG",
+                                                "args": [
+                                                  {
+                                                    "int": "2"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CDR"
+                                              },
+                                              {
+                                                "prim": "CAR"
+                                              },
+                                              {
+                                                "prim": "ADD"
+                                              },
+                                              {
+                                                "prim": "NOW"
+                                              },
+                                              {
+                                                "prim": "COMPARE"
+                                              },
+                                              {
+                                                "prim": "GT"
+                                              },
+                                              {
+                                                "prim": "IF",
+                                                "args": [
+                                                  [],
+                                                  [
+                                                    {
+                                                      "prim": "PUSH",
+                                                      "args": [
+                                                        {
+                                                          "prim": "string"
+                                                        },
+                                                        {
+                                                          "string": "highest bidder can only resolve after round finishes"
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "prim": "FAILWITH"
+                                                    }
+                                                  ]
+                                                ]
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "4"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CONTRACT",
+                                          "args": [
+                                            {
+                                              "prim": "pair",
+                                              "args": [
+                                                {
+                                                  "prim": "address",
+                                                  "annots": [
+                                                    "%highest_bidder"
+                                                  ]
+                                                },
+                                                {
+                                                  "prim": "nat",
+                                                  "annots": [
+                                                    "%token_id"
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ],
+                                          "annots": [
+                                            "%end_auction"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "IF_NONE",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "int"
+                                                  },
+                                                  {
+                                                    "int": "1133"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "NIL",
+                                          "args": [
+                                            {
+                                              "prim": "operation"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "2"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "5"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%highest_bidder",
+                                            "%token_id"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "TRANSFER_TOKENS"
+                                        },
+                                        {
+                                          "prim": "CONS"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "bool"
+                                            },
+                                            {
+                                              "prim": "True"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "PAIR"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "NIL",
+                  "args": [
+                    {
+                      "prim": "operation"
+                    }
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CONS"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "3"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CONTRACT",
+                  "args": [
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "address",
+                          "annots": [
+                            "%auction_contract"
+                          ]
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "mutez",
+                              "annots": [
+                                "%reserve_price"
+                              ]
+                            },
+                            {
+                              "prim": "nat",
+                              "annots": [
+                                "%token_id"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "annots": [
+                    "%register_auction"
+                  ]
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "int"
+                          },
+                          {
+                            "int": "995"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    []
+                  ]
+                },
+                {
+                  "prim": "AMOUNT"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%reserve_price",
+                    "%token_id"
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "SOME"
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "int"
+                          },
+                          {
+                            "int": "999"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    []
+                  ]
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%auction_contract"
+                  ]
+                },
+                {
+                  "prim": "TRANSFER_TOKENS"
+                },
+                {
+                  "prim": "CONS"
+                }
+              ],
+              [
+                {
+                  "prim": "IF_LEFT",
+                  "args": [
+                    [
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "SENDER"
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "EQ"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [],
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "WrongCondition: sp.sender == self.data.administrator"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "SENDER"
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "EQ"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [],
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "WrongCondition: sp.sender == self.data.administrator"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "NIL",
+                  "args": [
+                    {
+                      "prim": "operation"
+                    }
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "NIL",
+            "args": [
+              {
+                "prim": "operation"
+              }
+            ]
+          },
+          {
+            "prim": "SWAP"
+          },
+          {
+            "prim": "ITER",
+            "args": [
+              [
+                {
+                  "prim": "CONS"
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "PAIR"
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "prim": "Pair",
+    "args": [
+      {
+        "string": "tz1SotrT1MEeC8bNeGzgBLUb3ryfASsFsdun"
+      },
+      {
+        "string": "KT1DVkpd3UKJMe496e3fcB2ZZDjr1wvWPEcc"
+      }
+    ]
+  }
+}

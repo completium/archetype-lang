@@ -1,0 +1,8 @@
+{ parameter nat ;
+  storage nat ;
+  code { DUP ;
+         DIP { CDR @storage_slash_1 } ;
+         DIP { DROP } ;
+         CAR @n_slash_2 ;
+         NIL operation ;
+         PAIR } }

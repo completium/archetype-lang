@@ -1,0 +1,15 @@
+{ parameter (or (nat %divide) (or (unit %double) (nat %replace))) ;
+  storage nat ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DUP ;
+             PUSH nat 5 ;
+             COMPARE ;
+             LT ;
+             IF {} { PUSH string "WrongCondition: params.divisor > 5" ; FAILWITH } ;
+             SWAP ;
+             EDIV ;
+             IF_NONE { PUSH int 20 ; FAILWITH } { CAR } }
+           { IF_LEFT { DROP ; PUSH nat 2 ; MUL } { SWAP ; DROP } } ;
+         NIL operation ;
+         PAIR } }

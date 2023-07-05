@@ -1,0 +1,1 @@
+{ parameter nat ; storage nat ; code { CDR ; NIL operation ; PAIR } }

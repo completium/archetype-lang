@@ -1,0 +1,510 @@
+{ parameter
+    (or (or (pair %addApproval
+               (pair (address %ap_from) (address %ap_to))
+               (pair (timestamp %expires) (nat %tokens)))
+            (pair %burn (nat %amount) (address %tr_to)))
+        (or (pair %mint (nat %amount) (address %tr_to))
+            (pair %transfer (pair (nat %amount) (address %tr_from)) (address %tr_to)))) ;
+  storage
+    (pair (pair (pair (pair (bool %agreement_procedure)
+                            (list %approvals
+                               (pair (pair (address %ap_from) (address %ap_to))
+                                     (pair (timestamp %expires) (nat %tokens)))))
+                      (pair (map %balances address nat) (nat %decimals)))
+                (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+          (nat %tokens)) ;
+  code { DUP ;
+         LAMBDA
+           address
+           (lambda address (lambda address operation))
+           { DUP ;
+             PUSH (lambda (pair address address) (lambda address operation))
+                  { {} ;
+                    { { DUP ; CAR ; SWAP ; CDR } ; DIP { {} } } ;
+                    {} ;
+                    { { DIP { DUP } ; DUP ; DIP { PAIR } ; SWAP } ;
+                      PUSH (lambda (pair (pair address address) address) operation)
+                           { {} ;
+                             { { DUP ; CAR ; SWAP ; CDR } ;
+                               DIP { { { DUP ; CDR ; SWAP ; CAR } ; DIP { {} } } } } ;
+                             {} ;
+                             { { { { DUP ; DIP { {} } } ; PUSH string "%checkTransfer" } ;
+                                 { DROP ;
+                                   CONTRACT %checkTransfer (pair (address %0) (address %1)) ;
+                                   IF_NONE
+                                     { { PUSH string "bad address for get_entrypoint (%checkTransfer)" ; FAILWITH } }
+                                     { {} } } } ;
+                               { { { { { DIP 3 { DUP } ; DIG 3 } ;
+                                       DIP { { { DIP 2 { DUP } ; DIG 2 } ; DIP { {} } } } } ;
+                                     PAIR } ;
+                                   DIP { { { DUP ; DIP { {} } } ; PUSH mutez 0 } } } ;
+                                 TRANSFER_TOKENS } ;
+                               {} ;
+                               DIP { DROP } } ;
+                             {} ;
+                             DIP { DROP } ;
+                             { DIP { DROP 2 } } } ;
+                      SWAP ;
+                      APPLY } ;
+                    {} ;
+                    DIP { DROP } ;
+                    { DIP { DROP } } } ;
+             SWAP ;
+             APPLY ;
+             DIP { DROP } } ;
+         SWAP ;
+         DUP ;
+         CDR ;
+         DIP { DUP } ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DUP ;
+             IF_LEFT
+               { DIP 2 { DUP } ;
+                 DIG 2 ;
+                 DUP ;
+                 CAR ;
+                 CAR ;
+                 CAR ;
+                 CAR ;
+                 DIP { DIP { DUP } ; SWAP ; DIP { DUP ; CAR ; CAR ; CAR ; CDR } ; CONS } ;
+                 PAIR ;
+                 DIP { DUP ;
+                       CAR ;
+                       CAR ;
+                       CDR ;
+                       CAR ;
+                       DIP { DUP ; CAR ; CAR ; CDR ; CDR } ;
+                       PAIR } ;
+                 PAIR ;
+                 DIP { DUP ;
+                       CAR ;
+                       CDR ;
+                       CAR ;
+                       CAR ;
+                       DIP { DUP ; CAR ; CDR ; CAR ; CDR } ;
+                       PAIR ;
+                       DIP { DUP ;
+                             CAR ;
+                             CDR ;
+                             CDR ;
+                             CAR ;
+                             DIP { DUP ; CAR ; CDR ; CDR ; CDR } ;
+                             PAIR } ;
+                       PAIR } ;
+                 PAIR ;
+                 DIP { DUP ; CDR } ;
+                 PAIR ;
+                 NIL operation ;
+                 PAIR ;
+                 DIP { DROP 2 } }
+               { DIP 2 { DUP } ;
+                 DIG 2 ;
+                 DIP { DUP ;
+                       DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                             SWAP } ;
+                       DUP ;
+                       DIP { PAIR } ;
+                       SWAP ;
+                       LAMBDA
+                         (pair (pair (pair (nat %amount) (address %tr_to))
+                                     (lambda address (lambda address (lambda address operation))))
+                               (pair (pair (pair (pair (bool %agreement_procedure)
+                                                       (list %approvals
+                                                          (pair (pair (address %ap_from) (address %ap_to))
+                                                                (pair (timestamp %expires) (nat %tokens)))))
+                                                 (pair (map %balances address nat) (nat %decimals)))
+                                           (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                     (nat %tokens)))
+                         (pair (list %0 operation)
+                               (pair %1
+                                  (pair (pair (pair (bool %agreement_procedure)
+                                                    (list %approvals
+                                                       (pair (pair (address %ap_from) (address %ap_to))
+                                                             (pair (timestamp %expires) (nat %tokens)))))
+                                              (pair (map %balances address nat) (nat %decimals)))
+                                        (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                  (nat %tokens)))
+                         { DUP ;
+                           CAR ;
+                           SWAP ;
+                           CDR ;
+                           DIP { DUP ; CDR ; SWAP ; CAR } ;
+                           DUP ;
+                           DUP ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           SENDER ;
+                           COMPARE ;
+                           NEQ ;
+                           DIP { DUP ; CAR ; CDR ; CDR ; CAR ; SENDER ; COMPARE ; NEQ } ;
+                           AND ;
+                           IF { PUSH string "Only owner or issuer can call this method." ; FAILWITH }
+                              { UNIT } ;
+                           DIP { DUP } ;
+                           SWAP ;
+                           DIP { DROP 2 ; DUP } ;
+                           SWAP ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           DIP { DIP 2 { DUP } ;
+                                 DIG 2 ;
+                                 CDR ;
+                                 DIP { DIP 2 { DUP } ;
+                                       DIG 2 ;
+                                       CDR ;
+                                       DIP { DIP 3 { DUP } ; DIG 3 } ;
+                                       EXEC } ;
+                                 EXEC } ;
+                           EXEC ;
+                           DIP 3 { DUP } ;
+                           DIG 3 ;
+                           CDR ;
+                           DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CDR ; CAR } ;
+                           GET ;
+                           IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                           DIP 4 { DUP } ;
+                           DIG 4 ;
+                           CAR ;
+                           DIP { DUP } ;
+                           COMPARE ;
+                           GT ;
+                           IF { PUSH string "not enough tokens to burn" ; FAILWITH }
+                              { DUP ; DIP { DIP 4 { DUP } ; DIG 4 ; CAR } ; SUB ; ABS } ;
+                           DIP 5 { DUP } ;
+                           DIG 5 ;
+                           CDR ;
+                           DIP { DUP ; SOME ; DIP { DIP 4 { DUP } ; DIG 4 ; CAR ; CAR ; CDR ; CAR } } ;
+                           UPDATE ;
+                           DIP { DROP 2 ; DUP } ;
+                           SWAP ;
+                           NIL operation ;
+                           SWAP ;
+                           CONS ;
+                           DIP { DIP 3 { DUP } ;
+                                 DIG 3 ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CAR ; CDR } ;
+                                 PAIR ;
+                                 DIP { DUP ; DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CDR ; CDR } ; PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP 3 { DUP } ;
+                                       DIG 3 ;
+                                       CAR ;
+                                       CDR ;
+                                       CAR ;
+                                       CAR ;
+                                       DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CAR ; CDR } ;
+                                       PAIR ;
+                                       DIP { DIP 3 { DUP } ;
+                                             DIG 3 ;
+                                             CAR ;
+                                             CDR ;
+                                             CDR ;
+                                             CAR ;
+                                             DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CDR ; CDR } ;
+                                             PAIR } ;
+                                       PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP 3 { DUP } ; DIG 3 ; CDR } ;
+                                 PAIR } ;
+                           PAIR ;
+                           DIP { DROP 6 } } ;
+                       SWAP ;
+                       APPLY ;
+                       DIP { DROP } } ;
+                 EXEC ;
+                 DIP { DROP } } ;
+             DIP { DROP } }
+           { DUP ;
+             IF_LEFT
+               { DIP 2 { DUP } ;
+                 DIG 2 ;
+                 DIP { DUP ;
+                       DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                             SWAP } ;
+                       DUP ;
+                       DIP { PAIR } ;
+                       SWAP ;
+                       LAMBDA
+                         (pair (pair (pair (nat %amount) (address %tr_to))
+                                     (lambda address (lambda address (lambda address operation))))
+                               (pair (pair (pair (pair (bool %agreement_procedure)
+                                                       (list %approvals
+                                                          (pair (pair (address %ap_from) (address %ap_to))
+                                                                (pair (timestamp %expires) (nat %tokens)))))
+                                                 (pair (map %balances address nat) (nat %decimals)))
+                                           (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                     (nat %tokens)))
+                         (pair (list %0 operation)
+                               (pair %1
+                                  (pair (pair (pair (bool %agreement_procedure)
+                                                    (list %approvals
+                                                       (pair (pair (address %ap_from) (address %ap_to))
+                                                             (pair (timestamp %expires) (nat %tokens)))))
+                                              (pair (map %balances address nat) (nat %decimals)))
+                                        (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                  (nat %tokens)))
+                         { DUP ;
+                           CAR ;
+                           SWAP ;
+                           CDR ;
+                           DIP { DUP ; CDR ; SWAP ; CAR } ;
+                           DUP ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           DIP { DIP { DUP } ;
+                                 SWAP ;
+                                 CDR ;
+                                 DIP { DIP { DUP } ; SWAP ; CDR ; DIP { DIP 2 { DUP } ; DIG 2 } ; EXEC } ;
+                                 EXEC } ;
+                           EXEC ;
+                           DIP 2 { DUP } ;
+                           DIG 2 ;
+                           CAR ;
+                           DIP { DIP { DUP } ; SWAP ; CDR } ;
+                           COMPARE ;
+                           GT ;
+                           IF { PUSH string "not enough tokens to mint" ; FAILWITH }
+                              { DIP { DUP } ;
+                                SWAP ;
+                                CDR ;
+                                DIP { DIP 2 { DUP } ; DIG 2 ; CAR } ;
+                                SUB ;
+                                ABS } ;
+                           DIP 3 { DUP } ;
+                           DIG 3 ;
+                           CDR ;
+                           DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CDR ; CAR } ;
+                           GET ;
+                           IF_NONE
+                             { DIP 3 { DUP } ;
+                               DIG 3 ;
+                               CDR ;
+                               DIP { DIP 3 { DUP } ;
+                                     DIG 3 ;
+                                     CAR ;
+                                     SOME ;
+                                     DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CDR ; CAR } } ;
+                               UPDATE }
+                             { DIP 4 { DUP } ;
+                               DIG 4 ;
+                               CDR ;
+                               DIP { DUP ;
+                                     DIP { DIP 4 { DUP } ; DIG 4 ; CAR } ;
+                                     ADD ;
+                                     SOME ;
+                                     DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CDR ; CAR } } ;
+                               UPDATE ;
+                               DIP { DROP } } ;
+                           DIP 2 { DUP } ;
+                           DIG 2 ;
+                           NIL operation ;
+                           SWAP ;
+                           CONS ;
+                           DIP { DIP 3 { DUP } ;
+                                 DIG 3 ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CAR ; CDR } ;
+                                 PAIR ;
+                                 DIP { DUP ; DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CDR ; CDR } ; PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP 3 { DUP } ;
+                                       DIG 3 ;
+                                       CAR ;
+                                       CDR ;
+                                       CAR ;
+                                       CAR ;
+                                       DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CAR ; CDR } ;
+                                       PAIR ;
+                                       DIP { DIP 3 { DUP } ;
+                                             DIG 3 ;
+                                             CAR ;
+                                             CDR ;
+                                             CDR ;
+                                             CAR ;
+                                             DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CDR ; CDR } ;
+                                             PAIR } ;
+                                       PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP { DUP } ; SWAP } ;
+                                 PAIR } ;
+                           PAIR ;
+                           DIP { DROP 6 } } ;
+                       SWAP ;
+                       APPLY ;
+                       DIP { DROP } } ;
+                 EXEC ;
+                 DIP { DROP } }
+               { DIP 2 { DUP } ;
+                 DIG 2 ;
+                 DIP { DUP ;
+                       DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                             SWAP } ;
+                       DUP ;
+                       DIP { PAIR } ;
+                       SWAP ;
+                       LAMBDA
+                         (pair (pair (pair (pair (nat %amount) (address %tr_from)) (address %tr_to))
+                                     (lambda address (lambda address (lambda address operation))))
+                               (pair (pair (pair (pair (bool %agreement_procedure)
+                                                       (list %approvals
+                                                          (pair (pair (address %ap_from) (address %ap_to))
+                                                                (pair (timestamp %expires) (nat %tokens)))))
+                                                 (pair (map %balances address nat) (nat %decimals)))
+                                           (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                     (nat %tokens)))
+                         (pair (list %0 operation)
+                               (pair %1
+                                  (pair (pair (pair (bool %agreement_procedure)
+                                                    (list %approvals
+                                                       (pair (pair (address %ap_from) (address %ap_to))
+                                                             (pair (timestamp %expires) (nat %tokens)))))
+                                              (pair (map %balances address nat) (nat %decimals)))
+                                        (pair (pair (address %issuer) (string %name)) (pair (address %owner) (string %symbol))))
+                                  (nat %tokens)))
+                         { DUP ;
+                           CAR ;
+                           SWAP ;
+                           CDR ;
+                           DIP { DUP ; CDR ; SWAP ; CAR } ;
+                           DUP ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           DIP { DIP { DUP } ;
+                                 SWAP ;
+                                 CDR ;
+                                 DIP { DIP { DUP } ;
+                                       SWAP ;
+                                       CAR ;
+                                       CDR ;
+                                       DIP { DIP 2 { DUP } ; DIG 2 } ;
+                                       EXEC } ;
+                                 EXEC } ;
+                           EXEC ;
+                           DIP { DUP } ;
+                           SWAP ;
+                           CAR ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           DIP { DIP 2 { DUP } ;
+                                 DIG 2 ;
+                                 DUP ;
+                                 PUSH (lambda
+                                         (pair (pair (pair (nat %amount) (address %tr_from)) (address %tr_to)) (map address nat))
+                                         (map address nat))
+                                      { {} ;
+                                        { { DUP ; CAR ; SWAP ; CDR } ; DIP { {} } } ;
+                                        {} ;
+                                        { { { { { { { { DIP { DUP } ; SWAP } ; DIP { {} } } ; CAR } ;
+                                                  DIP { {} } } ;
+                                                CDR } ;
+                                              DIP { { DUP ; DIP { {} } } } } ;
+                                            { GET ; IF_NONE { { PUSH string "MAP FIND" ; FAILWITH } } { {} } } } ;
+                                          { { { DUP ;
+                                                DIP { { { { { { { DIP 2 { DUP } ; DIG 2 } ; DIP { {} } } ; CAR } ;
+                                                            DIP { {} } } ;
+                                                          CAR } ;
+                                                        DIP { {} } } } } ;
+                                              { COMPARE ; LT } } ;
+                                            IF { { { { {} ; PUSH string "emmiter balance in not sufficient." } ; FAILWITH } } }
+                                               { { { { { { DUP ;
+                                                           DIP { { { { { { { DIP 2 { DUP } ; DIG 2 } ; DIP { {} } } ; CAR } ;
+                                                                       DIP { {} } } ;
+                                                                     CAR } ;
+                                                                   DIP { {} } } } } ;
+                                                         SUB } ;
+                                                       DIP { {} } } ;
+                                                     ABS } ;
+                                                   { { { { { { { { { DIP 3 { DUP } ; DIG 3 } ; DIP { {} } } ; CDR } ;
+                                                               DIP { { { DIP 2 { DUP } ; DIG 2 } ; DIP { {} } } } } ;
+                                                             GET } ;
+                                                           IF_NONE { PUSH nat 0 } { { DUP ; DIP { DROP } } } } ;
+                                                         DIP { { { { { { { DIP 3 { DUP } ; DIG 3 } ; DIP { {} } } ; CAR } ;
+                                                                     DIP { {} } } ;
+                                                                   CAR } ;
+                                                                 DIP { {} } } } } ;
+                                                       ADD } ;
+                                                     { { { { { DIP 4 { DUP } ; DIG 4 } ; DIP { {} } } ; CDR } ;
+                                                         DIP { { { { DUP ; DIP { {} } } ; SOME } ;
+                                                                 DIP { { { { { { { { { DIP 4 { DUP } ; DIG 4 } ; DIP { {} } } ; CAR } ;
+                                                                                 DIP { {} } } ;
+                                                                               CDR } ;
+                                                                             DIP { { { { { DIP { DUP } ; SWAP } ; DIP { {} } } ; SOME } ;
+                                                                                     DIP { { { DIP 3 { DUP } ; DIG 3 } ; DIP { {} } } } } } } ;
+                                                                           UPDATE } ;
+                                                                         DIP { {} } } } } } } ;
+                                                       UPDATE } ;
+                                                     {} ;
+                                                     DIP { DROP } } ;
+                                                   {} ;
+                                                   DIP { DROP } } } } ;
+                                          {} ;
+                                          DIP { DROP } } ;
+                                        {} ;
+                                        DIP { DROP } ;
+                                        { DIP { DROP } } } ;
+                                 SWAP ;
+                                 APPLY ;
+                                 DIP { DROP } } ;
+                           EXEC ;
+                           DIP { DUP } ;
+                           SWAP ;
+                           NIL operation ;
+                           SWAP ;
+                           CONS ;
+                           DIP { DIP 2 { DUP } ;
+                                 DIG 2 ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 CAR ;
+                                 DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CAR ; CDR } ;
+                                 PAIR ;
+                                 DIP { DUP ; DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CDR ; CDR } ; PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP 2 { DUP } ;
+                                       DIG 2 ;
+                                       CAR ;
+                                       CDR ;
+                                       CAR ;
+                                       CAR ;
+                                       DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CDR ; CAR ; CDR } ;
+                                       PAIR ;
+                                       DIP { DIP 2 { DUP } ;
+                                             DIG 2 ;
+                                             CAR ;
+                                             CDR ;
+                                             CDR ;
+                                             CAR ;
+                                             DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CDR ; CDR ; CDR } ;
+                                             PAIR } ;
+                                       PAIR } ;
+                                 PAIR ;
+                                 DIP { DIP 2 { DUP } ; DIG 2 ; CDR } ;
+                                 PAIR } ;
+                           PAIR ;
+                           DIP { DROP 5 } } ;
+                       SWAP ;
+                       APPLY ;
+                       DIP { DROP } } ;
+                 EXEC ;
+                 DIP { DROP } } ;
+             DIP { DROP } } ;
+         DIP { DROP 4 } } }

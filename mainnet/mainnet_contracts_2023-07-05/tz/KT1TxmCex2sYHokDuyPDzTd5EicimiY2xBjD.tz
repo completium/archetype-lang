@@ -1,0 +1,115 @@
+{ parameter
+    (or (list %setRules address)
+        (pair %validateRules
+           (pair (pair (pair %accounts
+                          (pair (pair (pair (option %accreditation nat) (string %domicile))
+                                      (pair (bool %frozen) (address %parent)))
+                                (nat %role))
+                          (pair (pair (pair (option %accreditation nat) (string %domicile))
+                                      (pair (bool %frozen) (address %parent)))
+                                (nat %role)))
+                       (pair %addresses address address))
+                 (pair (pair %balances nat nat) (bool %issuance)))
+           (pair (address %sender) (pair %values nat nat)))) ;
+  storage (pair (pair (address %admin) (address %registry)) (list %rules address)) ;
+  code { DUP ;
+         CDR ;
+         DIG 1 ;
+         DUP ;
+         DUG 2 ;
+         CAR ;
+         IF_LEFT
+           { DIG 1 ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CAR ;
+             SOURCE ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "NotAllowed" ; FAILWITH }
+                { DIG 1 ;
+                  DUP ;
+                  DUG 2 ;
+                  DIG 1 ;
+                  DUP ;
+                  DUG 2 ;
+                  SWAP ;
+                  CAR ;
+                  PAIR ;
+                  NIL operation ;
+                  PAIR } ;
+             DIP { DROP } }
+           { DIG 1 ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CDR ;
+             SENDER ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "InvalidSender" ; FAILWITH }
+                { DUP ;
+                  CAR ;
+                  CAR ;
+                  CAR ;
+                  CDR ;
+                  CAR ;
+                  CDR ;
+                  CAR ;
+                  DIG 1 ;
+                  DUP ;
+                  DUG 2 ;
+                  CAR ;
+                  CAR ;
+                  CAR ;
+                  CAR ;
+                  CAR ;
+                  CDR ;
+                  CAR ;
+                  OR ;
+                  IF { PUSH string "FrozenAccount" ; FAILWITH }
+                     { DUP ;
+                       CAR ;
+                       CDR ;
+                       CDR ;
+                       IF { DIG 1 ; DUP ; DUG 2 ; NIL operation ; PAIR }
+                          { DIG 1 ;
+                            DUP ;
+                            DUG 2 ;
+                            DIG 2 ;
+                            DUP ;
+                            DUG 3 ;
+                            CDR ;
+                            MAP { DIG 2 ;
+                                  DUP ;
+                                  DUG 3 ;
+                                  DIG 1 ;
+                                  DUP ;
+                                  DUG 2 ;
+                                  PAIR ;
+                                  DUP ;
+                                  CAR ;
+                                  CONTRACT
+                                    (pair (pair (pair (pair %accounts
+                                                         (pair (pair (pair (option %accreditation nat) (string %domicile))
+                                                                     (pair (bool %frozen) (address %parent)))
+                                                               (nat %role))
+                                                         (pair (pair (pair (option %accreditation nat) (string %domicile))
+                                                                     (pair (bool %frozen) (address %parent)))
+                                                               (nat %role)))
+                                                      (pair %addresses address address))
+                                                (pair (pair %balances nat nat) (bool %issuance)))
+                                          (pair (address %sender) (pair %values nat nat))) ;
+                                  IF_NONE { PUSH string "InvalidRule" ; FAILWITH } { DUP ; DIP { DROP } } ;
+                                  DUP ;
+                                  PUSH mutez 0 ;
+                                  DIG 3 ;
+                                  DUP ;
+                                  DUG 4 ;
+                                  CDR ;
+                                  TRANSFER_TOKENS ;
+                                  DIP { DROP 3 } } ;
+                            PAIR } } } ;
+             DIP { DROP } } ;
+         DIP { DROP 2 } } }

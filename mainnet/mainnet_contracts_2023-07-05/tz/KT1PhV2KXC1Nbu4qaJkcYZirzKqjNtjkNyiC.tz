@@ -1,0 +1,3 @@
+{ parameter (list (pair (pair %request (nat %token_id) (address %owner)) (nat %balance))) ;
+  storage unit ;
+  code { CDR ; NIL operation ; PAIR } }

@@ -1,0 +1,78 @@
+{ parameter
+    (pair :bakerPoolInfo
+       (string %name)
+       (pair (nat %revShare)
+             (pair (nat %bakerFee)
+                   (pair (string %site)
+                         (pair (string %location) (pair (mutez %minAmount) (timestamp %updated))))))) ;
+  storage
+    (map address
+         (pair :bakerPoolInfo
+            (string %name)
+            (pair (nat %revShare)
+                  (pair (nat %bakerFee)
+                        (pair (string %site)
+                              (pair (string %location) (pair (mutez %minAmount) (timestamp %updated)))))))) ;
+  code { DUP ;
+         DIP { CDR @storage_slash_1 } ;
+         CAR @update_slash_2 ;
+         PUSH mutez 10000 ;
+         AMOUNT @amount ;
+         COMPARE ;
+         NEQ ;
+         IF { PUSH string "An update or registration costs 0.01tz in order to prevent spam" ;
+              FAILWITH }
+            { PUSH nat 100 ;
+              { DIP { DUP @update } ; SWAP } ;
+              { CDR ; CAR %revShare } ;
+              COMPARE ;
+              GT ;
+              IF { PUSH string "Can't share more than 100%" ; FAILWITH }
+                 { PUSH nat 10000 ;
+                   { DIP { DUP @update } ; SWAP } ;
+                   { CDR ; CDR ; CAR %bakerFee } ;
+                   COMPARE ;
+                   GT ;
+                   IF { PUSH string "Can't take more than 100% as fee" ; FAILWITH }
+                      { { DIP { DUP @storage } ; SWAP } ;
+                        { DIP { DUP @update } ; SWAP } ;
+                        DUP ;
+                        CAR %name ;
+                        SWAP ;
+                        CDR ;
+                        DUP ;
+                        CAR %revShare ;
+                        SWAP ;
+                        CDR ;
+                        DUP ;
+                        CAR %bakerFee ;
+                        SWAP ;
+                        CDR ;
+                        DUP ;
+                        CAR %site ;
+                        SWAP ;
+                        CDR ;
+                        DUP ;
+                        CAR %location ;
+                        SWAP ;
+                        CDR ;
+                        CAR %minAmount ;
+                        NOW ;
+                        SWAP ;
+                        PAIR %minAmount %updated ;
+                        SWAP ;
+                        PAIR %location ;
+                        SWAP ;
+                        PAIR %site ;
+                        SWAP ;
+                        PAIR %bakerFee ;
+                        SWAP ;
+                        PAIR %revShare ;
+                        SWAP ;
+                        PAIR @update %name ;
+                        SENDER @addr ;
+                        DIP { SOME } ;
+                        UPDATE @storage ;
+                        NIL operation ;
+                        PAIR } } } ;
+         DIP { DROP ; DROP } } }

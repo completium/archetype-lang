@@ -1,0 +1,63 @@
+{ parameter unit ;
+  storage
+    (pair (pair (address %issuer) (pair (mutez %price_per_tk) (address %protocol)))
+          (pair (timestamp %timeframe) (pair (nat %tk_amount) (nat %tk_id)))) ;
+  code { CDR ;
+         DUP ;
+         { CAR ; CDR ; CAR } ;
+         AMOUNT ;
+         COMPARE ;
+         GE ;
+         IF {}
+            { PUSH string "WrongCondition: sp.amount >= self.data.price_per_tk" ;
+              FAILWITH } ;
+         DUP ;
+         { CDR ; CAR } ;
+         NOW ;
+         COMPARE ;
+         LE ;
+         IF {}
+            { PUSH string "WrongCondition: sp.now <= self.data.timeframe" ; FAILWITH } ;
+         DUP ;
+         { CAR ; CDR ; CDR } ;
+         CONTRACT %swap (pair (address %destination) (nat %tk_amount)) ;
+         NIL operation ;
+         SWAP ;
+         { IF_NONE { PUSH int 65 ; FAILWITH } {} } ;
+         PUSH mutez 0 ;
+         PUSH mutez 1000000 ;
+         DUP ;
+         DIG 5 ;
+         DUP ;
+         DUG 6 ;
+         { CAR ; CDR ; CAR } ;
+         EDIV ;
+         { IF_NONE { PUSH int 59 ; FAILWITH } {} } ;
+         CAR ;
+         AMOUNT ;
+         PUSH nat 1 ;
+         MUL ;
+         EDIV ;
+         { IF_NONE { PUSH int 59 ; FAILWITH } {} } ;
+         CAR ;
+         EDIV ;
+         { IF_NONE { PUSH int 59 ; FAILWITH } {} } ;
+         CAR ;
+         SENDER ;
+         PAIR %destination %tk_amount ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         { CAR ; CAR } ;
+         CONTRACT unit ;
+         { IF_NONE { PUSH int 61 ; FAILWITH } {} } ;
+         AMOUNT ;
+         UNIT ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         NIL operation ;
+         SWAP ;
+         ITER { CONS } ;
+         PAIR } }

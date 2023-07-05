@@ -1,0 +1,127 @@
+{ parameter
+    (or (or (address %deposit) (address %process_reward))
+        (or (option %set_delegate_node key_hash)
+            (pair %withdraw (address %address) (mutez %amount)))) ;
+  storage (pair (mutez %deposit) (address %operator) (address %owner)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP ;
+                 DUP ;
+                 CDR ;
+                 CDR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True } { DUP ; CDR ; CAR ; SENDER ; COMPARE ; EQ } ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: (sp.sender == self.data.owner) | (sp.sender == self.data.operator)" ;
+                      FAILWITH } ;
+                 PUSH mutez 0 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 GT ;
+                 IF {} { PUSH string "InsufficientAmount" ; FAILWITH } ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 AMOUNT ;
+                 ADD ;
+                 PAIR ;
+                 NIL operation }
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True }
+                    { SWAP ; DUP ; DUG 2 ; CDR ; CAR ; SENDER ; COMPARE ; EQ } ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: (sp.sender == self.data.owner) | (sp.sender == self.data.operator)" ;
+                      FAILWITH } ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 BALANCE ;
+                 SUB ;
+                 DUP ;
+                 PUSH mutez 0 ;
+                 COMPARE ;
+                 LT ;
+                 IF { NIL operation ;
+                      DIG 2 ;
+                      CONTRACT unit ;
+                      IF_NONE { PUSH int 404 ; FAILWITH } {} ;
+                      DIG 2 ;
+                      UNIT ;
+                      TRANSFER_TOKENS ;
+                      CONS }
+                    { DROP 2 ; NIL operation } } }
+           { IF_LEFT
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True }
+                    { SWAP ; DUP ; DUG 2 ; CDR ; CAR ; SENDER ; COMPARE ; EQ } ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: (sp.sender == self.data.owner) | (sp.sender == self.data.operator)" ;
+                      FAILWITH } ;
+                 SET_DELEGATE ;
+                 NIL operation ;
+                 SWAP ;
+                 CONS }
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True }
+                    { SWAP ; DUP ; DUG 2 ; CDR ; CAR ; SENDER ; COMPARE ; EQ } ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: (sp.sender == self.data.owner) | (sp.sender == self.data.operator)" ;
+                      FAILWITH } ;
+                 DUP ;
+                 CAR ;
+                 CONTRACT unit ;
+                 IF_NONE { PUSH int 393 ; FAILWITH } {} ;
+                 NIL operation ;
+                 SWAP ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 UNIT ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 DIG 2 ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 DIG 3 ;
+                 CDR ;
+                 SWAP ;
+                 SUB ;
+                 PAIR ;
+                 SWAP } } ;
+         PAIR } }

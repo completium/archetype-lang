@@ -1,0 +1,14 @@
+{ parameter bytes ;
+  storage (big_map address bytes) ;
+  code { SENDER ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         CDR ;
+         DIG 2 ;
+         CAR ;
+         SOME ;
+         DIG 2 ;
+         UPDATE ;
+         NIL operation ;
+         PAIR } }

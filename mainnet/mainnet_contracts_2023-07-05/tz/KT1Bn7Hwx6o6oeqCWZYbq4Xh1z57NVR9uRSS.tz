@@ -1,0 +1,65 @@
+{ parameter
+    (or (pair %set_baker_hicetnuncDAO (key_hash %baker) (address %hicetnuncDAO))
+        (or (address %update_admin) (address %update_oracle_protocol))) ;
+  storage (pair (address %admin) (address %hicetnunc_protocol)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             IF {}
+                { PUSH string "WrongCondition: sp.sender == self.data.admin" ; FAILWITH } ;
+             DUP ;
+             CDR ;
+             CONTRACT %set_baker key_hash ;
+             NIL operation ;
+             SWAP ;
+             { IF_NONE { PUSH int 170 ; FAILWITH } {} } ;
+             PUSH mutez 0 ;
+             DIG 3 ;
+             CAR ;
+             TRANSFER_TOKENS ;
+             CONS }
+           { IF_LEFT
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF {}
+                    { PUSH string "WrongCondition: sp.sender == self.data.admin" ; FAILWITH } ;
+                 SWAP ;
+                 CDR ;
+                 SWAP ;
+                 PAIR ;
+                 NIL operation }
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF {}
+                    { PUSH string "WrongCondition: sp.sender == self.data.admin" ; FAILWITH } ;
+                 NIL operation ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CONTRACT %update_oracle address ;
+                 { IF_NONE { PUSH int 164 ; FAILWITH } {} } ;
+                 PUSH mutez 0 ;
+                 DIG 3 ;
+                 TRANSFER_TOKENS ;
+                 CONS } } ;
+         PAIR } }

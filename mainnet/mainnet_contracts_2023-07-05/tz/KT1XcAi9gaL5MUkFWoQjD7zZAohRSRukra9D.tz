@@ -1,0 +1,135 @@
+{ parameter
+    (or (lambda %do unit (list operation))
+        (or %default :_entries
+           (unit %_Liq_entry_get_state)
+           (or (pair %_Liq_entry_add_townhall address nat)
+               (or (unit %_Liq_entry_admin_power_on) (unit %_Liq_entry_admin_power_off))))) ;
+  storage
+    (pair key_hash
+          (pair :storage
+             (map %townhalls address (list nat))
+             (pair (address %manager) (bool %is_on)))) ;
+  code { DUP ;
+         CAR ;
+         IF_LEFT
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             { DIP { DUP } ; SWAP } ;
+             CDR ;
+             CAR ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { COMPARE ;
+               NEQ ;
+               IF { SENDER ; PUSH string "Only the owner can operate." ; PAIR ; FAILWITH }
+                  { UNIT ; EXEC ; DIP { CDR } ; PAIR } } }
+           { DIP { CDR ; DUP ; CDR } ;
+             PAIR ;
+             { DUP ;
+               DIP { CDR @storage_slash_1 } ;
+               CAR @parameter_slash_2 ;
+               DUP @parameter ;
+               IF_LEFT
+                 { DROP ; { DIP { DUP } ; SWAP } ; NIL operation ; PAIR }
+                 { IF_LEFT
+                     { RENAME @_owner_proposal_slash_11 ;
+                       { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                       { DIP { DUP } ; SWAP } ;
+                       CAR @owner ;
+                       PUSH mutez 1000000 ;
+                       AMOUNT ;
+                       COMPARE ;
+                       GE ;
+                       IF { { DIP { DUP @storage } ; SWAP } ;
+                            CDR ;
+                            { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                            CAR %townhalls ;
+                            { DIP { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            CAR %townhalls ;
+                            { DIP { { DIP { { DIP { DUP @owner } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            PAIR ;
+                            DUP @owner_townhalls ;
+                            CDR @townhalls ;
+                            { DIP { DUP @owner_townhalls } ; SWAP } ;
+                            CAR @owner ;
+                            GET ;
+                            IF_NONE { NIL nat } {} ;
+                            DIP { DROP } ;
+                            RENAME @_v ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { DUP } ; SWAP } } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            CDR @proposal ;
+                            CONS ;
+                            { DIP { { DIP { { DIP { DUP @owner } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            DIP { SOME } ;
+                            UPDATE ;
+                            PAIR %townhalls ;
+                            NIL operation ;
+                            PAIR }
+                          { PUSH string "Please send >1 XTZ" ; FAILWITH } ;
+                       DIP { DROP ; DROP ; DROP } }
+                     { IF_LEFT
+                         { RENAME @__slash_16 ;
+                           { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                           DUP @storage ;
+                           { CDR ; CAR %manager } ;
+                           SOURCE @addr ;
+                           COMPARE ;
+                           NEQ ;
+                           IF { PUSH string "Not admin" ; FAILWITH }
+                              { DUP @storage ;
+                                { CDR ; CDR %is_on } ;
+                                IF { PUSH string "Already Active" ; FAILWITH }
+                                   { DUP @storage ;
+                                     DUP ;
+                                     CAR %townhalls ;
+                                     SWAP ;
+                                     CDR ;
+                                     CAR %manager ;
+                                     PUSH bool True ;
+                                     SWAP ;
+                                     PAIR %manager %is_on ;
+                                     SWAP ;
+                                     PAIR %townhalls ;
+                                     NIL operation ;
+                                     PAIR } } ;
+                           DIP { DROP ; DROP } }
+                         { RENAME @__slash_19 ;
+                           { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                           DUP @storage ;
+                           { CDR ; CAR %manager } ;
+                           SOURCE @addr ;
+                           COMPARE ;
+                           NEQ ;
+                           IF { PUSH string "Not Admin" ; FAILWITH }
+                              { DUP @storage ;
+                                { CDR ; CDR %is_on } ;
+                                NOT ;
+                                IF { PUSH string "Already Deactivated" ; FAILWITH }
+                                   { DUP @storage ;
+                                     DUP ;
+                                     CAR %townhalls ;
+                                     SWAP ;
+                                     CDR ;
+                                     CAR %manager ;
+                                     PUSH bool False ;
+                                     SWAP ;
+                                     PAIR %manager %is_on ;
+                                     SWAP ;
+                                     PAIR %townhalls ;
+                                     NIL operation ;
+                                     PAIR } } ;
+                           DIP { DROP ; DROP } } } } ;
+               DIP { DROP ; DROP } } ;
+             SWAP ;
+             CAR ;
+             SWAP ;
+             { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP { SWAP ; PAIR } ;
+             PAIR } } }

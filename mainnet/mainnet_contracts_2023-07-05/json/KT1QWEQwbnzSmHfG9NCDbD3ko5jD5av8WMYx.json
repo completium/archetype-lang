@@ -1,0 +1,44 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "unit"
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "string"
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "CDR"
+          },
+          {
+            "prim": "NIL",
+            "args": [
+              {
+                "prim": "operation"
+              }
+            ]
+          },
+          {
+            "prim": "PAIR"
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "string": "My name is John David Pressman and I volunteer to be an omelas child."
+  }
+}

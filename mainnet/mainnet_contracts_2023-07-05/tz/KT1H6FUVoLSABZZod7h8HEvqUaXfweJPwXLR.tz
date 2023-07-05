@@ -1,0 +1,24 @@
+{ parameter
+    (pair (string %key)
+          (pair %value
+             (pair (pair (int %amount) (string %currency))
+                   (pair (string %date) (pair (string %donationId) (string %donationType))))
+             (pair (pair (string %frequency) (pair (string %fromName) (string %paymentGateway)))
+                   (pair (string %paymentGatewayChargeId) (pair (string %status) (string %toName)))))) ;
+  storage
+    (big_map
+       string
+       (pair (pair (pair (int %amount) (string %currency))
+                   (pair (string %date) (pair (string %donationId) (string %donationType))))
+             (pair (pair (string %frequency) (pair (string %fromName) (string %paymentGateway)))
+                   (pair (string %paymentGatewayChargeId) (pair (string %status) (string %toName)))))) ;
+  code { UNPAIR ;
+         DUP ;
+         DUG 2 ;
+         CDR ;
+         SOME ;
+         DIG 2 ;
+         CAR ;
+         UPDATE ;
+         NIL operation ;
+         PAIR } }

@@ -1,0 +1,10 @@
+{ parameter (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))) ;
+  storage
+    (list (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance)))) ;
+  code { CAST (pair (list (pair (pair address nat) nat)) (list (list (pair (pair address nat) nat)))) ;
+         DUP ;
+         CAR ;
+         DIP { CDR } ;
+         CONS ;
+         NIL operation ;
+         PAIR } }

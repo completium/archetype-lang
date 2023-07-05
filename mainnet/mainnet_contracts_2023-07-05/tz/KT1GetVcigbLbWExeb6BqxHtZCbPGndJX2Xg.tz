@@ -1,0 +1,3 @@
+{ parameter unit ;
+  storage (pair (unit %dummy_field) (big_map %metadata string bytes)) ;
+  code { CDR ; NIL operation ; PAIR } }

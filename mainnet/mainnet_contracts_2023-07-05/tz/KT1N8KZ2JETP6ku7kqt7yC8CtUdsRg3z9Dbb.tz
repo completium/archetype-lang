@@ -1,0 +1,21 @@
+{ parameter (or (unit %default) (int %replace)) ;
+  storage (pair (address %admin) (int %storedValue)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DROP }
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             IF {} { PUSH string "NOT_ADMIN" ; FAILWITH } ;
+             SWAP ;
+             CAR ;
+             PAIR } ;
+         NIL operation ;
+         PAIR } }

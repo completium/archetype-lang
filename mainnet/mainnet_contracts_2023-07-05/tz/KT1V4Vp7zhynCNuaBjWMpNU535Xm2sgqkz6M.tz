@@ -1,0 +1,70 @@
+{ parameter
+    (or (unit %default)
+        (pair %runEntrypointLambda (string %lambdaName) (bytes %lambdaParameter))) ;
+  storage
+    (pair (pair (big_map %arbitraryValues string bytes) (big_map %lambdas string bytes))
+          (big_map %ovens address address)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DROP ;
+             PUSH unit Unit ;
+             PACK ;
+             PUSH string "default" ;
+             PAIR ;
+             SWAP ;
+             DUP ;
+             CAR ;
+             CDR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CAR ;
+             PUSH string "entrypoint/" ;
+             CONCAT ;
+             GET ;
+             IF_NONE { PUSH string "0" ; FAILWITH } {} ;
+             SELF ;
+             ADDRESS ;
+             SWAP ;
+             UNPACK
+               (lambda
+                  (pair (pair bytes
+                              (pair (pair (big_map %arbitraryValues string bytes) (big_map %lambdas string bytes))
+                                    (big_map %ovens address address)))
+                        address)
+                  (pair (list operation)
+                        (pair (pair (big_map %arbitraryValues string bytes) (big_map %lambdas string bytes))
+                              (big_map %ovens address address)))) ;
+             IF_NONE
+               { DROP 3 ; PUSH string "1" ; FAILWITH }
+               { SWAP ; DIG 2 ; DIG 3 ; CDR ; PAIR ; PAIR ; EXEC } }
+           { SWAP ;
+             DUP ;
+             CAR ;
+             CDR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CAR ;
+             PUSH string "entrypoint/" ;
+             CONCAT ;
+             GET ;
+             IF_NONE { PUSH string "0" ; FAILWITH } {} ;
+             SELF ;
+             ADDRESS ;
+             SWAP ;
+             UNPACK
+               (lambda
+                  (pair (pair bytes
+                              (pair (pair (big_map %arbitraryValues string bytes) (big_map %lambdas string bytes))
+                                    (big_map %ovens address address)))
+                        address)
+                  (pair (list operation)
+                        (pair (pair (big_map %arbitraryValues string bytes) (big_map %lambdas string bytes))
+                              (big_map %ovens address address)))) ;
+             IF_NONE
+               { DROP 3 ; PUSH string "1" ; FAILWITH }
+               { SWAP ; DIG 2 ; DIG 3 ; CDR ; PAIR ; PAIR ; EXEC } } } }

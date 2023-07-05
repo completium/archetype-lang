@@ -1,0 +1,48 @@
+{ parameter (pair (address %to) (nat %tokens)) ;
+  storage (big_map :ledger address nat) ;
+  code { AMOUNT ;
+         PUSH mutez 0 ;
+         { COMPARE ; NEQ ; IF { PUSH string "NOAMOUNTALLOWED" ; FAILWITH } {} } ;
+         { { DUP ; CAR ; DIP { CDR } } ; { DUP ; CAR ; DIP { CDR } } } ;
+         DUP ;
+         SENDER ;
+         { COMPARE ;
+           EQ ;
+           IF { PUSH string "FORBIDDENSELFTRANFER" ; FAILWITH } {} } ;
+         DIG 2 ;
+         DUP ;
+         SENDER ;
+         MEM ;
+         IF { DUP ;
+              SENDER ;
+              GET ;
+              IF_NONE
+                { PUSH string "ERROR" ; FAILWITH }
+                { DUP ;
+                  DIP 4 { DUP } ;
+                  DIG 4 ;
+                  { COMPARE ; GT ; IF { PUSH string "INSUFFICIENTBALANCE" ; FAILWITH } {} } } ;
+              DIP 3 { DUP } ;
+              DIG 3 ;
+              SWAP ;
+              SUB ;
+              ABS ;
+              SOME ;
+              SENDER ;
+              UPDATE ;
+              DIP { DUP } ;
+              SWAP ;
+              DIP { DUP } ;
+              MEM ;
+              IF { SWAP ;
+                   DIP { DUP } ;
+                   DUP ;
+                   DIP { SWAP } ;
+                   GET ;
+                   IF_NONE
+                     { PUSH string "UNKNOWNBALANCE" ; FAILWITH }
+                     { DIG 3 ; ADD ; SOME ; SWAP ; UPDATE } }
+                 { DUG 2 ; DIP { SOME } ; UPDATE } ;
+              NIL operation ;
+              PAIR }
+            { PUSH string "UNKNOWNSPENDER" ; FAILWITH } } }

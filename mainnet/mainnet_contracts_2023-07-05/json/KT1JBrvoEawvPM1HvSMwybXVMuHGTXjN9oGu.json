@@ -1,0 +1,4467 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "or",
+          "args": [
+            {
+              "prim": "or",
+              "args": [
+                {
+                  "prim": "or",
+                  "args": [
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "address"
+                        },
+                        {
+                          "prim": "address"
+                        }
+                      ],
+                      "annots": [
+                        "%init_"
+                      ]
+                    },
+                    {
+                      "prim": "address",
+                      "annots": [
+                        "%notStopped"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "prim": "or",
+                  "args": [
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "address"
+                        },
+                        {
+                          "prim": "address"
+                        }
+                      ],
+                      "annots": [
+                        "%onlyAdmin"
+                      ]
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "address"
+                        },
+                        {
+                          "prim": "address"
+                        }
+                      ],
+                      "annots": [
+                        "%onlyOwner"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "prim": "or",
+              "args": [
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "address"
+                        },
+                        {
+                          "prim": "address"
+                        }
+                      ]
+                    },
+                    {
+                      "prim": "string"
+                    }
+                  ],
+                  "annots": [
+                    "%onlyRole"
+                  ]
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "address"
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "pair",
+                              "args": [
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "list",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%adminRoles"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "address",
+                                      "annots": [
+                                        "%owner"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "bool",
+                                      "annots": [
+                                        "%roleApproval"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "set",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%roleNames"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "pair",
+                              "args": [
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "map",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        },
+                                        {
+                                          "prim": "pair",
+                                          "args": [
+                                            {
+                                              "prim": "pair",
+                                              "args": [
+                                                {
+                                                  "prim": "map",
+                                                  "args": [
+                                                    {
+                                                      "prim": "address"
+                                                    },
+                                                    {
+                                                      "prim": "address"
+                                                    }
+                                                  ],
+                                                  "annots": [
+                                                    "%addRoleInitiators"
+                                                  ]
+                                                },
+                                                {
+                                                  "prim": "map",
+                                                  "args": [
+                                                    {
+                                                      "prim": "address"
+                                                    },
+                                                    {
+                                                      "prim": "address"
+                                                    }
+                                                  ],
+                                                  "annots": [
+                                                    "%removeRoleInitiators"
+                                                  ]
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "prim": "set",
+                                              "args": [
+                                                {
+                                                  "prim": "address"
+                                                }
+                                              ],
+                                              "annots": [
+                                                "%users"
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%roleUsers"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "option",
+                                      "args": [
+                                        {
+                                          "prim": "address"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%startInitiator"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "option",
+                                      "args": [
+                                        {
+                                          "prim": "address"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%stopInitiator"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "bool",
+                                      "annots": [
+                                        "%stopped"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "bool",
+                              "annots": [
+                                "%transferOwnershipApproval"
+                              ]
+                            },
+                            {
+                              "prim": "map",
+                              "args": [
+                                {
+                                  "prim": "address"
+                                },
+                                {
+                                  "prim": "address"
+                                }
+                              ],
+                              "annots": [
+                                "%transferOwnershipInitiator"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "annots": [
+                    "%updateStorage"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "pair",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "address",
+                  "annots": [
+                    "%allowable"
+                  ]
+                },
+                {
+                  "prim": "option",
+                  "args": [
+                    {
+                      "prim": "address"
+                    }
+                  ],
+                  "annots": [
+                    "%configurator"
+                  ]
+                }
+              ]
+            },
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "big_map",
+                  "args": [
+                    {
+                      "prim": "address"
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "pair",
+                              "args": [
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "list",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%adminRoles"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "address",
+                                      "annots": [
+                                        "%owner"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "bool",
+                                      "annots": [
+                                        "%roleApproval"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "set",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%roleNames"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "pair",
+                              "args": [
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "map",
+                                      "args": [
+                                        {
+                                          "prim": "string"
+                                        },
+                                        {
+                                          "prim": "pair",
+                                          "args": [
+                                            {
+                                              "prim": "pair",
+                                              "args": [
+                                                {
+                                                  "prim": "map",
+                                                  "args": [
+                                                    {
+                                                      "prim": "address"
+                                                    },
+                                                    {
+                                                      "prim": "address"
+                                                    }
+                                                  ],
+                                                  "annots": [
+                                                    "%addRoleInitiators"
+                                                  ]
+                                                },
+                                                {
+                                                  "prim": "map",
+                                                  "args": [
+                                                    {
+                                                      "prim": "address"
+                                                    },
+                                                    {
+                                                      "prim": "address"
+                                                    }
+                                                  ],
+                                                  "annots": [
+                                                    "%removeRoleInitiators"
+                                                  ]
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "prim": "set",
+                                              "args": [
+                                                {
+                                                  "prim": "address"
+                                                }
+                                              ],
+                                              "annots": [
+                                                "%users"
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%roleUsers"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "option",
+                                      "args": [
+                                        {
+                                          "prim": "address"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%startInitiator"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "option",
+                                      "args": [
+                                        {
+                                          "prim": "address"
+                                        }
+                                      ],
+                                      "annots": [
+                                        "%stopInitiator"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "bool",
+                                      "annots": [
+                                        "%stopped"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "bool",
+                              "annots": [
+                                "%transferOwnershipApproval"
+                              ]
+                            },
+                            {
+                              "prim": "map",
+                              "args": [
+                                {
+                                  "prim": "address"
+                                },
+                                {
+                                  "prim": "address"
+                                }
+                              ],
+                              "annots": [
+                                "%transferOwnershipInitiator"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "annots": [
+                    "%data"
+                  ]
+                },
+                {
+                  "prim": "address",
+                  "annots": [
+                    "%registry"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "PUSH",
+            "args": [
+              {
+                "prim": "string"
+              },
+              {
+                "string": "Access is denied"
+              }
+            ]
+          },
+          {
+            "prim": "LAMBDA",
+            "args": [
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "address"
+                  },
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "list",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "bool"
+                                  },
+                                  {
+                                    "prim": "set",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "map",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "map",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  },
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "map",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  },
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "set",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "option",
+                                    "args": [
+                                      {
+                                        "prim": "address"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "option",
+                                    "args": [
+                                      {
+                                        "prim": "address"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "bool"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "bool"
+                          },
+                          {
+                            "prim": "map",
+                            "args": [
+                              {
+                                "prim": "address"
+                              },
+                              {
+                                "prim": "address"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "prim": "bool"
+              },
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "1"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "COMPARE"
+                },
+                {
+                  "prim": "EQ"
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "LAMBDA",
+            "args": [
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "address"
+                      },
+                      {
+                        "prim": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "list",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "bool"
+                                  },
+                                  {
+                                    "prim": "set",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "map",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "map",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  },
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "map",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  },
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "set",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "option",
+                                    "args": [
+                                      {
+                                        "prim": "address"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "option",
+                                    "args": [
+                                      {
+                                        "prim": "address"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "bool"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "bool"
+                          },
+                          {
+                            "prim": "map",
+                            "args": [
+                              {
+                                "prim": "address"
+                              },
+                              {
+                                "prim": "address"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "prim": "bool"
+              },
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "1"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "GET"
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "bool"
+                          },
+                          {
+                            "prim": "False"
+                          }
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "MEM"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP"
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "LAMBDA",
+            "args": [
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "list",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "address"
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "bool"
+                              },
+                              {
+                                "prim": "set",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "map",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  },
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "map",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              },
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "map",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              },
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "prim": "set",
+                                        "args": [
+                                          {
+                                            "prim": "address"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "option",
+                                "args": [
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "option",
+                                "args": [
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "bool"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "bool"
+                      },
+                      {
+                        "prim": "map",
+                        "args": [
+                          {
+                            "prim": "address"
+                          },
+                          {
+                            "prim": "address"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "prim": "unit"
+              },
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "IF",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "string"
+                          },
+                          {
+                            "string": "Contract is stopped"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "unit"
+                          },
+                          {
+                            "prim": "Unit"
+                          }
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "LAMBDA",
+            "args": [
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "address"
+                  },
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "address"
+                          },
+                          {
+                            "prim": "option",
+                            "args": [
+                              {
+                                "prim": "address"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "big_map",
+                            "args": [
+                              {
+                                "prim": "address"
+                              },
+                              {
+                                "prim": "pair",
+                                "args": [
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "list",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "bool"
+                                              },
+                                              {
+                                                "prim": "set",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "map",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "prim": "pair",
+                                                    "args": [
+                                                      {
+                                                        "prim": "pair",
+                                                        "args": [
+                                                          {
+                                                            "prim": "map",
+                                                            "args": [
+                                                              {
+                                                                "prim": "address"
+                                                              },
+                                                              {
+                                                                "prim": "address"
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "prim": "map",
+                                                            "args": [
+                                                              {
+                                                                "prim": "address"
+                                                              },
+                                                              {
+                                                                "prim": "address"
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      },
+                                                      {
+                                                        "prim": "set",
+                                                        "args": [
+                                                          {
+                                                            "prim": "address"
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "option",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "pair",
+                                            "args": [
+                                              {
+                                                "prim": "option",
+                                                "args": [
+                                                  {
+                                                    "prim": "address"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "bool"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "bool"
+                                      },
+                                      {
+                                        "prim": "map",
+                                        "args": [
+                                          {
+                                            "prim": "address"
+                                          },
+                                          {
+                                            "prim": "address"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "address"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "list",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "address"
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "bool"
+                              },
+                              {
+                                "prim": "set",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "pair",
+                        "args": [
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "map",
+                                "args": [
+                                  {
+                                    "prim": "string"
+                                  },
+                                  {
+                                    "prim": "pair",
+                                    "args": [
+                                      {
+                                        "prim": "pair",
+                                        "args": [
+                                          {
+                                            "prim": "map",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              },
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "prim": "map",
+                                            "args": [
+                                              {
+                                                "prim": "address"
+                                              },
+                                              {
+                                                "prim": "address"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "prim": "set",
+                                        "args": [
+                                          {
+                                            "prim": "address"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "option",
+                                "args": [
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "prim": "pair",
+                            "args": [
+                              {
+                                "prim": "option",
+                                "args": [
+                                  {
+                                    "prim": "address"
+                                  }
+                                ]
+                              },
+                              {
+                                "prim": "bool"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "bool"
+                      },
+                      {
+                        "prim": "map",
+                        "args": [
+                          {
+                            "prim": "address"
+                          },
+                          {
+                            "prim": "address"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "1"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "DUG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "GET"
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "string"
+                          },
+                          {
+                            "string": "MAP FIND"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    []
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIG",
+            "args": [
+              {
+                "int": "5"
+              }
+            ]
+          },
+          {
+            "prim": "DUP"
+          },
+          {
+            "prim": "DUG",
+            "args": [
+              {
+                "int": "6"
+              }
+            ]
+          },
+          {
+            "prim": "CDR"
+          },
+          {
+            "prim": "DIG",
+            "args": [
+              {
+                "int": "6"
+              }
+            ]
+          },
+          {
+            "prim": "DUP"
+          },
+          {
+            "prim": "DUG",
+            "args": [
+              {
+                "int": "7"
+              }
+            ]
+          },
+          {
+            "prim": "CAR"
+          },
+          {
+            "prim": "IF_LEFT",
+            "args": [
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "IF_LEFT",
+                  "args": [
+                    [
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "IF_LEFT",
+                        "args": [
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "SENDER"
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "NEQ"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "SENDER"
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "NEQ"
+                            },
+                            {
+                              "prim": "AND"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "11"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "12"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "unit"
+                                      },
+                                      {
+                                        "prim": "Unit"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "IF_NONE",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "unit"
+                                      },
+                                      {
+                                        "prim": "Unit"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "string": "Already initialized"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "SOME"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "NIL",
+                              "args": [
+                                {
+                                  "prim": "operation"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "7"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "8"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "NIL",
+                              "args": [
+                                {
+                                  "prim": "operation"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "IF_LEFT",
+                        "args": [
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "9"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "10"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "15"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "16"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "bool"
+                                      },
+                                      {
+                                        "prim": "True"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  },
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "bool"
+                                      },
+                                      {
+                                        "prim": "False"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "1"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  },
+                                  {
+                                    "prim": "ITER",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "1"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "2"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "1"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "2"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "3"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "4"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "16"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "17"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "EXEC"
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "1"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "DUG",
+                                          "args": [
+                                            {
+                                              "int": "2"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "CAR"
+                                        },
+                                        {
+                                          "prim": "OR"
+                                        },
+                                        {
+                                          "prim": "DIP",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "DROP"
+                                              }
+                                            ]
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DROP"
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "NOT"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "12"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "13"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "unit"
+                                      },
+                                      {
+                                        "prim": "Unit"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "NIL",
+                              "args": [
+                                {
+                                  "prim": "operation"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "9"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "10"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "1"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "12"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "13"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "NOT"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "12"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "DUG",
+                                    "args": [
+                                      {
+                                        "int": "13"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "unit"
+                                      },
+                                      {
+                                        "prim": "Unit"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "NIL",
+                              "args": [
+                                {
+                                  "prim": "operation"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP"
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              [
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "IF_LEFT",
+                  "args": [
+                    [
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "5"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "EXEC"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "8"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "9"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "EXEC"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "5"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "13"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "14"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "EXEC"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "15"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "16"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "EXEC"
+                      },
+                      {
+                        "prim": "OR"
+                      },
+                      {
+                        "prim": "NOT"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "11"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "12"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "unit"
+                                },
+                                {
+                                  "prim": "Unit"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "5"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "NIL",
+                        "args": [
+                          {
+                            "prim": "operation"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "8"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "9"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP"
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "SENDER"
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "NEQ"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "9"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "DUG",
+                              "args": [
+                                {
+                                  "int": "10"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "unit"
+                                },
+                                {
+                                  "prim": "Unit"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "3"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "SOME"
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "DUG",
+                        "args": [
+                          {
+                            "int": "5"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "CAR"
+                      },
+                      {
+                        "prim": "UPDATE"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "CDR"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "NIL",
+                        "args": [
+                          {
+                            "prim": "operation"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIP",
+            "args": [
+              [
+                {
+                  "prim": "DROP",
+                  "args": [
+                    {
+                      "int": "7"
+                    }
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "prim": "Pair",
+    "args": [
+      {
+        "prim": "Pair",
+        "args": [
+          {
+            "string": "tz1LCqHwtyy5aT6UQYvT8pobMfCoeyS7egfX"
+          },
+          {
+            "prim": "Some",
+            "args": [
+              {
+                "string": "KT1UbqtneoB9H2xPrjrJg7SJTKJ57S2cQTYi"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "int": "88"
+      },
+      {
+        "string": "KT1JtBpbx9ZSUrmfdLbqxtycTQCzozUbT2fj"
+      }
+    ]
+  }
+}

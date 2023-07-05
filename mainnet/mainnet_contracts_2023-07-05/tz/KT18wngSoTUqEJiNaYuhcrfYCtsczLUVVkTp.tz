@@ -1,0 +1,162 @@
+{ parameter
+    (or (or (or (unit %default) (address %liquidate))
+            (or (pair %send mutez address) (pair %sendTokens nat address)))
+        (or (or (address %setAdministratorContract) (option %setDelegate key_hash))
+            (or (address %setGovernorContract) (address %setOvenRegistryContract)))) ;
+  storage
+    (pair (pair (address %administratorContractAddress) (address %governorContractAddress))
+          (pair (address %ovenRegistryContractAddress) (address %tokenContractAddress))) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { IF_LEFT
+                   { DROP ; NIL operation }
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CAR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 8 ; FAILWITH } ;
+                     NIL operation ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     { CDR ; CAR } ;
+                     CONTRACT %isOven address ;
+                     { IF_NONE { UNIT ; FAILWITH } {} } ;
+                     PUSH mutez 0 ;
+                     DIG 3 ;
+                     DUP ;
+                     DUG 4 ;
+                     TRANSFER_TOKENS ;
+                     CONS ;
+                     SWAP ;
+                     CONTRACT %liquidate unit ;
+                     { IF_NONE { UNIT ; FAILWITH } {} } ;
+                     PUSH mutez 0 ;
+                     UNIT ;
+                     TRANSFER_TOKENS ;
+                     CONS } }
+               { IF_LEFT
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 4 ; FAILWITH } ;
+                     DUP ;
+                     CDR ;
+                     CONTRACT unit ;
+                     { IF_NONE { UNIT ; FAILWITH } {} } ;
+                     NIL operation ;
+                     SWAP ;
+                     DIG 2 ;
+                     CAR ;
+                     UNIT ;
+                     TRANSFER_TOKENS ;
+                     CONS }
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 4 ; FAILWITH } ;
+                     NIL operation ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     { CDR ; CDR } ;
+                     CONTRACT %transfer (pair (address %from) (pair (address %to) (nat %value))) ;
+                     { IF_NONE { UNIT ; FAILWITH } {} } ;
+                     PUSH mutez 0 ;
+                     DIG 3 ;
+                     DUP ;
+                     CAR ;
+                     SWAP ;
+                     CDR ;
+                     PAIR %to %value ;
+                     SELF ;
+                     ADDRESS ;
+                     PAIR %from ;
+                     TRANSFER_TOKENS ;
+                     CONS } } }
+           { IF_LEFT
+               { IF_LEFT
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 4 ; FAILWITH } ;
+                     SWAP ;
+                     DUP ;
+                     CDR ;
+                     SWAP ;
+                     { CAR ; CDR } ;
+                     DIG 2 ;
+                     PAIR ;
+                     PAIR ;
+                     NIL operation }
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CAR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 8 ; FAILWITH } ;
+                     SET_DELEGATE ;
+                     NIL operation ;
+                     SWAP ;
+                     CONS } }
+               { IF_LEFT
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 4 ; FAILWITH } ;
+                     SWAP ;
+                     DUP ;
+                     CDR ;
+                     SWAP ;
+                     { CAR ; CAR } ;
+                     DIG 2 ;
+                     SWAP ;
+                     PAIR ;
+                     PAIR }
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH int 4 ; FAILWITH } ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     SWAP ;
+                     { CDR ; CDR } ;
+                     DIG 2 ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR } ;
+                 NIL operation } } ;
+         NIL operation ;
+         SWAP ;
+         ITER { CONS } ;
+         PAIR } }

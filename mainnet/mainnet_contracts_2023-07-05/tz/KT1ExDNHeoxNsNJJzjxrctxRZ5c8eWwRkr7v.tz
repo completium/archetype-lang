@@ -1,0 +1,64 @@
+{ parameter
+    (or (pair %notarizeDocument (string %documentHash) (set %signees address))
+        (string %signDocument)) ;
+  storage (big_map string (map address bool)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { SWAP ;
+             DUP ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CAR ;
+             GET ;
+             IF_NONE
+               { SWAP ;
+                 PAIR ;
+                 EMPTY_MAP address bool ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 CDR ;
+                 ITER { SWAP ; PAIR ; DUP ; CAR ; PUSH bool False ; SOME ; DIG 2 ; CDR ; UPDATE } ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 SWAP ;
+                 SOME ;
+                 DIG 2 ;
+                 CAR ;
+                 CAR ;
+                 UPDATE ;
+                 NIL operation ;
+                 PAIR }
+               { SWAP ; DROP ; SWAP ; DROP 2 ; PUSH string "1" ; FAILWITH } }
+           { SWAP ;
+             DUP ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             GET ;
+             IF_NONE
+               { DROP 2 ; PUSH string "2" ; FAILWITH }
+               { SENDER ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 GET ;
+                 IF_NONE
+                   { DROP 2 ; PUSH string "4" ; FAILWITH }
+                   { IF { DROP 2 ; PUSH string "3" ; FAILWITH }
+                        { SWAP ; PUSH bool True ; SOME ; DIG 2 ; UPDATE } } ;
+                 SOME ;
+                 DIG 2 ;
+                 UPDATE ;
+                 NIL operation ;
+                 PAIR } } } }

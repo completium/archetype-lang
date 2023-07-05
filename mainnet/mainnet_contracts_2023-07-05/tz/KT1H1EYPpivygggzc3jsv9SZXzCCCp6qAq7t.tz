@@ -1,0 +1,754 @@
+{ parameter
+    (or (or (or (address %addToken) (pair %checkTransfer (address %0) (address %1)))
+            (or (pair %setAccount (address %0) (pair %1 (address %registrar) (bool %restricted)))
+                (pair %setRegistrar (address %0) (bool %1))))
+        (or (or (pair %setToken (address %0) (bool %1))
+                (list %updateCountryRestrictions
+                   (pair (nat %0)
+                         (pair %1
+                            (pair (nat %country_invest_limit) (nat %min_rating))
+                            (pair (map %rating_restrictions nat nat) (timestamp %vesting))))))
+            (nat %updateGlobalLimit))) ;
+  storage
+    (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                            (map %country_counters
+                               nat
+                               (pair (nat %global_counter) (map %rating_counter nat nat))))
+                      (pair (map %country_restrictions
+                               nat
+                               (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                     (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                            (map %document_hashes string bytes)))
+                (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                      (pair (map %kyc_registrars address bool) (string %name))))
+          (pair (address %owner) (map %security_tokens address bool))) ;
+  code { DUP ;
+         LAMBDA
+           (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                   (map %country_counters
+                                      nat
+                                      (pair (nat %global_counter) (map %rating_counter nat nat))))
+                             (pair (map %country_restrictions
+                                      nat
+                                      (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                            (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                   (map %document_hashes string bytes)))
+                       (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                             (pair (map %kyc_registrars address bool) (string %name))))
+                 (pair (address %owner) (map %security_tokens address bool)))
+           unit
+           { DUP ;
+             CDR ;
+             CAR ;
+             SENDER ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "Only owner can call this entrypoint" ; FAILWITH }
+                { PUSH unit Unit } ;
+             DUP ;
+             DIP { DROP 2 } } ;
+         SWAP ;
+         DUP ;
+         CDR ;
+         DIP { DUP } ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DUP ;
+             IF_LEFT
+               { DUP ;
+                 IF_LEFT
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DUP ;
+                     DIP { DIP 6 { DUP } ; DIG 6 } ;
+                     EXEC ;
+                     DIP { DUP } ;
+                     SWAP ;
+                     CAR ;
+                     CAR ;
+                     CAR ;
+                     CAR ;
+                     DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CAR ; CDR } ;
+                     PAIR ;
+                     DIP { DIP { DUP } ;
+                           SWAP ;
+                           CAR ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CDR ; CDR } ;
+                           PAIR } ;
+                     PAIR ;
+                     DIP { DIP { DUP } ;
+                           SWAP ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CAR ; CDR } ;
+                           PAIR ;
+                           DIP { DIP { DUP } ;
+                                 SWAP ;
+                                 CAR ;
+                                 CDR ;
+                                 CDR ;
+                                 CAR ;
+                                 DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CDR ; CDR } ;
+                                 PAIR } ;
+                           PAIR } ;
+                     PAIR ;
+                     DIP { DIP { DUP } ;
+                           SWAP ;
+                           CDR ;
+                           CAR ;
+                           DIP { DIP 2 { DUP } ;
+                                 DIG 2 ;
+                                 DIP { PUSH bool False ; SOME ; DIP { DIP { DUP } ; SWAP ; CDR ; CDR } } ;
+                                 UPDATE } ;
+                           PAIR } ;
+                     PAIR ;
+                     NIL operation ;
+                     PAIR ;
+                     DIP { DROP 3 } }
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DUP ;
+                           LAMBDA
+                             (pair (pair (address %0) (address %1))
+                                   (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                           (map %country_counters
+                                                              nat
+                                                              (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                     (pair (map %country_restrictions
+                                                              nat
+                                                              (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                    (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                           (map %document_hashes string bytes)))
+                                               (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                     (pair (map %kyc_registrars address bool) (string %name))))
+                                         (pair (address %owner) (map %security_tokens address bool))))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                        (map %country_counters
+                                                           nat
+                                                           (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                  (pair (map %country_restrictions
+                                                           nat
+                                                           (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                 (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                        (map %document_hashes string bytes)))
+                                            (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                  (pair (map %kyc_registrars address bool) (string %name))))
+                                      (pair (address %owner) (map %security_tokens address bool))))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               CAR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CDR ;
+                                     DIP { EMPTY_SET address ; PUSH bool True } ;
+                                     UPDATE ;
+                                     PUSH bool True } ;
+                               UPDATE ;
+                               DIP { DUP } ;
+                               PAIR ;
+                               DUP ;
+                               CDR ;
+                               DUP ;
+                               CAR ;
+                               CDR ;
+                               CDR ;
+                               CAR ;
+                               PUSH nat 0 ;
+                               SWAP ;
+                               ITER { SWAP ;
+                                      PAIR ;
+                                      DUP ;
+                                      DUP ;
+                                      CAR ;
+                                      DIP { DUP } ;
+                                      SWAP ;
+                                      CDR ;
+                                      CDR ;
+                                      IF { DUP } { DUP ; PUSH nat 1 ; ADD } ;
+                                      DIP { DROP 3 } } ;
+                               DUP ;
+                               PUSH nat 0 ;
+                               SWAP ;
+                               COMPARE ;
+                               EQ ;
+                               IF { PUSH string
+                                         "This investor is not registered with an unrestricted KYC registrar known to the issuer." ;
+                                    FAILWITH }
+                                  { PUSH unit Unit } ;
+                               DIP 3 { DUP } ;
+                               DIG 3 ;
+                               CAR ;
+                               NIL operation ;
+                               SWAP ;
+                               ITER { SWAP ;
+                                      PAIR ;
+                                      DUP ;
+                                      DUP ;
+                                      CDR ;
+                                      DUP ;
+                                      DIP { DIP 5 { DUP } ; DIG 5 ; CAR ; CAR ; CAR ; CAR } ;
+                                      GET ;
+                                      IF_NONE
+                                        { PUSH unit Unit }
+                                        { DUP ;
+                                          CDR ;
+                                          IF { PUSH string "Investor is restricted at issuer level" ; FAILWITH }
+                                             { PUSH unit Unit } ;
+                                          DIP { DROP } } ;
+                                      DIP 6 { DUP } ;
+                                      DIG 6 ;
+                                      CAR ;
+                                      CDR ;
+                                      CDR ;
+                                      CAR ;
+                                      DIP { PUSH nat 0 ; NIL operation ; PAIR } ;
+                                      ITER { SWAP ;
+                                             PAIR ;
+                                             DUP ;
+                                             DUP ;
+                                             CAR ;
+                                             DIP { DUP } ;
+                                             SWAP ;
+                                             CDR ;
+                                             DIP { DUP } ;
+                                             SWAP ;
+                                             CAR ;
+                                             DIP 2 { DUP } ;
+                                             DIG 2 ;
+                                             CDR ;
+                                             DIP 2 { DUP } ;
+                                             DIG 2 ;
+                                             CDR ;
+                                             IF { DIP { DUP } ; SWAP ; DIP { DUP } ; PAIR }
+                                                { DIP 2 { DUP } ;
+                                                  DIG 2 ;
+                                                  CAR ;
+                                                  CONTRACT %checkMember
+                                                    (pair (pair (address %0)
+                                                                (map %1
+                                                                   nat
+                                                                   (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                         (pair (map %rating_restrictions nat nat) (timestamp %vesting)))))
+                                                          (bool %2)) ;
+                                                  IF_NONE
+                                                    { PUSH string "bad address for get_entrypoint (%checkMember)" ; FAILWITH }
+                                                    {} ;
+                                                  DIP { DUP } ;
+                                                  SWAP ;
+                                                  PUSH nat 1 ;
+                                                  ADD ;
+                                                  DIP { DIP 12 { DUP } ; DIG 12 } ;
+                                                  COMPARE ;
+                                                  EQ ;
+                                                  IF { PUSH bool True } { PUSH bool False } ;
+                                                  DIP 9 { DUP } ;
+                                                  DIG 9 ;
+                                                  DIP { DIP 14 { DUP } ; DIG 14 ; CAR ; CAR ; CDR ; CAR } ;
+                                                  PAIR ;
+                                                  DIP { DUP } ;
+                                                  PAIR ;
+                                                  DIP { DIP { DUP } ; SWAP ; PUSH mutez 0 } ;
+                                                  TRANSFER_TOKENS ;
+                                                  DUP ;
+                                                  DIP { DIP 4 { DUP } ; DIG 4 } ;
+                                                  CONS ;
+                                                  DIP { DIP 3 { DUP } ; DIG 3 ; PUSH nat 1 ; ADD } ;
+                                                  PAIR ;
+                                                  DIP { DROP 3 } } ;
+                                             DIP { DROP 6 } } ;
+                                      DUP ;
+                                      CAR ;
+                                      DIP { DIP 3 { DUP } ; DIG 3 ; CAR } ;
+                                      ITER { SWAP ;
+                                             PAIR ;
+                                             DUP ;
+                                             DUP ;
+                                             CDR ;
+                                             DIP { DUP ; CAR } ;
+                                             CONS ;
+                                             DIP { DROP 2 } } ;
+                                      DIP { DROP 5 } } ;
+                               DIP { DROP 4 } ;
+                               DUP ;
+                               DIP { DIP { DUP } ; SWAP } ;
+                               PAIR ;
+                               DIP { DROP 3 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } } ;
+                 DIP { DROP } }
+               { DUP ;
+                 IF_LEFT
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DIP { DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                                       SWAP } ;
+                                 SWAP } ;
+                           DUP ;
+                           DIP { PAIR } ;
+                           SWAP ;
+                           LAMBDA
+                             (pair (pair (pair (address %0) (pair %1 (address %registrar) (bool %restricted)))
+                                         (lambda
+                                            (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                                    (map %country_counters
+                                                                       nat
+                                                                       (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                              (pair (map %country_restrictions
+                                                                       nat
+                                                                       (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                             (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                                    (map %document_hashes string bytes)))
+                                                        (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                              (pair (map %kyc_registrars address bool) (string %name))))
+                                                  (pair (address %owner) (map %security_tokens address bool)))
+                                            unit))
+                                   (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                           (map %country_counters
+                                                              nat
+                                                              (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                     (pair (map %country_restrictions
+                                                              nat
+                                                              (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                    (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                           (map %document_hashes string bytes)))
+                                               (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                     (pair (map %kyc_registrars address bool) (string %name))))
+                                         (pair (address %owner) (map %security_tokens address bool))))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                        (map %country_counters
+                                                           nat
+                                                           (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                  (pair (map %country_restrictions
+                                                           nat
+                                                           (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                 (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                        (map %document_hashes string bytes)))
+                                            (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                  (pair (map %kyc_registrars address bool) (string %name))))
+                                      (pair (address %owner) (map %security_tokens address bool))))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP ; CDR ; SWAP ; CAR } ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 } ;
+                               EXEC ;
+                               DIP 2 { DUP } ;
+                               DIG 2 ;
+                               CAR ;
+                               DIP { DIP 2 { DUP } ;
+                                     DIG 2 ;
+                                     CDR ;
+                                     SOME ;
+                                     DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CAR ; CAR } } ;
+                               UPDATE ;
+                               DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CAR ; CDR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CAR ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CDR ; CDR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CAR ; CDR } ;
+                                     PAIR ;
+                                     DIP { DIP { DUP } ;
+                                           SWAP ;
+                                           CAR ;
+                                           CDR ;
+                                           CDR ;
+                                           CAR ;
+                                           DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CDR ; CDR } ;
+                                           PAIR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CDR ; CDR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               NIL operation ;
+                               PAIR ;
+                               DIP { DROP 4 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } }
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DIP { DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                                       SWAP } ;
+                                 SWAP } ;
+                           DUP ;
+                           DIP { PAIR } ;
+                           SWAP ;
+                           LAMBDA
+                             (pair (pair (pair (address %0) (bool %1))
+                                         (lambda
+                                            (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                                    (map %country_counters
+                                                                       nat
+                                                                       (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                              (pair (map %country_restrictions
+                                                                       nat
+                                                                       (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                             (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                                    (map %document_hashes string bytes)))
+                                                        (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                              (pair (map %kyc_registrars address bool) (string %name))))
+                                                  (pair (address %owner) (map %security_tokens address bool)))
+                                            unit))
+                                   (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                           (map %country_counters
+                                                              nat
+                                                              (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                     (pair (map %country_restrictions
+                                                              nat
+                                                              (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                    (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                           (map %document_hashes string bytes)))
+                                               (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                     (pair (map %kyc_registrars address bool) (string %name))))
+                                         (pair (address %owner) (map %security_tokens address bool))))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                        (map %country_counters
+                                                           nat
+                                                           (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                  (pair (map %country_restrictions
+                                                           nat
+                                                           (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                 (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                        (map %document_hashes string bytes)))
+                                            (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                  (pair (map %kyc_registrars address bool) (string %name))))
+                                      (pair (address %owner) (map %security_tokens address bool))))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP ; CDR ; SWAP ; CAR } ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 } ;
+                               EXEC ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CAR ; CDR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CAR ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CDR ; CDR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CAR ; CDR } ;
+                                     PAIR ;
+                                     DIP { DIP 2 { DUP } ;
+                                           DIG 2 ;
+                                           CAR ;
+                                           DIP { DIP 2 { DUP } ;
+                                                 DIG 2 ;
+                                                 CDR ;
+                                                 SOME ;
+                                                 DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CDR ; CAR } } ;
+                                           UPDATE ;
+                                           DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CDR ; CDR } ;
+                                           PAIR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP { DUP } ;
+                                     SWAP ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ; SWAP ; CDR ; CDR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               NIL operation ;
+                               PAIR ;
+                               DIP { DROP 4 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } } ;
+                 DIP { DROP } } ;
+             DIP { DROP } }
+           { DUP ;
+             IF_LEFT
+               { DUP ;
+                 IF_LEFT
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DIP { DIP { DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                                       SWAP } ;
+                                 SWAP } ;
+                           DUP ;
+                           DIP { PAIR } ;
+                           SWAP ;
+                           LAMBDA
+                             (pair (pair (pair (address %0) (bool %1))
+                                         (lambda
+                                            (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                                    (map %country_counters
+                                                                       nat
+                                                                       (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                              (pair (map %country_restrictions
+                                                                       nat
+                                                                       (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                             (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                                    (map %document_hashes string bytes)))
+                                                        (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                              (pair (map %kyc_registrars address bool) (string %name))))
+                                                  (pair (address %owner) (map %security_tokens address bool)))
+                                            unit))
+                                   (pair (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                           (map %country_counters
+                                                              nat
+                                                              (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                     (pair (map %country_restrictions
+                                                              nat
+                                                              (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                    (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                           (map %document_hashes string bytes)))
+                                               (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                     (pair (map %kyc_registrars address bool) (string %name))))
+                                         (pair (address %owner) (map %security_tokens address bool))))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (pair (pair (pair (map %accounts address (pair (address %registrar) (bool %restricted)))
+                                                        (map %country_counters
+                                                           nat
+                                                           (pair (nat %global_counter) (map %rating_counter nat nat))))
+                                                  (pair (map %country_restrictions
+                                                           nat
+                                                           (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                                 (pair (map %rating_restrictions nat nat) (timestamp %vesting))))
+                                                        (map %document_hashes string bytes)))
+                                            (pair (pair (nat %global_invest_limit) (nat %investor_counter))
+                                                  (pair (map %kyc_registrars address bool) (string %name))))
+                                      (pair (address %owner) (map %security_tokens address bool))))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP ; CDR ; SWAP ; CAR } ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 } ;
+                               EXEC ;
+                               DIP 2 { DUP } ;
+                               DIG 2 ;
+                               CAR ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 ; CDR ; CDR } ;
+                               GET ;
+                               IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                               DIP 3 { DUP } ;
+                               DIG 3 ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CAR ; CDR } ;
+                               PAIR ;
+                               DIP { DIP 3 { DUP } ;
+                                     DIG 3 ;
+                                     CAR ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CAR ; CDR ; CDR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP 3 { DUP } ;
+                                     DIG 3 ;
+                                     CAR ;
+                                     CDR ;
+                                     CAR ;
+                                     CAR ;
+                                     DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CAR ; CDR } ;
+                                     PAIR ;
+                                     DIP { DIP 3 { DUP } ;
+                                           DIG 3 ;
+                                           CAR ;
+                                           CDR ;
+                                           CDR ;
+                                           CAR ;
+                                           DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CDR ; CDR } ;
+                                           PAIR } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DIP { DIP 3 { DUP } ;
+                                     DIG 3 ;
+                                     CDR ;
+                                     CAR ;
+                                     DIP { DIP { DUP } ;
+                                           SWAP ;
+                                           DIP { DIP 4 { DUP } ;
+                                                 DIG 4 ;
+                                                 CDR ;
+                                                 SOME ;
+                                                 DIP { DIP 3 { DUP } ; DIG 3 ; CDR ; CDR } } ;
+                                           UPDATE } ;
+                                     PAIR } ;
+                               PAIR ;
+                               NIL operation ;
+                               PAIR ;
+                               DIP { DROP 6 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } }
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DUP ;
+                     DIP { DIP 6 { DUP } ; DIG 6 } ;
+                     EXEC ;
+                     DIP 2 { DUP } ;
+                     DIG 2 ;
+                     DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CDR ; CAR } ;
+                     ITER { SWAP ;
+                            PAIR ;
+                            DUP ;
+                            DUP ;
+                            CDR ;
+                            DUP ;
+                            CAR ;
+                            DIP { DUP ; CDR ; SOME ; DIP { DIP { DUP } ; SWAP ; CAR } } ;
+                            UPDATE ;
+                            DIP { DROP 3 } } ;
+                     DIP 2 { DUP } ;
+                     DIG 2 ;
+                     CAR ;
+                     CAR ;
+                     CAR ;
+                     CAR ;
+                     DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CAR ; CDR } ;
+                     PAIR ;
+                     DIP { DUP ; DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CAR ; CDR ; CDR } ; PAIR } ;
+                     PAIR ;
+                     DIP { DIP 2 { DUP } ;
+                           DIG 2 ;
+                           CAR ;
+                           CDR ;
+                           CAR ;
+                           CAR ;
+                           DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CDR ; CAR ; CDR } ;
+                           PAIR ;
+                           DIP { DIP 2 { DUP } ;
+                                 DIG 2 ;
+                                 CAR ;
+                                 CDR ;
+                                 CDR ;
+                                 CAR ;
+                                 DIP { DIP 2 { DUP } ; DIG 2 ; CAR ; CDR ; CDR ; CDR } ;
+                                 PAIR } ;
+                           PAIR } ;
+                     PAIR ;
+                     DIP { DIP 2 { DUP } ;
+                           DIG 2 ;
+                           CDR ;
+                           CAR ;
+                           DIP { DIP 2 { DUP } ; DIG 2 ; CDR ; CDR } ;
+                           PAIR } ;
+                     PAIR ;
+                     NIL operation ;
+                     PAIR ;
+                     DIP { DROP 4 } } ;
+                 DIP { DROP } }
+               { DIP 2 { DUP } ;
+                 DIG 2 ;
+                 DUP ;
+                 DIP { DIP 5 { DUP } ; DIG 5 } ;
+                 EXEC ;
+                 DIP { DUP } ;
+                 SWAP ;
+                 CAR ;
+                 CAR ;
+                 CAR ;
+                 CAR ;
+                 DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CAR ; CDR } ;
+                 PAIR ;
+                 DIP { DIP { DUP } ;
+                       SWAP ;
+                       CAR ;
+                       CAR ;
+                       CDR ;
+                       CAR ;
+                       DIP { DIP { DUP } ; SWAP ; CAR ; CAR ; CDR ; CDR } ;
+                       PAIR } ;
+                 PAIR ;
+                 DIP { DIP 2 { DUP } ;
+                       DIG 2 ;
+                       DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CAR ; CDR } ;
+                       PAIR ;
+                       DIP { DIP { DUP } ;
+                             SWAP ;
+                             CAR ;
+                             CDR ;
+                             CDR ;
+                             CAR ;
+                             DIP { DIP { DUP } ; SWAP ; CAR ; CDR ; CDR ; CDR } ;
+                             PAIR } ;
+                       PAIR } ;
+                 PAIR ;
+                 DIP { DIP { DUP } ;
+                       SWAP ;
+                       CDR ;
+                       CAR ;
+                       DIP { DIP { DUP } ; SWAP ; CDR ; CDR } ;
+                       PAIR } ;
+                 PAIR ;
+                 NIL operation ;
+                 PAIR ;
+                 DIP { DROP 3 } } ;
+             DIP { DROP } } ;
+         DIP { DROP 4 } } }

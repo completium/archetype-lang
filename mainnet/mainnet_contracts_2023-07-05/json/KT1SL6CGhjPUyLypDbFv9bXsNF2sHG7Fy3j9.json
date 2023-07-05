@@ -1,0 +1,4620 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "unit",
+          "annots": [
+            "%main"
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "pair",
+          "args": [
+            {
+              "prim": "big_map",
+              "args": [
+                {
+                  "prim": "address"
+                },
+                {
+                  "prim": "mutez"
+                }
+              ],
+              "annots": [
+                ":depositors"
+              ]
+            },
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "address",
+                  "annots": [
+                    "%owner"
+                  ]
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "mutez",
+                      "annots": [
+                        "%min_deposit"
+                      ]
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "nat",
+                          "annots": [
+                            "%withdraw_fee"
+                          ]
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "nat",
+                              "annots": [
+                                "%collat_coeff"
+                              ]
+                            },
+                            {
+                              "prim": "pair",
+                              "args": [
+                                {
+                                  "prim": "mutez",
+                                  "annots": [
+                                    "%deposited"
+                                  ]
+                                },
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "mutez",
+                                      "annots": [
+                                        "%borrowed"
+                                      ]
+                                    },
+                                    {
+                                      "prim": "pair",
+                                      "args": [
+                                        {
+                                          "prim": "nat",
+                                          "annots": [
+                                            "%depositors_size"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "key_hash",
+                                          "annots": [
+                                            "%delegate"
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "annots": [
+            ":storage"
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "DUP"
+          },
+          {
+            "prim": "DIP",
+            "args": [
+              [
+                {
+                  "prim": "CDR",
+                  "annots": [
+                    "@storage_slash_1"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "CAR",
+            "annots": [
+              "@__slash_2"
+            ]
+          },
+          {
+            "prim": "PUSH",
+            "args": [
+              {
+                "prim": "nat"
+              },
+              {
+                "int": "1000000"
+              }
+            ],
+            "annots": [
+              "@one_prec6"
+            ]
+          },
+          {
+            "prim": "LAMBDA",
+            "args": [
+              {
+                "prim": "pair",
+                "args": [
+                  {
+                    "prim": "pair",
+                    "args": [
+                      {
+                        "prim": "mutez"
+                      },
+                      {
+                        "prim": "nat"
+                      }
+                    ]
+                  },
+                  {
+                    "prim": "nat"
+                  }
+                ]
+              },
+              {
+                "prim": "mutez"
+              },
+              [
+                {
+                  "prim": "RENAME",
+                  "annots": [
+                    "@_amount_coeff__one_prec6_slash_8"
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR",
+                  "annots": [
+                    "@one_prec6_slash_3"
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DUP"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CDR",
+                  "annots": [
+                    "@coeff"
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "2"
+                    },
+                    [
+                      {
+                        "prim": "DUP"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "2"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "@amount"
+                  ]
+                },
+                {
+                  "prim": "MUL"
+                },
+                {
+                  "prim": "EDIV"
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "string"
+                          },
+                          {
+                            "string": "Division error in `apply_coeff`."
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "CAR"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DROP"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "PAIR",
+            "annots": [
+              "@apply_coeff"
+            ]
+          },
+          {
+            "prim": "SENDER",
+            "annots": [
+              "@sender"
+            ]
+          },
+          {
+            "prim": "AMOUNT",
+            "annots": [
+              "@amount"
+            ]
+          },
+          {
+            "prim": "BALANCE",
+            "annots": [
+              "@contract_balance"
+            ]
+          },
+          {
+            "prim": "DIP",
+            "args": [
+              {
+                "int": "5"
+              },
+              [
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@storage"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIG",
+            "args": [
+              {
+                "int": "5"
+              }
+            ]
+          },
+          {
+            "prim": "DUP",
+            "annots": [
+              "@s"
+            ]
+          },
+          [
+            {
+              "prim": "CDR"
+            },
+            {
+              "prim": "CAR",
+              "annots": [
+                "%owner"
+              ]
+            }
+          ],
+          {
+            "prim": "DIP",
+            "args": [
+              {
+                "int": "4"
+              },
+              [
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@sender"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIG",
+            "args": [
+              {
+                "int": "4"
+              }
+            ]
+          },
+          {
+            "prim": "COMPARE"
+          },
+          {
+            "prim": "NEQ"
+          },
+          {
+            "prim": "PUSH",
+            "args": [
+              {
+                "prim": "mutez"
+              },
+              {
+                "int": "1000000"
+              }
+            ]
+          },
+          {
+            "prim": "DIP",
+            "args": [
+              {
+                "int": "4"
+              },
+              [
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@amount"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIG",
+            "args": [
+              {
+                "int": "4"
+              }
+            ]
+          },
+          {
+            "prim": "COMPARE"
+          },
+          {
+            "prim": "GT"
+          },
+          {
+            "prim": "AND"
+          },
+          {
+            "prim": "IF",
+            "args": [
+              [
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                [
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CAR",
+                    "annots": [
+                      "@min_deposit",
+                      "%min_deposit"
+                    ]
+                  }
+                ],
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "3"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@amount"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "3"
+                    }
+                  ]
+                },
+                {
+                  "prim": "COMPARE"
+                },
+                {
+                  "prim": "LT"
+                },
+                {
+                  "prim": "IF",
+                  "args": [
+                    [
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "string"
+                          },
+                          {
+                            "string": "Deposited amount is too small."
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "FAILWITH"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "UNIT"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DROP"
+                },
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%depositors"
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "4"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@sender"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "GET"
+                },
+                {
+                  "prim": "IF_NONE",
+                  "args": [
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%deposited"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%borrowed"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "CDR",
+                        "annots": [
+                          "%delegate"
+                        ]
+                      },
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "nat"
+                          },
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "9"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "9"
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%depositors_size"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "ADD"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%depositors_size",
+                          "%delegate"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%borrowed"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%deposited"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "3"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "2"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@b"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "3"
+                          },
+                          [
+                            {
+                              "prim": "DROP"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "ADD"
+                      },
+                      {
+                        "prim": "PAIR"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "RENAME",
+                  "annots": [
+                    "@_user_balance_s"
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CDR",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%depositors"
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "3"
+                    },
+                    [
+                      {
+                        "prim": "DUP"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "3"
+                    }
+                  ]
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "@user_balance"
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "8"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@sender"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "8"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    [
+                      {
+                        "prim": "SOME"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "UPDATE"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "@s",
+                    "%depositors"
+                  ]
+                },
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%depositors"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%owner"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%min_deposit"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%withdraw_fee"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DUP"
+                },
+                {
+                  "prim": "CAR",
+                  "annots": [
+                    "%collat_coeff"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "CDR"
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "11"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@amount"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "11"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "7"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "7"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "8"
+                    },
+                    [
+                      {
+                        "prim": "DROP",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                [
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CAR",
+                    "annots": [
+                      "%deposited"
+                    ]
+                  }
+                ],
+                {
+                  "prim": "ADD"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%deposited"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%collat_coeff"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%withdraw_fee"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%min_deposit"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "%owner"
+                  ]
+                },
+                {
+                  "prim": "SWAP"
+                },
+                {
+                  "prim": "PAIR",
+                  "annots": [
+                    "@s",
+                    "%depositors"
+                  ]
+                },
+                {
+                  "prim": "NIL",
+                  "args": [
+                    {
+                      "prim": "operation"
+                    }
+                  ]
+                },
+                {
+                  "prim": "PAIR"
+                }
+              ],
+              [
+                {
+                  "prim": "DUP",
+                  "annots": [
+                    "@s"
+                  ]
+                },
+                [
+                  {
+                    "prim": "CDR"
+                  },
+                  {
+                    "prim": "CAR",
+                    "annots": [
+                      "%owner"
+                    ]
+                  }
+                ],
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "4"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@sender"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "COMPARE"
+                },
+                {
+                  "prim": "NEQ"
+                },
+                {
+                  "prim": "PUSH",
+                  "args": [
+                    {
+                      "prim": "mutez"
+                    },
+                    {
+                      "int": "1000000"
+                    }
+                  ]
+                },
+                {
+                  "prim": "DIP",
+                  "args": [
+                    {
+                      "int": "4"
+                    },
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@amount"
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "prim": "DIG",
+                  "args": [
+                    {
+                      "int": "4"
+                    }
+                  ]
+                },
+                {
+                  "prim": "COMPARE"
+                },
+                {
+                  "prim": "LE"
+                },
+                {
+                  "prim": "AND"
+                },
+                {
+                  "prim": "IF",
+                  "args": [
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@sender"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "GET"
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "Only depositors can withdraw."
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          []
+                        ]
+                      },
+                      {
+                        "prim": "RENAME",
+                        "annots": [
+                          "@user_balance"
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "2"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@contract_balance"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "2"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@user_balance"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "GT"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "Withdraw amount greater than current contract balance."
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "UNIT"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DROP"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "6"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@user_balance"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "6"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "8"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "8"
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%deposited"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "SUB_MUTEZ"
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "UNIT"
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          []
+                        ]
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%deposited"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "@s",
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "NONE",
+                        "args": [
+                          {
+                            "prim": "mutez"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "8"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@sender"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "8"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "UPDATE"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "@s",
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%deposited"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "CAR",
+                        "annots": [
+                          "%borrowed"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "CDR"
+                      },
+                      {
+                        "prim": "CDR",
+                        "annots": [
+                          "%delegate"
+                        ]
+                      },
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "nat"
+                          },
+                          {
+                            "int": "1"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "9"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "9"
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%depositors_size"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "SUB"
+                      },
+                      {
+                        "prim": "DUP"
+                      },
+                      {
+                        "prim": "ABS"
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "GE"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [],
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "Depositors counting error."
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%depositors_size",
+                          "%delegate"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%borrowed"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%deposited"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%collat_coeff"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%withdraw_fee"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%min_deposit"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "%owner"
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "PAIR",
+                        "annots": [
+                          "@s",
+                          "%depositors"
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "8"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@apply_coeff"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "8"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%withdraw_fee"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "5"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@user_balance"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "5"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "PAIR"
+                      },
+                      {
+                        "prim": "EXEC",
+                        "annots": [
+                          "@fee_amount"
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "SWAP"
+                      },
+                      {
+                        "prim": "NIL",
+                        "args": [
+                          {
+                            "prim": "operation"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "10"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@sender"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "10"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "CONTRACT",
+                        "args": [
+                          {
+                            "prim": "unit"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "No entrypoint default with parameter type unit"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          []
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "10"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "10"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@fee_amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "9"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@user_balance"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "9"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "SUB_MUTEZ"
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "UNIT"
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          []
+                        ]
+                      },
+                      {
+                        "prim": "ADD",
+                        "annots": [
+                          "@withdraw_amount"
+                        ]
+                      },
+                      {
+                        "prim": "UNIT"
+                      },
+                      {
+                        "prim": "TRANSFER_TOKENS",
+                        "annots": [
+                          "@op_withdraw"
+                        ]
+                      },
+                      {
+                        "prim": "CONS"
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "3"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%owner"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "CONTRACT",
+                        "args": [
+                          {
+                            "prim": "unit"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "IF_NONE",
+                        "args": [
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "string": "No entrypoint default with parameter type unit"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "FAILWITH"
+                            }
+                          ],
+                          []
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "3"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@fee_amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DROP",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "UNIT"
+                      },
+                      {
+                        "prim": "TRANSFER_TOKENS",
+                        "annots": [
+                          "@op_fee"
+                        ]
+                      },
+                      {
+                        "prim": "CONS"
+                      },
+                      {
+                        "prim": "PAIR"
+                      }
+                    ],
+                    [
+                      {
+                        "prim": "DUP",
+                        "annots": [
+                          "@s"
+                        ]
+                      },
+                      [
+                        {
+                          "prim": "CDR"
+                        },
+                        {
+                          "prim": "CAR",
+                          "annots": [
+                            "%owner"
+                          ]
+                        }
+                      ],
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@sender"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "EQ"
+                      },
+                      {
+                        "prim": "PUSH",
+                        "args": [
+                          {
+                            "prim": "mutez"
+                          },
+                          {
+                            "int": "0"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "DIP",
+                        "args": [
+                          {
+                            "int": "4"
+                          },
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@amount"
+                              ]
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "prim": "DIG",
+                        "args": [
+                          {
+                            "int": "4"
+                          }
+                        ]
+                      },
+                      {
+                        "prim": "COMPARE"
+                      },
+                      {
+                        "prim": "EQ"
+                      },
+                      {
+                        "prim": "AND"
+                      },
+                      {
+                        "prim": "IF",
+                        "args": [
+                          [
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "nat"
+                                },
+                                {
+                                  "int": "1000000"
+                                }
+                              ],
+                              "annots": [
+                                "@one_prec6"
+                              ]
+                            },
+                            {
+                              "prim": "LAMBDA",
+                              "args": [
+                                {
+                                  "prim": "pair",
+                                  "args": [
+                                    {
+                                      "prim": "nat"
+                                    },
+                                    {
+                                      "prim": "nat"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "prim": "nat"
+                                },
+                                [
+                                  {
+                                    "prim": "RENAME",
+                                    "annots": [
+                                      "@coeff__one_prec6_slash_14"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR",
+                                    "annots": [
+                                      "@coeff_slash_15"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DUP"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CDR",
+                                    "annots": [
+                                      "@one_prec6_slash_3"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "SUB"
+                                  },
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "ABS"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "GE"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "Invalid coefficient value in `get_coeff_compl`."
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DROP"
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "@get_coeff_compl"
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "5"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@apply_coeff"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "5"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%collat_coeff"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%deposited"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "@apply_coeff_slash_13"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR",
+                                "annots": [
+                                  "@get_coeff_compl_slash_18"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CDR",
+                              "annots": [
+                                "@collat_coeff"
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "CAR"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "@deposited"
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  },
+                                  {
+                                    "prim": "CAR"
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  },
+                                  {
+                                    "prim": "CDR"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "3"
+                                },
+                                [
+                                  {
+                                    "prim": "DROP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "EXEC"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%borrowed"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@max_borrowing"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "LT"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "string": "No available funds to borrow: contract is under-collateralized."
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "UNIT"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DROP"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@contract_balance"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%borrowed"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@max_borrowing"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "SUB_MUTEZ"
+                            },
+                            {
+                              "prim": "IF_NONE",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "UNIT"
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                []
+                              ]
+                            },
+                            {
+                              "prim": "PAIR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "@a"
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR",
+                              "annots": [
+                                "@b"
+                              ]
+                            },
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@b"
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@a"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "GT"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@b"
+                                    ]
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@a"
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "SWAP"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "mutez"
+                                },
+                                {
+                                  "int": "0"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@borrowing"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "EQ"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "string": "No available funds to borrow."
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "UNIT"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DROP"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%depositors"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%owner"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%min_deposit"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%withdraw_fee"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%collat_coeff"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DUP"
+                            },
+                            {
+                              "prim": "CAR",
+                              "annots": [
+                                "%deposited"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "CDR"
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "7"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@borrowing"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "7"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "10"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "10"
+                                }
+                              ]
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%borrowed"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "ADD"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%borrowed"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%deposited"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%collat_coeff"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%withdraw_fee"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%min_deposit"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "%owner"
+                              ]
+                            },
+                            {
+                              "prim": "SWAP"
+                            },
+                            {
+                              "prim": "PAIR",
+                              "annots": [
+                                "@s",
+                                "%depositors"
+                              ]
+                            },
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            },
+                            {
+                              "prim": "NIL",
+                              "args": [
+                                {
+                                  "prim": "operation"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "2"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "2"
+                                }
+                              ]
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%owner"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "CONTRACT",
+                              "args": [
+                                {
+                                  "prim": "unit"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "IF_NONE",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "string"
+                                      },
+                                      {
+                                        "string": "No entrypoint default with parameter type unit"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "FAILWITH"
+                                  }
+                                ],
+                                []
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "4"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@borrowing"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "4"
+                                },
+                                [
+                                  {
+                                    "prim": "DROP",
+                                    "args": [
+                                      {
+                                        "int": "3"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "UNIT"
+                            },
+                            {
+                              "prim": "TRANSFER_TOKENS",
+                              "annots": [
+                                "@op"
+                              ]
+                            },
+                            {
+                              "prim": "CONS"
+                            },
+                            {
+                              "prim": "PAIR"
+                            }
+                          ],
+                          [
+                            {
+                              "prim": "DUP",
+                              "annots": [
+                                "@s"
+                              ]
+                            },
+                            [
+                              {
+                                "prim": "CDR"
+                              },
+                              {
+                                "prim": "CAR",
+                                "annots": [
+                                  "%owner"
+                                ]
+                              }
+                            ],
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "4"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@sender"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "EQ"
+                            },
+                            {
+                              "prim": "PUSH",
+                              "args": [
+                                {
+                                  "prim": "mutez"
+                                },
+                                {
+                                  "int": "420000"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "DIP",
+                              "args": [
+                                {
+                                  "int": "4"
+                                },
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@amount"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "prim": "DIG",
+                              "args": [
+                                {
+                                  "int": "4"
+                                }
+                              ]
+                            },
+                            {
+                              "prim": "COMPARE"
+                            },
+                            {
+                              "prim": "EQ"
+                            },
+                            {
+                              "prim": "AND"
+                            },
+                            {
+                              "prim": "IF",
+                              "args": [
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "NIL",
+                                    "args": [
+                                      {
+                                        "prim": "operation"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      },
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@s"
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  },
+                                  [
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CDR",
+                                      "annots": [
+                                        "%delegate"
+                                      ]
+                                    }
+                                  ],
+                                  {
+                                    "prim": "SOME"
+                                  },
+                                  {
+                                    "prim": "SET_DELEGATE",
+                                    "annots": [
+                                      "@op_set_delegate"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CONS"
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      },
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@s"
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "2"
+                                      }
+                                    ]
+                                  },
+                                  [
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CAR",
+                                      "annots": [
+                                        "%owner"
+                                      ]
+                                    }
+                                  ],
+                                  {
+                                    "prim": "CONTRACT",
+                                    "args": [
+                                      {
+                                        "prim": "unit"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "IF_NONE",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "No entrypoint default with parameter type unit"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ],
+                                      []
+                                    ]
+                                  },
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "mutez"
+                                      },
+                                      {
+                                        "int": "420000"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "UNIT"
+                                  },
+                                  {
+                                    "prim": "TRANSFER_TOKENS",
+                                    "annots": [
+                                      "@op_refund"
+                                    ]
+                                  },
+                                  {
+                                    "prim": "CONS"
+                                  },
+                                  {
+                                    "prim": "PAIR"
+                                  }
+                                ],
+                                [
+                                  {
+                                    "prim": "DUP",
+                                    "annots": [
+                                      "@s"
+                                    ]
+                                  },
+                                  [
+                                    {
+                                      "prim": "CDR"
+                                    },
+                                    {
+                                      "prim": "CAR",
+                                      "annots": [
+                                        "%owner"
+                                      ]
+                                    }
+                                  ],
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      },
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@sender"
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "EQ"
+                                  },
+                                  {
+                                    "prim": "PUSH",
+                                    "args": [
+                                      {
+                                        "prim": "mutez"
+                                      },
+                                      {
+                                        "int": "0"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIP",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      },
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@amount"
+                                          ]
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "prim": "DIG",
+                                    "args": [
+                                      {
+                                        "int": "4"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "prim": "COMPARE"
+                                  },
+                                  {
+                                    "prim": "GT"
+                                  },
+                                  {
+                                    "prim": "AND"
+                                  },
+                                  {
+                                    "prim": "IF",
+                                    "args": [
+                                      [
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@s"
+                                          ]
+                                        },
+                                        [
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CAR",
+                                            "annots": [
+                                              "@borrowed",
+                                              "%borrowed"
+                                            ]
+                                          }
+                                        ],
+                                        {
+                                          "prim": "DIP",
+                                          "args": [
+                                            {
+                                              "int": "3"
+                                            },
+                                            [
+                                              {
+                                                "prim": "DUP",
+                                                "annots": [
+                                                  "@amount"
+                                                ]
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "3"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "COMPARE"
+                                        },
+                                        {
+                                          "prim": "GT"
+                                        },
+                                        {
+                                          "prim": "IF",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "PUSH",
+                                                "args": [
+                                                  {
+                                                    "prim": "string"
+                                                  },
+                                                  {
+                                                    "string": "Can't over-collateralize contract."
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            [
+                                              {
+                                                "prim": "UNIT"
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DROP"
+                                        },
+                                        {
+                                          "prim": "DUP",
+                                          "annots": [
+                                            "@s"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%depositors"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%owner"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%min_deposit"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%withdraw_fee"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%collat_coeff"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DUP"
+                                        },
+                                        {
+                                          "prim": "CAR",
+                                          "annots": [
+                                            "%deposited"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "CDR"
+                                        },
+                                        {
+                                          "prim": "DIP",
+                                          "args": [
+                                            {
+                                              "int": "9"
+                                            },
+                                            [
+                                              {
+                                                "prim": "DUP",
+                                                "annots": [
+                                                  "@amount"
+                                                ]
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "9"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DIP",
+                                          "args": [
+                                            {
+                                              "int": "8"
+                                            },
+                                            [
+                                              {
+                                                "prim": "DUP",
+                                                "annots": [
+                                                  "@s"
+                                                ]
+                                              }
+                                            ]
+                                          ]
+                                        },
+                                        {
+                                          "prim": "DIG",
+                                          "args": [
+                                            {
+                                              "int": "8"
+                                            }
+                                          ]
+                                        },
+                                        [
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CDR"
+                                          },
+                                          {
+                                            "prim": "CAR",
+                                            "annots": [
+                                              "%borrowed"
+                                            ]
+                                          }
+                                        ],
+                                        {
+                                          "prim": "SUB_MUTEZ"
+                                        },
+                                        {
+                                          "prim": "IF_NONE",
+                                          "args": [
+                                            [
+                                              {
+                                                "prim": "UNIT"
+                                              },
+                                              {
+                                                "prim": "FAILWITH"
+                                              }
+                                            ],
+                                            []
+                                          ]
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%borrowed"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%deposited"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%collat_coeff"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%withdraw_fee"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%min_deposit"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "%owner"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "SWAP"
+                                        },
+                                        {
+                                          "prim": "PAIR",
+                                          "annots": [
+                                            "@s",
+                                            "%depositors"
+                                          ]
+                                        },
+                                        {
+                                          "prim": "NIL",
+                                          "args": [
+                                            {
+                                              "prim": "operation"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "PAIR"
+                                        }
+                                      ],
+                                      [
+                                        {
+                                          "prim": "PUSH",
+                                          "args": [
+                                            {
+                                              "prim": "string"
+                                            },
+                                            {
+                                              "string": "You shouldn't be here."
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "prim": "FAILWITH"
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "prim": "DIP",
+            "args": [
+              [
+                {
+                  "prim": "DROP",
+                  "args": [
+                    {
+                      "int": "7"
+                    }
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "prim": "Pair",
+    "args": [
+      {
+        "int": "26"
+      },
+      {
+        "string": "tz1T4H8uQerqskAVxCx6CHXsADvKqr88kyh2"
+      },
+      {
+        "int": "100000000"
+      },
+      {
+        "int": "1000"
+      },
+      {
+        "int": "250000"
+      },
+      {
+        "int": "13484670000"
+      },
+      {
+        "int": "10718805000"
+      },
+      {
+        "int": "3"
+      },
+      {
+        "string": "tz1iDu3tHhf7H4jyXk6rGV4FNUsMqQmRkwLp"
+      }
+    ]
+  }
+}

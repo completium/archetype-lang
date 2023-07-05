@@ -1,0 +1,151 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "list",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "nat"
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "string"
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "string"
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "nat"
+                            },
+                            {
+                              "prim": "map",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "prim": "string"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "list",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {
+                  "prim": "nat"
+                },
+                {
+                  "prim": "pair",
+                  "args": [
+                    {
+                      "prim": "string"
+                    },
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {
+                          "prim": "string"
+                        },
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {
+                              "prim": "nat"
+                            },
+                            {
+                              "prim": "map",
+                              "args": [
+                                {
+                                  "prim": "string"
+                                },
+                                {
+                                  "prim": "string"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "CAR"
+          },
+          {
+            "prim": "NIL",
+            "args": [
+              {
+                "prim": "operation"
+              }
+            ]
+          },
+          {
+            "prim": "PAIR"
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": [
+    {
+      "prim": "Pair",
+      "args": [
+        {
+          "int": "0"
+        },
+        {
+          "string": "S0"
+        },
+        {
+          "string": "S0"
+        },
+        {
+          "int": "0"
+        },
+        []
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{ parameter (or (address %addOwner) (string %storeValue)) ;
+  storage (pair (set %owners address) (string %storedValue)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         SENDER ;
+         SWAP ;
+         CAR ;
+         SWAP ;
+         MEM ;
+         IF {} { PUSH string "failed assertion" ; FAILWITH } ;
+         IF_LEFT
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             DIG 2 ;
+             CAR ;
+             DIG 2 ;
+             PUSH bool True ;
+             SWAP ;
+             UPDATE ;
+             PAIR ;
+             NIL operation ;
+             PAIR }
+           { SWAP ; CAR ; PAIR ; NIL operation ; PAIR } } }

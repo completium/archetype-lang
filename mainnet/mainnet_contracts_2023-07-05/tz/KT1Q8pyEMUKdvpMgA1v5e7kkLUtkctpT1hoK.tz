@@ -1,0 +1,106 @@
+{ parameter (or (or (unit %default) (option %setDelegate key_hash)) (nat %withdraw)) ;
+  storage address ;
+  code { LAMBDA
+           (pair (pair (pair string bytes) mutez) address)
+           operation
+           { DUP ;
+             CDR ;
+             CONTRACT %runEntrypointLambda (pair (string %lambdaName) (bytes %lambdaParameter)) ;
+             IF_NONE { PUSH string "7" ; FAILWITH } {} ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CDR ;
+             DIG 2 ;
+             CAR ;
+             CAR ;
+             TRANSFER_TOKENS } ;
+         SWAP ;
+         DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP ;
+                 DUP ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { SWAP ; DROP ; NIL operation ; PAIR }
+                    { DUP ;
+                      AMOUNT ;
+                      PUSH unit Unit ;
+                      PACK ;
+                      PUSH string "onOvenDepositReceived" ;
+                      PAIR ;
+                      PAIR ;
+                      PAIR ;
+                      DIG 2 ;
+                      SWAP ;
+                      EXEC ;
+                      SWAP ;
+                      NIL operation ;
+                      DIG 2 ;
+                      CONS ;
+                      PAIR } }
+               { PAIR ;
+                 DUP ;
+                 CDR ;
+                 SENDER ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 AMOUNT ;
+                 DIG 2 ;
+                 PACK ;
+                 PUSH string "onOvenSetDelegate" ;
+                 PAIR ;
+                 PAIR ;
+                 PAIR ;
+                 DIG 3 ;
+                 SWAP ;
+                 EXEC ;
+                 DIG 2 ;
+                 CAR ;
+                 SET_DELEGATE ;
+                 DIG 2 ;
+                 NIL operation ;
+                 DIG 2 ;
+                 CONS ;
+                 DIG 2 ;
+                 CONS ;
+                 PAIR } }
+           { DUP ;
+             DUG 2 ;
+             SENDER ;
+             PAIR ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             AMOUNT ;
+             DIG 2 ;
+             PACK ;
+             PUSH string "onOvenWithdrawalRequested" ;
+             PAIR ;
+             PAIR ;
+             PAIR ;
+             DIG 3 ;
+             SWAP ;
+             EXEC ;
+             SENDER ;
+             CONTRACT unit ;
+             IF_NONE { PUSH string "15" ; FAILWITH } {} ;
+             PUSH mutez 1 ;
+             DIG 4 ;
+             MUL ;
+             PUSH unit Unit ;
+             TRANSFER_TOKENS ;
+             DIG 2 ;
+             NIL operation ;
+             DIG 2 ;
+             CONS ;
+             DIG 2 ;
+             CONS ;
+             PAIR } } }

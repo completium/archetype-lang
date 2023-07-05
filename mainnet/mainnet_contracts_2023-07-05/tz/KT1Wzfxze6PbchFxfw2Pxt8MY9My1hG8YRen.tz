@@ -1,0 +1,505 @@
+{ parameter
+    (or (or (pair %init (pair address address) address)
+            (pair %initToken (pair address nat) (pair address string)))
+        (pair %registerSymbol (pair string string) (pair nat nat))) ;
+  storage
+    (pair (pair (address %allowable) (option %documentManager address))
+          (pair (option %tokenHolders address)
+                (big_map %tokens
+                   string
+                   (pair (pair (nat %decimals) (string %name))
+                         (pair (option %tokenAddress address) (nat %totalSupply)))))) ;
+  code { LAMBDA
+           (pair (pair address string) address)
+           operation
+           { DUP ;
+             CDR ;
+             CONTRACT
+               (or (or (or (pair %init_ address address) (address %notStopped))
+                       (or (pair %onlyAdmin address address) (pair %onlyOwner address address)))
+                   (or (pair %onlyRole (pair address address) string)
+                       (pair %updateStorage
+                          address
+                          (pair (pair (pair (pair (list %adminRoles string) (address %owner))
+                                            (pair (bool %roleApproval) (set %roleNames string)))
+                                      (pair (pair (map %roleUsers
+                                                     string
+                                                     (pair (pair (map %addRoleInitiators address address)
+                                                                 (map %removeRoleInitiators address address))
+                                                           (set %users address)))
+                                                  (option %startInitiator address))
+                                            (pair (option %stopInitiator address) (bool %stopped))))
+                                (pair (bool %transferOwnershipApproval)
+                                      (map %transferOwnershipInitiator address address)))))) ;
+             IF_NONE { PUSH string "Allowable contract not found" ; FAILWITH } {} ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CDR ;
+             SENDER ;
+             DIG 3 ;
+             CAR ;
+             CAR ;
+             PAIR ;
+             PAIR ;
+             LEFT (pair address
+                        (pair (pair (pair (pair (list string) address) (pair bool (set string)))
+                                    (pair (pair (map string (pair (pair (map address address) (map address address)) (set address)))
+                                                (option address))
+                                          (pair (option address) bool)))
+                              (pair bool (map address address)))) ;
+             RIGHT
+               (or (or (pair address address) address) (or (pair address address) (pair address address))) ;
+             SWAP ;
+             PUSH mutez 0 ;
+             DIG 2 ;
+             TRANSFER_TOKENS } ;
+         PUSH string "Contract not found" ;
+         PUSH string "Already initialized" ;
+         PUSH string "INDIVIDUAL_ISSUE_TOKEN_OWNER" ;
+         DIG 4 ;
+         DUP ;
+         DUG 5 ;
+         CDR ;
+         DIG 5 ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DIG 2 ;
+                 DROP ;
+                 DIG 3 ;
+                 DROP ;
+                 DIG 3 ;
+                 DROP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 PAIR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 CDR ;
+                 DIG 2 ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 CDR ;
+                 DUP ;
+                 CAR ;
+                 CAR ;
+                 SENDER ;
+                 COMPARE ;
+                 NEQ ;
+                 IF { PUSH string "Access is denied" ; FAILWITH } {} ;
+                 DUP ;
+                 CAR ;
+                 CDR ;
+                 IF_NONE {} { DROP ; DIG 2 ; DUP ; DUG 3 ; FAILWITH } ;
+                 DUP ;
+                 CDR ;
+                 CAR ;
+                 IF_NONE { DIG 2 ; DROP } { DROP ; DIG 2 ; FAILWITH } ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CDR ;
+                 SOME ;
+                 DIG 2 ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 CDR ;
+                 DIG 2 ;
+                 CDR ;
+                 CAR ;
+                 SOME ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR ;
+                 NIL operation ;
+                 PAIR }
+               { DIG 3 ;
+                 DROP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CAR ;
+                 PAIR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CDR ;
+                 DIG 3 ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 CDR ;
+                 CAR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 DIG 4 ;
+                 DUP ;
+                 DUG 5 ;
+                 CAR ;
+                 CDR ;
+                 CDR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 CAR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 SWAP ;
+                 CDR ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 GET ;
+                 IF_NONE
+                   { PUSH string "Token symbol is not registered: " ; CONCAT ; FAILWITH }
+                   { SWAP ; DROP } ;
+                 DUP ;
+                 CDR ;
+                 CAR ;
+                 IF_NONE
+                   {}
+                   { DROP ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     PUSH string "Token is already deployed: " ;
+                     CONCAT ;
+                     FAILWITH } ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 DIG 5 ;
+                 CAR ;
+                 CDR ;
+                 SOME ;
+                 PAIR ;
+                 DIG 2 ;
+                 CAR ;
+                 PAIR ;
+                 SOME ;
+                 DIG 2 ;
+                 UPDATE ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CAR ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CAR ;
+                 DIG 5 ;
+                 SELF ;
+                 ADDRESS ;
+                 PAIR ;
+                 PAIR ;
+                 DIG 6 ;
+                 SWAP ;
+                 EXEC ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 PAIR ;
+                 DUP ;
+                 CDR ;
+                 CAR ;
+                 CDR ;
+                 IF_NONE { DIG 6 ; DUP ; DUG 7 ; FAILWITH } {} ;
+                 CONTRACT
+                   (or (or (address %addToken)
+                           (pair %setDocument_
+                              (pair (pair (pair (pair string nat) string) (pair string string))
+                                    (pair (pair string string) (pair string string)))
+                              string))
+                       (nat %setSaveDataFlag)) ;
+                 IF_NONE { DIG 6 ; DUP ; DUG 7 ; FAILWITH } {} ;
+                 PUSH mutez 0 ;
+                 DIG 2 ;
+                 CAR ;
+                 LEFT (pair (pair (pair (pair (pair string nat) string) (pair string string))
+                                  (pair (pair string string) (pair string string)))
+                            string) ;
+                 LEFT nat ;
+                 TRANSFER_TOKENS ;
+                 DIG 4 ;
+                 DIG 4 ;
+                 PAIR ;
+                 DIG 4 ;
+                 DUP ;
+                 DUG 5 ;
+                 CAR ;
+                 CAR ;
+                 CDR ;
+                 DIG 5 ;
+                 CAR ;
+                 CAR ;
+                 CAR ;
+                 PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CAR ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CAR ;
+                 CAR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CDR ;
+                 CDR ;
+                 CAR ;
+                 IF_NONE { DIG 6 ; DUP ; DUG 7 ; FAILWITH } {} ;
+                 CONTRACT
+                   (or (address %addToken_)
+                       (pair %afterTransfer (pair (pair address nat) (pair address nat)) address)) ;
+                 IF_NONE { DIG 6 ; FAILWITH } { DIG 7 ; DROP } ;
+                 PUSH mutez 0 ;
+                 DIG 4 ;
+                 CDR ;
+                 CAR ;
+                 DIG 4 ;
+                 DUP ;
+                 DUG 5 ;
+                 DIG 4 ;
+                 DUP ;
+                 DUG 5 ;
+                 PAIR ;
+                 DIG 5 ;
+                 DIG 5 ;
+                 PAIR ;
+                 PAIR ;
+                 PAIR ;
+                 RIGHT address ;
+                 TRANSFER_TOKENS ;
+                 DIG 3 ;
+                 NIL operation ;
+                 DIG 4 ;
+                 CONS ;
+                 DIG 3 ;
+                 CONS ;
+                 DIG 2 ;
+                 CONS ;
+                 PAIR } }
+           { DIG 3 ;
+             DROP ;
+             DIG 3 ;
+             DROP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             CDR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CDR ;
+             CAR ;
+             PAIR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CAR ;
+             CDR ;
+             DIG 3 ;
+             CAR ;
+             CAR ;
+             PAIR ;
+             PAIR ;
+             PAIR ;
+             DUP ;
+             CDR ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CDR ;
+             CAR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CAR ;
+             CAR ;
+             CDR ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             CAR ;
+             CAR ;
+             CAR ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             CAR ;
+             CAR ;
+             DIG 6 ;
+             SELF ;
+             ADDRESS ;
+             PAIR ;
+             PAIR ;
+             DIG 6 ;
+             SWAP ;
+             EXEC ;
+             PUSH nat 20 ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             SIZE ;
+             COMPARE ;
+             GT ;
+             PUSH nat 0 ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             SIZE ;
+             COMPARE ;
+             EQ ;
+             OR ;
+             IF { SWAP ; DUP ; DUG 2 ; PUSH string "Invalid symbol: " ; CONCAT ; FAILWITH }
+                {} ;
+             PUSH nat 128 ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             SIZE ;
+             COMPARE ;
+             GT ;
+             PUSH nat 0 ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             SIZE ;
+             COMPARE ;
+             EQ ;
+             OR ;
+             IF { DIG 2 ; DUP ; DUG 3 ; PUSH string "Invalid name: " ; CONCAT ; FAILWITH }
+                {} ;
+             PUSH nat 18 ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             COMPARE ;
+             GT ;
+             IF { PUSH string "Invalid decimals" ; FAILWITH } {} ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             CDR ;
+             CDR ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             GET ;
+             IF_NONE
+               {}
+               { DROP ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 PUSH string "Token symbol is already registered: " ;
+                 CONCAT ;
+                 FAILWITH } ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             CDR ;
+             CDR ;
+             DIG 6 ;
+             CAR ;
+             CDR ;
+             CDR ;
+             NONE address ;
+             PAIR ;
+             DIG 4 ;
+             DIG 5 ;
+             PAIR ;
+             PAIR ;
+             SOME ;
+             DIG 3 ;
+             UPDATE ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             CDR ;
+             CAR ;
+             PAIR ;
+             DIG 2 ;
+             CAR ;
+             PAIR ;
+             NIL operation ;
+             DIG 2 ;
+             CONS ;
+             PAIR } } }

@@ -1,0 +1,214 @@
+{ parameter
+    (or (or (unit %contribute) (key_hash %set_baker))
+        (or (string %update_meta)
+            (or (address %update_oracle) (pair %withdraw (address %address) (mutez %amount))))) ;
+  storage
+    (pair (pair (pair (mutez %achieved) (address %admin)) (pair (mutez %goal) (string %meta)))
+          (pair (pair (address %oracle) (bool %oracle_staking_rights))
+                (pair (address %protocol) (pair (timestamp %time_lock) (nat %token_id))))) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP ;
+                 PUSH mutez 1000000 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 GT ;
+                 IF {} { PUSH string "WrongCondition: sp.amount > sp.tez(1)" ; FAILWITH } ;
+                 DUP ;
+                 { CAR ; CAR ; CDR } ;
+                 SENDER ;
+                 COMPARE ;
+                 NEQ ;
+                 IF {}
+                    { PUSH string "WrongCondition: sp.sender != self.data.admin" ; FAILWITH } ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 AMOUNT ;
+                 ADD ;
+                 PAIR ;
+                 PAIR ;
+                 PAIR ;
+                 PUSH mutez 1 ;
+                 AMOUNT ;
+                 EDIV ;
+                 { IF_NONE { PUSH int 40 ; FAILWITH } {} } ;
+                 CAR ;
+                 NIL operation ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 { CDR ; CDR ; CAR } ;
+                 CONTRACT %mint_hicetnuncDAO
+                   (pair (address %address) (pair (nat %amount) (nat %token_id))) ;
+                 { IF_NONE { PUSH int 41 ; FAILWITH } {} } ;
+                 PUSH mutez 0 ;
+                 DIG 4 ;
+                 DUP ;
+                 DUG 5 ;
+                 { CDR ; CDR ; CDR ; CDR } ;
+                 DIG 4 ;
+                 PAIR ;
+                 SENDER ;
+                 PAIR ;
+                 TRANSFER_TOKENS ;
+                 CONS }
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 { CDR ; CAR ; CAR } ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH bool True ;
+                      DIG 2 ;
+                      DUP ;
+                      DUG 3 ;
+                      { CDR ; CAR ; CDR } ;
+                      COMPARE ;
+                      EQ }
+                    { PUSH bool False } ;
+                 IF { PUSH bool True }
+                    { SWAP ; DUP ; DUG 2 ; { CAR ; CAR ; CDR } ; SENDER ; COMPARE ; EQ } ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: ((sp.sender == self.data.oracle) & (self.data.oracle_staking_rights == True)) | (sp.sender == self.data.admin)" ;
+                      FAILWITH } ;
+                 DUP ;
+                 SOME ;
+                 SET_DELEGATE ;
+                 NIL operation ;
+                 SWAP ;
+                 CONS ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 { CAR ; CAR ; CDR } ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF { SWAP ;
+                      DROP ;
+                      SWAP ;
+                      DUP ;
+                      CAR ;
+                      SWAP ;
+                      CDR ;
+                      DUP ;
+                      CDR ;
+                      SWAP ;
+                      { CAR ; CAR } ;
+                      PUSH bool False ;
+                      SWAP ;
+                      PAIR ;
+                      PAIR ;
+                      SWAP ;
+                      PAIR ;
+                      SWAP }
+                    { SWAP ; DROP } } }
+           { IF_LEFT
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 { CAR ; CAR ; CDR } ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 IF {}
+                    { PUSH string "WrongCondition: sp.sender == self.data.admin" ; FAILWITH } ;
+                 SWAP ;
+                 DUP ;
+                 CDR ;
+                 SWAP ;
+                 CAR ;
+                 DUP ;
+                 CAR ;
+                 SWAP ;
+                 { CDR ; CAR } ;
+                 DIG 3 ;
+                 SWAP ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 PAIR ;
+                 NIL operation }
+               { IF_LEFT
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CDR ; CAR ; CAR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF { PUSH bool True }
+                        { SWAP ; DUP ; DUG 2 ; { CAR ; CAR ; CDR } ; SENDER ; COMPARE ; EQ } ;
+                     IF { PUSH bool False ;
+                          DIG 2 ;
+                          DUP ;
+                          DUG 3 ;
+                          { CDR ; CAR ; CDR } ;
+                          COMPARE ;
+                          EQ }
+                        { PUSH bool False } ;
+                     IF {}
+                        { PUSH string
+                               "WrongCondition: ((sp.sender == self.data.oracle) | (sp.sender == self.data.admin)) & (self.data.oracle_staking_rights == False)" ;
+                          FAILWITH } ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     SWAP ;
+                     CDR ;
+                     DUP ;
+                     CDR ;
+                     SWAP ;
+                     { CAR ; CDR } ;
+                     DIG 3 ;
+                     PAIR ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR ;
+                     NIL operation }
+                   { SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CAR ; CAR ; CDR } ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {}
+                        { PUSH string "WrongCondition: sp.sender == self.data.admin" ; FAILWITH } ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     { CDR ; CDR ; CDR ; CAR } ;
+                     NOW ;
+                     COMPARE ;
+                     GT ;
+                     IF {}
+                        { PUSH string "WrongCondition: sp.now > self.data.time_lock" ; FAILWITH } ;
+                     DUP ;
+                     CAR ;
+                     CONTRACT unit ;
+                     NIL operation ;
+                     SWAP ;
+                     { IF_NONE { PUSH int 77 ; FAILWITH } {} } ;
+                     DIG 2 ;
+                     CDR ;
+                     UNIT ;
+                     TRANSFER_TOKENS ;
+                     CONS } } } ;
+         PAIR } }

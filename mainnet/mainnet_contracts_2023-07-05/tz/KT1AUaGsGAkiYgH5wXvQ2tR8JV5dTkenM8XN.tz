@@ -1,0 +1,323 @@
+{ parameter
+    (or (or (address %addMinter)
+            (pair %grantNft (pair (address %addr) (nat %claim)) (nat %puzzleId)))
+        (or (address %removeMinter)
+            (pair %setNft
+               (pair %nft (pair (nat %cap) (address %contract)) (nat %seed))
+               (nat %puzzleId)))) ;
+  storage
+    (pair (map %nfts nat (pair (pair (nat %cap) (address %contract)) (nat %seed)))
+          (pair %roles (set %minter address) (address %owner))) ;
+  code { NIL operation ;
+         LAMBDA
+           (pair (map nat (pair (pair nat address) nat)) (pair (set address) address))
+           bool
+           { SENDER ; SWAP ; CDR ; CDR ; COMPARE ; EQ } ;
+         LAMBDA
+           (pair address (pair (map nat (pair (pair nat address) nat)) (pair (set address) address)))
+           bool
+           { DUP ; CDR ; SWAP ; CAR ; SWAP ; CDR ; CAR ; SWAP ; MEM } ;
+         DIG 3 ;
+         DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         PUSH mutez 0 ;
+         AMOUNT ;
+         COMPARE ;
+         GT ;
+         IF { PUSH string "This contract does not accept tokens." ; FAILWITH } {} ;
+         IF_LEFT
+           { IF_LEFT
+               { PUSH bool False ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 5 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "OperationNotAllowed" ; FAILWITH } {} ;
+                 PUSH bool True ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 PAIR ;
+                 DIG 4 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "MinterExists" ; FAILWITH } {} ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CAR ;
+                 DIG 2 ;
+                 PUSH bool True ;
+                 SWAP ;
+                 UPDATE ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR }
+               { DIG 3 ;
+                 DROP ;
+                 DIG 3 ;
+                 DROP ;
+                 PUSH bool False ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 SENDER ;
+                 PAIR ;
+                 DIG 4 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "NOPERM" ; FAILWITH } {} ;
+                 NIL operation ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 PUSH nat 0 ;
+                 SELF ;
+                 ADDRESS ;
+                 PUSH nat 0 ;
+                 PAIR ;
+                 PAIR ;
+                 DIG 2 ;
+                 CAR ;
+                 DIG 2 ;
+                 GET ;
+                 IF_NONE {} { SWAP ; DROP } ;
+                 DUP ;
+                 CAR ;
+                 CAR ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 CAR ;
+                 CDR ;
+                 COMPARE ;
+                 LE ;
+                 PUSH nat 0 ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 CAR ;
+                 COMPARE ;
+                 GT ;
+                 AND ;
+                 IF { DIG 2 ;
+                      DUP ;
+                      DUG 3 ;
+                      CAR ;
+                      CDR ;
+                      SWAP ;
+                      DUP ;
+                      DUG 2 ;
+                      CDR ;
+                      PUSH nat 3 ;
+                      DIG 2 ;
+                      DUP ;
+                      DUG 3 ;
+                      COMPARE ;
+                      LE ;
+                      IF { DROP ; PUSH nat 1 ; SWAP ; SUB ; ABS }
+                         { PUSH int 1 ;
+                           SWAP ;
+                           PAIR ;
+                           SWAP ;
+                           LAMBDA
+                             (pair nat (pair nat int))
+                             (pair bool (pair nat int))
+                             { DUP ;
+                               CDR ;
+                               SWAP ;
+                               CAR ;
+                               SWAP ;
+                               DUP ;
+                               CDR ;
+                               DIG 2 ;
+                               INT ;
+                               SWAP ;
+                               DUP ;
+                               DUG 2 ;
+                               COMPARE ;
+                               LE ;
+                               IF { PUSH nat 4294967296 ;
+                                    PUSH nat 1 ;
+                                    DIG 3 ;
+                                    CAR ;
+                                    PUSH nat 134775813 ;
+                                    MUL ;
+                                    ADD ;
+                                    EDIV ;
+                                    IF_NONE { PUSH string "MOD by 0" ; FAILWITH } {} ;
+                                    CDR ;
+                                    PUSH int 1 ;
+                                    DIG 2 ;
+                                    ADD ;
+                                    SWAP ;
+                                    PAIR ;
+                                    PUSH bool True ;
+                                    PAIR }
+                                  { DROP ; PUSH bool False ; PAIR } } ;
+                           SWAP ;
+                           APPLY ;
+                           SWAP ;
+                           PUSH bool True ;
+                           LOOP { DIP { DUP } ; EXEC ; DUP ; CDR ; SWAP ; CAR } ;
+                           SWAP ;
+                           DROP ;
+                           CAR ;
+                           PUSH nat 1000 ;
+                           PUSH nat 1000000 ;
+                           DIG 2 ;
+                           EDIV ;
+                           IF_NONE { PUSH string "MOD by 0" ; FAILWITH } {} ;
+                           CDR ;
+                           EDIV ;
+                           IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+                           CAR ;
+                           PUSH nat 700 ;
+                           SWAP ;
+                           DUP ;
+                           DUG 2 ;
+                           COMPARE ;
+                           GE ;
+                           IF { DROP ; PUSH nat 5 }
+                              { PUSH nat 400 ;
+                                SWAP ;
+                                DUP ;
+                                DUG 2 ;
+                                COMPARE ;
+                                GE ;
+                                IF { DROP ; PUSH nat 4 }
+                                   { PUSH nat 200 ;
+                                     SWAP ;
+                                     DUP ;
+                                     DUG 2 ;
+                                     COMPARE ;
+                                     GE ;
+                                     IF { DROP ; PUSH nat 3 }
+                                        { PUSH nat 50 ;
+                                          SWAP ;
+                                          COMPARE ;
+                                          GE ;
+                                          IF { PUSH nat 2 } { PUSH nat 1 } } } } } ;
+                      SWAP ;
+                      CAR ;
+                      CDR ;
+                      CONTRACT %mint_tokens
+                        (list (pair (address %owner) (pair (nat %token_id) (nat %amount)))) ;
+                      IF_NONE { PUSH string "bad address for get_entrypoint" ; FAILWITH } {} ;
+                      PUSH mutez 0 ;
+                      NIL (pair address (pair nat nat)) ;
+                      PUSH nat 1 ;
+                      DIG 4 ;
+                      PAIR ;
+                      DIG 5 ;
+                      CAR ;
+                      CAR ;
+                      PAIR ;
+                      CONS ;
+                      TRANSFER_TOKENS ;
+                      CONS }
+                    { DROP ; SWAP ; DROP } ;
+                 PAIR } }
+           { IF_LEFT
+               { PUSH bool False ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 5 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "OperationNotAllowed" ; FAILWITH } {} ;
+                 PUSH bool False ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 PAIR ;
+                 DIG 4 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "MinterNotExists" ; FAILWITH } {} ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 CAR ;
+                 DIG 2 ;
+                 PUSH bool False ;
+                 SWAP ;
+                 UPDATE ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR }
+               { DIG 2 ;
+                 DROP ;
+                 PUSH bool False ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 DIG 4 ;
+                 SWAP ;
+                 EXEC ;
+                 COMPARE ;
+                 EQ ;
+                 IF { PUSH string "OperationNotAllowed" ; FAILWITH } {} ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 DIG 2 ;
+                 CAR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 DIG 3 ;
+                 CDR ;
+                 SWAP ;
+                 SOME ;
+                 SWAP ;
+                 UPDATE ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR } } } }

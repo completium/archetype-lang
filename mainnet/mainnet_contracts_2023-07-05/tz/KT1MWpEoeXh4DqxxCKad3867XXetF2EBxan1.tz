@@ -1,0 +1,60 @@
+{ parameter unit ;
+  storage
+    (pair (pair (nat %amount) (big_map %claimed address bool))
+          (pair (address %fa2) (nat %token_id))) ;
+  code { CDR ;
+         DUP ;
+         { CAR ; CDR } ;
+         SENDER ;
+         GET ;
+         { IF_NONE { PUSH bool False } {} } ;
+         IF { PUSH string
+                   "WrongCondition: ~ self.data.claimed.get(sp.sender, default_value = False)" ;
+              FAILWITH }
+            {} ;
+         DUP ;
+         { CDR ; CAR } ;
+         CONTRACT %transfer
+           (list (pair (address %from_)
+                       (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))) ;
+         NIL operation ;
+         SWAP ;
+         { IF_NONE { PUSH int 53 ; FAILWITH } {} } ;
+         PUSH mutez 0 ;
+         NIL (pair (address %from_)
+                   (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))) ;
+         NIL (pair (address %to_) (pair (nat %token_id) (nat %amount))) ;
+         DIG 5 ;
+         DUP ;
+         { CAR ; CAR } ;
+         SWAP ;
+         DUP ;
+         DUG 7 ;
+         { CDR ; CDR } ;
+         PAIR %token_id %amount ;
+         SENDER ;
+         PAIR %to_ ;
+         CONS ;
+         SELF ;
+         ADDRESS ;
+         PAIR %from_ %txs ;
+         CONS ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         SWAP ;
+         DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         DUP ;
+         CAR ;
+         SWAP ;
+         CDR ;
+         PUSH (option bool) (Some True) ;
+         SENDER ;
+         UPDATE ;
+         SWAP ;
+         PAIR ;
+         PAIR ;
+         SWAP ;
+         PAIR } }

@@ -1,0 +1,68 @@
+{ parameter
+    (or (unit %default)
+        (pair %command
+           (or :action
+              (pair :transfer (mutez %amount) (contract %dest unit))
+              (or (option %delegate key_hash) (key %new_key)))
+           signature)) ;
+  storage (pair (nat %counter) (key %key)) ;
+  code { { { { DUP ; CAR ; DIP { CDR } } } } ;
+         IF_LEFT
+           { DROP ;
+             PUSH (set address) { "tz1eBSEX4KZ7dT7XrDxUX4HtXZBsb8XgPV7o" } ;
+             SENDER ;
+             MEM ;
+             { IF {} { { UNIT ; FAILWITH } } } ;
+             NIL operation ;
+             PAIR }
+           { { { { DUP ; CAR @action ; DIP { CDR @signature } } } } ;
+             DIG 2 ;
+             { { { DUP ; CAR @counter ; DIP { CDR @key } } } } ;
+             DUP ;
+             { DIP 3 { DUP } ; DIG 4 } ;
+             PAIR ;
+             SENDER ;
+             SELF ;
+             ADDRESS ;
+             PAIR ;
+             CHAIN_ID ;
+             PAIR ;
+             PAIR ;
+             PACK ;
+             DIG 4 ;
+             { DIP 3 { DUP } ; DIG 4 } ;
+             CHECK_SIGNATURE ;
+             { IF {} { { UNIT ; FAILWITH } } } ;
+             PUSH nat 1 ;
+             ADD @new_counter ;
+             PAIR @new_storage ;
+             SWAP ;
+             NIL operation ;
+             SWAP ;
+             IF_LEFT
+               { NOW ;
+                 PUSH timestamp "2024-01-01T00:00:00Z" ;
+                 SUB @rem_sec ;
+                 PUSH @month int 2629800 ;
+                 SWAP ;
+                 EDIV ;
+                 { IF_NONE { UNIT ; FAILWITH } {} } ;
+                 CAR @rem_month_round_down ;
+                 PUSH int 1 ;
+                 ADD @rem_month_round_up ;
+                 ISNAT ;
+                 { IF_NONE { PUSH nat 0 } {} } ;
+                 PUSH @monthly_amount mutez 1 ;
+                 MUL @amount_that_must_remain ;
+                 { DIP { DUP } ; SWAP } ;
+                 CAR @amount ;
+                 BALANCE ;
+                 SUB ;
+                 SUB ;
+                 DROP ;
+                 { { { DUP ; CAR ; DIP { CDR } } } } ;
+                 UNIT ;
+                 TRANSFER_TOKENS ;
+                 CONS }
+               { IF_LEFT { SET_DELEGATE ; CONS } { DIG 2 ; CAR ; PAIR ; SWAP } } ;
+             PAIR } } }

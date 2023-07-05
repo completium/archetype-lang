@@ -1,0 +1,74 @@
+{
+  "code": [
+    {
+      "prim": "parameter",
+      "args": [
+        {
+          "prim": "unit"
+        }
+      ]
+    },
+    {
+      "prim": "storage",
+      "args": [
+        {
+          "prim": "pair",
+          "args": [
+            {
+              "prim": "unit",
+              "annots": [
+                "%dummy_field"
+              ]
+            },
+            {
+              "prim": "big_map",
+              "args": [
+                {
+                  "prim": "string"
+                },
+                {
+                  "prim": "bytes"
+                }
+              ],
+              "annots": [
+                "%metadata"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prim": "code",
+      "args": [
+        [
+          {
+            "prim": "CDR"
+          },
+          {
+            "prim": "NIL",
+            "args": [
+              {
+                "prim": "operation"
+              }
+            ]
+          },
+          {
+            "prim": "PAIR"
+          }
+        ]
+      ]
+    }
+  ],
+  "storage": {
+    "prim": "Pair",
+    "args": [
+      {
+        "prim": "Unit"
+      },
+      {
+        "int": "396"
+      }
+    ]
+  }
+}

@@ -1,0 +1,121 @@
+{ parameter
+    (or (pair %setInterfaceImplementer
+           (address %addr)
+           (pair (address %implementer) (string %name)))
+        (pair %tokens_transferred_hook
+           (pair (nat %amount) (address %from_))
+           (pair (bool %isReward) (address %to_)))) ;
+  storage (pair (address %admin) (big_map %interfaces address (map string address))) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DUP ;
+             CAR ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             IF {} { PUSH string "Not matched" ; FAILWITH } ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             MEM ;
+             IF {}
+                { SWAP ;
+                  DUP ;
+                  CAR ;
+                  SWAP ;
+                  CDR ;
+                  DIG 2 ;
+                  DUP ;
+                  DUG 3 ;
+                  CAR ;
+                  PUSH (option (map string address)) (Some {}) ;
+                  SWAP ;
+                  UPDATE ;
+                  SWAP ;
+                  PAIR ;
+                  SWAP } ;
+             SWAP ;
+             DUP ;
+             CAR ;
+             SWAP ;
+             CDR ;
+             DUP ;
+             DIG 3 ;
+             DUP ;
+             DUG 4 ;
+             CAR ;
+             DUP ;
+             DUG 2 ;
+             GET ;
+             IF_NONE { PUSH int 15 ; FAILWITH } {} ;
+             DIG 4 ;
+             DUP ;
+             CDR ;
+             CDR ;
+             SWAP ;
+             CDR ;
+             CAR ;
+             SOME ;
+             SWAP ;
+             UPDATE ;
+             SOME ;
+             SWAP ;
+             UPDATE ;
+             SWAP ;
+             PAIR ;
+             NIL operation }
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             CDR ;
+             MEM ;
+             IF { NIL operation ;
+                  DIG 2 ;
+                  DUP ;
+                  DUG 3 ;
+                  CDR ;
+                  DIG 2 ;
+                  DUP ;
+                  DUG 3 ;
+                  CDR ;
+                  CDR ;
+                  GET ;
+                  IF_NONE { PUSH int 20 ; FAILWITH } {} ;
+                  PUSH string "tokens_received" ;
+                  GET ;
+                  IF_NONE { PUSH int 20 ; FAILWITH } {} ;
+                  CONTRACT %tokens_received
+                    (pair (nat %amount) (pair (address %from_) (bool %isReward))) ;
+                  IF_NONE { PUSH int 23 ; FAILWITH } {} ;
+                  PUSH mutez 0 ;
+                  DIG 3 ;
+                  DUP ;
+                  CDR ;
+                  CAR ;
+                  SWAP ;
+                  DUP ;
+                  DUG 5 ;
+                  CAR ;
+                  CDR ;
+                  PAIR %from_ %isReward ;
+                  DIG 4 ;
+                  CAR ;
+                  CAR ;
+                  PAIR %amount ;
+                  TRANSFER_TOKENS ;
+                  CONS }
+                { DROP ; NIL operation } } ;
+         PAIR } }

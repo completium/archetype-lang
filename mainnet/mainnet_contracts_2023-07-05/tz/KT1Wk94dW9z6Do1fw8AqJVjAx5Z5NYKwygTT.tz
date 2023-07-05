@@ -1,0 +1,31 @@
+{ parameter unit ;
+  storage (pair (address %fa2) (nat %token_id)) ;
+  code { CDR ;
+         DUP ;
+         CAR ;
+         CONTRACT %transfer
+           (list (pair (address %from_)
+                       (list %txs (pair (nat %amount) (pair (address %to_) (nat %token_id)))))) ;
+         NIL operation ;
+         SWAP ;
+         { IF_NONE { PUSH int 49 ; FAILWITH } {} } ;
+         PUSH mutez 0 ;
+         NIL (pair (address %from_)
+                   (list %txs (pair (nat %amount) (pair (address %to_) (nat %token_id))))) ;
+         NIL (pair (nat %amount) (pair (address %to_) (nat %token_id))) ;
+         DIG 5 ;
+         DUP ;
+         DUG 6 ;
+         CDR ;
+         SENDER ;
+         PAIR ;
+         PUSH nat 1 ;
+         PAIR ;
+         CONS ;
+         SELF ;
+         ADDRESS ;
+         PAIR ;
+         CONS ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         PAIR } }

@@ -1,0 +1,53 @@
+{ parameter address ;
+  storage
+    (pair :storage
+       (big_map address (pair :record (mutez %deposited) (address %delegate)))
+       mutez) ;
+  code { DUP ;
+         DIP { CDR @prev_slash_1 } ;
+         CAR @delegate_slash_2 ;
+         AMOUNT @amount ;
+         SENDER @source ;
+         { DIP 3 { DUP @prev } ; DIG 4 } ;
+         CAR %deposits ;
+         { DIP 2 { DUP @amount } ; DIG 3 } ;
+         { DIP 5 { DUP @prev } ; DIG 6 } ;
+         CDR %total ;
+         ADD ;
+         SWAP ;
+         PAIR @curr %deposits %total ;
+         PUSH @dest key_hash "tz1iDu3tHhf7H4jyXk6rGV4FNUsMqQmRkwLp" ;
+         IMPLICIT_ACCOUNT ;
+         { DIP 3 { DUP @amount } ; DIG 4 } ;
+         UNIT ;
+         TRANSFER_TOKENS @op ;
+         { DIP { DUP @curr } ; SWAP } ;
+         CDR %total ;
+         { DIP 2 { DUP @curr } ; DIG 3 } ;
+         CAR %deposits ;
+         { DIP 7 { DUP @prev } ; DIG 8 } ;
+         CAR %deposits ;
+         { DIP 5 { DUP @source } ; DIG 6 } ;
+         GET ;
+         IF_NONE
+           { { DIP 6 { DUP @delegate } ; DIG 7 } ;
+             { DIP 6 { DUP @amount } ; DIG 7 } ;
+             PAIR %deposited %delegate }
+           { { DIP 7 { DUP @delegate } ; DIG 8 } ;
+             { DIP 7 { DUP @amount } ; DIG 8 } ;
+             { DIP 2 { DUP @r } ; DIG 3 } ;
+             DIP 3 { DROP } ;
+             CAR %deposited ;
+             ADD ;
+             PAIR %deposited %delegate } ;
+         RENAME @record ;
+         { DIP 5 { DUP @source } ; DIG 6 } ;
+         DIP { SOME } ;
+         DIP 5 { DROP ; DROP ; DROP ; DROP ; DROP } ;
+         UPDATE ;
+         PAIR @curr %deposits %total ;
+         NIL operation ;
+         { DIP 2 { DUP } ; DIG 3 } ;
+         DIP 3 { DROP } ;
+         CONS ;
+         PAIR } }

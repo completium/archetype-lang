@@ -1,0 +1,16 @@
+{ parameter int ;
+  storage (pair (int %last_completed_migration) (address %owner)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         CDR ;
+         SENDER ;
+         COMPARE ;
+         NEQ ;
+         IF { DROP } { SWAP ; CDR ; SWAP ; PAIR } ;
+         NIL operation ;
+         PAIR } }

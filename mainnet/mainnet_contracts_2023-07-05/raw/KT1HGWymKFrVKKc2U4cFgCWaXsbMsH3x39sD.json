@@ -1,0 +1,1 @@
+{"balance":"0","script":{"code":[{"prim":"parameter","args":[{"prim":"address"}]},{"prim":"storage","args":[{"prim":"address"}]},{"prim":"code","args":[[{"prim":"CAR"},{"prim":"NIL","args":[{"prim":"operation"}]},{"prim":"PAIR"}]]}],"storage":{"string":"KT1Dc22wdDGx4w5xdyRzvicUPZZ2uj2Q4mtU"}}}

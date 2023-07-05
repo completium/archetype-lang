@@ -1,0 +1,1 @@
+{ parameter nat ; storage unit ; code { CAR ; FAILWITH } }

@@ -1,0 +1,148 @@
+{ parameter
+    (or (lambda %do unit (list operation))
+        (or %default :_entries
+           (pair %_Liq_entry_play nat key_hash)
+           (or (nat %_Liq_entry_finish) (unit %_Liq_entry_fund)))) ;
+  storage
+    (pair key_hash
+          (pair :storage
+             (option %game (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))))
+             (address %oracle_id))) ;
+  code { DUP ;
+         CAR ;
+         IF_LEFT
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             { DIP { DUP } ; SWAP } ;
+             CDR ;
+             CAR ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { COMPARE ;
+               NEQ ;
+               IF { SENDER ; PUSH string "Only the owner can operate." ; PAIR ; FAILWITH }
+                  { UNIT ; EXEC ; DIP { CDR } ; PAIR } } }
+           { DIP { CDR ; DUP ; CDR } ;
+             PAIR ;
+             { DUP ;
+               DIP { CDR @storage_slash_1 } ;
+               CAR @parameter_slash_2 ;
+               DUP @parameter ;
+               IF_LEFT
+                 { RENAME @_number_player_slash_3 ;
+                   { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ;
+                   { DIP { DUP } ; SWAP } ;
+                   CAR @number ;
+                   PUSH nat 100 ;
+                   { DIP { DUP @number } ; SWAP } ;
+                   COMPARE ;
+                   GT ;
+                   IF { PUSH string "number must be <= 100" ; FAILWITH } { UNIT } ;
+                   DROP ;
+                   PUSH mutez 0 ;
+                   AMOUNT ;
+                   COMPARE ;
+                   EQ ;
+                   IF { PUSH string "bet cannot be 0tz" ; FAILWITH } { UNIT } ;
+                   DROP ;
+                   BALANCE ;
+                   AMOUNT ;
+                   PUSH nat 2 ;
+                   MUL ;
+                   COMPARE ;
+                   GT ;
+                   IF { PUSH string "I don't have enough money for this bet" ; FAILWITH }
+                      { UNIT } ;
+                   DROP ;
+                   { DIP { DUP @storage } ; SWAP } ;
+                   CAR %game ;
+                   IF_NONE
+                     { { DIP { DUP @storage } ; SWAP } ;
+                       CDR %oracle_id ;
+                       { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                       CDR @player ;
+                       AMOUNT @bet ;
+                       PAIR %bet %player ;
+                       { DIP { DIP { DUP @number } ; SWAP } ; SWAP } ;
+                       PAIR %number ;
+                       SOME ;
+                       PAIR @storage %game %oracle_id ;
+                       NIL operation ;
+                       PAIR }
+                     { DUP @g ; PUSH string "Game already started with" ; PAIR ; FAILWITH } ;
+                   DIP { DROP ; DROP ; DROP } }
+                 { IF_LEFT
+                     { RENAME @random_number_slash_10 ;
+                       { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ;
+                       DUP @storage ;
+                       CDR %oracle_id ;
+                       SENDER ;
+                       COMPARE ;
+                       NEQ ;
+                       IF { PUSH string "Random numbers cannot be generated" ; FAILWITH } { UNIT } ;
+                       DROP ;
+                       DUP @storage ;
+                       CAR %game ;
+                       IF_NONE
+                         { PUSH string "No game already started" ; FAILWITH }
+                         { { DIP { DUP @storage } ; SWAP } ;
+                           CDR %oracle_id ;
+                           NONE (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))) ;
+                           PAIR @storage %game %oracle_id ;
+                           { DIP { DUP @game } ; SWAP } ;
+                           CAR %number ;
+                           PUSH nat 101 ;
+                           { DIP { DIP { DIP { DIP { DIP { DUP @random_number } ; SWAP } ; SWAP } ;
+                                         SWAP } ;
+                                   SWAP } ;
+                             SWAP } ;
+                           EDIV ;
+                           IF_NONE { UNIT ; FAILWITH } { CDR @r } ;
+                           RENAME @random_number ;
+                           COMPARE ;
+                           LT ;
+                           IF { NIL operation ;
+                                { DIP { DIP { DUP @game } ; SWAP } ; SWAP } ;
+                                { CDR ; CDR %player } ;
+                                IMPLICIT_ACCOUNT ;
+                                PUSH mutez 1 ;
+                                UNIT ;
+                                TRANSFER_TOKENS ;
+                                CONS }
+                              { NIL operation ;
+                                { DIP { DIP { DUP @game } ; SWAP } ; SWAP } ;
+                                { CDR ; CDR %player } ;
+                                IMPLICIT_ACCOUNT ;
+                                PUSH nat 100 ;
+                                { DIP { DIP { DIP { DIP { DUP @game } ; SWAP } ; SWAP } ; SWAP } ;
+                                  SWAP } ;
+                                CAR %number ;
+                                { DIP { DIP { DIP { DIP { DIP { DUP @game } ; SWAP } ; SWAP } ; SWAP } ;
+                                        SWAP } ;
+                                  SWAP } ;
+                                { CDR ; CAR %bet } ;
+                                MUL ;
+                                EDIV ;
+                                IF_NONE { PUSH mutez 0 } { CAR @g } ;
+                                RENAME @gain ;
+                                { DIP { DIP { DIP { DIP { DUP @game } ; SWAP } ; SWAP } ; SWAP } ;
+                                  SWAP } ;
+                                { CDR ; CAR %bet } ;
+                                ADD @reimbursed ;
+                                UNIT ;
+                                TRANSFER_TOKENS ;
+                                CONS } ;
+                           { DIP { DIP { DROP } } } ;
+                           RENAME @ops ;
+                           PAIR } ;
+                       DIP { DROP ; DROP } }
+                     { DROP ; { DIP { DUP } ; SWAP } ; NIL operation ; PAIR } } ;
+               DIP { DROP ; DROP } } ;
+             SWAP ;
+             CAR ;
+             SWAP ;
+             { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP { SWAP ; PAIR } ;
+             PAIR } } }

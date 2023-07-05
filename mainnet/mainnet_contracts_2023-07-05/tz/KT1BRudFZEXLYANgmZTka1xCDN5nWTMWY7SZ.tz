@@ -1,0 +1,17 @@
+{ parameter unit ;
+  storage unit ;
+  code { CDR ;
+         NIL operation ;
+         AMOUNT ;
+         PUSH mutez 0 ;
+         { COMPARE ;
+           EQ ;
+           IF {}
+              { SOURCE ;
+                CONTRACT unit ;
+                { IF_NONE { { UNIT ; FAILWITH } } {} } ;
+                AMOUNT ;
+                UNIT ;
+                TRANSFER_TOKENS ;
+                CONS } } ;
+         PAIR } }

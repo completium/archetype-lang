@@ -1,0 +1,16 @@
+{ parameter (or (lambda %do unit (list operation)) (unit %default)) ;
+  storage key_hash ;
+  code { UNPAIR ;
+         IF_LEFT
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             DUP 2 ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             UNIT ;
+             EXEC ;
+             PAIR }
+           { DROP ; NIL operation ; PAIR } } }

@@ -1,0 +1,70 @@
+{ parameter
+    (or (or (contract %get_metadata (big_map string bytes))
+            (pair %update_owners (bool %add) (address %owner)))
+        (big_map %update_storage string bytes)) ;
+  storage (pair (big_map %metadata string bytes) (set %owners address)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 NIL operation ;
+                 DIG 2 ;
+                 PUSH mutez 0 ;
+                 DIG 4 ;
+                 CAR ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 PAIR }
+               { SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 SENDER ;
+                 MEM ;
+                 IF {} { PUSH string "MetadataStorage/permision-denied" ; FAILWITH } ;
+                 DUP ;
+                 CAR ;
+                 IF { SWAP ;
+                      DUP ;
+                      DUG 2 ;
+                      CDR ;
+                      SWAP ;
+                      CDR ;
+                      PUSH bool True ;
+                      SWAP ;
+                      UPDATE ;
+                      SWAP ;
+                      CAR ;
+                      PAIR }
+                    { SWAP ;
+                      DUP ;
+                      DUG 2 ;
+                      CDR ;
+                      SWAP ;
+                      CDR ;
+                      PUSH bool False ;
+                      SWAP ;
+                      UPDATE ;
+                      SWAP ;
+                      CAR ;
+                      PAIR } ;
+                 NIL operation ;
+                 PAIR } }
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             SENDER ;
+             MEM ;
+             IF {} { PUSH string "MetadataStorage/permision-denied" ; FAILWITH } ;
+             SWAP ;
+             CDR ;
+             SWAP ;
+             PAIR ;
+             NIL operation ;
+             PAIR } } }
