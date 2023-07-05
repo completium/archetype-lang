@@ -106,7 +106,18 @@ let container_to_str c =
   | AssetView      -> "asset_view"
   | AssetKey       -> "asset_key"
 
-let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || is_keyword str
+let skip_keyword = function
+| "address_to_contract"
+(* | "make_asset" *)
+| "make_big_map"
+| "make_event"
+| "make_list"
+| "make_map"
+| "make_set"
+| "global_constant" -> true
+| _ -> false
+
+let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || (not (skip_keyword str) && is_keyword str)
 
 let string_of_id (id : Ident.ident) : string =
   if is_percent_prefix id then "%" ^ id else id
@@ -490,7 +501,7 @@ let rec pp_expr outer pos fmt a =
       | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_simple_expr x pp_simple_expr dst
       | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_simple_expr x pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
       | TTentry (x, id, arg)            -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_simple_expr x pp_id id pp_simple_expr arg
-      | TTentry2 (x, ida, arga, id, arg)-> Format.fprintf fmt "transfer %a to entry entry %a(%a).%a(%a)" pp_simple_expr x pp_id ida pp_simple_expr arga pp_id id pp_simple_expr arg
+      | TTentry2 (x, ida, arga, id, arg)-> Format.fprintf fmt "transfer %a to entry %a(%a).%a(%a)" pp_simple_expr x pp_id ida pp_simple_expr arga pp_id id pp_simple_expr arg
       | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_simple_expr x pp_id id (pp_list "," pp_simple_expr) args
       | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_simple_expr x
     in
@@ -828,7 +839,7 @@ and pp_literal fmt lit =
   | Lmtz                  n -> Format.fprintf fmt "%smtz" n
   | Lutz                  n -> Format.fprintf fmt "%sutz" n
   | Laddress              a -> Format.fprintf fmt "@%s" a
-  | Lstring               s -> Format.fprintf fmt "\"%s\"" s
+  | Lstring               s -> Format.fprintf fmt "\"%s\"" (String.escaped s)
   | Lbool                 b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration             d -> Format.fprintf fmt "%s" d
   | Ldate                 d -> Format.fprintf fmt "%s" d
