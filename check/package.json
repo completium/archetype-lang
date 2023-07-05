@@ -20,6 +20,7 @@
     "test:decomp:mic:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mic-passed.spec.ts",
     "test:decomp:mit:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mit-passed.spec.ts",
     "test:decomp:dir:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-dir-passed.spec.ts",
+    "test:decomp:ama:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-ama-passed.spec.ts",
     "test:decomp:mic:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mic-mainnet.spec.ts",
     "test:decomp:mit:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mit-mainnet.spec.ts",
     "test:decomp:dir:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-dir-mainnet.spec.ts",

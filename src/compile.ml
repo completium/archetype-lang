@@ -435,6 +435,15 @@ let decompile_from_path path =
 
 (* -------------------------------------------------------------------- *)
 
+let arl_model_arl input =
+  input
+  |> parse
+  |> compile_model
+  |> (fun x -> let env = Gen_decompile.mk_env () in to_archetype (x, env))
+  |> extract_pt
+
+(* -------------------------------------------------------------------- *)
+
 let print_version () =
   Format.printf "%s@\n" Options.version;
   exit 0

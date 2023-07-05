@@ -89,6 +89,7 @@ let main () : unit =
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
       "-rdt", Arg.Set Options.opt_raw_debug_trace, " Same as -rj";
       "--raw-debug-trace", Arg.Set Options.opt_raw_debug_trace, " Same as -rdt";
+      "-ama", Arg.Set Options.opt_ama, " arl -> mdl -> arl";
       "-j", Arg.Set Options.opt_json, " Json";
       "--json", Arg.Set Options.opt_json, " Same as -j";
       "-rj", Arg.Set Options.opt_rjson, " Raw Json";
@@ -161,7 +162,7 @@ let main () : unit =
             | _, _, _, true, _  , _, _, _ -> get_storage_values input
             | _, _, _, _, true  , _, _, _ -> with_parameters input
             | Some k, _, _, _, _, _, _, _ -> Lsp.process k input
-            | _, true, _  , _, _, _, _, _ -> decompile input
+            | _, true, _  , _, _, _, _, _ -> (if !Options.opt_ama then arl_model_arl input else decompile input)
             | _, _, Some v, _, _, _, _, _ -> process_expr ~tinput:input v
             | _, _, _, _, _, true  , _, _ -> show_entries_from_input input
             | _, _, _, _, _, _, true  , _ -> show_contract_interface input
