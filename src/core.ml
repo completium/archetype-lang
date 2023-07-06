@@ -151,6 +151,9 @@ let pp_duration_for_printer fmt (d : duration) =
       (pp_aux "m") d.minutes
       (pp_aux "s") d.seconds
 
+let duration_to_string (duration : duration) : string =
+  Format.asprintf "%a" pp_duration_for_printer duration
+
 let duration_to_timestamp (d : duration) : big_int =
   Big_int.zero_big_int
   |> fun x -> Big_int.mult_int_big_int 7  (Big_int.add_big_int x d.weeks)
@@ -210,6 +213,9 @@ let pp_date fmt (date : date) =
        | TZplus (h, m)  -> Format.fprintf fmt "+%a:%a" pp_int2 h pp_int2 m
        | TZminus (h, m) -> Format.fprintf fmt "-%a:%a" pp_int2 h pp_int2 m
     ) (date.timezone)
+
+let date_to_string (date : date) : string =
+  Format.asprintf "%a" pp_date date
 
 let cmp_timezone (t1 : timezone) (t2 : timezone) : bool =
   match t1, t2 with

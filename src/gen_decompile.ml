@@ -1537,7 +1537,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* lambda *)
 
     | Mletin (_ids, _a, _t, _b, _o)       -> assert false
-    | Mdeclvar (_ids, _t, _v, _c)         -> assert false
+    | Mdeclvar (ids, t, v, c)             -> A.evar (List.map snd ids) ?t:(Option.map for_type t) (f v) VDKbasic c
     | Mdeclvaropt (_ids, _t, _v, _fa, _c) -> assert false
     | Mapp (_e, _args)                    -> assert false
 
@@ -1576,7 +1576,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         | [e]  -> f e
         | e::t -> List.fold_left (fun accu x -> A.eseq (f x) accu) (f e) t
       end
-    | Mreturn _x                 -> assert false
+    | Mreturn x                  -> A.ereturn (f x)
 
 
     (* effect *)
@@ -1619,28 +1619,28 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnat v             -> A.ebnat v
     | Mbool true         -> A.etrue
     | Mbool false        -> A.efalse
-    | Mrational (_n, _d) -> assert false
+    | Mrational (n, d)   -> A.eapp (A.Foperator (dumloc (A.Arith A.DivRat))) [A.ebint n; A.ebint d]
     | Mstring v          -> A.estring v
-    | Mmutez _v          -> assert false
+    | Mmutez v           -> A.eutz (Big_int.string_of_big_int v)
     | Maddress v         -> A.eaddress v
-    | Mdate _v           -> assert false
-    | Mduration _v       -> assert false
+    | Mdate v            -> let d = Core.date_to_string v in A.edate d
+    | Mduration v        -> let d = Core.duration_to_string v in A.eduration d
     | Mtimestamp _v      -> assert false
     | Mbytes v           -> A.ebytes v
-    | Mchain_id _v       -> assert false
-    | Mkey _v            -> assert false
-    | Mkey_hash _v       -> assert false
-    | Msignature _v      -> assert false
-    | Mbls12_381_fr _    -> assert false
-    | Mbls12_381_fr_n _  -> assert false
-    | Mbls12_381_g1 _    -> assert false
-    | Mbls12_381_g2 _    -> assert false
+    | Mchain_id v        -> A.estring v
+    | Mkey v             -> A.estring v
+    | Mkey_hash v        -> A.estring v
+    | Msignature v       -> A.estring v
+    | Mbls12_381_fr v    -> A.ebytesFr v
+    | Mbls12_381_fr_n v  -> A.enumberFr v
+    | Mbls12_381_g1 v    -> A.ebytesG1 v
+    | Mbls12_381_g2 v    -> A.ebytesG2 v
     | Munit              -> A.etuple []
-    | MsaplingStateEmpty _ -> assert false
+    | MsaplingStateEmpty _v -> assert false
     | MsaplingTransaction (_, v) -> A.ebytes v
     | Mchest v           -> A.ebytes v
     | Mchest_key v       -> A.ebytes v
-    | Mtz_expr _v        -> assert false
+    | Mtz_expr v         -> A.etz_expr v
 
 
     (* control expression *)
@@ -1704,12 +1704,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnot _e          -> assert false
     | Mplus (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Plus))) [f l; f r]
     | Mminus (_l, _r)  -> assert false
-    | Mmult (_l, _r)   -> assert false
+    | Mmult (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Mult))) [f l; f r]
     | Mdivrat (_l, _r) -> assert false
     | Mdiveuc (_l, _r) -> assert false
     | Mmodulo (_l, _r) -> assert false
     | Mdivmod (_l, _r) -> assert false
-    | Muminus _e       -> assert false
+    | Muminus  e       -> A.eapp (A.Foperator (dumloc (A.Unary A.Uminus))) [f e]
     | MthreeWayCmp (_l, _r) -> assert false
     | Mshiftleft   (_l, _r) -> assert false
     | Mshiftright  (_l, _r) -> assert false
@@ -1877,7 +1877,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* bls curve *)
 
-    | Mpairing_check _ -> assert false
+    | Mpairing_check x -> A.eapp (A.Fident (SINone, (dumloc "pairing_check"))) [f x]
 
 
     (* timelock *)
@@ -1923,7 +1923,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mratarith (_op, _l, _r) -> assert false
     | Mratuminus _v           -> assert false
     | Mrattez (_c, _t)        -> assert false
-    | Mnattoint _e            -> assert false
+    | Mnattoint e             -> f e
     | Mnattorat _e            -> assert false
     | Minttorat _e            -> assert false
     | Mratdur (_c, _t)        -> assert false
@@ -2002,7 +2002,17 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     match f with
     | Function (_fs, _t) -> assert false
     | Getter (_fs, _t) -> assert false
-    | View (_fs, _t, _vv) -> assert false
+    | View (fs, rt, vv) -> begin
+        let sf : A.s_function = {
+          name  = snd fs.name;
+          args  = List.map (fun (id, ty, _dv) -> (snd id, for_type ty)) fs.args;
+          ret_t = Some (for_type rt);
+          body  = for_expr fs.body;
+          view  = true;
+          view_visibility = match vv with | VVonchain -> A.VVonchain | VVoffchain -> A.VVoffchain | VVonoffchain -> A.VVonoffchain;
+        } in
+        A.mk_function sf
+      end
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in

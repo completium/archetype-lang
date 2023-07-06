@@ -3,10 +3,6 @@
 BIN=./archetype.exe
 NB_ERR="0"
 NB_OUT="0"
-NB_MOD="0"
-NB_STR="0"
-NB_LIQ="0"
-NB_EXT="0"
 
 process () {
     printf '%-70s' $1
@@ -23,6 +19,7 @@ process () {
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
                 echo -ne "     \033[32m OK \033[0m"
+                NB_OUT=$((${NB_OUT} + 1))
                 # octez-client --mode mockup --base-dir /home/guillaume/.completium/mockup typecheck script $OUT > /dev/null 2> /dev/null
                 # RET=`echo $?`
                 # if [ ${RET} -eq 0 ]; then
