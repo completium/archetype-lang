@@ -1936,6 +1936,18 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   in
 
+  let for_decl (x : M.decl_node) : A.declaration =
+    match x with
+    | Dvar {name; type_; kind; default; _} -> begin
+        let k = match kind with | VKconstant -> A.VKconstant | VKvariable -> A.VKvariable in
+        A.mk_variable (A.mk_variable_decl ?dv:(Option.map for_expr default) (snd name) (for_type type_) k)
+      end
+    | Denum   _denum -> assert false
+    | Dasset  _dasset -> assert false
+    | Drecord _drecord -> assert false
+    | Devent  _devent -> assert false
+  in
+
   let for_storage_item (si : M.storage_item) : A.declaration =
     let id = si.id in
     let t  = for_type si.typ in
@@ -1963,7 +1975,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   in
 
   let decls =
-    List.map for_storage_item model.storage
+    List.map for_decl model.decls
+    @ List.map for_storage_item model.storage
     @ List.map for_fun model.functions
   in
 

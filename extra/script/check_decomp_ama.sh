@@ -13,29 +13,37 @@ process () {
     $BIN -d -ama $i > /dev/null 2> /dev/null
     RET=`echo $?`
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
-
-        OUT=$i.out
-        $BIN -d -ama $i 2> /dev/null | $BIN -pt > $OUT 2> /dev/null
+	    echo -ne "\033[32m OK \033[0m"
+        $BIN -d -ama $i 2> /dev/null | $BIN -pt > /dev/null 2> /dev/null
         RET=`echo $?`
         if [ ${RET} -eq 0 ]; then
             echo -ne "     \033[32m OK \033[0m"
-            octez-client --mode mockup --base-dir /home/guillaume/.completium/mockup typecheck script $OUT > /dev/null 2> /dev/null
+            OUT=$i.out
+            $BIN -d -ama $i 2> /dev/null | $BIN > $OUT 2> /dev/null
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
-    	          echo -ne "     \033[32m OK \033[0m"
+                echo -ne "     \033[32m OK \033[0m"
+                octez-client --mode mockup --base-dir /home/guillaume/.completium/mockup typecheck script $OUT > /dev/null 2> /dev/null
+                RET=`echo $?`
+                if [ ${RET} -eq 0 ]; then
+    	            echo -ne "     \033[32m OK \033[0m"
+                else
+	                echo -ne "     \033[31m KO \033[0m"
+                    NB_ERR=$((${NB_ERR} + 1))
+                fi
             else
-	              echo -ne "     \033[31m KO \033[0m"
-                NB_OUT=$((${NB_OUT} + 1))
+	            echo -ne "     \033[31m KO \033[0m"
+                NB_ERR=$((${NB_ERR} + 1))
             fi
         else
-	          echo -ne "     \033[31m KO \033[0m"
-            NB_OUT=$((${NB_OUT} + 1))
+	        echo -ne "     \033[31m KO \033[0m"
+            NB_ERR=$((${NB_ERR} + 1))
         fi
         echo ""
     else
 	      echo -ne "\033[31m KO \033[0m"
 	      echo -ne "     \033[31m KO \033[0m"
+          echo -ne "     \033[31m KO \033[0m"
 	      echo -e  "     \033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
         NB_OUT=$((${NB_OUT} + 1))
