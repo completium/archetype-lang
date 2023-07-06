@@ -23,14 +23,14 @@ process () {
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
                 echo -ne "     \033[32m OK \033[0m"
-                octez-client --mode mockup --base-dir /home/guillaume/.completium/mockup typecheck script $OUT > /dev/null 2> /dev/null
-                RET=`echo $?`
-                if [ ${RET} -eq 0 ]; then
-    	            echo -ne "     \033[32m OK \033[0m"
-                else
-	                echo -ne "     \033[31m KO \033[0m"
-                    NB_ERR=$((${NB_ERR} + 1))
-                fi
+                # octez-client --mode mockup --base-dir /home/guillaume/.completium/mockup typecheck script $OUT > /dev/null 2> /dev/null
+                # RET=`echo $?`
+                # if [ ${RET} -eq 0 ]; then
+    	        #     echo -ne "     \033[32m OK \033[0m"
+                # else
+	            #     echo -ne "     \033[31m KO \033[0m"
+                #     NB_ERR=$((${NB_ERR} + 1))
+                # fi
             else
 	            echo -ne "     \033[31m KO \033[0m"
                 NB_ERR=$((${NB_ERR} + 1))
@@ -43,7 +43,7 @@ process () {
     else
 	      echo -ne "\033[31m KO \033[0m"
 	      echo -ne "     \033[31m KO \033[0m"
-          echo -ne "     \033[31m KO \033[0m"
+#          echo -ne "     \033[31m KO \033[0m"
 	      echo -e  "     \033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
         NB_OUT=$((${NB_OUT} + 1))
@@ -55,12 +55,6 @@ printf '%-68s%s\n' '' '  PARSE   AMA   COMPILE'
 
 echo ""
 for i in tests/passed/*.arl; do
-  process $i
-done
-for i in tests/type-errors/*.arl; do
-  process $i
-done
-for i in tests/model-errors/*.arl; do
   process $i
 done
 

@@ -570,6 +570,9 @@ let mk_asset ?(loc=dummy) ad =
 let mk_record ?(loc=dummy) rd =
   mkloc loc (Drecord rd)
 
+let mk_event ?(loc=dummy) rd =
+  mkloc loc (Devent rd)
+
 let mk_entry ?(loc=dummy) ed =
   mkloc loc (Dentry ed)
 

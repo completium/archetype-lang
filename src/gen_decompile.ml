@@ -1942,10 +1942,51 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         let k = match kind with | VKconstant -> A.VKconstant | VKvariable -> A.VKvariable in
         A.mk_variable (A.mk_variable_decl ?dv:(Option.map for_expr default) (snd name) (for_type type_) k)
       end
-    | Denum   _denum -> assert false
-    | Dasset  _dasset -> assert false
-    | Drecord _drecord -> assert false
-    | Devent  _devent -> assert false
+    | Denum {name; values; _} -> begin
+        let ek =
+          match M.unloc_mident name with
+          | "state" -> A.EKstate
+          | v -> A.EKenum (dumloc v)
+        in
+        let l : (A.lident * A.type_t list * A.enum_option list) list =
+          List.map (fun (x : M.enum_item) -> (snd x.name, List.map for_type x.args, [])) values
+        in
+        A.mk_enum ek l
+      end
+    | Dasset dasset ->  begin
+        let for_field (x : M.asset_item) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, Option.map for_expr x.default)) in
+        let a : A.lident = snd dasset.name in
+        let b : A.field list = List.map for_field dasset.values in
+        let c : A.asset_option list =
+          []
+          |> (fun accu -> let a = match dasset.map_kind with | M.MKMap -> A.MKMap | M.MKBigMap -> A.MKBigMap | M.MKIterableBigMap -> A.MKIterableBigMap in A.AOtoMapKind a :: accu )
+          |> (fun accu -> match dasset.keys with | [] -> accu | l -> A.AOidentifiedby (List.map dumloc l)::accu )
+          |> (fun accu -> (List.map (fun x -> A.AOsortedby (snd x)) dasset.sort) @ accu)
+        in
+        let d : A.asset_post_option list =
+          match dasset.init with
+          | [] -> []
+          | xs -> let l = List.map for_expr xs in [A.APOinit l]
+        in
+        let e : A.asset_operation option = None in
+        A.mk_asset (a, b, c, d, e)
+      end
+    | Drecord drecord -> begin
+        let for_field (x : M.record_field) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, None)) in
+        let a : A.lident = snd drecord.name in
+        let b : A.field list = List.map for_field drecord.fields in
+        let c : A.expr option = None in
+        let rd : A.record_decl = (a, b, c) in
+        A.mk_record rd
+      end
+    | Devent  drecord ->  begin
+        let for_field (x : M.record_field) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, None)) in
+        let a : A.lident = snd drecord.name in
+        let b : A.field list = List.map for_field drecord.fields in
+        let c : A.expr option = None in
+        let rd : A.record_decl = (a, b, c) in
+        A.mk_event rd
+      end
   in
 
   let for_storage_item (si : M.storage_item) : A.declaration =
