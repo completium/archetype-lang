@@ -783,6 +783,13 @@ and op_MUL (stack : stack) =
 
   Some (M.mk_type aout :: stack)
 
+and op_NEVER (stack : stack) =
+  let ty, _stack = Stack.pop stack in
+
+  Ty.check_eq ty M.tnever;
+
+  None
+
 (* -------------------------------------------------------------------- *)
 and op_NIL (stack : stack) (ty : stack1) =
   Some (M.tlist ty :: stack)
@@ -841,6 +848,17 @@ and op_OR (stack : stack) =
     | _, _ -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
+
+and op_OPEN_CHEST (stack : stack) =
+  let (ty1, ty2, ty3), stack = Stack.pop3 stack in
+
+  begin
+    match ty1.node, ty2.node, ty3.node with
+    | M.Tchest_key, M.Tchest, M.Tnat -> ()
+    | _, _, _ -> raise MichelsonTypingError
+  end;
+
+  Some (M.tor M.tbytes M.tbool :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_PACK (stack : stack) =
@@ -1405,7 +1423,7 @@ and tycheck_r (env : env) (stack : stack) (code : M.code_node) : stack option =
     op_MEM stack
 
   | NEVER ->
-    None
+    op_NEVER stack
 
   | NIL ty ->
     op_NIL stack ty
@@ -1468,14 +1486,16 @@ and tycheck_r (env : env) (stack : stack) (code : M.code_node) : stack option =
   (* Other *)
 
   | CAST _ ->
-    Some stack                (* ? *)
+    Some stack
 
-  | RENAME                   -> (* Unused? *) assert false
+  | RENAME ->
+    Some stack
 
   | VIEW (_, ty) ->
     op_VIEW stack ty
 
-  | OPEN_CHEST -> assert false (* TODO *)
+  | OPEN_CHEST ->
+    op_OPEN_CHEST stack
 
   (* Macro *)
 
