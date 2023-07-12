@@ -53,6 +53,9 @@ printf '%-68s%s\n' '' '  PARSE   AMA   COMPILE'
 echo ""
 for i in tests/passed/*.arl; do
   process $i
+  if [ ${NB_ERR} -eq 1 ]; then
+    break
+  fi
 done
 
 echo ""

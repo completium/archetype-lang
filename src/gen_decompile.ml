@@ -1465,6 +1465,16 @@ let dir_to_model (dir, env : T.dprogram * env) : M.model * env =
   Decomp_model.decompile (dir, env)
 
 let to_archetype (model, _env : M.model * env) : A.archetype =
+  let to_assign_operator = function
+    | M.ValueAssign -> A.ValueAssign
+    | M.PlusAssign  -> A.PlusAssign
+    | M.MinusAssign -> A.MinusAssign
+    | M.MultAssign  -> A.MultAssign
+    | M.DivAssign   -> A.DivAssign
+    | M.AndAssign   -> A.AndAssign
+    | M.OrAssign    -> A.OrAssign
+  in
+
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match M.get_ntype t with
@@ -1533,6 +1543,13 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   let rec for_expr (mt : M.mterm) : A.expr =
     let f = for_expr in
+
+    let to_ck an = function
+      | M.CKcoll -> assert false
+      | M.CKview v -> f v
+      | M.CKfield (_oan, _fn, k) -> f k
+    in
+
     match mt.node with
     (* lambda *)
 
@@ -1572,7 +1589,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mwhile (_c, _b)            -> assert false
     | Mseq l                     -> begin
         match List.rev l with
-        | []   -> assert false
+        | []   -> A.enothing ()
         | [e]  -> f e
         | e::t -> List.fold_left (fun accu x -> A.eseq (f x) accu) (f e) t
       end
@@ -1665,7 +1682,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnone           -> A.eoption (ONone None)
     | Msome v         -> A.eoption (OSome (f v))
     | Mtuple l        -> A.etuple (List.map f l)
-    | Masset _l       -> assert false
+    | Masset l        -> A.erecord (List.map (fun x -> (None, f x)) l)
     | Massets _l      -> assert false
     | Mlitset _l      -> assert false
     | Mlitlist l      -> A.earray (List.map f l)
@@ -1678,9 +1695,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* access *)
 
-    | Mdot (_e, _i)                   -> assert false
-    | Mdotassetfield (_an, _k, _fn)   -> assert false
-    | Mquestionoption (_a, _fn)       -> assert false
+    | Mdot (_e, _i)              -> assert false
+    | Mdotassetfield (an, k, fn) -> A.edot (A.esqapp (A.eterm (snd an)) (f k)) ((SINone, snd fn))
+    | Mquestionoption (_a, _fn)  -> assert false
 
 
     (* comparison operators *)
@@ -1730,7 +1747,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mset            (_c,  _l, _k, _v)       -> assert false
     | Mupdate         (_an, _k, _l)           -> assert false
     | Mupdateall      (_an, _c, _l)           -> assert false
-    | Maddupdate      (_an, _c, _k, _l)       -> assert false
+    | Maddupdate      (an, ck, k, l)          -> begin
+        A.emethod (MKexpr (to_ck an ck)) (dumloc "add_update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
+      end
     | Mputremove      (_an, _c, _k, _v)       -> assert false
 
 
