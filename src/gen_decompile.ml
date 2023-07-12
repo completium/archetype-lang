@@ -1522,7 +1522,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tor (lt, rt)               -> A.mk_tor (f lt) (f rt)
     | Trecord id                 -> A.tref (M.unloc_mident id)
     | Tevent id                  -> A.tref (M.unloc_mident id)
-    | Tlambda _                  -> assert false
+    | Tlambda (a, b)             -> A.mk_tlambda (f a) (f b)
     | Tunit                      -> A.tunit
     | Toperation                 -> A.toperation
     | Tcontract t                -> A.mk_tcontract (f t)
@@ -1541,11 +1541,26 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | M.OrAssign    -> A.OrAssign
   in
 
+  let mident_to_sid ((sc, id) : M.mident) : (A.id_scope * A.lident) =
+    match sc with
+    | None -> (SINone, id)
+    | Some s -> (SIId s, id)
+  in
+
+  let id_to_sid (id : Ident.ident) : (A.id_scope * A.lident) = (SINone, dumloc id) in
+
   let rec for_expr (mt : M.mterm) : A.expr =
     let f = for_expr in
+    let ft = for_type in
+    let f_cst id = A.eterm (dumloc id) in
+    let f_app ?(ts = []) id args =
+      match ts with
+      | [] -> A.eapp (A.Fident (id_to_sid id)) args
+      | _ -> A.eappt (A.Fident (id_to_sid id)) ts args
+    in
 
     let to_ck an = function
-      | M.CKcoll -> assert false
+      | M.CKcoll -> (A.eterm (dumloc an))
       | M.CKview v -> f v
       | M.CKfield (_oan, _fn, k) -> f k
     in
@@ -1554,9 +1569,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* lambda *)
 
     | Mletin (_ids, _a, _t, _b, _o)       -> assert false
-    | Mdeclvar (ids, t, v, c)             -> A.evar (List.map snd ids) ?t:(Option.map for_type t) (f v) VDKbasic c
-    | Mdeclvaropt (_ids, _t, _v, _fa, _c) -> assert false
-    | Mapp (_e, _args)                    -> assert false
+    | Mdeclvar (ids, t, v, c)             -> A.evar (List.map snd ids) ?t:(Option.map ft t) (f v) VDKbasic c
+    | Mdeclvaropt (ids, t, v, fa, c)      -> A.evar (List.map snd ids) ?t:(Option.map ft t) (f v) (VDKoption (Option.map f fa)) c
+    | Mapp (e, args)                      -> A.eapp (A.Fident (mident_to_sid e)) (List.map f args)
 
 
     (* assign *)
@@ -1607,7 +1622,19 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         A.efail v
       end
     | Mfailsome _        -> assert false
-    | Mtransfer _tr      -> assert false
+    | Mtransfer tk       -> begin
+      let tr =
+        match tk with
+        | TKsimple (a, dst) -> A.TTsimple (f a, f dst)
+        | TKcall (e, ty, _, dst, args) -> assert false
+        | TKentry (x, e, arg) -> assert false (*A.TTentry (f x, f e, f arg)*)
+        | TKgen  (a, cn, _, address_arg, en, arg) -> assert false
+        | TKself (e, name, args) -> A.TTself (f e, dumloc name, List.map (fun (_, y) -> f y) args)
+        | TKoperation op -> A.TToperation (f op)
+        | _ -> assert false
+        in
+        A.etransfer tr
+      end
     | Memit (_, _)       -> assert false
     | Mdetach (_, _, _, _)  -> assert false
     | Mmicheline _       -> assert false
@@ -1671,33 +1698,33 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mternaryoption (_c, _a, _b)            -> assert false
     | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
-    | Mexeclambda (_l, _a)                   -> assert false
-    | Mapplylambda (_l, _a)                  -> assert false
+    | Mexeclambda (l, a)                     -> f_app "exec_lambda"  [f l; f a]
+    | Mapplylambda (l, a)                    -> f_app "apply_lambda" [f l; f a]
 
 
     (* composite type constructors *)
 
-    | Mleft (t, x)    -> A.eleft (for_type t) (f x)
-    | Mright (t, x)   -> A.eright (for_type t) (f x)
-    | Mnone           -> A.eoption (ONone None)
+    | Mleft (t, x)    -> A.eleft (ft t) (f x)
+    | Mright (t, x)   -> A.eright (ft t) (f x)
+    | Mnone           -> let a = match fst mt.type_ with | Toption ty -> Some (ft ty) | _ -> None in A.eoption (ONone a)
     | Msome v         -> A.eoption (OSome (f v))
     | Mtuple l        -> A.etuple (List.map f l)
     | Masset l        -> A.erecord (List.map (fun x -> (None, f x)) l)
-    | Massets _l      -> assert false
-    | Mlitset _l      -> assert false
+    | Massets l       -> A.earray (List.map f l)
+    | Mlitset l       -> A.earray (List.map f l)
     | Mlitlist l      -> A.earray (List.map f l)
-    | Mlitmap (_b, _l)-> assert false
-    | Mlitrecord _l   -> assert false
-    | Mlitevent  _l   -> assert false
-    | Mlambda (_rt, _id, _at, _e) -> assert false
-    | Mlambda_michelson (_it, _rt, _body) -> assert false
+    | Mlitmap (_b, l) -> A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l)
+    | Mlitrecord l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
+    | Mlitevent  l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
+    | Mlambda (rt, id, at, e) -> A.elambda (Some (ft at)) (snd id) (Some (ft rt)) (f e)
+    | Mlambda_michelson (it, rt, body) -> A.elambda_michelson (ft it) (ft rt) (Micheline_tools.obj_to_micheline_t body)
     | Mmicheline_expr (_t, _m, _a) -> assert false
 
     (* access *)
 
-    | Mdot (_e, _i)              -> assert false
-    | Mdotassetfield (an, k, fn) -> A.edot (A.esqapp (A.eterm (snd an)) (f k)) ((SINone, snd fn))
-    | Mquestionoption (_a, _fn)  -> assert false
+    | Mdot (e, i)                -> A.edot (f e) (mident_to_sid i)
+    | Mdotassetfield (an, k, fn) -> A.edot (A.esqapp (A.eterm (snd an)) (f k)) (mident_to_sid fn)
+    | Mquestionoption (e, i)     -> A.equestiondot (f e) (mident_to_sid i)
 
 
     (* comparison operators *)
@@ -1713,32 +1740,32 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* arithmetic operators *)
 
-    | Mand (_l, _r)    -> assert false
-    | Mor (_l, _r)     -> assert false
-    | Mgreedyand (_l, _r)-> assert false
-    | Mgreedyor (_l, _r) -> assert false
-    | Mxor (_l, _r)    -> assert false
-    | Mnot _e          -> assert false
-    | Mplus (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Plus))) [f l; f r]
-    | Mminus (_l, _r)  -> assert false
-    | Mmult (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Mult))) [f l; f r]
-    | Mdivrat (_l, _r) -> assert false
-    | Mdiveuc (_l, _r) -> assert false
-    | Mmodulo (_l, _r) -> assert false
-    | Mdivmod (_l, _r) -> assert false
-    | Muminus  e       -> A.eapp (A.Foperator (dumloc (A.Unary A.Uminus))) [f e]
-    | MthreeWayCmp (_l, _r) -> assert false
-    | Mshiftleft   (_l, _r) -> assert false
-    | Mshiftright  (_l, _r) -> assert false
-    | Msubnat      (_l, _r) -> assert false
-    | Msubmutez    (_l, _r) -> assert false
+    | Mand         (l, r) -> A.eapp (A.Foperator (dumloc (A.Logical A.And)))       [f l; f r]
+    | Mor          (l, r) -> A.eapp (A.Foperator (dumloc (A.Logical A.Or)))        [f l; f r]
+    | Mgreedyand   (l, r) -> f_app "greedy_and" [f l; f r]
+    | Mgreedyor    (l, r) -> f_app "greedy_or"  [f l; f r]
+    | Mxor         (l, r) -> A.eapp (A.Foperator (dumloc (A.Logical A.Xor)))       [f l; f r]
+    | Mnot          e     -> A.eapp (A.Foperator (dumloc (A.Unary A.Not)))         [f e]
+    | Mplus        (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.Plus)))        [f l; f r]
+    | Mminus       (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.Minus)))       [f l; f r]
+    | Mmult        (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.Mult)))        [f l; f r]
+    | Mdivrat      (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.DivRat)))      [f l; f r]
+    | Mdiveuc      (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.DivEuc)))      [f l; f r]
+    | Mmodulo      (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.Modulo)))      [f l; f r]
+    | Mdivmod      (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.DivMod)))      [f l; f r]
+    | Muminus       e     -> A.eapp (A.Foperator (dumloc (A.Unary A.Uminus)))      [f e]
+    | MthreeWayCmp (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.ShiftLeft)))   [f l; f r]
+    | Mshiftleft   (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.ShiftLeft)))   [f l; f r]
+    | Mshiftright  (l, r) -> A.eapp (A.Foperator (dumloc (A.Arith A.ShiftRight)))  [f l; f r]
+    | Msubnat      (l, r) -> f_app "sub_nat"   [f l; f r]
+    | Msubmutez    (l, r) -> f_app "sub_mutez" [f l; f r]
 
     (* asset api effect *)
 
-    | Maddasset       (_an, _i)               -> assert false
+    | Maddasset       (an, i)                 -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "add") [f i]
     | Mputsingleasset (_an, _i)               -> assert false
     | Mputasset       (_an, _k, _v)           -> assert false
-    | Maddfield       (_an, _fn, _c, _i)      -> assert false
+    | Maddfield       (an, fn, c, i)          -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "add") [f i]
     | Mremoveasset    (_an, _i)               -> assert false
     | Mremovefield    (_an, _fn, _c, _i)      -> assert false
     | Mremoveall      (_an, _c)               -> assert false
@@ -1755,7 +1782,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* asset api expression *)
 
-    | Mget      (_an, _c, _k)           -> assert false
+    | Mget      (an, c, k)              -> A.esqapp (to_ck an c) (f k)
     | Mgetsome  (_an, _c, _k)           -> assert false
     | Mselect   (_an, _c, _la, _lb, _a) -> assert false
     | Msort     (_an, _c, _l)           -> assert false
@@ -1769,9 +1796,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* utils *)
 
-    | Mcast (_src, _dst, _v) -> assert false
-    | Mtupleaccess (x, k)    -> A.esqapp (f x) (A.ebnat k)
-    | Mrecupdate (_x, _l)    -> assert false
+    | Mcast (_src, _dst, _v)   -> assert false
+    | Mtupleaccess (x, k)      -> A.esqapp (f x) (A.ebnat k)
+    | Mrecupdate (_x, _l)      -> assert false
     | Mmakeasset (_an, _k, _v) -> assert false
     | Mtocontainer _an         -> assert false
     | Mglobal_constant (_t, _v)-> assert false
@@ -1790,19 +1817,19 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* set api instruction *)
 
     | Msetinstradd    _                   -> assert false
-    | Msetinstrremove _                   -> assert false
+    | Msetinstrremove (_, _ck, _a)        -> assert false
 
 
     (* list api expression *)
 
-    | Mlistprepend (_, _c, _a)             -> assert false
-    | Mlistlength (_, c)                   -> A.eapp (A.Fident (SINone, (dumloc "size"))) [f c]
-    | Mlistcontains (_, _c, _a)            -> assert false
-    | Mlistnth (_, _c, _a)                 -> assert false
-    | Mlisthead (_, _c, _a)                -> assert false
-    | Mlisttail (_, _c, _a)                -> assert false
-    | Mlistreverse (_, _l)                 -> assert false
-    | Mlistconcat (_, _l, _m)              -> assert false
+    | Mlistprepend (_, c, a)               -> f_app "prepend"  [f c; f a]
+    | Mlistlength (_, c)                   -> f_app "size"     [f c]
+    | Mlistcontains (_, c, a)              -> f_app "contains" [f c; f a]
+    | Mlistnth (_, c, a)                   -> f_app "nth"      [f c; f a]
+    | Mlisthead (_, c, a)                  -> f_app "head"     [f c; f a]
+    | Mlisttail (_, c, a)                  -> f_app "tail"     [f c; f a]
+    | Mlistreverse (_, l)                  -> f_app "reverse"  [f l]
+    | Mlistconcat (_, l, m)                -> f_app "concat"   [f l; f m]
     | Mlistfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
@@ -1813,13 +1840,13 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, _, c, k, v)                  -> A.eapp (A.Fident (SINone, (dumloc "put"))) [f c; f k; f v]
-    | Mmapremove (_, _, _, _c, _k)                -> assert false
-    | Mmapupdate (_, _, _, _c, _k, _v)            -> assert false
-    | Mmapget (_, _, _, _c, _k, _an)              -> assert false
-    | Mmapgetopt (_, _, _, _c, _k)                -> assert false
-    | Mmapcontains (_, _, _, _c, _k)              -> assert false
-    | Mmaplength (_, _, _, _c)                    -> assert false
+    | Mmapput (_, _, _, c, k, v)                  -> f_app "put"      [f c; f k; f v]
+    | Mmapremove (_, _, _, c, k)                  -> f_app "remove"   [f c; f k]
+    | Mmapupdate (_, _, _, c, k, v)               -> f_app "update"   [f c; f k; f v]
+    | Mmapget (_, _, _, c, k, _an)                -> A.esqapp (f c) (f k)
+    | Mmapgetopt (_, _, _, c, k)                  -> f_app "get_opt"  [f c; f k]
+    | Mmapcontains (_, _, _, c, k)                -> f_app "contains" [f c; f k]
+    | Mmaplength (_, _, _, c)                     -> f_app "length"   [f c]
     | Mmapfold (_, _t, _ik, _iv, _ia, _c, _a, _b) -> assert false
 
 
@@ -1832,60 +1859,60 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* builtin functions *)
 
-    | Mmax (_l, _r)       -> assert false
-    | Mmin (_l, _r)       -> assert false
-    | Mabs _a             -> assert false
-    | Mconcat (_x, _y)    -> assert false
-    | Mconcatlist _x      -> assert false
-    | Mslice (_x, _s, _e) -> assert false
-    | Mlength x           -> A.eapp (A.Fident (SINone, (dumloc "length"))) [f x]
-    | Misnone _x          -> assert false
-    | Missome _x          -> assert false
-    | Minttonat _x        -> assert false
-    | Mfloor  _x          -> assert false
-    | Mceil   _x          -> assert false
-    | Mnattostring _x     -> assert false
-    | Mbytestonat _x      -> assert false
-    | Mnattobytes _x      -> assert false
-    | Mbytestoint _x      -> assert false
-    | Minttobytes _x      -> assert false
-    | Mpack _x            -> assert false
-    | Munpack (_t, _x)    -> assert false
-    | Msetdelegate _x     -> assert false
-    | Mkeyhashtocontract _x -> assert false
-    | Mcontracttoaddress _x -> assert false
-    | Maddresstocontract (_t, _x) -> assert false
-    | Mkeytoaddress _x      -> assert false
-    | Msimplify_rational _x -> assert false
-    | Mget_numerator _x     -> assert false
-    | Mget_denominator _x   -> assert false
-    | Misimplicitaddress _x -> assert false
-    | Mexp_horner (_x, _s)  -> assert false
+    | Mmax (l, r)                 -> f_app "max" [f l; f r]
+    | Mmin (l, r)                 -> f_app "min" [f l; f r]
+    | Mabs a                      -> f_app "abs" [f a]
+    | Mconcat (x, y)              -> f_app "abs" [f x; f y]
+    | Mconcatlist x               -> f_app "abs" [f x]
+    | Mslice (x, s, e)            -> f_app "slice" [f x; f s; f e]
+    | Mlength x                   -> f_app "length" [f x]
+    | Misnone x                   -> f_app "is_none" [f x]
+    | Missome x                   -> f_app "is_some" [f x]
+    | Minttonat x                 -> f_app "int_to_nat" [f x]
+    | Mfloor  x                   -> f_app "floor" [f x]
+    | Mceil   x                   -> f_app "ceil" [f x]
+    | Mnattostring x              -> f_app "nat_to_string" [f x]
+    | Mbytestonat x               -> f_app "bytes_to_nat" [f x]
+    | Mnattobytes x               -> f_app "nat_to_bytes" [f x]
+    | Mbytestoint x               -> f_app "bytes_to_int" [f x]
+    | Minttobytes x               -> f_app "int_to_bytes" [f x]
+    | Mpack x                     -> f_app "pack" [f x]
+    | Munpack (t, x)              -> f_app "unpack" [f x] ~ts:[ft t]
+    | Msetdelegate x              -> f_app "set_delegate" [f x]
+    | Mkeyhashtocontract x        -> f_app "key_hash_to_contract" [f x]
+    | Mcontracttoaddress x        -> f_app "contract_to_address" [f x]
+    | Maddresstocontract (t, x)   -> f_app "address_to_contract" [f x] ~ts:[ft t]
+    | Mkeytoaddress x             -> f_app "key_to_address" [f x]
+    | Msimplify_rational x        -> f_app "simplify_rational" [f x]
+    | Mget_numerator x            -> f_app "get_numerator" [f x]
+    | Mget_denominator x          -> f_app "get_denominator" [f x]
+    | Misimplicitaddress x        -> f_app "is_implicit_address" [f x]
+    | Mexp_horner (x, s)          -> f_app "exp_horner" [f x; f s]
 
 
     (* crypto functions *)
 
-    | Mblake2b _x                  -> assert false
-    | Msha256  _x                  -> assert false
-    | Msha512  _x                  -> assert false
-    | Msha3    _x                  -> assert false
-    | Mkeccak  _x                  -> assert false
-    | Mkeytokeyhash _x             -> assert false
-    | Mchecksignature (_k, _s, _x) -> assert false
+    | Mblake2b         x        -> f_app "blake2b" [f x]
+    | Msha256          x        -> f_app "sha256" [f x]
+    | Msha512          x        -> f_app "sha512" [f x]
+    | Msha3            x        -> f_app "sha3" [f x]
+    | Mkeccak          x        -> f_app "keccak" [f x]
+    | Mkeytokeyhash    x        -> f_app "key_to_key_hash" [f x]
+    | Mchecksignature (k, s, x) -> f_app "check_signature" [f k; f s; f x]
 
 
     (* voting *)
 
-    | Mtotalvotingpower            -> assert false
-    | Mvotingpower _x              -> assert false
+    | Mtotalvotingpower         -> f_cst "total_voting_power"
+    | Mvotingpower x            -> f_app "voting_power" [f x]
 
 
     (* ticket *)
 
-    | Mcreateticket (_x, _a)    -> assert false
-    | Mreadticket _x            -> assert false
-    | Msplitticket (_x, _a, _b) -> assert false
-    | Mjointickets (_x, _y)     -> assert false
+    | Mcreateticket (x, a)   -> f_app "create_ticket" [f x; f a]
+    | Mreadticket x          -> f_app "read_ticket"   [f x]
+    | Msplitticket (x, a, b) -> f_app "split_ticket"  [f x; f a; f b]
+    | Mjointickets (x, y)    -> f_app "join_tickets"  [f x; f y]
 
 
     (* sapling *)
@@ -1896,26 +1923,26 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* bls curve *)
 
-    | Mpairing_check x -> A.eapp (A.Fident (SINone, (dumloc "pairing_check"))) [f x]
+    | Mpairing_check x -> f_app "pairing_check" [f x]
 
 
     (* timelock *)
 
-    | Mopen_chest _ -> assert false
+    | Mopen_chest (a, b, c) -> f_app "open_chest" [f a; f b; f c]
 
 
     (* constants *)
 
-    | Mnow           -> A.eterm (dumloc A.cst_now)
-    | Mtransferred   -> A.eterm (dumloc A.cst_transferred)
-    | Mcaller        -> A.eterm (dumloc A.cst_caller)
-    | Mbalance       -> A.eterm (dumloc A.cst_balance)
-    | Msource        -> A.eterm (dumloc A.cst_source)
-    | Mselfaddress   -> A.eterm (dumloc A.cst_self_address)
-    | Mselfchainid   -> A.eterm (dumloc A.cst_self_chain_id)
-    | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
-    | Mlevel         -> A.eterm (dumloc A.cst_level)
-    | Mminblocktime  -> A.eterm (dumloc A.cst_min_block_time)
+    | Mnow           -> f_cst A.cst_now
+    | Mtransferred   -> f_cst A.cst_transferred
+    | Mcaller        -> f_cst A.cst_caller
+    | Mbalance       -> f_cst A.cst_balance
+    | Msource        -> f_cst A.cst_source
+    | Mselfaddress   -> f_cst A.cst_self_address
+    | Mselfchainid   -> f_cst A.cst_self_chain_id
+    | Mmetadata      -> f_cst A.cst_metadata
+    | Mlevel         -> f_cst A.cst_level
+    | Mminblocktime  -> f_cst A.cst_min_block_time
 
 
     (* variable *)
@@ -1929,10 +1956,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(_, Vthe)              -> assert false
     | Mvar(_, Vstate)            -> assert false
     | Mvar(v, Vparameter)        -> A.eterm (snd v)
-    | Menumval (id, args, _e)            -> begin
+    | Menumval (id, args, _e) -> begin
         match args with
         | [] -> A.eterm (snd id)
-        | _  -> A.eapp (A.Fident (SINone, (snd id))) []
+        | args  -> A.eapp (A.Fident (mident_to_sid id)) (List.map f args)
       end
 
     (* rational *)
@@ -1943,15 +1970,15 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mratuminus _v           -> assert false
     | Mrattez (_c, _t)        -> assert false
     | Mnattoint e             -> f e
-    | Mnattorat _e            -> assert false
-    | Minttorat _e            -> assert false
+    | Mnattorat e             -> f e
+    | Minttorat e             -> f e
     | Mratdur (_c, _t)        -> assert false
 
 
     (* utils *)
 
-    | Minttodate         _ -> assert false
-    | Mmuteztonat        _ -> assert false
+    | Minttodate         x -> f_app "int_to_date" [f x]
+    | Mmuteztonat        x -> f_app "mutez_to_nat" [f x]
 
   in
 
@@ -2019,7 +2046,17 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   let for_fun (f : M.function_node) : A.declaration =
     match f with
-    | Function (_fs, _t) -> assert false
+    | Function (fs, t) -> begin
+        let sf : A.s_function = {
+          name  = snd fs.name;
+          args  = List.map (fun (id, ty, _dv) -> (snd id, for_type ty)) fs.args;
+          ret_t = (match t with | Void -> None | Typed t -> Some (for_type t));
+          body  = for_expr fs.body;
+          view  = false;
+          view_visibility = A.VVnone;
+        } in
+        A.mk_function sf
+      end
     | Getter (_fs, _t) -> assert false
     | View (fs, rt, vv) -> begin
         let sf : A.s_function = {
