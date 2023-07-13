@@ -1592,16 +1592,31 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* control *)
 
     | Mif (c, t, e)              -> A.eif ?e:(Option.map f e) (f c) (f t)
-    | Mmatchwith (_e, _l)        -> assert false
-    | Minstrmatchoption _        -> assert false
+    | Mmatchwith (x, l) ->
+      A.ematchwith (f x) (List.map (fun (x, y : (M.pattern * M.mterm)) -> ([
+          match x.node with
+          | Pconst (id, ids) -> dumloc (A.Pref (dumloc (A.PIdent (unloc (snd id))), ids))
+          | Pwild            -> dumloc (A.Pref (dumloc (A.PIdent "_"), []))
+        ], f y)) l) MKbasic
 
-    | Minstrmatchor (e, xl, bl, xr, br) ->
-      A.ematchwith (f e) [
+    | Minstrmatchoption (x, i, ve, ne) ->
+      A.ematchwith (f x) [
+        ([dumloc (A.Pref (dumloc A.PSome, [snd i]))], f ve);
+        ([dumloc (A.Pref (dumloc A.PNone, []))], f ne)
+      ] MKbasic
+
+    | Minstrmatchor (x, xl, bl, xr, br) ->
+      A.ematchwith (f x) [
         ([dumloc (A.Pref (dumloc A.PLeft , [snd xl]))], f bl);
         ([dumloc (A.Pref (dumloc A.PRight, [snd xr]))], f br)
       ] MKbasic
 
-    | Minstrmatchlist   _        -> assert false
+    | Minstrmatchlist (x, hid, tid, hte, ee) ->
+      A.ematchwith (f x) [
+        ([dumloc (A.Pref (dumloc A.PCons, [snd hid; snd tid]))], f hte);
+        ([dumloc (A.Pref (dumloc A.PNil, []))], f ee)
+      ] A.MKbasic
+
     | Minstrmatchdetach  _       -> assert false
     | Mfor (i, c, b)             -> begin
         let to_for_ident (i : M.for_ident) : A.for_ident =
@@ -1721,11 +1736,32 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* control expression *)
 
-    | Mexprif (_c, _t, _e)                   -> assert false
-    | Mexprmatchwith (_e, _l)                -> assert false
-    | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
-    | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
-    | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
+    | Mexprif (c, t, e) -> A.eif (f c) (f t) ~e:(f e)
+    | Mexprmatchwith (x, l) ->
+      A.ematchwith (f x) (List.map (fun (x, y : (M.pattern * M.mterm)) -> ([
+          match x.node with
+          | Pconst (id, ids) -> dumloc (A.Pref (dumloc (A.PIdent (unloc (snd id))), ids))
+          | Pwild            -> dumloc (A.Pref (dumloc (A.PIdent "_"), []))
+        ], f y)) l) MKbasic
+
+    | Mmatchoption (x, i, ve, ne) ->
+      A.ematchwith (f x) [
+        ([dumloc (A.Pref (dumloc A.PSome, [snd i]))], f ve);
+        ([dumloc (A.Pref (dumloc A.PNone, []))], f ne)
+      ] MKbasic
+
+    | Mmatchor (x, lid, le, rid, re) ->
+      A.ematchwith (f x) [
+        ([dumloc (A.Pref (dumloc A.PLeft,  [snd lid]))], f le);
+        ([dumloc (A.Pref (dumloc A.PRight, [snd rid]))], f re)
+      ] MKbasic
+
+    | Mmatchlist (x, hid, tid, hte, ee)      ->
+      A.ematchwith (f x) [
+        ([dumloc (A.Pref (dumloc A.PCons, [snd hid; snd tid]))], f hte);
+        ([dumloc (A.Pref (dumloc A.PNil,  []))], f ee)
+      ] A.MKbasic
+
     | Mternarybool   (c, a, b)               -> A.eternary (f c) (f a) (f b)
     | Mternaryoption (c, a, b)               -> A.eternary (f c) (f a) (f b)
     | Mfold (_e, _i, _l)                     -> assert false
