@@ -1565,6 +1565,16 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       | M.CKfield (_oan, _fn, k) -> f k
     in
 
+    let to_ak = function
+      | M.Avar id                   -> A.eterm (snd id)
+      | M.Avarstore id              -> A.eterm (snd id)
+      | M.Aasset (_an, _fn, _k)     -> assert false
+      | M.Arecord (_lv, _rn, _fn)   -> assert false
+      | M.Atuple (_lv, _n, _l)      -> assert false
+      | M.Astate                    -> A.eterm (dumloc "state")
+      | M.Aoperations               -> A.eterm (dumloc "operations")
+    in
+
     match mt.node with
     (* lambda *)
 
@@ -1576,14 +1586,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* assign *)
 
-    | Massign (op, _, Avar id, v)                   -> A.eassign (for_op op) (A.eterm (snd id)) (f v)
-    | Massign (op, _, Avarstore id, v)              -> A.eassign (for_op op) (A.eterm (snd id)) (f v)
-    | Massign (_op, _, Aasset (_an, _fn, _k), _v)   -> assert false
-    | Massign (_op, _, Arecord (_lv, _rn, _fn), _v) -> assert false
-    | Massign (_op, _, Atuple (_lv, _n, _l), _v)    -> assert false
-    | Massign (_op, _, Astate, _x)                  -> assert false
-    | Massign (_op, _, Aoperations, _v)             -> assert false
-    | Massignopt _ -> assert false
+    | Massign (op, _, ak, v)              -> A.eassign (for_op op) (to_ak ak) (f v)
+    | Massignopt (_op, _t, ak, v, fa)     -> A.eassignopt (to_ak ak) (f v) (f fa)
 
     (* control *)
 
@@ -1599,7 +1603,26 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minstrmatchlist   _        -> assert false
     | Minstrmatchdetach  _       -> assert false
-    | Mfor (_i, _c, _b)          -> assert false
+    | Mfor (i, c, b)             -> begin
+        let to_for_ident (i : M.for_ident) : A.for_ident =
+          let v =
+            match i with
+            | FIsimple id -> A.FIsimple (snd id)
+            | FIdouble (i1, i2) -> A.FIdouble (snd i1, snd i2)
+          in
+          dumloc v
+        in
+        let to_iter_container (c : M.iter_container_kind) : A.expr =
+          match c with
+          | ICKcoll  an -> A.eterm (dumloc an)
+          | ICKview  v -> f v
+          | ICKfield (an, fn, v) -> assert false
+          | ICKset   v -> f v
+          | ICKlist  v -> f v
+          | ICKmap   v -> f v
+        in
+        A.efor (to_for_ident i) (to_iter_container c) (f b)
+      end
     | Miter (_i, _a, _b, _c, _n) -> assert false
     | Mwhile (_c, _b)            -> assert false
     | Mseq l                     -> begin
@@ -1623,15 +1646,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       end
     | Mfailsome _        -> assert false
     | Mtransfer tk       -> begin
-      let tr =
-        match tk with
-        | TKsimple (a, dst) -> A.TTsimple (f a, f dst)
-        | TKcall (e, ty, _, dst, args) -> assert false
-        | TKentry (x, e, arg) -> assert false (*A.TTentry (f x, f e, f arg)*)
-        | TKgen  (a, cn, _, address_arg, en, arg) -> assert false
-        | TKself (e, name, args) -> A.TTself (f e, dumloc name, List.map (fun (_, y) -> f y) args)
-        | TKoperation op -> A.TToperation (f op)
-        | _ -> assert false
+        let tr =
+          match tk with
+          | TKsimple (a, dst) -> A.TTsimple (f a, f dst)
+          | TKcall (e, ty, _, dst, args) -> assert false
+          | TKentry (x, e, arg) -> assert false (*A.TTentry (f x, f e, f arg)*)
+          | TKgen  (a, cn, _, address_arg, en, arg) -> assert false
+          | TKself (e, name, args) -> A.TTself (f e, dumloc name, List.map (fun (_, y) -> f y) args)
+          | TKoperation op -> A.TToperation (f op)
         in
         A.etransfer tr
       end
@@ -1762,41 +1784,39 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* asset api effect *)
 
-    | Maddasset       (an, i)                 -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "add") [f i]
-    | Mputsingleasset (_an, _i)               -> assert false
-    | Mputasset       (_an, _k, _v)           -> assert false
-    | Maddfield       (an, fn, c, i)          -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "add") [f i]
-    | Mremoveasset    (_an, _i)               -> assert false
-    | Mremovefield    (_an, _fn, _c, _i)      -> assert false
-    | Mremoveall      (_an, _c)               -> assert false
-    | Mremoveif       (_an, _c, _la, _lb, _a) -> assert false
-    | Mclear          (_an, _v)               -> assert false
-    | Mset            (_c,  _l, _k, _v)       -> assert false
-    | Mupdate         (_an, _k, _l)           -> assert false
-    | Mupdateall      (_an, _c, _l)           -> assert false
-    | Maddupdate      (an, ck, k, l)          -> begin
-        A.emethod (MKexpr (to_ck an ck)) (dumloc "add_update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
-      end
-    | Mputremove      (_an, _c, _k, _v)       -> assert false
+    | Maddasset       (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "add") [f i]
+    | Mputsingleasset (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "put") [f i]
+    | Mputasset       (an, k, v)          -> assert false
+    | Maddfield       (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "add") [f i]
+    | Mremoveasset    (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "remove") [f i]
+    | Mremovefield    (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "remove") [f i]
+    | Mremoveall      (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_all") []
+    | Mremoveif       (an, ck, la, lb, a) -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_if") [f lb]
+    | Mclear          (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "clear") []
+    | Mset            (c,  l, k, v)       -> assert false
+    | Mupdate         (an, k, l)          -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
+    | Mupdateall      (an, ck, l)         -> A.emethod (MKexpr (to_ck an ck)) (dumloc "update_all") [A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
+    | Maddupdate      (an, ck, k, l)      -> A.emethod (MKexpr (to_ck an ck)) (dumloc "add_update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
+    | Mputremove      (an, ck, k, v)      -> A.emethod (MKexpr (to_ck an ck)) (dumloc "put_remove") [f k; f v]
 
 
     (* asset api expression *)
 
-    | Mget      (an, c, k)              -> A.esqapp (to_ck an c) (f k)
-    | Mgetsome  (_an, _c, _k)           -> assert false
-    | Mselect   (_an, _c, _la, _lb, _a) -> assert false
-    | Msort     (_an, _c, _l)           -> assert false
-    | Mcontains (_an, _c, _i)           -> assert false
-    | Mnth      (_an, _c, _i)           -> assert false
-    | Mcount    (_an, _c)               -> assert false
-    | Msum      (_an, _c, _p)           -> assert false
-    | Mhead     (_an, _c, _i)           -> assert false
-    | Mtail     (_an, _c, _i)           -> assert false
+    | Mget      (an, ck, k)              -> A.esqapp (to_ck an ck) (f k)
+    | Mgetsome  (an, ck, k)              -> A.esqapp (to_ck an ck) (f k)
+    | Mselect   (an, ck, la, lb, a)      -> A.emethod (MKexpr (to_ck an ck)) (dumloc "select")   [f lb]
+    | Msort     (an, ck, l)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "sort")     []
+    | Mcontains (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "contains") [f i]
+    | Mnth      (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "nth")      [f i]
+    | Mcount    (an, ck)                 -> A.emethod (MKexpr (to_ck an ck)) (dumloc "count")    []
+    | Msum      (an, ck, p)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "sum")      [f p]
+    | Mhead     (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "head")     [f i]
+    | Mtail     (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "tail")     [f i]
 
 
     (* utils *)
 
-    | Mcast (_src, _dst, _v)   -> assert false
+    | Mcast (_src, _dst, v)    -> f v
     | Mtupleaccess (x, k)      -> A.esqapp (f x) (A.ebnat k)
     | Mrecupdate (_x, _l)      -> assert false
     | Mmakeasset (_an, _k, _v) -> assert false
@@ -2087,4 +2107,15 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     @ List.map for_fun model.functions
   in
 
-  A.mk_archetype () ~decls:((A.mk_darchetype model.name)::decls)
+  let parameters : A.parameters =
+    match model.parameters with
+    | [] -> None
+    | ps -> begin
+        let parameters : A.parameter list = List.map (fun (x : M.parameter) ->
+            dumloc (snd x.name, for_type x.typ, Option.map for_expr x.default, x.const)) ps
+        in
+        Some (dumloc parameters)
+      end
+  in
+
+  A.mk_archetype () ~decls:((A.mk_darchetype ?parameters model.name)::decls)
