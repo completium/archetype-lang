@@ -1568,9 +1568,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     let to_ak = function
       | M.Avar id                   -> A.eterm (snd id)
       | M.Avarstore id              -> A.eterm (snd id)
-      | M.Aasset (_an, _fn, _k)     -> assert false
-      | M.Arecord (_lv, _rn, _fn)   -> assert false
-      | M.Atuple (_lv, _n, _l)      -> assert false
+      | M.Aasset (an, fn, k)        -> A.edot (A.esqapp (A.eterm2 (mident_to_sid an)) (f k)) (mident_to_sid fn)
+      | M.Arecord (lv, _rn, fn)     -> A.edot (f lv) (mident_to_sid fn)
+      | M.Atuple (lv, n, _l)        -> A.esqapp (f lv) (A.ebnat (Big_int.big_int_of_int n))
       | M.Astate                    -> A.eterm (dumloc "state")
       | M.Aoperations               -> A.eterm (dumloc "operations")
     in
@@ -1639,8 +1639,18 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mfail ft           -> begin
         let v =
           match ft with
-          | Invalid e -> f e
-          | _ -> assert false
+          | Invalid e                -> f e
+          | InvalidCaller            -> A.estring M.fail_msg_INVALID_CALLER
+          | InvalidSource            -> A.estring M.fail_msg_INVALID_SOURCE
+          | InvalidCondition (id, c) -> let v = match c with | None -> A.estring id | Some v -> f v in A.etuple [A.estring M.fail_msg_INVALID_CONDITION; v]
+          | NotFound                 -> A.estring M.fail_msg_INVALID_STATE
+          | AssetNotFound id         -> A.etuple [A.estring M.fail_msg_ASSET_NOT_FOUND; A.estring id]
+          | KeyExists id             -> A.etuple [A.estring M.fail_msg_KEY_EXISTS; A.estring id]
+          | KeyExistsOrNotFound id   -> A.etuple [A.estring M.fail_msg_KEY_EXISTS_OR_NOT_FOUND; A.estring id]
+          | DivByZero                -> A.estring M.fail_msg_DIV_BY_ZERO
+          | NatNegAssign             -> A.estring M.fail_msg_NAT_NEG_ASSIGN
+          | NoTransfer               -> A.estring M.fail_msg_NO_TRANSFER
+          | InvalidState             -> A.estring M.fail_msg_INVALID_STATE
         in
         A.efail v
       end
@@ -1716,8 +1726,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
-    | Mternarybool (_c, _a, _b)              -> assert false
-    | Mternaryoption (_c, _a, _b)            -> assert false
+    | Mternarybool   (c, a, b)               -> A.eternary (f c) (f a) (f b)
+    | Mternaryoption (c, a, b)               -> A.eternary (f c) (f a) (f b)
     | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
     | Mexeclambda (l, a)                     -> f_app "exec_lambda"  [f l; f a]
