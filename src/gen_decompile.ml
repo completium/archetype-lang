@@ -1565,6 +1565,16 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       | M.CKfield (_oan, _fn, k) -> f k
     in
 
+    let to_ck2 an = function
+      | M.CKcoll -> (A.eterm (dumloc an))
+      | M.CKview v -> f v
+      | M.CKfield (an, fn, k) -> A.edot (A.esqapp (A.eterm (dumloc an)) (f k)) (id_to_sid fn)
+    in
+
+    let as_list (ty : M.type_) = match fst ty with | M.Tlist ty -> Some ty | _ -> None in
+    (* let as_set (ty : M.type_) = match fst ty with | M.Tset ty -> Some ty | _ -> None in *)
+    (* let as_map (ty : M.type_) : M.type_ * M.type_ = match fst ty with | M.Tmap (k, v) | M.Tbig_map (k, v) -> (k, v) | _ -> assert false in *)
+
     let to_ak = function
       | M.Avar id                   -> A.eterm (snd id)
       | M.Avarstore id              -> A.eterm (snd id)
@@ -1578,7 +1588,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     match mt.node with
     (* lambda *)
 
-    | Mletin (_ids, _a, _t, _b, _o)       -> assert false
+    | Mletin (ids, a, t, b, o)            -> begin
+        let lv = match a with | LVsimple v -> v | LVreplace _ -> assert false in
+        let id = match ids with id::_ -> id | _ -> assert false in
+        A.eletin (snd id) ?t:(Option.map ft t) ?o:(Option.map f o) (f lv) (f b)
+      end
     | Mdeclvar (ids, t, v, c)             -> A.evar (List.map snd ids) ?t:(Option.map ft t) (f v) VDKbasic c
     | Mdeclvaropt (ids, t, v, fa, c)      -> A.evar (List.map snd ids) ?t:(Option.map ft t) (f v) (VDKoption (Option.map f fa)) c
     | Mapp (e, args)                      -> A.eapp (A.Fident (mident_to_sid e)) (List.map f args)
@@ -1669,7 +1683,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         in
         A.efail v
       end
-    | Mfailsome _        -> assert false
+    | Mfailsome x        -> A.efailsome (f x)
     | Mtransfer tk       -> begin
         let tr =
           match tk with
@@ -1682,13 +1696,13 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
               | _ -> assert false
             in
             A.TTentry (f x, id, f arg)
-          | TKgen  (a, cn, _, address_arg, en, arg) -> assert false
+          | TKgen  (_a, _cn, _, _address_arg, _en, _arg) -> assert false
           | TKself (e, name, args) -> A.TTself (f e, dumloc name, List.map (fun (_, y) -> f y) args)
           | TKoperation op -> A.TToperation (f op)
         in
         A.etransfer tr
       end
-    | Memit (_, _)       -> assert false
+    | Memit (a, b) -> A.eemit (dumloc (A.Tref (mident_to_sid a)), None) (f b)
     | Mdetach (a, b, _c, d) ->
       let to_detach_kind = function
         | M.DK_option (_, id) -> A.eterm (dumloc id)
@@ -1700,18 +1714,18 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* entrypoint *)
 
-    | Mgetentrypoint (_t, _a, _s)      -> assert false
+    | Mgetentrypoint (t, a, s)         -> A.eentrypoint (ft t) (A.estring (M.unloc_mident a)) (f s) None
     | Mcallview (_t, _a, _b, _c)       -> assert false
     | Mimportcallview (_t, _a, _b, _c) -> assert false
-    | Mself _id                        -> assert false
+    | Mself id                         -> A.eself (snd id)
     | Mselfcallview (_t, _id, _args)   -> assert false
 
 
     (* operation *)
 
-    | Moperations                       -> assert false
-    | Mmakeoperation (_v, _d, _a)       -> assert false
-    | Mmakeevent (_t, _id, _a)          -> assert false
+    | Moperations                       -> f_cst "operations"
+    | Mmakeoperation (v, d, a)          -> f_app "make_operation" [f v; f d; f a]
+    | Mmakeevent (t, id, a)             -> f_app "make_event" ~ts:[ft t] [(A.estring (M.unloc_mident id)); f a]
     | Mcreatecontract (_cc, _d, _a) -> assert false
 
 
@@ -1737,7 +1751,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mbls12_381_fr_n v  -> A.enumberFr v
     | Mbls12_381_g1 v    -> A.ebytesG1 v
     | Mbls12_381_g2 v    -> A.ebytesG2 v
-    | Munit              -> A.etuple []
+    | Munit              -> A.eunit ()
     | MsaplingStateEmpty _v -> assert false
     | MsaplingTransaction (_, v) -> A.ebytes v
     | Mchest v           -> A.ebytes v
@@ -1775,8 +1789,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mternarybool   (c, a, b)               -> A.eternary (f c) (f a) (f b)
     | Mternaryoption (c, a, b)               -> A.eternary (f c) (f a) (f b)
-    | Mfold (_e, _i, _l)                     -> assert false
-    | Mmap (_e, _i, _l)                      -> assert false
+    | Mfold (e, i, l)                        -> A.efold (f e) (snd i) (f l)
+    | Mmap (e, i, l)                         -> A.emap (f e) (snd i) (f l)
     | Mexeclambda (l, a)                     -> f_app "exec_lambda"  [f l; f a]
     | Mapplylambda (l, a)                    -> f_app "apply_lambda" [f l; f a]
 
@@ -1788,10 +1802,28 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnone           -> let a = match fst mt.type_ with | Toption ty -> Some (ft ty) | _ -> None in A.eoption (ONone a)
     | Msome v         -> A.eoption (OSome (f v))
     | Mtuple l        -> A.etuple (List.map f l)
-    | Masset l        -> A.erecord (List.map (fun x -> (None, f x)) l)
+    | Masset l        -> begin
+        let extract_asset_name (ty : M.type_) =
+          let an =
+            match fst ty with
+            | Tasset an -> an
+            | _ -> assert false
+          in
+          an
+        in
+        let get_asset_value an : string list =
+          let asset = M.Utils.get_asset model an in
+          (* Format.eprintf "%a@\n" M.pp_mident asset.name; *)
+          (* let lvalues = List.filter (fun (x : M.asset_item) -> if List.exists (fun a -> String.equal (M.unloc_mident x.name) a) asset.keys then false else true ) asset.values in *)
+          let res = List.map (fun (x : M.asset_item) -> M.unloc_mident x.name) asset.values in
+          (* List.iter (Format.eprintf "%s@\n") res; *)
+          res
+        in
+        let an = extract_asset_name mt.type_ in let lnames = get_asset_value an in A.erecord (List.map2 (fun x y -> (Some (A.ValueAssign, dumloc x), f y)) lnames l)
+      end
     | Massets l       -> A.earray (List.map f l)
     | Mlitset l       -> A.earray (List.map f l)
-    | Mlitlist l      -> A.earray (List.map f l)
+    | Mlitlist l      -> let g : A.expr -> A.expr = match as_list mt.type_ with | Some ty -> (fun x -> f_app "make_list" ~ts:[ft ty] [x]) | _ -> (fun x -> x) in g (A.earray (List.map f l))
     | Mlitmap (_b, l) -> A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l)
     | Mlitrecord l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlitevent  l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
@@ -1847,8 +1879,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Maddfield       (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "add") [f i]
     | Mremoveasset    (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "remove") [f i]
     | Mremovefield    (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "remove") [f i]
-    | Mremoveall      (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_all") []
-    | Mremoveif       (an, ck, _la, lb, _a) -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_if") [f lb]
+    | Mremoveall      (an, ck)            -> A.emethod (MKexpr (to_ck2 an ck)) (dumloc "remove_all") []
+    | Mremoveif       (an, ck, _la, lb, _a) -> A.emethod (MKexpr (to_ck2 an ck)) (dumloc "remove_if") [f lb]
     | Mclear          (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "clear") []
     | Mset            (_c, _l, _k, _v)       -> assert false
     | Mupdate         (an, k, l)          -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
@@ -1883,11 +1915,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* set api expression *)
 
-    | Msetadd (_t, _c, _a)                -> assert false
-    | Msetremove (_t, _c, _a)             -> assert false
-    | Msetupdate (_t, _c, _b, _v)         -> assert false
-    | Msetcontains (_t, _c, _a)           -> assert false
-    | Msetlength (_t, _c)                 -> assert false
+    | Msetadd (_t, c, a)                  -> f_app "add"      [f c; f a]
+    | Msetremove (_t, c, a)               -> f_app "remove"   [f c; f a]
+    | Msetupdate (_t, c, b, v)            -> f_app "update"   [f c; f b; f v]
+    | Msetcontains (_t, c, a)             -> f_app "contains" [f c; f a]
+    | Msetlength (_t, c)                  -> f_app "length"   [f c]
     | Msetfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
@@ -1900,7 +1932,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* list api expression *)
 
     | Mlistprepend (_, c, a)               -> f_app "prepend"  [f c; f a]
-    | Mlistlength (_, c)                   -> f_app "size"     [f c]
+    | Mlistlength (_, c)                   -> f_app "length"   [f c]
     | Mlistcontains (_, c, a)              -> f_app "contains" [f c; f a]
     | Mlistnth (_, c, a)                   -> f_app "nth"      [f c; f a]
     | Mlisthead (_, c, a)                  -> f_app "head"     [f c; f a]
@@ -1939,8 +1971,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmax (l, r)                 -> f_app "max" [f l; f r]
     | Mmin (l, r)                 -> f_app "min" [f l; f r]
     | Mabs a                      -> f_app "abs" [f a]
-    | Mconcat (x, y)              -> f_app "abs" [f x; f y]
-    | Mconcatlist x               -> f_app "abs" [f x]
+    | Mconcat (x, y)              -> f_app "concat" [f x; f y]
+    | Mconcatlist x               -> f_app "concat" [f x]
     | Mslice (x, s, e)            -> f_app "slice" [f x; f s; f e]
     | Mlength x                   -> f_app "length" [f x]
     | Misnone x                   -> f_app "is_none" [f x]
@@ -1954,7 +1986,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mbytestoint x               -> f_app "bytes_to_int" [f x]
     | Minttobytes x               -> f_app "int_to_bytes" [f x]
     | Mpack x                     -> f_app "pack" [f x]
-    | Munpack (t, x)              -> f_app "unpack" [f x] ~ts:[ft t]
+    | Munpack (t, x)              -> A.eunpack (ft t) (f x)
     | Msetdelegate x              -> f_app "set_delegate" [f x]
     | Mkeyhashtocontract x        -> f_app "key_hash_to_contract" [f x]
     | Mcontracttoaddress x        -> f_app "contract_to_address" [f x]
@@ -2134,7 +2166,16 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         } in
         A.mk_function sf
       end
-    | Getter (_fs, _t) -> assert false
+    | Getter (fs, t) -> begin
+        let id = fs.name in
+        let body = for_expr fs.body in
+        let args = List.map (fun (id, t, _) -> (id, for_type t) ) fs.args in
+
+        let ep = A.mk_entry_properties () in
+        let ed = A.mk_getter_decl (snd id) (List.map (fun (x, y) -> (snd x, y)) args) (for_type t) ep body in
+
+        A.mk_getter ed
+      end
     | View (fs, rt, vv) -> begin
         let sf : A.s_function = {
           name  = snd fs.name;

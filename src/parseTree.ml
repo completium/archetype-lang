@@ -568,6 +568,8 @@ let mk_record_decl ?(fs=[]) ?pos id : record_decl = id, fs, pos
 
 let mk_entry_decl ?(args=[]) ?body id ep : entry_decl = id, args, ep, body
 
+let mk_getter_decl name args ret_t entry_properties body : getter_decl = { name; args; ret_t; entry_properties; body }
+
 let mk_transition_decl ?(args=[]) ?(trs=[]) id body ep : transition_decl = id, args, body, ep, trs
 
 let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
@@ -606,6 +608,9 @@ let mk_event ?(loc=dummy) rd =
 
 let mk_entry ?(loc=dummy) ed =
   mkloc loc (Dentry ed)
+
+let mk_getter ?(loc=dummy) ed =
+  mkloc loc (Dgetter ed)
 
 let mk_transition ?(loc=dummy) td =
   mkloc loc (Dtransition td)
