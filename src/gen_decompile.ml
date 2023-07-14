@@ -1596,7 +1596,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       A.ematchwith (f x) (List.map (fun (x, y : (M.pattern * M.mterm)) -> ([
           match x.node with
           | Pconst (id, ids) -> dumloc (A.Pref (dumloc (A.PIdent (unloc (snd id))), ids))
-          | Pwild            -> dumloc (A.Pref (dumloc (A.PIdent "_"), []))
+          | Pwild            -> dumloc (A.Pwild)
         ], f y)) l) MKbasic
 
     | Minstrmatchoption (x, i, ve, ne) ->
@@ -1631,15 +1631,15 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
           match c with
           | ICKcoll  an -> A.eterm (dumloc an)
           | ICKview  v -> f v
-          | ICKfield (an, fn, v) -> assert false
+          | ICKfield (_an, _fn, v) -> f v (*A.edot (A.esqapp (A.eterm (dumloc an)) (f v)) ((SINone, dumloc fn))*)
           | ICKset   v -> f v
           | ICKlist  v -> f v
           | ICKmap   v -> f v
         in
         A.efor (to_for_ident i) (to_iter_container c) (f b)
       end
-    | Miter (_i, _a, _b, _c, _n) -> assert false
-    | Mwhile (_c, _b)            -> assert false
+    | Miter (i, a, b, c, _n)     -> A.eiter (snd i) ~min:(f a) (f b) (f c)
+    | Mwhile (c, b)              -> A.ewhile (f c) (f b)
     | Mseq l                     -> begin
         match List.rev l with
         | []   -> A.enothing ()
@@ -1674,8 +1674,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         let tr =
           match tk with
           | TKsimple (a, dst) -> A.TTsimple (f a, f dst)
-          | TKcall (e, ty, _, dst, args) -> assert false
-          | TKentry (x, e, arg) -> assert false (*A.TTentry (f x, f e, f arg)*)
+          | TKcall (e, id, ty, dst, args) -> A.TTcontract (f e, f dst, dumloc id, ft ty, f args)
+          | TKentry (x, e, arg) ->
+            let id =
+              match e.node with
+              | Mvar (id, _) -> snd id
+              | _ -> assert false
+            in
+            A.TTentry (f x, id, f arg)
           | TKgen  (a, cn, _, address_arg, en, arg) -> assert false
           | TKself (e, name, args) -> A.TTself (f e, dumloc name, List.map (fun (_, y) -> f y) args)
           | TKoperation op -> A.TToperation (f op)
@@ -1683,7 +1689,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         A.etransfer tr
       end
     | Memit (_, _)       -> assert false
-    | Mdetach (_, _, _, _)  -> assert false
+    | Mdetach (a, b, _c, d) ->
+      let to_detach_kind = function
+        | M.DK_option (_, id) -> A.eterm (dumloc id)
+        | M.DK_map (_, id, k) -> A.esqapp (A.eterm (dumloc id)) (f k)
+      in
+      A.edetach (snd a) (to_detach_kind b) (f d)
     | Mmicheline _       -> assert false
 
 
@@ -1741,7 +1752,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       A.ematchwith (f x) (List.map (fun (x, y : (M.pattern * M.mterm)) -> ([
           match x.node with
           | Pconst (id, ids) -> dumloc (A.Pref (dumloc (A.PIdent (unloc (snd id))), ids))
-          | Pwild            -> dumloc (A.Pref (dumloc (A.PIdent "_"), []))
+          | Pwild            -> dumloc (A.Pwild)
         ], f y)) l) MKbasic
 
     | Mmatchoption (x, i, ve, ne) ->
@@ -1832,14 +1843,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Maddasset       (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "add") [f i]
     | Mputsingleasset (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "put") [f i]
-    | Mputasset       (an, k, v)          -> assert false
+    | Mputasset       (_an, _k, _v)          -> assert false
     | Maddfield       (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "add") [f i]
     | Mremoveasset    (an, i)             -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "remove") [f i]
     | Mremovefield    (an, fn, c, i)      -> A.emethod (MKexpr (A.edot (A.esqapp (A.eterm (dumloc an)) (f c)) (id_to_sid fn))) (dumloc "remove") [f i]
     | Mremoveall      (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_all") []
-    | Mremoveif       (an, ck, la, lb, a) -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_if") [f lb]
+    | Mremoveif       (an, ck, _la, lb, _a) -> A.emethod (MKexpr (to_ck an ck)) (dumloc "remove_if") [f lb]
     | Mclear          (an, ck)            -> A.emethod (MKexpr (to_ck an ck)) (dumloc "clear") []
-    | Mset            (c,  l, k, v)       -> assert false
+    | Mset            (_c, _l, _k, _v)       -> assert false
     | Mupdate         (an, k, l)          -> A.emethod (MKexpr (A.eterm (dumloc an))) (dumloc "update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
     | Mupdateall      (an, ck, l)         -> A.emethod (MKexpr (to_ck an ck)) (dumloc "update_all") [A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
     | Maddupdate      (an, ck, k, l)      -> A.emethod (MKexpr (to_ck an ck)) (dumloc "add_update") [f k; A.erecord (List.map (fun (id, op, x) : A.record_item -> (Some (to_assign_operator op, snd id), f x)) l)]
@@ -1850,8 +1861,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mget      (an, ck, k)              -> A.esqapp (to_ck an ck) (f k)
     | Mgetsome  (an, ck, k)              -> A.esqapp (to_ck an ck) (f k)
-    | Mselect   (an, ck, la, lb, a)      -> A.emethod (MKexpr (to_ck an ck)) (dumloc "select")   [f lb]
-    | Msort     (an, ck, l)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "sort")     []
+    | Mselect   (an, ck, _la, lb, _a)    -> A.emethod (MKexpr (to_ck an ck)) (dumloc "select")   [f lb]
+    | Msort     (an, ck, _l)             -> A.emethod (MKexpr (to_ck an ck)) (dumloc "sort")     []
     | Mcontains (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "contains") [f i]
     | Mnth      (an, ck, i)              -> A.emethod (MKexpr (to_ck an ck)) (dumloc "nth")      [f i]
     | Mcount    (an, ck)                 -> A.emethod (MKexpr (to_ck an ck)) (dumloc "count")    []
@@ -1864,7 +1875,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mcast (_src, _dst, v)    -> f v
     | Mtupleaccess (x, k)      -> A.esqapp (f x) (A.ebnat k)
-    | Mrecupdate (_x, _l)      -> assert false
+    | Mrecupdate (x, l)        -> A.erecupdate (f x) (List.map (fun (id, x) -> (dumloc id, f x)) l)
     | Mmakeasset (_an, _k, _v) -> assert false
     | Mtocontainer _an         -> assert false
     | Mglobal_constant (_t, _v)-> assert false
@@ -1910,7 +1921,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmapremove (_, _, _, c, k)                  -> f_app "remove"   [f c; f k]
     | Mmapupdate (_, _, _, c, k, v)               -> f_app "update"   [f c; f k; f v]
     | Mmapget (_, _, _, c, k, _an)                -> A.esqapp (f c) (f k)
-    | Mmapgetopt (_, _, _, c, k)                  -> f_app "get_opt"  [f c; f k]
+    | Mmapgetopt (_, _, _, c, k)                  -> A.esqapp (f c) (f k)
     | Mmapcontains (_, _, _, c, k)                -> f_app "contains" [f c; f k]
     | Mmaplength (_, _, _, c)                     -> f_app "length"   [f c]
     | Mmapfold (_, _t, _ik, _iv, _ia, _c, _a, _b) -> assert false
@@ -2019,8 +2030,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(v, Vlocal)            -> A.eterm (snd v)
     | Mvar(v, Vparam)            -> A.eterm (snd v)
     | Mvar(_v, Vfield)           -> assert false
-    | Mvar(_, Vthe)              -> assert false
-    | Mvar(_, Vstate)            -> assert false
+    | Mvar(_, Vthe)              -> A.eterm (dumloc "the")
+    | Mvar(_, Vstate)            -> A.eterm (dumloc "state")
     | Mvar(v, Vparameter)        -> A.eterm (snd v)
     | Menumval (id, args, _e) -> begin
         match args with
