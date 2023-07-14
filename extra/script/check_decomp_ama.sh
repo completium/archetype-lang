@@ -13,7 +13,7 @@ is_skip() {
     local filename=$(basename "$filepath")
 
     # List of filenames to check against
-    local filename_list=("contract_transition.arl")
+    local filename_list=("contract_transition.arl" "entry_section_state_is_otherwise.arl" "event_dup.arl")
 
     # Loop through the filename list
     for fname in "${filename_list[@]}"; do
@@ -94,7 +94,7 @@ fi
 if [ ${NB_OUT} -eq 0 ]; then
     echo "all generated print files compile."
 else
-    echo -e "\033[32mPassed : ${NB_OUT} \032[0m"
+    echo -e "\033[32mPassed : ${NB_OUT} \033[0m"
     RET=1
 fi
 
