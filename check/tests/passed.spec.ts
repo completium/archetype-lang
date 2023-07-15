@@ -1091,6 +1091,7 @@ import * as test_create_contract_arl_with_param from '../bindings/passed/test_cr
 import * as test_create_contract_arl_with_param_const from '../bindings/passed/test_create_contract_arl_with_param_const'
 import * as test_create_contract_arl_with_param_with_default from '../bindings/passed/test_create_contract_arl_with_param_with_default'
 import * as test_create_contract_bytes from '../bindings/passed/test_create_contract_bytes'
+import * as test_create_contract_inline from '../bindings/passed/test_create_contract_inline'
 import * as test_create_contract_tz_with_import from '../bindings/passed/test_create_contract_tz_with_import'
 import * as test_create_contract_tz_with_path from '../bindings/passed/test_create_contract_tz_with_path'
 import * as test_fget from '../bindings/passed/test_fget'
@@ -21177,6 +21178,12 @@ describe('passed', async () => {
     await test_create_contract_bytes.test_create_contract_bytes.deploy({ as: alice })
 
     await test_create_contract_bytes.test_create_contract_bytes.exec({ as: alice })
+  })
+
+  it('test_create_contract_inline', async () => {
+    await test_create_contract_inline.test_create_contract_inline.deploy({ as: alice })
+
+    await test_create_contract_inline.test_create_contract_inline.exec({ as: alice })
   })
 
   it('test_create_contract_tz_with_import', async () => {

@@ -4024,6 +4024,10 @@ let rec for_xexpr
 
         let create_contract_type =
           match path with
+          | {pldesc = PT.Emicheline v} -> begin
+            let obj = Micheline_tools.pt_to_obj v in
+            process (`Tz obj)
+          end
           | {pldesc = PT.Eterm (_, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
               (* FIXME: error if the namespace is not empty *)
               let importdecl = Env.Import.get env (unloc id) in

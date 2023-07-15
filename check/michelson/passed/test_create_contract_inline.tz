@@ -1,0 +1,32 @@
+{ storage unit ;
+  parameter (unit %exec) ;
+  code { NIL operation ;
+         SWAP ;
+         CDR ;
+         NONE key_hash ;
+         PUSH mutez 0 ;
+         PUSH bytes 0x00 ;
+         DUP ;
+         DUP 3 ;
+         DUP 5 ;
+         CREATE_CONTRACT
+           { storage bytes ;
+             parameter (nat %exec) ;
+             code { UNPAIR ;
+                    DUP ;
+                    BYTES ;
+                    DIP 1 { SWAP ; DROP 1 } ;
+                    SWAP ;
+                    DROP 1 ;
+                    NIL operation ;
+                    PAIR } } ;
+         PAIR ;
+         NIL operation ;
+         DUP 2 ;
+         GET 1 ;
+         CONS ;
+         DIP 1 { DIG 5 ; DROP 1 } ;
+         DUG 5 ;
+         DROP 4 ;
+         SWAP ;
+         PAIR } }

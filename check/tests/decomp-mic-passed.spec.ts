@@ -4657,6 +4657,10 @@ describe('decomp-mic-passed', async () => {
     const stat = compile("michelson/passed/test_create_contract_bytes.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_create_contract_inline', async () => {
+    const stat = compile("michelson/passed/test_create_contract_inline.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_create_contract_tz_with_import', async () => {
     const stat = compile("michelson/passed/test_create_contract_tz_with_import.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

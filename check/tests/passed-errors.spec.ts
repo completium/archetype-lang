@@ -4357,6 +4357,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/test_create_contract_bytes.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_create_contract_inline', async () => {
+    const stat = compile("../tests/passed/test_create_contract_inline.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_create_contract_tz_with_import', async () => {
     const stat = compile("../tests/passed/test_create_contract_tz_with_import.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
