@@ -1739,7 +1739,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mcreatecontract (cc, d, a) -> begin
         let code, storage =
           match cc with
-          | CCTz (_m, a)    -> (A.estring "code", f a)
+          | CCTz (m, a)    -> (A.emicheline (Micheline_tools.obj_to_pt m.ms_content), f a)
           | CCArl (_id, _l) -> assert false
         in
         f_app "create_contract" [code; f d; f a; storage]

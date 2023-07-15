@@ -55,6 +55,27 @@ let obj_to_micheline (obj : TZ.obj_micheline) : micheline =
   in
   aux obj
 
+let obj_to_pt (obj : TZ.obj_micheline) : PT.micheline_t =
+  let mkprim (p, args, annot) = PT.MIprim (p, args, annot) in
+  let rec aux (obj : TZ.obj_micheline) : PT.micheline_t =
+    match obj with
+    | Oprim p -> mkprim (p.prim, List.map aux p.args, p.annots)
+    | Ostring v -> PT.MIstring v
+    | Obytes v -> PT.MIbytes v
+    | Oint v -> PT.MIint (Big_int.big_int_of_string v)
+    | Oarray v -> PT.MIseq (List.map aux v)
+    | Ovar v -> begin
+        let f id = mkprim (id, [], []) in
+        match v with
+        | OMVfree id -> f id
+        | OMVint (id, _) -> f id
+        | OMVstring id -> f id
+        | OMVbytes id -> f id
+        | OMVif (id, _, _) -> f id
+      end
+  in
+  aux obj
+
 let obj_to_micheline_t (obj : TZ.obj_micheline) : PT.micheline_t =
   let rec aux (obj : TZ.obj_micheline) : PT.micheline_t =
     match obj with

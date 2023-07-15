@@ -17,7 +17,7 @@ is_skip() {
      "event_dup.arl" \
      "import_.*.arl" \
      "invariants_on_states.arl" \
-     "test_create_contract.*.arl" \
+     "test_create_contract_arl.*.arl" \
      "section_constant_transition.arl" \
      "state_is.arl" \
      "test_transition.arl" \
