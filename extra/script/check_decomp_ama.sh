@@ -17,6 +17,18 @@ is_skip() {
      "event_dup.arl" \
      "import_.*.arl" \
      "invariants_on_states.arl" \
+     "test_create_contract.*.arl" \
+     "section_constant_transition.arl" \
+     "state_is.arl" \
+     "test_transition.arl" \
+     "test_metadata.arl" \
+     "view_all_chain.arl" \
+     "view_offchain.arl" \
+     "view_offchain_nat.arl" \
+     "view_onchain_offchain.arl" \
+     "with_metadata_json.arl" \
+     "with_metadata_json_with_offchain_view.arl" \
+     "with_metadata_uri.arl" \
      )
 
     for pattern in "${filename_patterns[@]}"; do

@@ -546,7 +546,7 @@ let enothing          ?(loc=dummy) _              = mkloc loc (Enothing)
 let eunit             ?(loc=dummy) _              = mkloc loc (Eunit)
 let etz_expr          ?(loc=dummy) v              = mkloc loc (Etz_expr v)
 let emicheline        ?(loc=dummy) v              = mkloc loc (Emicheline v)
-let emicheline        ?(loc=dummy) a b c          = mkloc loc (Emicheline_expr (a, b, c))
+let emicheline_expr   ?(loc=dummy) a b c          = mkloc loc (Emicheline_expr (a, b, c))
 let einvalid          ?(loc=dummy) _              = mkloc loc (Einvalid)
 (* declarations utils *)
 

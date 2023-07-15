@@ -1719,7 +1719,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         | M.DK_map (_, id, k) -> A.esqapp (A.eterm (dumloc id)) (f k)
       in
       A.edetach (snd a) (to_detach_kind b) (f d)
-    | Mmicheline _       -> assert false
+    | Mmicheline m -> A.emicheline (Micheline_tools.obj_to_micheline_t m)
 
 
     (* entrypoint *)
@@ -1736,7 +1736,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Moperations                       -> f_cst "operations"
     | Mmakeoperation (v, d, a)          -> f_app "make_operation" [f v; f d; f a]
     | Mmakeevent (t, id, a)             -> f_app "make_event" ~ts:[ft t] [(A.estring (M.unloc_mident id)); f a]
-    | Mcreatecontract (_cc, _d, _a) -> assert false
+    | Mcreatecontract (cc, d, a) -> begin
+        let code, storage =
+          match cc with
+          | CCTz (_m, a)    -> (A.estring "code", f a)
+          | CCArl (_id, _l) -> assert false
+        in
+        f_app "create_contract" [code; f d; f a; storage]
+      end
 
 
     (* literals *)
@@ -1839,7 +1846,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlitevent  l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlambda (rt, id, at, e) -> A.elambda (Some (ft at)) (snd id) (Some (ft rt)) (f e)
     | Mlambda_michelson (it, rt, body) -> A.elambda_michelson (ft it) (ft rt) (Micheline_tools.obj_to_micheline_t body)
-    | Mmicheline_expr (_t, _m, _a) -> assert false
+    | Mmicheline_expr (t, m, a) -> A.emicheline_expr (ft t) (Micheline_tools.obj_to_micheline_t m) (List.map f a)
 
     (* access *)
 
@@ -1920,8 +1927,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mrecupdate (x, l)        -> A.erecupdate (f x) (List.map (fun (id, x) -> (dumloc id, f x)) l)
     | Mmakeasset (_an, _k, _v) -> assert false
     | Mtocontainer _an         -> assert false
-    | Mglobal_constant (_t, _v)-> assert false
-
+    | Mglobal_constant (t, v)  -> f_app "global_constant" ~ts:[ft t] [f v]
 
     (* set api expression *)
 
@@ -2036,8 +2042,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* sapling *)
 
-    | Msapling_empty_state   _ -> assert false
-    | Msapling_verify_update _ -> assert false
+    | Msapling_empty_state       n  -> f_app "sapling_empty_state" [A.ebnat (Big_int.big_int_of_int n)]
+    | Msapling_verify_update (s, t) -> f_app "sapling_verify_update" [f s; f t]
 
 
     (* bls curve *)
