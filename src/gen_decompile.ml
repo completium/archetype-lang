@@ -2165,8 +2165,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     let t  = for_type si.typ in
     let dv = for_expr si.default in
     match si.model_type with
-    | MTvar -> A.mk_variable (A.mk_variable_decl ~dv:dv (snd id) t VKvariable)
-    | _ -> assert false
+    | MTvar       -> A.mk_variable (A.mk_variable_decl ~dv:dv (snd id) t VKvariable)
+    | MTconst     -> A.mk_variable (A.mk_variable_decl ~dv:dv (snd id) t VKconstant)
+    | MTasset  id -> A.mk_variable (A.mk_variable_decl ~dv:dv (snd id) t VKvariable)
+    | MTstate     -> A.mk_variable (A.mk_variable_decl ~dv:dv (dumloc "state") t VKvariable)
+    | MTenum   id -> A.mk_variable (A.mk_variable_decl ~dv:dv (dumloc id) t VKvariable)
   in
 
   let for_fun (f : M.function_node) : A.declaration =

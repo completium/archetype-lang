@@ -79,6 +79,7 @@ let opt_event_well_address : (string option) ref = ref (None : string option)
 let opt_g = ref false
 let opt_path = ref "."
 let opt_ama = ref false
+let opt_alma = ref false
 
 let opt_property_focused = ref ""
 

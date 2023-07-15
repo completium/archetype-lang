@@ -435,10 +435,11 @@ let decompile_from_path path =
 
 (* -------------------------------------------------------------------- *)
 
-let arl_model_arl input =
+let arl_model_arl low input =
   input
   |> parse
   |> compile_model
+  |> (fun x -> if low then toolchain x else x)
   |> (fun x -> let env = Gen_decompile.mk_env () in to_archetype (x, env))
   |> extract_pt
 
