@@ -1631,7 +1631,17 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         ([dumloc (A.Pref (dumloc A.PNil, []))], f ee)
       ] A.MKbasic
 
-    | Minstrmatchdetach  _       -> assert false
+    | Minstrmatchdetach  (dk, i, ve, ne) ->
+      let to_dk dk =
+        match dk with
+        | M.DK_option (_, x) -> A.eterm (dumloc x)
+        | M.DK_map (_, i, k) -> A.esqapp (A.eterm (dumloc i)) (f k)
+      in
+      A.ematchwith (to_dk dk) [
+        ([dumloc (A.Pref (dumloc A.PSome, [snd i]))], f ve);
+        ([dumloc (A.Pref (dumloc A.PNone, []))], f ne)
+      ] A.MKdetach
+
     | Mfor (i, c, b)             -> begin
         let to_for_ident (i : M.for_ident) : A.for_ident =
           let v =
@@ -1715,10 +1725,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* entrypoint *)
 
     | Mgetentrypoint (t, a, s)         -> A.eentrypoint (ft t) (A.estring (M.unloc_mident a)) (f s) None
-    | Mcallview (_t, _a, _b, _c)       -> assert false
+    | Mcallview (t, a, b, c)           -> A.ecallview (ft t) (f a) (A.estring (M.unloc_mident b)) (f c)
     | Mimportcallview (_t, _a, _b, _c) -> assert false
     | Mself id                         -> A.eself (snd id)
-    | Mselfcallview (_t, _id, _args)   -> assert false
+    | Mselfcallview (_t, id, args)     -> A.emethod A.MKself id (List.map f args)
 
 
     (* operation *)

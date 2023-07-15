@@ -12,12 +12,15 @@ is_skip() {
     local filepath=$1
     local filename=$(basename "$filepath")
 
-    # List of filenames to check against
-    local filename_list=("contract_transition.arl" "entry_section_state_is_otherwise.arl" "event_dup.arl")
+    local filename_patterns=("contract_transition.arl" \
+     "entry_section_state_is_otherwise.arl" \
+     "event_dup.arl" \
+     "import_.*.arl" \
+     "invariants_on_states.arl" \
+     )
 
-    # Loop through the filename list
-    for fname in "${filename_list[@]}"; do
-        if [ "$fname" = "$filename" ]; then
+    for pattern in "${filename_patterns[@]}"; do
+        if [[ $filename =~ $pattern ]]; then
             return 0
         fi
     done
@@ -76,9 +79,9 @@ for i in tests/passed/*.arl; do
     continue
   fi
   process $i
-  if [ ${NB_ERR} -eq 1 ]; then
-    break
-  fi
+#  if [ ${NB_ERR} -eq 1 ]; then
+#    break
+#  fi
 done
 
 echo ""

@@ -1446,9 +1446,10 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let id    : M.lident       = Option.get x.label in
         let value : M.mterm        = to_mterm env x.term in
         let fa    : M.mterm option = Option.map (to_mterm env) x.error in
+        let as_option ty = match fst ty with | M.Toption ty -> ty | _ -> assert false in
         let node =
           match fa with
-          | Some fa -> M.Mdeclvaropt([M.mk_mident id], Some value.type_, value, Some fa, true)
+          | Some fa -> M.Mdeclvaropt([M.mk_mident id], Some (as_option value.type_), value, Some fa, true)
           | None    -> M.Mdeclvar   ([M.mk_mident id], Some value.type_, value, true)
         in
         let term  = M.mk_mterm node M.tunit in
