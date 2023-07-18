@@ -4025,9 +4025,9 @@ let rec for_xexpr
         let create_contract_type =
           match path with
           | {pldesc = PT.Emicheline v} -> begin
-            let obj = Micheline_tools.pt_to_obj v in
-            process (`Tz obj)
-          end
+              let obj = Micheline_tools.pt_to_obj v in
+              process (`Tz obj)
+            end
           | {pldesc = PT.Eterm (_, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
               (* FIXME: error if the namespace is not empty *)
               let importdecl = Env.Import.get env (unloc id) in
@@ -4961,23 +4961,25 @@ and for_api_call ~mode ?autoview ?capture env (the, m, args)
 
     let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-    let method_ =
+    let g ty tys = List.find_map
+        (fun op ->
+           if Option.is_some op.op_thety then
+             select_mop (unloc m) (ty :: tys) args op
+           else None) allops
+    in
+
+    let args, method_ =
       match the.A.type_ with
       | None ->
         raise E.Bailout
 
       | Some ty ->
-        match
-          List.find_map
-            (fun op ->
-               if Option.is_some op.op_thety then
-                 select_mop (unloc m) (ty :: aty) args op
-               else None) allops
-        with
-        | None ->
+        match (g ty aty), (g ty [A.Ttuple aty]) with
+        | Some (_, method_), _ -> args, method_
+        | _, Some (_, method_) -> [A.mk_sp ~loc:(Location.mergeall (List.map (fun (x : A.pterm) -> x.loc) args)) ~type_:(A.Ttuple aty) (A.Ptuple args)], method_
+        | _ ->
           Env.emit_error env (loc m, NoSuchMethod (unloc m));
-          raise E.Bailout
-        | Some (_, method_) -> method_ in
+          raise E.Bailout in
 
     Some (the, method_, args)
 

@@ -529,6 +529,10 @@ describe('decomp-mit-passed', async () => {
     const stat = compile("michelson/passed/const_decl.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('containers_of_tuple', async () => {
+    const stat = compile("michelson/passed/containers_of_tuple.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('contract_called', async () => {
     const stat = compile("michelson/passed/contract_called.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

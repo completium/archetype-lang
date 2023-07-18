@@ -134,6 +134,7 @@ import * as col_iter_direct_storage from '../bindings/passed/col_iter_direct_sto
 import * as col_iter_filter_storage from '../bindings/passed/col_iter_filter_storage'
 import * as compare_enum from '../bindings/passed/compare_enum'
 import * as const_decl from '../bindings/passed/const_decl'
+import * as containers_of_tuple from '../bindings/passed/containers_of_tuple'
 import * as contract_called from '../bindings/passed/contract_called'
 import * as contract_caller from '../bindings/passed/contract_caller'
 import * as contract_empty from '../bindings/passed/contract_empty'
@@ -3871,6 +3872,12 @@ describe('passed', async () => {
   it('const_decl', async () => {
     await const_decl.const_decl.deploy({ as: alice })
     await const_decl.const_decl.exec({ as: alice })
+  })
+
+  it('containers_of_tuple', async () => {
+    await containers_of_tuple.containers_of_tuple.deploy({ as: alice })
+
+    await containers_of_tuple.containers_of_tuple.test({ as: alice })
   })
 
   it('contract_called', async () => {

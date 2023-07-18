@@ -529,6 +529,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/const_decl.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('containers_of_tuple', async () => {
+    const stat = compile("../tests/passed/containers_of_tuple.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('contract_called', async () => {
     const stat = compile("../tests/passed/contract_called.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

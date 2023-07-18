@@ -1,0 +1,9 @@
+archetype containers_of_tuple
+
+entry test() {
+    var myList : list<(nat * nat)> = [];
+    myList.prepend((1, 1));
+
+    var mySet : set<(nat * nat)> = [];
+    mySet.add((1, 1));
+}

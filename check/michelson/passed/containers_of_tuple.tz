@@ -1,0 +1,17 @@
+{ storage unit ;
+  parameter (unit %test) ;
+  code { CDR ;
+         NIL (pair nat nat) ;
+         PUSH nat 1 ;
+         PUSH nat 1 ;
+         PAIR ;
+         CONS ;
+         EMPTY_SET (pair nat nat) ;
+         PUSH bool True ;
+         PUSH nat 1 ;
+         PUSH nat 1 ;
+         PAIR ;
+         UPDATE ;
+         DROP 2 ;
+         NIL operation ;
+         PAIR } }
