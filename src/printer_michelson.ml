@@ -79,6 +79,29 @@ let rec pp_data fmt (d : data) =
   | Dlambda_rec c     -> pp "(Lambda_rec { %a })" pp_code c
   | Dconstant v       -> pp "(constant \"%s\")" v
 
+let rec pp_data_no_const fmt (d : data) =
+let pp_data = pp_data_no_const in
+  let pp s = Format.fprintf fmt s in
+  match d with
+  | Dint    v         -> pp_big_int fmt v
+  | Dstring v         -> pp "\"%s\"" (String.escaped v)
+  | Dbytes  v         -> pp "0x%s"     v
+  | Dunit             -> pp "Unit"
+  | Dtrue             -> pp "True"
+  | Dfalse            -> pp "False"
+  | Dpair   l         -> pp "(Pair %a)"     (pp_list " " pp_data) l
+  | Dleft   d         -> pp "(Left %a)"      pp_data d
+  | Dright  d         -> pp "(Right %a)"     pp_data d
+  | Dsome   d         -> pp "(Some %a)"      pp_data d
+  | Dnone             -> pp "None"
+  | Dlist l           -> pp "{ %a }" (pp_list "; " pp_data) l
+  | Delt (x, y)       -> pp "Elt %a %a" pp_data x pp_data y
+  | Dvar (x, _, _)    -> pp "%s" x
+  | DIrCode (_id, _c) -> pp "IrCode"
+  | Dcode c           -> pp "{ %a }" pp_code c
+  | Dlambda_rec c     -> pp "(Lambda_rec { %a })" pp_code c
+  | Dconstant v       -> pp "(constant \"%s\")" v
+
 and pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
   let pp_annot = pp_option (fun fmt -> Format.fprintf fmt " %s") in
