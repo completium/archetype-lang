@@ -3804,7 +3804,7 @@ let remove_high_level_model (model : model)  =
       let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
       let id = mk_mident (dumloc "_map_getopt_value") in
       let some_value = mk_mvar id vt in
-      let none_value = match oan with | Some an -> failg (mk_tuple [mk_string fail_msg_ASSET_NOT_FOUND; mk_string an]) | None -> fail fail_msg_NOT_FOUND in
+      let none_value = match oan with | Some an -> faile (mk_tuple [mk_string fail_msg_ASSET_NOT_FOUND; mk_string an]) vt | None -> fail fail_msg_NOT_FOUND in
 
       mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
 

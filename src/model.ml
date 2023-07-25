@@ -1043,6 +1043,7 @@ let mk_metadata v = mk_mterm (Mlitmap(MKBigMap, v)) tmetadata
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
 let failc x = mk_mterm (Mfail x) tunit
+let faile x ty = mk_mterm (Mfailexpr x) ty
 let mnot x  = mk_mterm (Mnot x) tbool
 let seq x   = mk_mterm (Mseq x) tunit
 let skip    = seq []
