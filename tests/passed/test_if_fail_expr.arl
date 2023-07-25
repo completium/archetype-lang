@@ -1,0 +1,10 @@
+archetype test_if_fail_expr
+
+variable res : nat = 0
+
+entry exec(x : option<nat>) {
+  res := match x with
+  | some(v) -> v
+  | none -> fail_expr("error")
+  end
+}

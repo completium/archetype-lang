@@ -275,8 +275,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
   let get_enum_type a = a |> get_enum_type_opt |> Option.get in
 
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
-    let is_record t = match M.get_ntype t with | M.Trecord _ | M.Tevent _ -> true | _ -> false in
-    let type_ = type_to_type (Option.get pterm.type_) in
+    let is_record t = match Option.map M.get_ntype t with | Some (M.Trecord _) | Some (M.Tevent _) -> true | _ -> false in
+    let type_ = Option.map type_to_type pterm.type_ in
     let f x = to_mterm env x in
     let node =
       match pterm.node with
@@ -314,7 +314,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin
-          let record_name : M.mident =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> name | _ -> assert false in
+          let record_name : M.mident =  match Option.map M.get_ntype type_ with | Some (M.Trecord name) | Some (M.Tevent name) -> name | _ -> assert false in
           let w_ast = match fst record_name with | None -> ast | Some id -> (let import =  Typing.Env.Import.get _tenv (unloc id) in Option.get import.id_ast)
           in
           let ids, k =
@@ -350,12 +350,12 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Parray l ->
         begin
           let l = List.map f l in
-          match M.get_ntype type_ with
-          | Tcontainer ((Tasset _, _), _)   -> M.Massets l
-          | Tset _ -> M.Mlitset l
-          | Tmap ( _, _) -> M.Mlitmap (MKMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
-          | Tbig_map ( _, _) -> M.Mlitmap (MKBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
-          | Titerable_big_map (_, _) -> M.Mlitmap (MKIterableBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          match Option.map M.get_ntype type_ with
+          | Some (Tcontainer ((Tasset _, _), _))   -> M.Massets l
+          | Some (Tset _) -> M.Mlitset l
+          | Some (Tmap ( _, _)) -> M.Mlitmap (MKMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Some (Tbig_map ( _, _)) -> M.Mlitmap (MKBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Some (Titerable_big_map (_, _)) -> M.Mlitmap (MKIterableBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})                  -> M.Mint i
@@ -457,6 +457,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           M.Mcreatecontract (cc, f okh, f amount)
         end
       | A.Ptz_expr s -> M.Mtz_expr s
+      | A.Pfailexpr e -> M.Mfailexpr (f e)
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
@@ -757,8 +758,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Pcall (None, A.Cconst A.Cunpack, [], [AExpr x]) ->
         let fx = f x in
         let t =
-          match M.get_ntype type_ with
-          | Toption t -> t
+          match Option.map M.get_ntype type_ with
+          | Some (Toption t) -> t
           | _ -> assert false
         in
         M.Munpack (t, fx)
@@ -1012,7 +1013,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
     in
-    M.mk_mterm node type_ ~loc:pterm.loc
+    M.mk_mterm node (match type_ with | Some t -> t | None -> M.tunit) ~loc:pterm.loc
   in
 
   let extract_asset_name (pterm : M.mterm) : Ident.ident =

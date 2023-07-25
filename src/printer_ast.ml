@@ -688,6 +688,13 @@ let rec pp_pterm fmt (pterm : pterm) =
         in
         (pp_no_paren pp) fmt (t, m, a)
       end
+    | Pfailexpr e -> begin
+        let pp fmt e =
+          Format.fprintf fmt "fail_expr(%a)"
+            pp_pterm e
+        in
+        (pp_no_paren pp) fmt e
+      end
   in
   pp_struct_poly pp_node fmt pterm
 

@@ -4749,6 +4749,10 @@ describe('decomp-mic-passed', async () => {
     const stat = compile("michelson/passed/test_global_constant.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_if_fail_expr', async () => {
+    const stat = compile("michelson/passed/test_if_fail_expr.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_if_int_nat', async () => {
     const stat = compile("michelson/passed/test_if_int_nat.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

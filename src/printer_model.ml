@@ -362,6 +362,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "fail (%a)"
         (pp_fail_type f) ft
 
+    | Mfailexpr v ->
+      Format.fprintf fmt "fail_expr (%a)"
+        f v
+
     | Mfailsome v ->
       Format.fprintf fmt "fail_some (%a)"
         f v

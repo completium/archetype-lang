@@ -766,6 +766,7 @@ let to_ir (model : M.model) : T.ir =
         in
         T.iunop ~loc:mtt.loc Ufail x
       end
+    | Mfailexpr e -> T.iunop ~loc:mtt.loc Ufail (f e)
     | Mfailsome _ -> emit_error (UnsupportedTerm ("Mfailsome"))
     | Mtransfer tr -> begin
         let op =

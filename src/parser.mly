@@ -68,6 +68,7 @@
 %token EVENT
 %token FAIL
 %token FAIL_IF
+%token FAILEXPR
 %token FAILSOME
 %token FALSE
 %token FOLD
@@ -825,6 +826,9 @@ expr_r:
 
  | FAIL e=paren(expr)
      { Efail e }
+
+ | FAILEXPR e=paren(expr)
+     { Efailexpr e }
 
  | FAILSOME e=paren(expr)
      { Efailsome e }

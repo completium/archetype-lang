@@ -4449,6 +4449,10 @@ describe('decomp-ama-passed', async () => {
     const stat = compile("../tests/passed/test_global_constant.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_if_fail_expr', async () => {
+    const stat = compile("../tests/passed/test_if_fail_expr.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_if_int_nat', async () => {
     const stat = compile("../tests/passed/test_if_int_nat.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

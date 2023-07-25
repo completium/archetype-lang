@@ -1114,6 +1114,7 @@ import * as test_getter2 from '../bindings/passed/test_getter2'
 import * as test_getter_with_arg from '../bindings/passed/test_getter_with_arg'
 import * as test_getter_with_args from '../bindings/passed/test_getter_with_args'
 import * as test_global_constant from '../bindings/passed/test_global_constant'
+import * as test_if_fail_expr from '../bindings/passed/test_if_fail_expr'
 import * as test_if_int_nat from '../bindings/passed/test_if_int_nat'
 import * as test_init_asset from '../bindings/passed/test_init_asset'
 import * as test_init_asset2 from '../bindings/passed/test_init_asset2'
@@ -21457,6 +21458,22 @@ describe('passed', async () => {
     await test_global_constant.test_global_constant.exec({ as: alice })
 
     const res_after = await test_global_constant.test_global_constant.get_res()
+    assert(res_after.equals(new Nat(2)))
+  })
+
+  it('test_if_fail_expr', async () => {
+    await test_if_fail_expr.test_if_fail_expr.deploy({ as: alice })
+
+    const res_before = await test_if_fail_expr.test_if_fail_expr.get_res()
+    assert(res_before.equals(new Nat(0)))
+
+    await expect_to_fail(async () => {
+      await test_if_fail_expr.test_if_fail_expr.exec(Option.None(), { as: alice })
+    }, { string: "error" })
+
+    await test_if_fail_expr.test_if_fail_expr.exec(Option.Some(new Nat(2)), { as: alice })
+
+    const res_after = await test_if_fail_expr.test_if_fail_expr.get_res()
     assert(res_after.equals(new Nat(2)))
   })
 

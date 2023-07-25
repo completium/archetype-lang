@@ -212,6 +212,7 @@ type 'term mterm_node  =
   | Mreturn           of 'term
   (* effect *)
   | Mfail             of fail_type
+  | Mfailexpr         of 'term
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
@@ -1286,6 +1287,7 @@ let cmp_mterm_node
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
+    | Mfailexpr v1, Mfailexpr v2                                                       -> cmp v1 v2
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
@@ -1753,6 +1755,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mreturn x                      -> Mreturn (f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
+  | Mfailexpr v                    -> Mfailexpr (f v)
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
@@ -2133,6 +2136,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mreturn x                             -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
+  | Mfailexpr v                           -> f accu v
   | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
@@ -2616,6 +2620,10 @@ let fold_map_term
       | _ -> ft, accu
     in
     g (Mfail fte), fta
+
+  | Mfailexpr v ->
+    let ve, va = f accu v in
+    g (Mfailexpr ve), va
 
   | Mfailsome v ->
     let ve, va = f accu v in

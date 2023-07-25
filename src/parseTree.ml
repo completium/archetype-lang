@@ -150,6 +150,7 @@ and expr_unloc =
   | Edorequire     of expr * expr
   | Edofailif      of expr * expr
   | Efail          of expr
+  | Efailexpr      of expr
   | Efailsome      of expr
   | Eassign        of assignment_operator * expr * expr
   | Eassignopt     of expr * expr * expr
@@ -514,6 +515,7 @@ let edetach           ?(loc=dummy) a b c          = mkloc loc (Edetach (a, b, c)
 let edorequire        ?(loc=dummy) e f            = mkloc loc (Edorequire(e, f))
 let edofailif         ?(loc=dummy) e f            = mkloc loc (Edofailif (e, f))
 let efail             ?(loc=dummy) e              = mkloc loc (Efail e)
+let efailexpr         ?(loc=dummy) e              = mkloc loc (Efailexpr e)
 let efailsome         ?(loc=dummy) e              = mkloc loc (Efailsome e)
 let eassign           ?(loc=dummy) op e v         = mkloc loc (Eassign(op, e, v))
 let eassignopt        ?(loc=dummy) e v f          = mkloc loc (Eassignopt(e, v, f))

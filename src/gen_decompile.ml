@@ -1693,6 +1693,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         in
         A.efail v
       end
+    | Mfailexpr x        -> A.efailexpr (f x)
     | Mfailsome x        -> A.efailsome (f x)
     | Mtransfer tk       -> begin
         let tr =

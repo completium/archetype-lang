@@ -3639,6 +3639,10 @@ let rec for_xexpr
         mk_sp e.A.type_ (A.Precupdate (e, upd))
       end
 
+    | Efailexpr e -> begin
+      let e = for_xexpr env e in
+      mk_sp None (A.Pfailexpr (e))
+    end
     | Etuple es -> begin
         let etys =
           match Option.bind Type.as_tuple ety with

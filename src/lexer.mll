@@ -53,6 +53,7 @@
       "enum"                , ENUM                ;
       "event"               , EVENT               ;
       "fail"                , FAIL                ;
+      "fail_expr"           , FAILEXPR            ;
       "fail_some"           , FAILSOME            ;
       "false"               , FALSE               ;
       "fold"                , FOLD                ;
