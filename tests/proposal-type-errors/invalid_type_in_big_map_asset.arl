@@ -1,0 +1,8 @@
+archetype invalid_type_in_big_map_asset
+
+asset a to big_map {
+  id : nat;
+  bmap : big_map<nat, nat>;
+  list_bmap: list<big_map<nat, nat>>;
+  sapling: sapling_state(8)
+}
