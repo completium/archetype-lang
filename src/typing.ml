@@ -737,6 +737,7 @@ type error_desc =
   | InvalidArlFile
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
+  | InvalidAssetFieldTypeValueBigMap
   | InvalidAssetGetContainer           of A.container
   | InvalidCallByAsset
   | InvalidCallByExpression
@@ -1014,6 +1015,7 @@ let pp_error_desc fmt e =
   | InvalidArlFile                     -> pp "Invalid arl file"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" Printer_ast.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
+  | InvalidAssetFieldTypeValueBigMap   -> pp "Invalid type for big map asset field value"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
   | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
@@ -3640,9 +3642,9 @@ let rec for_xexpr
       end
 
     | Efailexpr e -> begin
-      let e = for_xexpr env e in
-      mk_sp None (A.Pfailexpr (e))
-    end
+        let e = for_xexpr env e in
+        mk_sp None (A.Pfailexpr (e))
+      end
     | Etuple es -> begin
         let etys =
           match Option.bind Type.as_tuple ety with
@@ -6511,6 +6513,11 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
         if not (Type.pktype ty) then
           Env.emit_error env (loc, InvalidTypeForPk)
     );
+
+  if (match bigmaps with | A.MKMap -> false | A.MKBigMap | A.MKIterableBigMap -> true)
+  then fields
+       |> List.filter (fun ({ pldesc = id, _, _}) -> not (List.exists (fun x -> String.equal id (unloc x)) pks))
+       |> List.iter (fun { pldesc = _, ty, _; plloc = loc; } -> if not (Type.Michelson.is_big_map_value ty) then Env.emit_error env (loc, InvalidAssetFieldTypeValueBigMap));
 
   let _ : Sstr.t =
     List.fold_left (fun seen pk ->

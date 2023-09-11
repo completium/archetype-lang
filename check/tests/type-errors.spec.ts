@@ -421,6 +421,10 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/invalid_type_for_key_map.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('invalid_type_in_big_map_asset', async () => {
+    const stat = compile("../tests/type-errors/invalid_type_in_big_map_asset.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('iterable_big_map_update', async () => {
     const stat = compile("../tests/type-errors/iterable_big_map_update.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
