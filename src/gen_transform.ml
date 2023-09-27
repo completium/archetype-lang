@@ -115,6 +115,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Maddupdate (an, c, k, l) ->
+      let mloc = mt.loc in
       begin
         let type_asset = tasset (mk_mident (dumloc an)) in
         let is_put =
@@ -172,7 +173,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
 
         let asset = mk_asset (string_to_mident an, k, l) in
         if is_put
-        then mk_mterm (Mputsingleasset (an, asset)) tunit
+        then mk_mterm ~loc:mloc (Mputsingleasset (an, asset)) tunit
         else
           let cond = mk_mterm (
               match c with
@@ -189,7 +190,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
               let add = mk_mterm (Maddfield (unloc_mident dan, unloc_mident dfn, dk, asset)) tunit in
-              let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
+              let r = mk_mterm ~loc:mloc (Mif (cond, if_nested, Some add)) tunit in
               r
             end
           | _ -> begin
@@ -200,7 +201,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                   | _ -> assert false) tunit in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_node = Mif (cond, update, Some add) in
-              mk_mterm if_node tunit
+              mk_mterm ~loc:mloc if_node tunit
             end
       end
     | _ -> map_mterm (aux ctx) mt
