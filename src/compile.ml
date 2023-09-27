@@ -253,6 +253,7 @@ let rec toolchain ?(debug=false) model =
     let rec aux (mt : Model.mterm) : Model.mterm =
       match mt.node with
       | Mcreatecontract (Model.CCArl(id, args), okh, am) -> begin
+          let mloc = mt.loc in
           let cc_model = List.find (fun (x : Model.model) -> String.equal id (Location.unloc x.name)) model.cc_models in
           let cc_model = {cc_model with parameters = List.map (fun (p : M.parameter) ->
               if p.const
@@ -287,7 +288,7 @@ let rec toolchain ?(debug=false) model =
               v
             ) |> M.mk_pair in
           let ms_content = Michelson.Utils.michelson_to_obj_micheline michelson in
-          Model.mk_mterm (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
+          Model.mk_mterm ~loc:mloc (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
         end
       | _ -> Model.map_mterm aux mt
     in

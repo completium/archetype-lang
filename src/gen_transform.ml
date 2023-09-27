@@ -115,7 +115,6 @@ let remove_add_update ?(isformula = false) (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Maddupdate (an, c, k, l) ->
-      let mloc = mt.loc in
       begin
         let type_asset = tasset (mk_mident (dumloc an)) in
         let is_put =
@@ -173,7 +172,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
 
         let asset = mk_asset (string_to_mident an, k, l) in
         if is_put
-        then mk_mterm ~loc:mloc (Mputsingleasset (an, asset)) tunit
+        then mk_mterm ~loc:mt.loc (Mputsingleasset (an, asset)) tunit
         else
           let cond = mk_mterm (
               match c with
@@ -190,7 +189,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
               let add = mk_mterm (Maddfield (unloc_mident dan, unloc_mident dfn, dk, asset)) tunit in
-              let r = mk_mterm ~loc:mloc (Mif (cond, if_nested, Some add)) tunit in
+              let r = mk_mterm ~loc:mt.loc (Mif (cond, if_nested, Some add)) tunit in
               r
             end
           | _ -> begin
@@ -201,7 +200,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                   | _ -> assert false) tunit in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_node = Mif (cond, update, Some add) in
-              mk_mterm ~loc:mloc if_node tunit
+              mk_mterm ~loc:mt.loc if_node tunit
             end
       end
     | _ -> map_mterm (aux ctx) mt
@@ -742,7 +741,7 @@ type enum_info = {
 let remove_enum (model : model) : model =
 
   let _remove_cmp_enum (model : model) : model =
-    let mk_exprmatchwith dir v id =
+    let mk_exprmatchwith loc dir v id =
       let t = mk_mterm (Mbool true) tbool in
       let f = mk_mterm (Mbool false)tbool in
       let cv, wv =
@@ -754,14 +753,14 @@ let remove_enum (model : model) : model =
       let pattern_wild  = mk_pattern Pwild, wv in
 
       let l = [pattern_const; pattern_wild] in
-      mk_mterm (Mexprmatchwith (v, l)) tbool
+      mk_mterm ~loc (Mexprmatchwith (v, l)) tbool
     in
     let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
       match mt.node with
-      | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith `Pos v id
-      | Mequal  (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Pos v id
-      | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith `Neg v id
-      | Mnequal (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
+      | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith mt.loc `Pos v id
+      | Mequal  (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith mt.loc `Pos v id
+      | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith mt.loc `Neg v id
+      | Mnequal (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith mt.loc `Neg v id
       | _ -> map_mterm (aux ctx) mt
     in
     map_mterm_model aux model
@@ -1028,9 +1027,9 @@ let remove_enum (model : model) : model =
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     let f = aux c in
-    let not x = mk_mterm (Mnot x) tbool in
-    let vtrue = mk_mterm (Mbool true) tbool in
-    let vfalse = mk_mterm (Mbool false) tbool in
+    let not x  = mk_mterm ~loc:mt.loc (Mnot x) tbool in
+    let vtrue  = mk_mterm ~loc:mt.loc (Mbool true) tbool in
+    let vfalse = mk_mterm ~loc:mt.loc (Mbool false) tbool in
     match mt.node with
     | Mequal (_, {node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
     | Mequal (_, {node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
@@ -1336,7 +1335,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
     aux t
   in
   let rec to_timestamp (x : mterm) =
-    let mk n = mk_mterm (Mtimestamp n) ttimestamp in
+    let mk loc n = mk_mterm ~loc (Mtimestamp n) ttimestamp in
     let extract (x : mterm) =
       match x.node with
       | Mtimestamp n -> n
@@ -1348,14 +1347,14 @@ let replace_date_duration_by_timestamp (model : model) : model =
     let f = to_timestamp in
     let g = extract |@ f in
     match x.node with
-    | Mdate d       -> mk (Core.date_to_timestamp d)
-    | Mduration d   -> mk (Core.duration_to_timestamp d)
-    | Mint i        -> mk i
-    | Mnat n        -> mk n
-    | Mnow          -> mk (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
-    | Mplus  (a, b) -> mk (Big_int.add_big_int (g a) (g b))
-    | Mminus (a, b) -> mk (Big_int.sub_big_int (g a) (g b))
-    | Minttodate v  -> mk (g v)
+    | Mdate d       -> mk x.loc (Core.date_to_timestamp d)
+    | Mduration d   -> mk x.loc (Core.duration_to_timestamp d)
+    | Mint i        -> mk x.loc i
+    | Mnat n        -> mk x.loc n
+    | Mnow          -> mk x.loc (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
+    | Mplus  (a, b) -> mk x.loc (Big_int.add_big_int (g a) (g b))
+    | Mminus (a, b) -> mk x.loc (Big_int.sub_big_int (g a) (g b))
+    | Minttodate v  -> mk x.loc (g v)
     | Mtimestamp _  -> x
     | Mvar (_, _) -> x
     | Mmin _ -> x
@@ -1369,22 +1368,22 @@ let replace_date_duration_by_timestamp (model : model) : model =
   let process_mterm mt =
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
-      | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) ttimestamp
-      | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) tint
+      | Mdate d,_      -> mk_mterm ~loc:mt.loc (Mtimestamp (Core.date_to_timestamp d)) ttimestamp
+      | Mduration d, _ -> mk_mterm ~loc:mt.loc (Mint (Core.duration_to_timestamp d)) tint
       | Minttodate _, _ -> to_timestamp mt
-      | Mnow, _        -> mk_mterm (Mnow) ttimestamp
+      | Mnow, _        -> mk_mterm ~loc:mt.loc (Mnow) ttimestamp
       | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
         let a = aux a in
         let b = aux b in
-        mk_mterm (Mratdur (a, b)) tint
+        mk_mterm ~loc:mt.loc (Mratdur (a, b)) tint
       | Mmax (a, b), t when is_duration t || is_date t ->
         let a = aux a in
         let b = aux b in
-        mk_mterm (Mmax(a, b)) (process_type t)
+        mk_mterm ~loc:mt.loc (Mmax(a, b)) (process_type t)
       | Mmin (a, b), t when is_duration t || is_date t ->
         let a = aux a in
         let b = aux b in
-        mk_mterm (Mmin(a, b)) (process_type t)
+        mk_mterm ~loc:mt.loc (Mmin(a, b)) (process_type t)
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
           node = Mletin (ids, (match v with | LVsimple v -> LVsimple (aux v) | LVreplace (id, k, fa) -> LVreplace (id, k, aux fa)), Option.map process_type t, aux body, Option.map aux o)
@@ -1461,9 +1460,9 @@ let abs_tez model : model =
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mmult (lhs, rhs) when is_int lhs && is_cur rhs ->
-      mk_mterm (Mmult (abs(lhs), rhs)) mt.type_
+      mk_mterm ~loc:mt.loc (Mmult (abs(lhs), rhs)) mt.type_
     | Mmult (lhs, rhs) when is_cur lhs && is_int rhs ->
-      mk_mterm (Mmult (lhs, abs(rhs))) mt.type_
+      mk_mterm ~loc:mt.loc (Mmult (lhs, abs(rhs))) mt.type_
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -1542,7 +1541,7 @@ let replace_dotassetfield_by_dot (model : model) : model =
       begin
         let k = aux ctx k in
         let get = build_get (unloc_mident an) k in
-        mk_mterm (Mdot (get, fn)) mt.type_
+        mk_mterm ~loc:mt.loc (Mdot (get, fn)) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -1554,7 +1553,7 @@ let process_internal_string (model : model) : model =
     | Mplus (l, r), Tbuiltin Bstring ->
       let l = aux ctx l in
       let r = aux ctx r in
-      mk_mterm (Mconcat (l, r)) tstring
+      mk_mterm ~loc:mt.loc (Mconcat (l, r)) tstring
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
@@ -1630,7 +1629,7 @@ let remove_duplicate_key (model : model) : model =
           Utils.get_labeled_value_from model an l
           |> List.filter (fun (lbl, _) -> not (String.equal lbl k))
         in
-        mk_mterm (Mlitrecord l) (tasset an)
+        mk_mterm ~loc:mt.loc (Mlitrecord l) (tasset an)
       end
     | _ -> mt
   in
@@ -1983,16 +1982,16 @@ let remove_asset (model : model) : model =
                    in
                    let ll = List.map extract_asset l in
                    let lll = List.map extract_key ll in *)
-                mk_mterm (Mlitset []) (tset kt)
+                mk_mterm ~loc:mt.loc (Mlitset []) (tset kt)
               | { node = Massets l; type_ = (Tcontainer (kt, (Partition | Aggregate)), _)} ->
-                mk_mterm (Mlitset l) (tset kt)
+                mk_mterm ~loc:mt.loc (Mlitset l) (tset kt)
               | _ -> map_mterm aux mt
             in
             let l = List.map (fun (x, y) -> (x, aux y)) l in
             { mt with node = Mlitmap (b, l) }
           end
         | { node = Massets _l; type_ = (Tcontainer (kt, (Partition | Aggregate)), _)} -> begin
-            mk_mterm (Mlitset []) (tset kt)
+            mk_mterm ~loc:mt.loc (Mlitset []) (tset kt)
           end
         | _ -> mt
       in
@@ -3779,7 +3778,7 @@ let remove_high_level_model (model : model)  =
         let iaccu = mk_mident (dumloc "_accu") in
         let vaccu = mk_mvar iaccu t in
         let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
-        mk_mterm (Mlistfold(t, iid, iaccu, iter, f m, b)) tl
+        mk_mterm ~loc:mt.loc (Mlistfold(t, iid, iaccu, iter, f m, b)) tl
       end
     | Miter (i, a, b, c, nat) -> begin
         let a = f a in
@@ -3799,7 +3798,7 @@ let remove_high_level_model (model : model)  =
 
         loop
         |> mk_letin i  a
-        |> mk_letin ie b
+        |> mk_letin ~loc:mt.loc ie b
       end
     | Mmapget (mkm, kt, vt, m, k, oan) ->
       let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
@@ -3924,7 +3923,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
         let vcallback = mk_pvar icallback tcallback in
         let rec aux (mt : mterm) : mterm =
           match mt.node with
-          | Mreturn x -> mk_mterm (Mtransfer(TKentry(mtransferred, vcallback, x))) tunit
+          | Mreturn x -> mk_mterm ~loc:mt.loc (Mtransfer(TKentry(mtransferred, vcallback, x))) tunit
           | _ -> map_mterm aux mt
         in
         (icallback, tcallback, None), aux fs.body
@@ -4052,7 +4051,7 @@ let process_parameter (model : model) : model =
   let for_parameter (param : parameter) =
     let t = param.typ in
     let name = param.name in
-    let mk_parameter id t = mk_mterm (Mvar(id, Vparameter )) t in
+    let mk_parameter id t = mk_mterm ~loc:param.loc (Mvar(id, Vparameter )) t in
     let default : mterm =
       match param.value, param.default with
       | Some v, _
@@ -4085,21 +4084,21 @@ let expr_to_instr (model : model) =
     match mt.node, mt.type_ with
 
     | Massign (ValueAssign, _, ak, {node = Msetadd(t, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Msetinstradd (t, ak, k)) tyinstr
+      mk_mterm ~loc:mt.loc (Msetinstradd (t, ak, k)) tyinstr
     | Massign (ValueAssign, _, ak, {node = Msetremove(t, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Msetinstrremove (t, ak, k)) tyinstr
+      mk_mterm ~loc:mt.loc (Msetinstrremove (t, ak, k)) tyinstr
 
     | Massign (ValueAssign, _, ak, {node = Mlistprepend(t, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mlistinstrprepend (t, ak, k)) tyinstr
+      mk_mterm ~loc:mt.loc (Mlistinstrprepend (t, ak, k)) tyinstr
     (* | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
        mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr *)
 
     | Massign (ValueAssign, _, ak, {node = Mmapput(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrput (mky, tk, vk, ak, k, v)) tyinstr
+      mk_mterm ~loc:mt.loc (Mmapinstrput (mky, tk, vk, ak, k, v)) tyinstr
     | Massign (ValueAssign, _, ak, {node = Mmapremove(mky, tk, vk, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrremove (mky, tk, vk, ak, k)) tyinstr
+      mk_mterm ~loc:mt.loc (Mmapinstrremove (mky, tk, vk, ak, k)) tyinstr
     | Massign (ValueAssign, _, ak, {node = Mmapupdate(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrupdate (mky, tk, vk, ak, k, v)) tyinstr
+      mk_mterm ~loc:mt.loc (Mmapinstrupdate (mky, tk, vk, ak, k, v)) tyinstr
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4119,34 +4118,34 @@ let instr_to_expr_exec (model : model) =
     | _ -> assert false
   in
 
-  let mk ak ty fnode =
+  let mk ?loc ak ty fnode =
     let rv : mterm = extract_rev_var ak ty in
     let v : mterm = mk_mterm (fnode rv) ty in
-    mk_mterm (Massign (ValueAssign, ty, ak, v)) tunit
+    mk_mterm ?loc (Massign (ValueAssign, ty, ak, v)) tunit
   in
 
   let rec aux ctx (mt : mterm) =
     match mt.node with
     | Msetinstradd (sty, ak, k) when is_used ak [k] ->
-      mk ak (tset sty) (fun x -> Msetadd(sty, x, k))
+      mk ~loc:mt.loc ak (tset sty) (fun x -> Msetadd(sty, x, k))
 
     | Msetinstrremove (sty, ak, k) when is_used ak [k] ->
-      mk ak (tset sty) (fun x -> Msetremove(sty, x, k))
+      mk ~loc:mt.loc ak (tset sty) (fun x -> Msetremove(sty, x, k))
 
     | Mlistinstrprepend (lty, ak, i) when is_used ak [i] ->
-      mk ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
+      mk ~loc:mt.loc ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
 
     | Mlistinstrconcat (lty, ak, i) when is_used ak [i] ->
-      mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
+      mk ~loc:mt.loc ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
 
     | Mmapinstrput(mky, kty, vty, ak, k, v) when is_used ak [k; v] ->
-      mk ak (tmap kty vty) (fun x -> Mmapput(mky, kty, vty, x, k, v))
+      mk ~loc:mt.loc ak (tmap kty vty) (fun x -> Mmapput(mky, kty, vty, x, k, v))
 
     | Mmapinstrremove(mky, kty, vty, ak, k) when is_used ak [k] ->
-      mk ak (tmap kty vty) (fun x -> Mmapremove(mky, kty, vty, x, k))
+      mk ~loc:mt.loc ak (tmap kty vty) (fun x -> Mmapremove(mky, kty, vty, x, k))
 
     | Mmapinstrupdate (mky, kty, vty, ak, k, v) when is_used ak [k; v] ->
-      mk ak (tmap kty vty) (fun x -> Mmapupdate(mky, kty, vty, x, k, v))
+      mk ~loc:mt.loc ak (tmap kty vty) (fun x -> Mmapupdate(mky, kty, vty, x, k, v))
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4288,7 +4287,7 @@ let remove_iterable_big_map (model : model) : model =
 
         body
         |> (fun x -> mk_mterm (Mletin ([idx_id_loced], LVsimple init_value, Some tnat, x, None)) tunit)
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     | { node = Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar _ | Avarstore _) as assign_value),
@@ -4365,22 +4364,22 @@ let remove_iterable_big_map (model : model) : model =
           mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
         in
         matchinstr
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     (* expression *)
     | { node = Mmapget (MKIterableBigMap, kt, vt, map, k, io)} ->
-      mk_mterm (Mmapget (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
+      mk_mterm ~loc:mt.loc (Mmapget (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
 
     | { node = Mmapgetopt (MKIterableBigMap, kt, vt, map, k)} ->
       mk_mterm (Mmapgetopt (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k)) (toption (ttuple [tnat; vt]))
       |> (fun (x : mterm) ->
           let var = mk_mident (dumloc "_var_ibm_getopt") in
           let mvar : mterm = mk_mvar var (ttuple [tnat; vt]) in
-          mk_mterm (Mmap (x, var, mk_tupleaccess 1 mvar)) (toption vt))
+          mk_mterm ~loc:mt.loc (Mmap (x, var, mk_tupleaccess 1 mvar)) (toption vt))
 
     | { node = Mmapcontains (MKIterableBigMap, kt, vt, map, k)} ->
-      mk_mterm (Mmapcontains (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k)) (tbool)
+      mk_mterm ~loc:mt.loc (Mmapcontains (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k)) (tbool)
 
     | { node = Mmaplength (MKIterableBigMap, _, _, map)} -> begin
         aux ctx map |> mk_tupleaccess 2
@@ -4390,7 +4389,7 @@ let remove_iterable_big_map (model : model) : model =
     | { node = Mmapfold (MKIterableBigMap, kt, ikid, ivid, iaccu, map, init, act); type_ = vt } -> begin
         let body = mk_mterm (Mfor (FIdouble(ikid, ivid), ICKmap map, mk_mterm (Massign (ValueAssign, kt, Avar iaccu, act)) tunit)) tunit in
         seq [aux ctx body; mk_mvar iaccu kt]
-        |> (fun x -> mk_mterm (Mletin ([iaccu], LVsimple init, Some vt, x, None)) tunit)
+        |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([iaccu], LVsimple init, Some vt, x, None)) tunit)
       end
 
     (* control *)
@@ -4414,11 +4413,11 @@ let remove_iterable_big_map (model : model) : model =
         let letin =
           aux ctx body
           |> (fun x -> mk_mterm (Mletin ([id_v], LVsimple value_v, Some vt, x, None)) tunit)
-          |> (fun x -> mk_mterm (Mletin ([id_k], LVsimple value_k, Some kt, x, None)) tunit)
+          |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([id_k], LVsimple value_k, Some kt, x, None)) tunit)
         in
 
         mk_mterm (Miter (idx_id, bound_min, bound_max, letin, true)) tunit
-        |> (fun x -> mk_mterm (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
+        |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     | { node = Mlitmap (MKIterableBigMap, original_values); type_ = (Titerable_big_map (kt, vt), _)} -> begin
@@ -4427,7 +4426,7 @@ let remove_iterable_big_map (model : model) : model =
         let content_value = mk_mterm (Mlitmap (MKBigMap, (List.mapi (fun i (k, v) -> (k, mk_tuple[mk_nat (i + 1); v]))) original_values)) content_type in
         let index_value   = mk_mterm (Mlitmap (MKBigMap, (List.mapi (fun i (k, _) -> (mk_nat (i + 1), k))               original_values))) index_type in
         let counter_value = mk_nat (List.length original_values) in
-        mk_tuple [content_value; index_value; counter_value]
+        mk_tuple ~loc:mt.loc [content_value; index_value; counter_value]
       end
 
     | { type_ = (Titerable_big_map (_, _), _) } -> begin
@@ -4476,12 +4475,12 @@ let remove_iterable_big_map (model : model) : model =
   map_mterm_model aux model
 
 let lazy_eval_condition (model : model) : model =
-  let mk_if (cond : mterm) (then_ : mterm) (else_ : mterm) : mterm = mk_mterm (Mexprif(cond, then_, else_)) tbool in
+  let mk_if ?loc (cond : mterm) (then_ : mterm) (else_ : mterm) : mterm = mk_mterm ?loc (Mexprif(cond, then_, else_)) tbool in
   let rec aux ctx (mt : mterm) : mterm =
     let f = aux ctx in
     match mt with
-    | { node = Mand(a, b); type_ = (Tbuiltin Bbool, _) } -> mk_if (f a) (mk_if (f b) mtrue mfalse) mfalse
-    | { node = Mor(a, b); type_ = (Tbuiltin Bbool, _) }  -> mk_if (f a) mtrue (mk_if (f b) mtrue mfalse)
+    | { node = Mand(a, b); type_ = (Tbuiltin Bbool, _) } -> mk_if ~loc:mt.loc (f a) (mk_if (f b) mtrue mfalse) mfalse
+    | { node = Mor(a, b); type_ = (Tbuiltin Bbool, _) }  -> mk_if ~loc:mt.loc (f a) mtrue (mk_if (f b) mtrue mfalse)
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -4544,7 +4543,7 @@ let remove_decl_var_opt (model : model) =
   map_mterm_model aux model
 
 let process_arith_container (model : model) =
-  let doit_gen a (c : mterm) ctyp ityp fv : mterm =
+  let doit_gen ?loc a (c : mterm) ctyp ityp fv : mterm =
     let cid = "_l" in
     let lcid = mk_mident (dumloc cid) in
     let container = mk_mvar lcid ctyp in
@@ -4556,34 +4555,38 @@ let process_arith_container (model : model) =
     let ick = match get_ntype c.type_ with | Tset _ -> ICKset c | Tlist _ -> ICKlist c | _ -> assert false in
     let loop : mterm = mk_mterm (Mfor (FIsimple xid, ick, assign)) tunit in
     let seq = mk_mterm (Mseq [loop; container]) container.type_  in
-    mk_letin lcid a seq
+    mk_letin ?loc lcid a seq
   in
   let rec aux ctx (mt : mterm) : mterm =
     let f = aux ctx in
     match mt.node with
     | Mplus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist (Ttuple [lkt; lvt], _), _); node = Mlitlist l})) when cmp_type kt lkt && cmp_type vt lvt -> begin
-        List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a)
+        let res = List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a) in
+        {res with loc = mt.loc}
       end
     | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = ((Tlist (Ttuple [lkt; lvt], _) | Tset (Ttuple [lkt; lvt], _)), _)}) as c))  when cmp_type kt lkt && cmp_type vt lvt -> begin
-        doit_gen a c tmap (ttuple [lkt; lvt]) (fun container x -> mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap)
+        doit_gen ~loc:mt.loc a c tmap (ttuple [lkt; lvt]) (fun container x -> mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap)
       end
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
-        List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
+        let res = List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a) in
+        {res with loc = mt.loc}
       end
     | Mplus (({type_ = ((Tset ty, _) as tset)} as a), ({type_ = ((Tlist lty | Tset lty), _)} as c)) when cmp_type ty lty -> begin
-        doit_gen a c tset lty (fun container x -> mk_mterm (Msetadd (lty, container, x)) tset)
+        doit_gen ~loc:mt.loc a c tset lty (fun container x -> mk_mterm (Msetadd (lty, container, x)) tset)
       end
     | Mminus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type kt lty -> begin
-        List.fold_right (fun x accu -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) t) l (f a)
+        let res = List.fold_right (fun x accu -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) t) l (f a) in
+        {res with loc = mt.loc}
       end
     | Mminus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), ({type_ = ((Tlist lty | Tset lty), _)} as c)) when cmp_type kt lty -> begin
-        doit_gen a c tmap kt (fun container x -> mk_mterm (Mmapremove (MKMap, kt, vt, container, x)) tmap)
+        doit_gen ~loc:mt.loc a c tmap kt (fun container x -> mk_mterm (Mmapremove (MKMap, kt, vt, container, x)) tmap)
       end
     | Mminus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
-        List.fold_right (fun x accu -> mk_mterm (Msetremove (ty, accu, x)) t) l (f a)
+        let res = List.fold_right (fun x accu -> mk_mterm (Msetremove (ty, accu, x)) t) l (f a) in
+        {res with loc = mt.loc}
       end
     | Mminus (({type_ = ((Tset ty, _) as tset)} as a), ({type_ = ((Tlist lty | Tset lty), _)} as c)) when cmp_type ty lty -> begin
-        doit_gen a c tset ty (fun container x -> mk_mterm (Msetremove (lty, container, x)) tset)
+        doit_gen ~loc:mt.loc a c tset ty (fun container x -> mk_mterm (Msetremove (lty, container, x)) tset)
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4635,10 +4638,10 @@ let remove_import_mterm (model : model) =
   let rec aux ctx (mt : mterm) : mterm =
     let f = aux ctx in
     match mt.node with
-    | Mimportcallview (t, a, b, c) -> mk_mterm (Mcallview (t, f a, b, f c)) (mt.type_)
+    | Mimportcallview (t, a, b, c) -> mk_mterm ~loc:mt.loc (Mcallview (t, f a, b, f c)) (mt.type_)
     | Mselfcallview (t, id, args) -> begin
         let arg = mk_pair (List.map f args) in
-        mk_mterm (Mcallview (t, mselfaddress, (None, id), arg)) (mt.type_)
+        mk_mterm ~loc:mt.loc (Mcallview (t, mselfaddress, (None, id), arg)) (mt.type_)
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4796,9 +4799,9 @@ let add_builtin_functions (model : model) : model =
                 mk_nat 9, mk_string "9"
               ])) tymap);
             mk_while (mk_ne (mk_mod10 x_var) (mk_nat 0)) (seq [
-              mk_assign tstring r_mident (mk_concat (mk_mapget (mk_mod10 x_var)) r_var);
-              mk_assign tnat x_mident (mk_mterm (Mdiveuc (x_var, mk_nat 10)) tnat)
-            ]);
+                mk_assign tstring r_mident (mk_concat (mk_mapget (mk_mod10 x_var)) r_var);
+                mk_assign tnat x_mident (mk_mterm (Mdiveuc (x_var, mk_nat 10)) tnat)
+              ]);
             mk_ret (mk_mterm (Mexprif (mk_eq (mk_nat 0) a_var, mk_string "0", r_var)) tstring )
           ] in
         let args = [(a_mident, tnat, None)] in
@@ -4848,11 +4851,11 @@ let add_builtin_functions (model : model) : model =
     match mt.node with
     | Mexp_horner (x, s) -> begin
         let name = mk_mident (dumloc cst_exp_horner) in
-        let x = f x in let s = f s in mk_mterm (Mapp (name, [x; s])) trational
+        let x = f x in let s = f s in mk_mterm ~loc:mt.loc (Mapp (name, [x; s])) trational
       end
     | Mnattostring x -> begin
         let name = mk_mident (dumloc cst_nat_to_string) in
-        let x = f x in mk_mterm (Mapp (name, [x])) tstring
+        let x = f x in mk_mterm ~loc:mt.loc (Mapp (name, [x])) tstring
       end
     | _ -> map_mterm (aux ctx) mt
   in
