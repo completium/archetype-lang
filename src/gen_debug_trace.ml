@@ -1,3 +1,4 @@
+module M = Model
 module T = Michelson
 
 type node_micheline =
@@ -19,9 +20,35 @@ and micheline = {
 }
 [@@deriving show {with_path = false}]
 
+type arg = {
+  name: string;
+  type_: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entrypoint = {
+  name: string;
+  args: arg list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type storage_item = {
+  name: string;
+  type_: string;
+  value: string option;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type interface = {
+  entrypoints: entrypoint list;
+  storage: storage_item list;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type debug_trace = {
   name: string;
   path: string;
+  interface: interface;
   contract: micheline;
 }
 [@@deriving show {with_path = false}]
@@ -268,12 +295,36 @@ and code_to_micheline (code : T.code) : micheline =
   (* Custom *)
   | CUSTOM _c                -> assert false (* TODO: obj_micheline *)
 
-let generate_debug_trace_json (michelson : T.michelson) : debug_trace =
+let for_interface (model : M.model) : interface =
+  let for_type (ty : M.type_) : string =
+    ""
+  in
+  let for_mtype (ty : Gen_contract_interface.type_) : string =
+    ""
+  in
+  let for_interface_entrypoint (fs : M.function_struct) : entrypoint =
+    let for_argument arg : arg =
+      {name = (M.unloc_mident (Tools.proj3_1 arg)); type_ = (for_type (Tools.proj3_2 arg))}
+    in
+    {name = (M.unloc_mident fs.name); args = List.map for_argument fs.args}
+  in
+  let for_interface_storage (model : M.model) =
+    let po = Gen_contract_interface.get_var_decls_size model in
+    let s = Gen_contract_interface.for_storage model po in
+    List.map (fun (item : Gen_contract_interface.decl_storage) -> {name = item.name; type_ = for_mtype item.type_; value = None}) s
+  in
+  let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
+  let interface_storage = for_interface_storage model in
+  let interface : interface = {entrypoints = interface_entrypoints; storage = interface_storage} in
+  interface
+
+let generate_debug_trace_json (model : M.model) (michelson : T.michelson) : debug_trace =
   let storage = mk_mich_prim "storage" ~args:[type_to_micheline michelson.storage] in
   let parameter = mk_mich_prim "parameter" ~args:[type_to_micheline michelson.parameter] in
   let code = mk_mich_prim "code" ~args:[code_to_micheline michelson.code] in
   let contract = mk_mich_array [storage; parameter; code] in
-  let res : debug_trace = {name = ""; path = ""; contract = contract} in
+  let interface = for_interface model in
+  let res : debug_trace = {name = (Location.unloc model.name); path = ""; interface = interface; contract = contract} in
   res
 
 let pp_range fmt (l : Location.t) =
@@ -323,4 +374,7 @@ let rec pp_micheline_ fmt (mich : micheline) =
   | Narray  v -> Format.fprintf fmt "[%a]" (Printer_tools.pp_list "," pp_micheline_) v
 
 let pp_trace_json fmt (debug_trace : debug_trace) =
-  Format.fprintf fmt "{\"contract\":%a}\n" pp_micheline_ debug_trace.contract
+  Format.fprintf fmt "{\"name\":\"%s\",\"interface\":%s,\"contract\":%a}\n"
+    debug_trace.name
+    (Yojson.Safe.to_string (interface_to_yojson debug_trace.interface))
+    pp_micheline_ debug_trace.contract
