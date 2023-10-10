@@ -1622,14 +1622,23 @@ type stack_item = {
 }
 [@@deriving show {with_path = false}]
 
+type var_location =
+  | VLstorage
+  | VLargument
+  | VLlocal
+[@@deriving show {with_path = false}]
+
 type env = {
   stack : stack_item list;
+  vars : (string * var_location) list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
 let process_debug ?decl_bound ?loc (env : env) : T.debug =
-  let stack : T.stack_item list = List.map (fun (x : stack_item) -> T.{stack_item_name = x.id; stack_item_type = None} ) env.stack in
+  let stack : T.stack_item list = List.map (fun (x : stack_item) ->
+      let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
+      T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack in
   let res : T.debug = { decl_bound; stack; loc } in
   res
 
@@ -1642,7 +1651,7 @@ let rec assign_last_seq (debug : T.debug) (cs : T.code list) =
     end
   | [] -> []
 
-let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
+let mk_env ?(stack=[]) ?(vars=[]) () = { stack = stack; vars = vars; fail = false; }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with stack = { id = "_"; populated = true}::env.stack }
 let dec_env (env : env) = { env with stack = match env.stack with | _::t -> t | _ -> emit_error StackEmptyDec }
@@ -2480,14 +2489,18 @@ and build_view storage_list (v : T.func) : T.view_struct =
 
     | args, [] ->
       let code = [T.ccar ()] @ unfold_all args in
-      let env = { env with stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
+      let env = { env with
+                  vars = (List.map (fun x -> (fst x, VLargument))) args;
+                  stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
       code, env, List.length args
 
     | [], stovars ->
       let scode, svs = extract_storage_vars stovars in
       (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
       let code = [T.ccdr ()] @ scode in
-      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
+      let env = { env with
+                  vars = (List.map (fun x -> (x, VLstorage))) stovars;
+                  stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
       code, env, List.length svs
 
     | args, stovars ->
@@ -2496,7 +2509,9 @@ and build_view storage_list (v : T.func) : T.view_struct =
       let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
       let code = [T.cunpair ()] @ scode @ acode in
       let avs = List.map fst args in
-      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
+      let env = { env with
+                  vars = ((List.map (fun x -> (x, VLargument))) avs) @ ((List.map (fun x -> (x, VLstorage))) svs);
+                  stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
       code, env, List.length (svs @ avs)
 
   in
@@ -2553,7 +2568,7 @@ and to_michelson (ir : T.ir) : T.michelson =
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~stack:(args |> List.map (fun x -> {id = fst x; populated = true})) () in
+                let env = mk_env ~vars:(args |> List.map (fun x -> (fst x, VLargument))) ~stack:(args |> List.map (fun x -> {id = fst x; populated = true})) () in
                 let nb_args = List.length args in
                 (* let nb_as = nb_args - 1 in *)
                 let unfold_args = unfold_n nb_args in
@@ -2580,8 +2595,9 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.cdig n] else []), (if df > 0 then [T.cdip (1, [T.cdrop df]) ] else []) in
 
-    let stack            = (let l = ir.storage_list in if List.is_empty l then [{id = "_"; populated = true}] else List.map (fun (x, _, _) -> {id = x; populated = true}) l) @ (List.map (fun x -> {id = x; populated = true}) ops_var) @ (List.rev (List.map (fun x -> {id = x; populated = true}) funids)) in
-    let env             = mk_env () ~stack in
+    let stack           = (let l = ir.storage_list in if List.is_empty l then [{id = "_"; populated = true}] else List.map (fun (x, _, _) -> {id = x; populated = true}) l) @ (List.map (fun x -> {id = x; populated = true}) ops_var) @ (List.rev (List.map (fun x -> {id = x; populated = true}) funids)) in
+    let vars            = (List.map (fun x -> (Tools.proj3_1 x, VLstorage)) ir.storage_list) in
+    let env             = mk_env () ~vars ~stack in
     let nb_storage_item = List.length ir.storage_list in
     let unfold_storage  = unfold_n nb_storage_item  in
     let fold_storage    = fold_n nb_storage_item in
@@ -2613,7 +2629,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           let nb_as = nb_args - 1 in
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
-          let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
+          let env = { env with vars = env.vars @ (List.map (fun x -> (x, VLargument)) args) ; stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
           let code, nenv = instruction_to_code env e.body in
           let diff = List.count (fun x -> not x.populated) nenv.stack in
           (* Format.eprintf "diff: %n\n" diff; *)

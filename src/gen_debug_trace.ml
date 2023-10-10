@@ -348,7 +348,7 @@ let pp_decl_bound fmt (decl_bound : T.decl_bound) =
 let pp_debug_ fmt (debug : T.debug) =
   let pp_option = Printer_tools.pp_option in
   let pp_list = Printer_tools.pp_list in
-  let pp_stack_item fmt (si : T.stack_item) = Format.fprintf fmt "{\"name\":\"%s\"}" si.stack_item_name in
+  let pp_stack_item fmt (si : T.stack_item) = Format.fprintf fmt "{\"name\":\"%s\", \"kind\":\"%s\"}" si.stack_item_name si.stack_item_kind in
   Format.fprintf fmt ",\"debug\":{\"stack\":[%a]%a%a}"
     (pp_list "," pp_stack_item) debug.stack
     (pp_option pp_range) debug.loc

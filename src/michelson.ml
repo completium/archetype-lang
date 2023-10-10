@@ -244,6 +244,7 @@ and code_node =
 
 and stack_item = {
   stack_item_name: string;
+  stack_item_kind: string;
   stack_item_type: type_ option;
 }
 
