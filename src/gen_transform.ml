@@ -4773,7 +4773,7 @@ let add_builtin_functions (model : model) : model =
         let m_mident = mk_mident (dumloc "_var_m_nat_to_string") in
         let body =
           let mk_eq lhs rhs = mk_mterm (Mequal (tnat, lhs, rhs)) tbool in
-          let mk_ne lhs rhs = mk_mterm (Mnequal (tnat, lhs, rhs)) tbool in
+          let mk_gt lhs rhs = mk_mterm (Mgt (lhs, rhs)) tbool in
           let mk_mod10 x = mk_mterm (Mmodulo (x, mk_nat 10)) tnat in
           let mk_while cond body = mk_mterm (Mwhile (cond, body)) tunit in
           let mk_assign t id v = mk_mterm (Massign (ValueAssign, t, Avar id, v)) tunit in
@@ -4783,6 +4783,7 @@ let add_builtin_functions (model : model) : model =
           let r_var = mk_mvar r_mident tstring in
           let m_var = mk_mvar m_mident tymap in
           let mk_mapget k = mk_mterm (Mmapget (MKMap, tnat, tstring, m_var, k, None)) tstring in
+          let cond = (mk_gt (x_var) (mk_nat 0)) in
           seq [
             mk_declvar x_mident tnat a_var;
             mk_declvar r_mident tstring (mk_string "");
@@ -4798,7 +4799,7 @@ let add_builtin_functions (model : model) : model =
                 mk_nat 8, mk_string "8";
                 mk_nat 9, mk_string "9"
               ])) tymap);
-            mk_while (mk_ne (mk_mod10 x_var) (mk_nat 0)) (seq [
+            mk_while cond (seq [
                 mk_assign tstring r_mident (mk_concat (mk_mapget (mk_mod10 x_var)) r_var);
                 mk_assign tnat x_mident (mk_mterm (Mdiveuc (x_var, mk_nat 10)) tnat)
               ]);

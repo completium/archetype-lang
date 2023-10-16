@@ -1,0 +1,11 @@
+archetype nat_to_string_2
+
+variable s1 : string = ""
+variable s2 : string = ""
+variable bal: nat = 1
+
+entry callback(babal : nat) {
+  s2 := nat_to_string(1000);
+  bal := babal;
+  s1 := nat_to_string(bal)
+}

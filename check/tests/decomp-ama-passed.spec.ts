@@ -3409,6 +3409,10 @@ describe('decomp-ama-passed', async () => {
     const stat = compile("../tests/passed/nat_to_string.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('nat_to_string_2', async () => {
+    const stat = compile("../tests/passed/nat_to_string_2.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('nested_for', async () => {
     const stat = compile("../tests/passed/nested_for.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

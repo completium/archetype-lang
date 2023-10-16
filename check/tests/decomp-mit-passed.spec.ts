@@ -3605,6 +3605,10 @@ describe('decomp-mit-passed', async () => {
     const stat = compile("michelson/passed/nat_to_string.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('nat_to_string_2', async () => {
+    const stat = compile("michelson/passed/nat_to_string_2.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('nested_for', async () => {
     const stat = compile("michelson/passed/nested_for.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
