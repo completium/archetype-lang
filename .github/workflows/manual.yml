@@ -67,6 +67,10 @@ jobs:
       working-directory: ./check
       run: npm run show_archetype_version
 
+    - name: show_tezos_client_version
+      working-directory: ./check
+      run: npm run show_tezos_client_version
+
     - name: completium_add_users
       working-directory: ./check
       run: npm run completium_add_users
