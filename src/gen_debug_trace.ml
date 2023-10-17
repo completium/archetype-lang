@@ -319,10 +319,8 @@ let for_interface (model : M.model) : interface =
   in
 
   let for_type (ty : M.type_) : string =
-    ""
-  in
-  let for_mtype (ty : Gen_contract_interface.type_) : string =
-    ""
+    let type_michelson = Gen_michelson.to_type model ty in
+    Format.asprintf "%a" Printer_michelson.pp_type type_michelson
   in
   let for_interface_entrypoint (fs : M.function_struct) : entrypoint =
     let for_argument arg : arg =
@@ -332,8 +330,8 @@ let for_interface (model : M.model) : interface =
   in
   let for_interface_storage (model : M.model) =
     let po = Gen_contract_interface.get_var_decls_size model in
-    let s = Gen_contract_interface.for_storage model po in
-    List.map (fun (item : Gen_contract_interface.decl_storage) -> {name = item.name; type_ = for_mtype item.type_; value = None}) s
+    let s = Gen_contract_interface.for_storage_internal model po in
+    List.map (fun (name, ty, _const) -> {name = name; type_ = for_type ty; value = None}) s
   in
   let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let interface_storage = for_interface_storage model in

@@ -275,23 +275,23 @@ let compute_path idx size : int list =
   if size = 1
   then []
   else [idx]
-  (* begin
-    let rec aux accu i =
-      if i = 0
-      then accu @ (if size - idx = 1 then [] else [0])
-      else aux (1::accu) (i - 1)
-    in
-    aux [] idx
-  end *)
+(* begin
+   let rec aux accu i =
+    if i = 0
+    then accu @ (if size - idx = 1 then [] else [0])
+    else aux (1::accu) (i - 1)
+   in
+   aux [] idx
+   end *)
 
 let for_parameters (po : preprocess_obj) (ps : M.parameter list) : parameter list =
   let start = if po.with_state then 1 else 0 in
   let _, res =
-  List.fold_left (
-   fun ((i, accu) : int * parameter list) (p : M.parameter) -> begin
-    let param = mk_parameter (M.unloc_mident p.name) (for_type p.typ) p.const None in
-    (i + (if p.const then 0 else 1), param::accu)
-   end) (start, []) ps
+    List.fold_left (
+      fun ((i, accu) : int * parameter list) (p : M.parameter) -> begin
+          let param = mk_parameter (M.unloc_mident p.name) (for_type p.typ) p.const None in
+          (i + (if p.const then 0 else 1), param::accu)
+        end) (start, []) ps
   in
   List.rev res
 
@@ -393,28 +393,33 @@ let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list
   let assets, enums, records, events = List.fold_right (for_decl_type model low_model) ds ([], [], [], []) in
   mk_decl_type assets enums records events
 
-let for_decl_node (d : M.decl_node) accu : decl_storage list =
-  let for_var (var : M.var) : decl_storage = mk_storage (M.unloc_mident var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
-  let for_asset (asset : M.asset) : decl_storage = mk_storage (M.unloc_mident asset.name) (mk_type "asset" (Some (M.unloc_mident asset.name)) None []) false in
-  match d with
-  | Dvar var     -> (for_var var)::accu
-  | Denum _      -> accu
-  | Dasset asset when asset.no_storage -> accu
-  | Dasset asset -> (for_asset asset)::accu
-  | Drecord _    -> accu
-  | Devent _     -> accu
-
-let for_storage (_model : M.model) (po : preprocess_obj) =
+let for_storage_internal (_model : M.model) (po : preprocess_obj) =
+  let for_decl_node (d : M.decl_node) accu =
+    let for_var (var : M.var) = (M.unloc_mident var.name, var.type_, (match var.kind with | VKconstant -> true | _ -> false)) in
+    (* let a = (mk_type "asset" (Some (M.unloc_mident asset.name)) None []) in *)
+    let for_asset (asset : M.asset) = (M.unloc_mident asset.name, Model.tasset asset.name, false) in
+    match d with
+    | Dvar var     -> (for_var var)::accu
+    | Denum _      -> accu
+    | Dasset asset when asset.no_storage -> accu
+    | Dasset asset -> (for_asset asset)::accu
+    | Drecord _    -> accu
+    | Devent _     -> accu
+  in
   let start = List.length po.params + if po.with_state then 1 else 0 in
-  let (_, res) : int * decl_storage list = List.fold_left
+  let (_, res) : int * 'a list = List.fold_left
       (fun (i, accu) (x : M.decl_node) ->
-         let accu : decl_storage list = for_decl_node x accu in
+         let accu = for_decl_node x accu in
          (i + 1, accu)
       ) (start, []) po.var_decls in
   let res = List.rev res in
   if po.with_state
-  then (mk_storage "_state" (mk_type "int" None None []) false)::res
+  then ("_state", Model.tint, false)::res
   else res
+
+let for_storage (_model : M.model) (po : preprocess_obj) =
+  let res = for_storage_internal _model po in
+  List.map (fun (x, y, z) -> mk_storage x (for_type y) z) res
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
