@@ -53,8 +53,8 @@ export class Asset_simple_to_iterable_big_map {
     async get_my_asset_value(key: att.Nat): Promise<string | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const raw_data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair)?.args[0]).toString()), key.to_mich(), my_asset_key_mich_type);
-            const data = raw_data ? raw_data?.args[1] : undefined;
+            const raw_data = await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair)?.args)[0]).toString()), key.to_mich(), my_asset_key_mich_type);
+            const data = raw_data ? (raw_data?.args)[1] : undefined;
             if (data != undefined) {
                 return att.mich_to_string(data);
             }
@@ -67,8 +67,8 @@ export class Asset_simple_to_iterable_big_map {
     async has_my_asset_value(key: att.Nat): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const raw_data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair)?.args[0]).toString()), key.to_mich(), my_asset_key_mich_type);
-            const data = raw_data ? raw_data?.args[1] : undefined;
+            const raw_data = await ex.get_big_map_value(BigInt(att.Int.from_mich(((storage as att.Mpair)?.args)[0]).toString()), key.to_mich(), my_asset_key_mich_type);
+            const data = raw_data ? (raw_data?.args)[1] : undefined;
             if (data != undefined) {
                 return true;
             }
