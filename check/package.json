@@ -4,6 +4,7 @@
   "scripts": {
     "init": "completium-cli init",
     "set_binary": "completium-cli set binary path archetype ${PWD}/../_build/default/src/compiler.exe && completium-cli set mode archetype binary",
+    "show_completium_cli_version": "completium-cli version",
     "show_archetype_version": "completium-cli archetype version",
     "show_tezos_client_version": "tezos-client --version",
     "log:dump": "completium-cli log dump",
