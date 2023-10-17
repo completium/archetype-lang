@@ -63,7 +63,7 @@ jobs:
       working-directory: ./check
       run: npm run set_binary
 
-    - name: show_archetype_version
+    - name: show_completium_cli_version
       working-directory: ./check
       run: npm run show_completium_cli_version
 
