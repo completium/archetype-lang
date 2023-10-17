@@ -83,6 +83,6 @@ jobs:
       working-directory: ./check
       run: npm run test:passed
 
-      - name: log
+    - name: log
       working-directory: ./check
       run: npm run log:dump
