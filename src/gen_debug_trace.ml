@@ -1,6 +1,20 @@
 module M = Model
 module T = Michelson
 
+type lcc = {
+  line: int;
+  col: int;
+  char: int
+}
+[@@deriving yojson, show {with_path = false}]
+
+type range = {
+  name: string;
+  begin_: lcc;
+  end_: lcc;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type node_micheline =
   | Nprim of prim
   | Nstring of string
@@ -29,6 +43,7 @@ type arg = {
 type entrypoint = {
   name: string;
   args: arg list;
+  range: range;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -296,6 +311,13 @@ and code_to_micheline (code : T.code) : micheline =
   | CUSTOM _c                -> assert false (* TODO: obj_micheline *)
 
 let for_interface (model : M.model) : interface =
+  let for_range (l : Location.t) : range =
+    let for_fcc line col char : lcc = {line; col; char} in
+    let sl, sc = l.loc_start in
+    let el, ec = l.loc_end in
+    {name = l.loc_fname; begin_ = for_fcc sl sc l.loc_bchar ; end_ = for_fcc el ec l.loc_echar  }
+  in
+
   let for_type (ty : M.type_) : string =
     ""
   in
@@ -306,7 +328,7 @@ let for_interface (model : M.model) : interface =
     let for_argument arg : arg =
       {name = (M.unloc_mident (Tools.proj3_1 arg)); type_ = (for_type (Tools.proj3_2 arg))}
     in
-    {name = (M.unloc_mident fs.name); args = List.map for_argument fs.args}
+    {name = (M.unloc_mident fs.name); args = List.map for_argument fs.args; range = for_range fs.loc }
   in
   let for_interface_storage (model : M.model) =
     let po = Gen_contract_interface.get_var_decls_size model in
