@@ -84,5 +84,6 @@ jobs:
       run: npm run test:passed
 
     - name: log
+      if: always()
       working-directory: ./check
       run: npm run log:dump
