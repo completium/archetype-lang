@@ -1641,7 +1641,7 @@ let bls_ops : opinfo list =
 let timelock_ops : opinfo list =
   [
     op "open_chest" A.Copen_chest `Total None
-      [A.vtchest_key; A.vtchest; A.vtnat] (`Ty (A.Tor (A.vtbytes, A.vtbool))) Mint.empty;
+      [A.vtchest_key; A.vtchest; A.vtnat] (`Ty (A.Toption (A.vtbytes))) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
