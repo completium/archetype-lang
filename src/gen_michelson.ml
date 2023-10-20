@@ -2630,10 +2630,14 @@ and to_michelson (ir : T.ir) : T.michelson =
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
           let env = { env with vars = env.vars @ (List.map (fun x -> (x, VLargument)) args) ; stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
+          let debug_begin = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "begin"} env in
           let code, nenv = instruction_to_code env e.body in
           let diff = List.count (fun x -> not x.populated) nenv.stack in
           (* Format.eprintf "diff: %n\n" diff; *)
-          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
+          let start = unfold_eargs @ unfold_args in
+          let start = assign_last_seq debug_begin start in
+          let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
+          T.cseq (start @ [code] @ [T.cdrop ~debug:debug_end (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
         end
     in
 
