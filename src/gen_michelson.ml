@@ -1908,14 +1908,21 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       (* Format.eprintf "%a@\n" (pp_list "," pp_str) ids; *)
       let v = if n <= 1 then v else T.cseq [v; T.cunpair_n n] in
       let env = List.fold_right (fun x env -> add_var_env env x) ids (dec_env env) in
-      let debug = process_debug ?loc:i.loc env in
-      let v = {v with debug = Some debug} in
       (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
       (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
       let cs, nenv =
         List.fold_left (fun (b, env) id -> begin
               let idx, si = get_pos_stack_item env id in
+              let debug = process_debug ?loc:i.loc env in
+              let b =
+                match b with
+                | [] -> []
+                | hd::t -> begin
+                    let nhd = assign_last_seq debug [hd]  in
+                    nhd @ t
+                  end
+              in
               let env = rm_var_env env id in
               (* Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si; *)
               let c =
