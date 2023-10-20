@@ -393,11 +393,11 @@ let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list
   let assets, enums, records, events = List.fold_right (for_decl_type model low_model) ds ([], [], [], []) in
   mk_decl_type assets enums records events
 
-let for_storage_internal (_model : M.model) (po : preprocess_obj) =
+let for_storage_internal (_model : M.model) (po : preprocess_obj) : (string * M.type_ * bool * M.mterm option) list =
   let for_decl_node (d : M.decl_node) accu =
-    let for_var (var : M.var) = (M.unloc_mident var.name, var.type_, (match var.kind with | VKconstant -> true | _ -> false)) in
+    let for_var (var : M.var) = (M.unloc_mident var.name, var.type_, (match var.kind with | VKconstant -> true | _ -> false), var.default) in
     (* let a = (mk_type "asset" (Some (M.unloc_mident asset.name)) None []) in *)
-    let for_asset (asset : M.asset) = (M.unloc_mident asset.name, Model.tasset asset.name, false) in
+    let for_asset (asset : M.asset) = (M.unloc_mident asset.name, Model.tasset asset.name, false, None) in
     match d with
     | Dvar var     -> (for_var var)::accu
     | Denum _      -> accu
@@ -414,12 +414,12 @@ let for_storage_internal (_model : M.model) (po : preprocess_obj) =
       ) (start, []) po.var_decls in
   let res = List.rev res in
   if po.with_state
-  then ("_state", Model.tint, false)::res
+  then ("_state", Model.tint, false, Some (Model.mk_int 0))::res
   else res
 
 let for_storage (_model : M.model) (po : preprocess_obj) =
   let res = for_storage_internal _model po in
-  List.map (fun (x, y, z) -> mk_storage x (for_type y) z) res
+  List.map (fun (x, y, z, _) -> mk_storage x (for_type y) z) res
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)

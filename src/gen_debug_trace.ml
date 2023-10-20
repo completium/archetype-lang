@@ -322,6 +322,13 @@ let for_interface (model : M.model) : interface =
     let type_michelson = Gen_michelson.to_type model ty in
     Format.asprintf "%a" Printer_michelson.pp_type type_michelson
   in
+
+  let for_data (model : M.model) (d : M.mterm) : string option =
+    d
+    |> Gen_michelson.to_simple_data model
+    |> Option.map (Format.asprintf "%a" Printer_michelson.pp_data)
+  in
+
   let for_interface_entrypoint (fs : M.function_struct) : entrypoint =
     let for_argument arg : arg =
       {name = (M.unloc_mident (Tools.proj3_1 arg)); type_ = (for_type (Tools.proj3_2 arg))}
@@ -331,7 +338,7 @@ let for_interface (model : M.model) : interface =
   let for_interface_storage (model : M.model) =
     let po = Gen_contract_interface.get_var_decls_size model in
     let s = Gen_contract_interface.for_storage_internal model po in
-    List.map (fun (name, ty, _const) -> {name = name; type_ = for_type ty; value = None}) s
+    List.map (fun (name, ty, _const, default) -> {name = name; type_ = for_type ty; value = Option.bind default (for_data model)}) s
   in
   let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let interface_storage = for_interface_storage model in
