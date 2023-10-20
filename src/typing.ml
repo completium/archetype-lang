@@ -1754,6 +1754,7 @@ type tentrydecl = {
   ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
   ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
   ad_actfs  : bool * A.pterm option;
+  ad_loc    : Location.t;
 }
 
 and transition = A.sexpr * txeffect list
@@ -6864,6 +6865,7 @@ let for_events_decl (env : env) (decls : PT.record_decl loced list) =
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced)
   =
+  let decl_loc = loc decl in
   match unloc decl with
   | `Entry (x, args, pt, i) -> begin
       let env, decl =
@@ -6885,7 +6887,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_actfs  = actfs; } in
+                ad_actfs  = actfs;
+                ad_loc    = decl_loc; } in
 
             (env, decl))
 
@@ -6916,7 +6919,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_actfs  = actfs; } in
+                ad_actfs  = actfs;
+                ad_loc    = decl_loc; } in
 
             (env, decl))
 
@@ -6966,7 +6970,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
               ad_csts   = Option.get_dfl [] csts;
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
-              ad_actfs  = actfs; }
+              ad_actfs  = actfs;
+              ad_loc    = decl_loc; }
 
           in (env, decl))
 
@@ -7208,7 +7213,7 @@ let transentrys_of_tdecls tdecls =
         transition      = transition;
         functions       = functions_of_fdecls tdecl.ad_funs;
         effect          = effect;
-        loc             = loc tdecl.ad_name; }
+        loc             = tdecl.ad_loc; }
 
   in
   let getters, entries = List.fold_right (fun (x : A.transaction) (g, e) -> match x.kind with | Entry -> (g, x::e) | Getter _ -> (x::g, e) ) (List.map for1 (List.pmap id tdecls)) ([], []) in
