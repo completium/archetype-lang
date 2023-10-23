@@ -1031,7 +1031,7 @@ let pp_error_desc fmt e =
   | InvalidFieldsCountInAssetOrRecordLiteral -> pp "Invalid fields count in asset or record literal"
   | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
-  | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
+  | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excepted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidKeyFieldInAssetValueType    -> pp "Key field asset is not in asset_value type"

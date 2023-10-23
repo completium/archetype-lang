@@ -2238,8 +2238,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iconst (t, e) -> begin
       let nenv = inc_env env in
-      let debug = process_debug ?loc:i.loc nenv in
-      T.cpush ~debug (rar t, e), nenv
+      (* let debug = process_debug ?loc:i.loc nenv in *)
+      T.cpush (rar t, e), nenv
     end
 
   | Icompare (op, lhs, rhs) -> begin
