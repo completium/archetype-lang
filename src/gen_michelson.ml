@@ -275,6 +275,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mlitset    l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
   | Mlitlist   l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
   | Mlitmap    (_, l)          -> let v = dolist2 l in (match v with | Some l -> Some (T.Dlist (List.map (fun (x, y) -> T.Delt (x, y)) l)) | None -> None)
+  | Mlitrecord l               -> l |> List.map snd |> dolist |> (fun x -> match x with | Some v -> Some (to_one_data v) | None -> None)
   | Muminus    v               -> let v = f v in (match v with | Some (Dint n) -> Some (T.Dint (Big_int.mult_int_big_int (-1) n)) | _ -> None)
   | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
   | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)

@@ -336,9 +336,10 @@ let for_interface (model : M.model) : interface =
     {name = (M.unloc_mident fs.name); args = List.map for_argument fs.args; range = for_range fs.loc }
   in
   let for_interface_storage (model : M.model) =
-    let po = Gen_contract_interface.get_var_decls_size model in
-    let s = Gen_contract_interface.for_storage_internal model po in
-    List.map (fun (name, ty, _const, default) -> {name = name; type_ = for_type ty; value = Option.bind default (for_data model)}) s
+    (* let po = Gen_contract_interface.get_var_decls_size model in
+       let s = Gen_contract_interface.for_storage_internal model po in *)
+    List.map (fun (si : Model.storage_item) -> {name = (Model.unloc_mident si.id); type_ = for_type (si.typ); value = for_data model si.default }) model.storage
+    (* List.map (fun (name, ty, _const, default) -> {name = name; type_ = for_type ty; value = Option.bind default (for_data model)}) s *)
   in
   let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let interface_storage = for_interface_storage model in
