@@ -175,6 +175,27 @@ and data_to_micheline (d : T.data) : micheline =
   | Dlambda_rec c     -> mk_mich_prim ~args:[code_to_micheline c] "Lambda_rec"
   | Dconstant v       -> mk_mich_prim ~args:[mk_mich_string v] "constant"
 
+and obj_micheline_to_micheline (obj : T.obj_micheline) : micheline =
+  let mk node : micheline =  {node = node; debug = None} in
+  let rec aux (obj : T.obj_micheline) : micheline =
+    match obj with
+    | Oprim p -> mk (Nprim ({prim = p.prim; args = List.map aux p.args; annots = p.annots}))
+    | Ostring v -> mk (Nstring v)
+    | Obytes v -> mk (Nbytes v)
+    | Oint v ->  mk (Nint v)
+    | Oarray v -> mk (Narray (List.map aux v))
+    | Ovar v -> begin
+        let f id = mk (Nprim ({prim = id; args = []; annots = []})) in
+        match v with
+        | OMVfree id -> f id
+        | OMVint (id, _) -> f id
+        | OMVstring id -> f id
+        | OMVbytes id -> f id
+        | OMVif (id, _, _) -> f id
+      end
+  in
+  aux obj
+
 and code_to_micheline (code : T.code) : micheline =
   let f = code_to_micheline in
   let ft = type_to_micheline in
@@ -250,7 +271,7 @@ and code_to_micheline (code : T.code) : micheline =
   | BALANCE                  -> mk "BALANCE"
   | CHAIN_ID                 -> mk "CHAIN_ID"
   | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
-  | CREATE_CONTRACT _c       -> mk ~args:[] "CREATE_CONTRACT" (* TODO: obj_micheline *)
+  | CREATE_CONTRACT c        -> mk ~args:[obj_micheline_to_micheline c] "CREATE_CONTRACT"
   | EMIT (t, a)              -> mk ~args:[ft t] ~annots:(fan a) "EMIT"
   | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
   | LEVEL                    -> mk "LEVEL"
