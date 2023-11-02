@@ -35,6 +35,7 @@ import * as asset_init_by_const_key from '../bindings/passed/asset_init_by_const
 import * as asset_init_by_const_key_parameter from '../bindings/passed/asset_init_by_const_key_parameter'
 import * as asset_initializedby_aggregate_empty from '../bindings/passed/asset_initializedby_aggregate_empty'
 import * as asset_initializedby_aggregate_filled from '../bindings/passed/asset_initializedby_aggregate_filled'
+import * as asset_intructions from '../bindings/passed/asset_intructions'
 import * as asset_iterable_big_map from '../bindings/passed/asset_iterable_big_map'
 import * as asset_iterable_big_map_effect_add from '../bindings/passed/asset_iterable_big_map_effect_add'
 import * as asset_iterable_big_map_effect_addupdate from '../bindings/passed/asset_iterable_big_map_effect_addupdate'
@@ -1861,6 +1862,18 @@ describe('passed', async () => {
     assert(o_asset[4][1] == "str4")
     assert(o_asset[5][0].equals(new Nat(5)))
     assert(o_asset[5][1] == "str5")
+  })
+
+  it('asset_intructions', async () => {
+    await asset_intructions.asset_intructions.deploy({ as: alice })
+
+    const my_asset_before = asset_intructions.asset_intructions.get_my_asset()
+    assert((await my_asset_before).length == 0)
+
+    await asset_intructions.asset_intructions.exec({ as: alice })
+
+    const my_asset_after = asset_intructions.asset_intructions.get_my_asset()
+    assert((await my_asset_after).length == 0)
   })
 
   it('asset_iterable_big_map', async () => {

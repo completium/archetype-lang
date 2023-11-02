@@ -133,6 +133,10 @@ describe('decomp-mic-passed', async () => {
     const stat = compile("michelson/passed/asset_initializedby_aggregate_filled.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('asset_intructions', async () => {
+    const stat = compile("michelson/passed/asset_intructions.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('asset_iterable_big_map', async () => {
     const stat = compile("michelson/passed/asset_iterable_big_map.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

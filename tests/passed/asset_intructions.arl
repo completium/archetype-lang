@@ -1,0 +1,18 @@
+archetype asset_intructions
+
+asset my_asset {
+  k : nat;
+  v : string
+}
+
+entry exec() {
+  my_asset.add({k = 0; v = "mystr"});
+  my_asset.put({k = 0; v = "mystr"});
+  my_asset.update(0, {v := "mystr2"});
+  my_asset.update_all({v := "mystr2"});
+  my_asset.add_update(0, {v := "mystr3"});
+  my_asset.remove(0);
+  my_asset.remove_if(k = 0);
+  my_asset.remove_all();
+  my_asset.select(the.k = 0).clear()
+}

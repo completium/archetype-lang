@@ -133,6 +133,10 @@ describe('decomp-ama-passed', async () => {
     const stat = compile("../tests/passed/asset_initializedby_aggregate_filled.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('asset_intructions', async () => {
+    const stat = compile("../tests/passed/asset_intructions.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('asset_iterable_big_map', async () => {
     const stat = compile("../tests/passed/asset_iterable_big_map.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
