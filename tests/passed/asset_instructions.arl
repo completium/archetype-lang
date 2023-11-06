@@ -1,4 +1,4 @@
-archetype asset_intructions
+archetype asset_instructions
 
 asset my_asset {
   k : nat;
