@@ -1637,20 +1637,25 @@ type env = {
 [@@deriving show {with_path = false}]
 
 let process_debug ?decl_bound ?loc (env : env) : T.debug =
+  let loc = match loc with | Some loc when not (Location.isdummy loc) -> Some loc | _ -> None in
   let stack : T.stack_item list = List.map (fun (x : stack_item) ->
       let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
       T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack in
   let res : T.debug = { decl_bound; stack; loc } in
   res
 
-let rec assign_last_seq (debug : T.debug) (cs : T.code list) =
+let rec assign_last_seq_gen f (cs : T.code list) =
   match List.rev cs with
   | a::l -> begin
       match a.node with
-      | T.SEQ ll -> List.rev ({a with node = T.SEQ (assign_last_seq debug ll)}::l)
-      | _ -> List.rev ({a with debug = Some debug}::l)
+      | T.SEQ ll -> List.rev ({a with node = T.SEQ (assign_last_seq_gen f ll)}::l)
+      | _ -> List.rev ({a with debug = f a.debug}::l)
     end
   | [] -> []
+
+let assign_last_seq (debug : T.debug) (cs : T.code list) =
+  let f _ = Some debug in
+  assign_last_seq_gen f cs
 
 let mk_env ?(stack=[]) ?(vars=[]) () = { stack = stack; vars = vars; fail = false; }
 let fail_env (env : env) = { env with fail = true }
@@ -2027,7 +2032,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | _, true     -> envt
         | _           -> enve
       in
-      T.cseq [ c; T.cif ([t], [e]) ], env
+      let debug = process_debug ?loc:i.loc env in
+      T.cseq [ c; T.cif ~debug ([t], [e]) ], env
     end
 
   | Iifnone (v, t, id, s, _ty) -> begin
@@ -2616,9 +2622,10 @@ and to_michelson (ir : T.ir) : T.michelson =
       match e.args, e.eargs with
       | [], [] -> begin
           let code, env = instruction_to_code env e.body in
-          let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
+          let decl_bound : T.decl_bound = {db_kind = "entry"; db_name = e.name; db_bound = "end"} in
+          let f (od : T.debug option) = Some (match od with | Some d -> {d with decl_bound = Some decl_bound} | None -> process_debug ~decl_bound env) in
           let seq_code = [code] in
-          let seq_code = assign_last_seq debug_end seq_code in
+          let seq_code = assign_last_seq_gen f seq_code in
           T.cseq ([T.cdrop 1] @ seq_code @ fold_storage @ eops @ [T.cpair ()])
         end
       | l, m -> begin

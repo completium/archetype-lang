@@ -2186,7 +2186,7 @@ let remove_asset (model : model) : model =
       mk_mterm (f x) tbool
     in
 
-    let add_asset ?(force=false) f an v =
+    let add_asset ?(force=false) ?loc f an v =
       begin
         let v = f v in
         (* let is_single, is_record = is_single_simple_record an in *)
@@ -2230,9 +2230,14 @@ let remove_asset (model : model) : model =
           | _ -> assert false
         in
 
-        if force
-        then assign
-        else mk_mterm (Mif (cond, failc (KeyExists (unloc_mident an)), Some assign)) tunit
+        let res =
+          if force
+          then assign
+          else mk_mterm (Mif (cond, failc (KeyExists (unloc_mident an)), Some assign)) tunit
+        in
+        match loc with
+        | Some loc -> {res with loc = loc}
+        | None -> res
       end
     in
 
@@ -2548,7 +2553,7 @@ let remove_asset (model : model) : model =
 
       (* effect *)
 
-      | Maddasset (an, v) -> add_asset (fm ctx) (string_to_mident an) v
+      | Maddasset (an, v) -> add_asset ~loc:mt.loc (fm ctx) (string_to_mident an) v
 
       | Mputsingleasset (an, v) -> add_asset (fm ctx) (string_to_mident an) v ~force:true
 

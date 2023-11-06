@@ -479,7 +479,7 @@ and transfer_kind = mterm transfer_kind_gen
 and mterm_gen = {
   node: mterm_gen mterm_node;
   type_: type_;
-  loc : Location.t [@opaque];
+  loc : Location.t;
 }
 [@@deriving show {with_path = false}]
 
