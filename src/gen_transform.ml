@@ -2241,7 +2241,7 @@ let remove_asset (model : model) : model =
       end
     in
 
-    let remove_asset f (an : mident) k =
+    let remove_asset ?loc f (an : mident) k =
       let k = f k in
       let va = get_asset_global an in
 
@@ -2261,23 +2261,28 @@ let remove_asset (model : model) : model =
 
       let partitions : (ident * mident) list = get_partitions an in
 
-      match partitions with
-      | [] -> assign
-      | _ -> begin
-          let l : mterm list = List.map (fun (fn, aan) ->
-              let viter_name = "_viter" in
-              let viter_id = mk_mident (dumloc viter_name) in
-              let pk = Utils.get_asset_key model aan |> snd in
-              let viter    : mterm = mk_mterm (Mvar (viter_id, Vstorecol)) pk in
-              let set      : mterm = mk_mterm (Mdot((mk_mterm (Mget(unloc_mident an, CKcoll, k)) (tasset an)), mk_mident (dumloc fn))) pk |> f in
-              let passign2 : mterm = mk_mterm (Mremoveasset (unloc_mident aan, viter)) tunit |> f in
-              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign2)) tunit
-            ) partitions in
-          mk_mterm (Mseq (l @ [assign])) tunit
-        end
+      let res =
+        match partitions with
+        | [] -> assign
+        | _ -> begin
+            let l : mterm list = List.map (fun (fn, aan) ->
+                let viter_name = "_viter" in
+                let viter_id = mk_mident (dumloc viter_name) in
+                let pk = Utils.get_asset_key model aan |> snd in
+                let viter    : mterm = mk_mterm (Mvar (viter_id, Vstorecol)) pk in
+                let set      : mterm = mk_mterm (Mdot((mk_mterm (Mget(unloc_mident an, CKcoll, k)) (tasset an)), mk_mident (dumloc fn))) pk |> f in
+                let passign2 : mterm = mk_mterm (Mremoveasset (unloc_mident aan, viter)) tunit |> f in
+                mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign2)) tunit
+              ) partitions in
+            mk_mterm (Mseq (l @ [assign])) tunit
+          end
+      in
+      match loc with
+      | Some loc -> {res with loc = loc}
+      | None -> res
     in
 
-    let remove_field f (an, fn, ak, b) =
+    let remove_field ?loc f (an, fn, ak, b) =
       let ak = f ak in
       let bk = f b in
 
@@ -2315,12 +2320,17 @@ let remove_asset (model : model) : model =
         mk_mterm (Massign (ValueAssign, va.type_, Avarstore an, nmap)) tunit
       in
 
-      match c with
-      | Aggregate -> mk_assign bk
-      | Partition ->
-        let assign = mk_assign bk in
-        mk_mterm (Mseq [remove_asset f aan b; assign]) tunit
-      | _ -> assert false
+      let res =
+        match c with
+        | Aggregate -> mk_assign bk
+        | Partition ->
+          let assign = mk_assign bk in
+          mk_mterm (Mseq [remove_asset f aan b; assign]) tunit
+        | _ -> assert false
+      in
+      match loc with
+      | Some loc -> {res with loc = loc}
+      | None -> res
     in
 
     let fold_ck ?(with_value=true) f (an, ck : mident * container_kind) (init : mterm) mk =
@@ -2555,7 +2565,7 @@ let remove_asset (model : model) : model =
 
       | Maddasset (an, v) -> add_asset ~loc:mt.loc (fm ctx) (string_to_mident an) v
 
-      | Mputsingleasset (an, v) -> add_asset (fm ctx) (string_to_mident an) v ~force:true
+      | Mputsingleasset (an, v) -> add_asset ~loc:mt.loc (fm ctx) (string_to_mident an) v ~force:true
 
       | Maddfield (an, fn, ak, b) -> begin
           let ak = fm ctx ak in
@@ -2607,9 +2617,9 @@ let remove_asset (model : model) : model =
           | _ -> assert false
         end
 
-      | Mremoveasset (an, k) -> remove_asset (fm ctx) (string_to_mident an) k
+      | Mremoveasset (an, k) -> remove_asset ~loc:mt.loc (fm ctx) (string_to_mident an) k
 
-      | Mremovefield (an, fn, ak, b) -> remove_field (fm ctx) ((string_to_mident an), fn, ak, b)
+      | Mremovefield (an, fn, ak, b) -> remove_field ~loc:mt.loc (fm ctx) ((string_to_mident an), fn, ak, b)
 
       | Mremoveall (an, ck) -> begin
           match ck with
@@ -2655,9 +2665,12 @@ let remove_asset (model : model) : model =
 
               let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (string_to_mident an), empty)) tunit in
               let partitions = get_partitions (string_to_mident an) in
-              match partitions with
-              | [] -> assign
-              | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+              let res =
+                match partitions with
+                | [] -> assign
+                | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+              in
+              {res with loc = mt.loc}
             end
           | CKfield (_, fn, k) -> begin
               let kk = fm ctx k in
@@ -2755,7 +2768,7 @@ let remove_asset (model : model) : model =
                   let cond = fm ctx (mk_cond (string_to_mident an) vkey None b) in
                   let remove = remove_asset (fm ctx) (string_to_mident an) vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
-                  let loop = mk_mterm (Mfor(FIsimple ikey, ICKset va, body) ) tunit in
+                  let loop = mk_mterm ~loc:mt.loc (Mfor(FIsimple ikey, ICKset va, body) ) tunit in
                   loop
                 end
               | Tmap (kt, vt)
@@ -2770,7 +2783,7 @@ let remove_asset (model : model) : model =
                   let cond = fm ctx (mk_cond (string_to_mident an) vkey (Some vval) b) in
                   let remove = remove_asset (fm ctx) (string_to_mident an) vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
-                  let loop = mk_mterm (Mfor(FIdouble (ikey, ival), ICKmap va, body) ) tunit in
+                  let loop = mk_mterm ~loc:mt.loc (Mfor(FIdouble (ikey, ival), ICKmap va, body) ) tunit in
                   loop
                 end
               | _ -> assert false
@@ -2827,7 +2840,7 @@ let remove_asset (model : model) : model =
                   end
               in
 
-              let loop = mk_mterm (Mfor(FIsimple ikey, ICKset set, body) ) tunit in
+              let loop = mk_mterm ~loc:mt.loc (Mfor(FIsimple ikey, ICKset set, body) ) tunit in
               loop
             end
           | _ -> assert false
@@ -2877,9 +2890,13 @@ let remove_asset (model : model) : model =
 
               let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (string_to_mident an), empty)) tunit in
               let partitions = get_partitions (string_to_mident an) in
-              match partitions with
-              | [] -> assign
-              | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+              let assign =
+                match partitions with
+                | [] -> assign
+                | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+              in
+              let assign = {assign with loc = mt.loc} in
+              assign
             end
           | CKfield (an, fn, k) -> begin
               let kk = fm ctx k in
@@ -2910,6 +2927,7 @@ let remove_asset (model : model) : model =
               let b : mterm = remove_asset (fm ctx) aan var_value in
               let loop = mk_mterm (Mfor (FIsimple var_id, ICKset set, b)) tunit in
               let assign = fm ctx (mk_mterm (Mremoveall (an, CKfield(unloc_mident aan, fn, k))) tunit) in
+              let assign = {assign with loc = mt.loc} in
               mk_mterm (Mseq [loop; assign]) tunit
             end
           | CKview l -> begin
@@ -2922,7 +2940,7 @@ let remove_asset (model : model) : model =
 
               let b : mterm = remove_asset (fm ctx) (string_to_mident an) var_value in
 
-              mk_mterm (Mfor (FIsimple var_id, ICKlist l, b)) tunit
+              mk_mterm ~loc:mt.loc (Mfor (FIsimple var_id, ICKlist l, b)) tunit
             end
         end
 
@@ -3208,6 +3226,7 @@ let remove_asset (model : model) : model =
                 mk_mterm (Mif (cond, assign, Some (failc msg))) tunit
               end
           in
+          let assign = {assign with loc = mt.loc} in
           assign
         end
 
@@ -3237,7 +3256,7 @@ let remove_asset (model : model) : model =
             | Titerable_big_map (_kt, _vt) -> (emit_error (mt.loc, NoPutRemoveForIterableBigMapAsset); raise (Error.Stop 5))
             | _ -> assert false
           in
-          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (string_to_mident an), value)) tunit
+          mk_mterm ~loc:mt.loc (Massign (ValueAssign, va.type_, Avarstore (string_to_mident an), value)) tunit
         end
 
       (* expression *)
