@@ -57,6 +57,7 @@ type storage_item = {
 type interface = {
   entrypoints: entrypoint list;
   storage: storage_item list;
+  const_params: storage_item list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -134,7 +135,7 @@ and data_to_micheline (d : T.data) : micheline =
   | Dnone        -> mk_mich_prim "None"
   | Dlist l      -> mk_mich_array (List.map f l)
   | Delt (l, r)  -> mk_mich_prim ~args:[f l; f r] "Elt"
-  | Dvar (_x, _t, _b)  -> assert false (* TODO *)
+  | Dvar (x, _t, _b)  -> mk_mich_prim x (* TODO *)
   (* begin
       match t.node with
       | Taddress                -> Ovar (OMVstring x)
@@ -364,7 +365,8 @@ let for_interface (model : M.model) : interface =
   in
   let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let interface_storage = for_interface_storage model in
-  let interface : interface = {entrypoints = interface_entrypoints; storage = interface_storage} in
+  let interface_const_params = model.parameters |> List.filter (fun (x : Model.parameter) -> x.const) |> List.map (fun (x : Model.parameter) -> {name = (Model.unloc_mident x.name); type_ = for_type (x.typ); value = Option.bind x.value (for_data model) }) in
+  let interface : interface = {entrypoints = interface_entrypoints; storage = interface_storage; const_params = interface_const_params } in
   interface
 
 let generate_debug_trace_json (model : M.model) (michelson : T.michelson) : debug_trace =

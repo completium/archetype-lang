@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+  - debugger output
   - `match_detach` instruction
   - multiple variable declaration
   - `open_chest` update
