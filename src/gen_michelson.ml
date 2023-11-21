@@ -1636,13 +1636,17 @@ type env = {
 }
 [@@deriving show {with_path = false}]
 
-let process_debug ?decl_bound ?loc (env : env) : T.debug =
-  let loc = match loc with | Some loc when not (Location.isdummy loc) -> Some loc | _ -> None in
-  let stack : T.stack_item list = List.map (fun (x : stack_item) ->
-      let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
-      T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack in
-  let res : T.debug = { decl_bound; stack; loc } in
-  res
+let process_debug ?decl_bound ?loc (env : env) : T.debug option =
+  match loc with
+  | Some loc when not (Location.isdummy loc) -> begin
+      let stack : T.stack_item list = List.map (fun (x : stack_item) ->
+          let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
+          T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack in
+      let res : T.debug = { decl_bound; stack; loc = Some loc } in
+      Some res
+    end
+  | _ -> None
+
 
 let rec assign_last_seq_gen f (cs : T.code list) =
   match List.rev cs with
@@ -1653,8 +1657,8 @@ let rec assign_last_seq_gen f (cs : T.code list) =
     end
   | [] -> []
 
-let assign_last_seq (debug : T.debug) (cs : T.code list) =
-  let f _ = Some debug in
+let assign_last_seq (debug : T.debug option) (cs : T.code list) =
+  let f _ = debug in
   assign_last_seq_gen f cs
 
 let mk_env ?(stack=[]) ?(vars=[]) () = { stack = stack; vars = vars; fail = false; }
@@ -2033,7 +2037,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | _           -> enve
       in
       let debug = process_debug ?loc:i.loc env in
-      T.cseq [ c; T.cif ~debug ([t], [e]) ], env
+      T.cseq [ c; T.cif ?debug ([t], [e]) ], env
     end
 
   | Iifnone (v, t, id, s, _ty) -> begin
@@ -2117,7 +2121,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | _ -> assert false
       in
       let debug = process_debug ?loc:i.loc nenv in
-      let l = match List.rev l with | i::tl -> List.rev tl @ [{i with debug = Some debug}] | [] -> [] in
+      let l = match List.rev l with | i::tl -> List.rev tl @ [{i with debug = debug}] | [] -> [] in
       T.cseq l, nenv
     end
 
@@ -2627,7 +2631,7 @@ and to_michelson (ir : T.ir) : T.michelson =
       | [], [] -> begin
           let code, env = instruction_to_code env e.body in
           let decl_bound : T.decl_bound = {db_kind = "entry"; db_name = e.name; db_bound = "end"} in
-          let f (od : T.debug option) = Some (match od with | Some d -> {d with decl_bound = Some decl_bound} | None -> process_debug ~decl_bound env) in
+          let f (od : T.debug option) = (match od with | Some d -> Some {d with decl_bound = Some decl_bound} | None -> process_debug ~decl_bound env) in
           let seq_code = [code] in
           let seq_code = assign_last_seq_gen f seq_code in
           T.cseq ([T.cdrop 1] @ seq_code @ fold_storage @ eops @ [T.cpair ()])
@@ -2652,7 +2656,7 @@ and to_michelson (ir : T.ir) : T.michelson =
           let diff = List.count (fun x -> not x.populated) nenv.stack in
           (* Format.eprintf "diff: %n\n" diff; *)
           let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
-          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop ~debug:debug_end (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
+          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop ?debug:debug_end (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
         end
     in
 

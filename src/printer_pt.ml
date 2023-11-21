@@ -1060,7 +1060,7 @@ let pp_entry_properties fmt (props : entry_properties) =
   let pp_rf s1 s2 fmt l =
     Format.fprintf fmt "%s {@\n  @[%a@]@\n}@\n"
       s1
-      (pp_list ";@\n" (fun fmt (id, e, f) ->
+      (pp_list ";@\n" (fun fmt {pldesc = (id, e, f)} ->
            Format.fprintf fmt "%a: %a%a"
              pp_id id
              (pp_expr e_default PNone) e
@@ -1069,7 +1069,7 @@ let pp_entry_properties fmt (props : entry_properties) =
   in
   let pp_cf fmt l =
     Format.fprintf fmt "constant {@\n  @[%a@]@\n}@\n"
-      (pp_list ";@\n" (fun fmt (id, e, f) ->
+      (pp_list ";@\n" (fun fmt {pldesc = (id, e, f)} ->
            Format.fprintf fmt "%a %s %a%a"
              pp_id id
              (if Option.is_some f then "?is" else "is")

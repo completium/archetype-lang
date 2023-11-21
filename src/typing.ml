@@ -1750,9 +1750,9 @@ type tentrydecl = {
   ad_stateis: (A.lident * A.pterm option) option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : fundecl option list;
-  ad_csts   : (A.lident option * A.pterm * A.pterm option) list;
-  ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
-  ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
+  ad_csts   : (A.lident option * A.pterm * A.pterm option) loced list;
+  ad_reqs   : (A.lident option * A.pterm * A.pterm option) loced list;
+  ad_fais   : (A.lident option * A.pterm * A.pterm option) loced list;
   ad_actfs  : bool * A.pterm option;
   ad_loc    : Location.t;
 }
@@ -5264,15 +5264,15 @@ let for_rf
     (ekind : ekind)
     ?(ety   : A.ptyp option)
     (env   : env)
-    (topf  : (PT.lident * PT.expr * PT.expr option) list)
-  : env * (A.lident option * A.pterm * A.pterm option) list
+    (topf  : (PT.lident * PT.expr * PT.expr option) loced list)
+  : env * (A.lident option * A.pterm * A.pterm option) loced list
   =
   let aux
       ?ety
       (ekind        : ekind)
       (env          : env)
-      ((id, e, err) : PT.lident * PT.expr * PT.expr option)
-    : env * (A.lident option * A.pterm * A.pterm option)
+      ({pldesc = (id, e, err); plloc = loc} : (PT.lident * PT.expr * PT.expr option) loced)
+    : env * (A.lident option * A.pterm * A.pterm option) loced
     =
 
     let error = Option.map (for_expr ekind env) err in
@@ -5284,9 +5284,9 @@ let for_rf
 
     if check_and_emit_name_free env id then
       let env = Env.Label.push env (id, `Plain) in
-      env, (Some id, for_expr ekind env ?ety e, error)
+      env, mkloc loc (Some id, for_expr ekind env ?ety e, error)
     else
-      env, (None, for_expr ekind env ?ety e, error)
+      env, mkloc loc (None, for_expr ekind env ?ety e, error)
   in
   List.fold_left_map (aux ?ety ekind) env topf
 
@@ -5298,15 +5298,15 @@ let for_cf
     (ekind : ekind)
     ?(ety   : A.ptyp option)
     (env   : env)
-    (topf  : (PT.lident * PT.expr * PT.expr option) list)
-  : env * (A.lident option * A.pterm * A.pterm option) list
+    (topf  : (PT.lident * PT.expr * PT.expr option) loced list)
+  : env * (A.lident option * A.pterm * A.pterm option) loced list
   =
   let aux
       (ekind        : ekind)
-      ?(ety          : A.ptyp option)
+      ?(ety         : A.ptyp option)
       (env          : env)
-      ((id, e, err) : PT.lident * PT.expr * PT.expr option)
-    : env * (A.lident option * A.pterm * A.pterm option)
+      ({pldesc = (id, e, err); plloc = loc} : (PT.lident * PT.expr * PT.expr option) loced)
+    : env * (A.lident option * A.pterm * A.pterm option) loced
     =
     let error = Option.map (for_expr ekind env) err in
     error
@@ -5325,9 +5325,9 @@ let for_cf
         end else vty
       in
       let env = Env.Local.push env (id, Option.get ty) ~kind:`Const in
-      env, (Some id, v, error)
+      env, mkloc loc (Some id, v, error)
     else
-      env, (None, for_expr ekind env ?ety e, error)
+      env, mkloc loc (None, for_expr ekind env ?ety e, error)
   in
   List.fold_left_map (aux ?ety ekind) env topf
 
@@ -7181,7 +7181,7 @@ let transentrys_of_tdecls tdecls =
   in
 
   let for1 tdecl =
-    let mkl (x, c, e) =  A.{ label = x; term = c; error = e; loc = L.dummy; } in
+    let mkl {pldesc = (x, c, e); plloc = loc} =  A.{ label = x; term = c; error = e; loc = loc; } in
 
     let transition =
       match tdecl.ad_effect with

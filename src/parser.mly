@@ -609,6 +609,9 @@ sourcedby:
 | l=snl(SEMI_COLON, rf(X)) { l }
 
 rf(X):
+| x=loc(rf_unloc(X)) { x }
+
+rf_unloc(X):
 | id=ident COLON e=expr %prec prec_labelexpr { (id, e, None) }
 | id=ident COLON e=expr f=rfi(X) %prec prec_labelexpr { (id, e, Some f) }
 
@@ -623,6 +626,9 @@ cfs:
 | l=snl(SEMI_COLON, cf) { l }
 
 cf:
+| x=loc(cf_unloc) { x }
+
+cf_unloc:
 | id=ident IS e=expr %prec prec_labelexpr                          { (id, e, None) }
 | id=ident QUESTIONIS e=expr OTHERWISE f=expr %prec prec_labelexpr { (id, e, Some f) }
 

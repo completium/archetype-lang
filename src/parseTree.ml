@@ -259,9 +259,9 @@ and entry_properties = {
   sourcedby       : (expr * expr option) option;
   calledby        : (expr * expr option) option;
   state_is        : (lident * expr option) option;
-  constants       : ((lident * expr * expr option) list) option;
-  require         : ((lident * expr * expr option) list) option;
-  failif          : ((lident * expr * expr option) list) option;
+  constants       : ((lident * expr * expr option) loced list) option;
+  require         : ((lident * expr * expr option) loced list) option;
+  failif          : ((lident * expr * expr option) loced list) option;
   functions       : (s_function loced) list;
 }
 
