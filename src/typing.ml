@@ -1745,8 +1745,8 @@ type tentrydecl = {
   ad_args   : (A.lident * A.ptyp) list;
   ad_getter : bool;
   ad_ret_t  : A.ptyp option;
-  ad_srcby  : ((A.pterm option) loced list * A.pterm option);
-  ad_callby : ((A.pterm option) loced list * A.pterm option);
+  ad_srcby  : ((A.pterm option) loced list * A.pterm option) loced;
+  ad_callby : ((A.pterm option) loced list * A.pterm option) loced;
   ad_stateis: (A.lident * A.pterm option) loced option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : fundecl option list;
@@ -6256,8 +6256,8 @@ let rec for_callby (locc : Location.t) (env : env) kind (cb : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_entry (env : env) (act : PT.entry_properties) i (ret : PT.type_t option) =
   let fe = for_expr `Entry env in
-  let sourcedby = Option.map (fun {pldesc =(x, _);  plloc = loc} -> for_callby loc env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd |@ unloc) act.sourcedby in
-  let calledby  = Option.map (fun {pldesc =(x, _);  plloc = loc} -> for_callby loc env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd |@ unloc) act.calledby  in
+  let sourcedby = Option.map (fun {pldesc =(x, _);  plloc = locc} -> for_callby locc env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd |@ unloc) act.sourcedby, Option.map Location.loc act.sourcedby in
+  let calledby  = Option.map (fun {pldesc =(x, _);  plloc = locc} -> for_callby locc env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd |@ unloc) act.calledby , Option.map Location.loc act.calledby in
   let stateis   = Option.map (fun {pldesc =(x, o);  plloc = loc} -> mkloc loc (for_named_state x.plloc env x, Option.map fe o)) act.state_is in
   let actfs     = fst act.accept_transfer, Option.map fe (snd act.accept_transfer) in
   let env, cst  = Option.foldmap (for_cfs `Entry) env act.constants in
@@ -6862,10 +6862,8 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
 let for_events_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map (for_record_decl `Event) env decls
 
-(* let for_csby (input : (A.rexpr * A.pterm option) loced option) : ((A.pterm option) loced list * A.pterm option) loced =
-  match input with
-  | Some {pldesc = (xs, x); plloc = loc} -> mkloc loc ([], x)
-  | None -> dumloc ([], None) *)
+let for_csby ((a, b, loc) : ((A.pterm option) loced list option) * (A.pterm option) * (Location.t option)) : ((A.pterm option) loced list * A.pterm option) loced =
+  mkloc (Option.get_dfl Location.dummy loc) (Option.get_dfl [] a, b)
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced)
@@ -6884,8 +6882,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_args   = List.pmap (fun x -> x) args;
                 ad_getter = false;
                 ad_ret_t  = ret;
-                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
-                ad_callby = Option.get_dfl [] (fst callby), snd callby;
+                ad_srcby  = for_csby srcby;
+                ad_callby = for_csby callby;
                 ad_stateis= stateis;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_funs   = funs;
@@ -6916,8 +6914,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_args   = List.pmap (fun x -> x) args;
                 ad_getter = true;
                 ad_ret_t  = ret;
-                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
-                ad_callby = Option.get_dfl [] (fst callby), snd callby;
+                ad_srcby  = for_csby srcby;
+                ad_callby = for_csby callby;
                 ad_stateis= stateis;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_funs   = funs;
@@ -6967,8 +6965,8 @@ let for_acttx_decl (env : env) (decl : acttx loced)
               ad_args   = List.pmap (fun x -> x) args;
               ad_getter = false;
               ad_ret_t  = None;
-              ad_srcby  = Option.get_dfl [] (fst srcby),  snd srcby;
-              ad_callby = Option.get_dfl [] (fst callby), snd callby;
+              ad_srcby  = for_csby srcby;
+              ad_callby = for_csby callby;
               ad_stateis= stateis;
               ad_effect = Some (`Tx (from_, tx));
               ad_funs   = funs;
@@ -7163,7 +7161,7 @@ let functions_of_fdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let transentrys_of_tdecls tdecls =
-  let for_calledby ocb : (A.rexpr * A.pterm option) loced option =
+  let for_calledby {pldesc = ocb; plloc = locc} : (A.rexpr * A.pterm option) loced option =
     match fst ocb with [] -> None | c :: cb ->
 
       let for1 = fun (x : A.pterm option loced) ->
@@ -7182,7 +7180,7 @@ let transentrys_of_tdecls tdecls =
       let aout = List.fold_left
           (fun acc c' ->  A.mk_sp (A.Ror (acc, for1 c')))
           (for1 c) cb
-      in Some (mkloc Location.dummy (aout, snd ocb))
+      in Some (mkloc locc (aout, snd ocb))
   in
 
   let for1 tdecl =
