@@ -592,13 +592,22 @@ entry_properties:
     }
   }
 
-calledby:
+%inline calledby:
+| x=loc(calledby_unloc) { x }
+
+calledby_unloc:
 | CALLED BY x=expr o=otherwise_section? { (x, o) }
 
-sourcedby:
+%inline sourcedby:
+| x=loc(sourcedby_unloc) { x }
+
+sourcedby_unloc:
 | SOURCED BY x=expr o=otherwise_section? { (x, o) }
 
 %inline state_is:
+| x=loc(state_is_unloc) { x }
+
+state_is_unloc:
 | STATE_IS id=ident o=otherwise_section? { (id, o) }
 
 %inline rfs(X):

@@ -572,9 +572,9 @@ type transaction = {
   kind            : tr_kind;
   name            : lident;
   args            : lident decl_gen list;
-  sourcedby       : (rexpr * pterm option) option;
-  calledby        : (rexpr * pterm option) option;
-  state_is        : (lident * pterm option) option;
+  sourcedby       : (rexpr * pterm option) loced option;
+  calledby        : (rexpr * pterm option) loced option;
+  state_is        : (lident * pterm option) loced option;
   accept_transfer : bool * pterm option;
   constants       : label_term list option;
   require         : label_term list option;

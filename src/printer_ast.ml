@@ -1130,9 +1130,9 @@ let pp_transaction_entry fmt (t : transaction) =
     pp_fun_args t.args
     (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_type x)) oty
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
-    (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
-    (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
-    (pp_option (fun fmt (x ,o) -> Format.fprintf fmt "state is %a%a@\n" pp_id x pp_otherwise o )) t.state_is
+    (pp_option (fun fmt Location.{pldesc = (x ,o)} -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
+    (pp_option (fun fmt Location.{pldesc = (x ,o)} -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
+    (pp_option (fun fmt Location.{pldesc = (x ,o)} -> Format.fprintf fmt "state is %a%a@\n" pp_id x pp_otherwise o )) t.state_is
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "constant {@\n  @[%a@]@\n}@\n" pp_label_term))) t.constants
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
@@ -1149,7 +1149,7 @@ let pp_transaction_transition fmt (t : transaction) (tr : transition) =
   Format.fprintf fmt "transition %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    (pp_option (fun fmt (x, _) -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
+    (pp_option (fun fmt Location.{pldesc = (x, _)} -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
     (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_list "@\n" pp_function) t.functions

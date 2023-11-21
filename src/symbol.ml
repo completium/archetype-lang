@@ -368,8 +368,9 @@ let string_of_symbol = function
   | X (N N_type_decl) -> "a type decl"
   | X (N N_transition) -> "a transition"
   | X (N N_transition_to_item) -> "a transition to item"
+  | X (N N_state_is_unloc) -> "state_is_unloc"
   | X (N N_start_expr) -> "a start expression"
-  | X (N N_sourcedby) -> "a sourced by"
+  | X (N N_sourcedby_unloc) -> "sourcedby_unloc"
   | X (N N_snl2_COMMA_ident_) -> "a non empty list of identifier separated by ,"
   | X (N N_snl2_COMMA_expr_) -> "a non empty list of expression separated by ,"
   | X (N N_snl_SEMI_COLON_rf_WITH__) -> "a list of rf with"
@@ -465,7 +466,7 @@ let string_of_symbol = function
   | X (N N_cfs) -> "constants"
   | X (N N_cf) -> "constant item"
   | X (N N_cf_unloc) -> "cf_unloc"
-  | X (N N_calledby) -> "called by"
+  | X (N N_calledby_unloc) -> "calledby_unloc"
   | X (N N_branch) -> "branch"
   | X (N N_boption_CONST_) -> "an optional const"
   | X (N N_asset) -> "an asset"
@@ -473,7 +474,6 @@ let string_of_symbol = function
   | X (N N_asset_option) -> "an asset option"
   | X (N N_archetype) -> "archetype"
   | X (N N_archetype_r) -> "archetype"
-
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "
