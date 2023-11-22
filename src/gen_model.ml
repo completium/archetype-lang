@@ -1453,7 +1453,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | Some fa -> M.Mdeclvaropt([M.mk_mident id], Some (as_option value.type_), value, Some fa, true)
           | None    -> M.Mdeclvar   ([M.mk_mident id], Some value.type_, value, true)
         in
-        let term  = M.mk_mterm node M.tunit in
+        let term  = M.mk_mterm ~loc:x.loc node M.tunit in
         add_seq term body
       in
       match li with
