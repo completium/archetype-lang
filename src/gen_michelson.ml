@@ -1934,7 +1934,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
                 match b with
                 | [] -> []
                 | hd::t -> begin
-                    let nhd = assign_last_seq debug [hd]  in
+                    let nhd = if (match ids with | [id] -> String.equal (String.sub id 0 1) "_" | _ -> false) then [hd] else assign_last_seq debug [hd]  in
                     nhd @ t
                   end
               in
@@ -1946,6 +1946,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
                 | 0  -> b @ (if si.populated then [T.cdrop 1] else [])
                 | 1  -> b @ (if si.populated then [T.cswap (); T.cdrop 1 ] else [])
                 | _  -> b @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else [])
+              in
+              let c =
+                if (match ids with | [id] -> String.equal (String.sub id 0 1) "_" | _ -> false)
+                then let debug = process_debug ?loc:i.loc env in assign_last_seq debug c
+                else c
               in
               (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
               c, env
