@@ -1637,14 +1637,19 @@ type env = {
 [@@deriving show {with_path = false}]
 
 let process_debug ?decl_bound ?loc (env : env) : T.debug option =
-  match loc with
-  | Some loc when not (Location.isdummy loc) -> begin
-      let stack : T.stack_item list = List.map (fun (x : stack_item) ->
-          let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
-          T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack in
+  let get_stack (env : env) : T.stack_item list = List.map (fun (x : stack_item) ->
+      let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
+      T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack
+  in
+  match loc, decl_bound with
+  | Some loc, _ when not (Location.isdummy loc) -> begin
+      let stack = get_stack env in
       let res : T.debug = { decl_bound; stack; loc = Some loc } in
       Some res
     end
+  | _, Some _ ->
+    let stack = get_stack env in
+    Some { decl_bound; stack; loc = None }
   | _ -> None
 
 
