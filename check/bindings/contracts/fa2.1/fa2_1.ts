@@ -973,7 +973,7 @@ export class Fa2_1 {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "transfer_event"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return transfer_event.from_mich(x);
+                        return transfer_event.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
@@ -985,7 +985,7 @@ export class Fa2_1 {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "operator_update_event"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return operator_update_event.from_mich(x);
+                        return operator_update_event.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
@@ -997,7 +997,7 @@ export class Fa2_1 {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "approval_event"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return approval_event.from_mich(x);
+                        return approval_event.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });

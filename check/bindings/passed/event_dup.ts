@@ -71,7 +71,7 @@ export class Event_dup {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "even"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return even.from_mich(x);
+                        return even.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
@@ -83,7 +83,7 @@ export class Event_dup {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "odd"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return odd.from_mich(x);
+                        return odd.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
