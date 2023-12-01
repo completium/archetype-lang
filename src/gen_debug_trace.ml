@@ -72,6 +72,7 @@ let rec type_to_micheline (t : T.type_) : micheline =
     | Tnever                 -> "never", []
     | Tchest                 -> "chest", []
     | Tchest_key             -> "chest_key", []
+    | Tvar _                 -> assert false
   in
   let annots = match t.annotation with | Some a -> [a] | None -> [] in
   mk_mich_prim ~args ~annots prim

@@ -345,21 +345,30 @@ end = struct
   (* ------------------------------------------------------------------ *)
   let gen () = Oo.id (object end)
 
-  type dvar = [
-    | `VLocal  of int
-    | `VGlobal of string
-  ]
+  let fresh_tvar () =
+    mk_type (Tvar (gen ()))
 
-  let vlocal  () : dvar = `VLocal (gen ())
-  let vglobal x  : dvar = `VGlobal x
+  let vlocal  ty    : dvar = `VLocal (ty, gen ())
+  let vglobal ty x  : dvar = `VGlobal (ty, x)
 
   let as_vlocal (x : dvar) =
     match x with `VLocal i -> i | _ -> assert false
 
+  let rec vlocal_of_rstack1 (r : rstack1) =
+    match r with
+    | #dvar as dv ->
+       let x = vlocal (ty_of_dvar dv) in
+       dvar x, (x :> rstack1)
+
+    | `Paired (r1, r2) ->
+       let e1, x1 = vlocal_of_rstack1 r1 in
+       let e2, x2 = vlocal_of_rstack1 r2 in
+       depair e1 e2, `Paired (x1, x2)
+
   let rec pp_rstack1 fmt (x : rstack1) =
     match x with
-    | `VLocal  i -> Format.fprintf fmt "#%d" i
-    | `VGlobal n -> Format.fprintf fmt "%s" n
+    | `VLocal  (_, i) -> Format.fprintf fmt "#%d" i
+    | `VGlobal (_, n) -> Format.fprintf fmt "%s" n
 
     | `Paired(x, y) ->
       Format.fprintf fmt "(%a, %a)" pp_rstack1 x pp_rstack1 y
@@ -376,8 +385,8 @@ end = struct
     match x, e.node with
     | #dvar as x, _ -> [DIAssign (x, e)]
     | `Paired (x1, x2), Depair (e1, e2) ->
-      let a = vlocal () in
-      write_var e1 (a :> rstack1)
+      let a = vlocal (ty_of_rstack1 x1) in
+        write_var e1 (a :> rstack1)
       @ write_var e2 x2
       @ write_var (dvar a) x1
     | _ -> assert false
@@ -393,7 +402,7 @@ end = struct
     match s1, s2 with
     | (#dvar as x) :: s1, (#dvar as y) :: s2 ->
       let (is1, is2), s = merge_rstack s1 s2 in
-      let a = vlocal () in
+      let a = vlocal (ty_of_dvar x) in
       (([DIAssign (a, dvar x)] @ is1), is2), y :: s
 
     | `Paired (x1, y1) :: s1, `Paired (x2, y2) :: s2 ->
@@ -423,11 +432,11 @@ end = struct
       let p2, c2 = dptn_of_rstack1 r2 in
       (DPair (p1, p2), c1 @ c2)
 
-    | `VLocal x ->
-      (DVar x, [])
+    | `VLocal n ->
+      (DVar n, [])
 
-    | (`VGlobal _) as n ->
-      let x = gen () in (DVar x, [DIAssign (n, dvar (`VLocal x))])
+    | (`VGlobal (ty, _)) as n ->
+      let x = gen () in (DVar (ty, x), [DIAssign (n, dvar (`VLocal (ty, x)))])
 
   exception UnificationFailure
 
@@ -436,7 +445,8 @@ end = struct
     | `VGlobal m, `VGlobal n ->
       if m <> n then raise UnificationFailure
 
-    | `VLocal i, `VLocal j ->
+    | `VLocal (tyi, i), `VLocal (tyj, j) ->
+      assert (tyi = tyj);       (* FIXME *)
       ignore (UF.union uf i j : int)
 
     | _, _ ->
@@ -479,7 +489,7 @@ end = struct
   let dvar_apply_uf (uf : UF.uf) (x : dvar) : dvar =
     match x with
     | `VGlobal _ -> x
-    | `VLocal  i -> `VLocal (UF.find uf i)
+    | `VLocal (ty, i) -> `VLocal (ty, UF.find uf i)
 
   let rec dexpr_apply_uf (uf : UF.uf) (e : dexpr) : dexpr =
     match e.node with
@@ -495,7 +505,7 @@ end = struct
       e
 
     | Dfun (o, es) ->
-      dfun o (List.map (dexpr_apply_uf uf) es)
+      dfun e.type_ o (List.map (dexpr_apply_uf uf) es)
 
   let dpattern_apply_uf (_uf : UF.uf) (p : dpattern) : dpattern =
     p
@@ -583,7 +593,7 @@ end = struct
           | true , false -> ([], []), s2
           | false, true  -> ([], []), s1
           | true , true  -> assert false in
-        let x = vlocal () in
+        let x = vlocal tbool in
         mkdecomp ((x :> rstack1) :: s) [DIIf (dvar x, (pr1 @ b1, pr2 @ b2))]
       end
 
@@ -602,8 +612,9 @@ end = struct
       mkdecomp ~failure (s1 @ s2) ops
 
     | DROP n ->
-      let pre = List.init n (fun _ -> (vlocal () :> rstack1)) in
-      mkdecomp (pre @ s) []
+      let pre =
+        List.init n (fun _ -> (vlocal (fresh_tvar ()) :> rstack1))
+      in mkdecomp (pre @ s) []
 
     | DUG n ->
       assert (List.length s >= n + 1);
@@ -614,20 +625,20 @@ end = struct
     | DUP ->
       let x, s = List.pop s in
       let y, s = List.pop s in
-      let a = vlocal () in
-      let wri1 = write_var (dvar a) x in
-      let wri2 = write_var (dvar a) y in
-      mkdecomp ((a :> rstack1) :: s) (wri1 @ wri2)
+      let a, ra = vlocal_of_rstack1 x in
+      let wri1 = write_var a x in
+      let wri2 = write_var a y in
+      mkdecomp (ra :: s) (wri1 @ wri2)
 
     | DUP_N n ->
       assert (1 <= n);
       let x, s = List.pop s in
       let pre, s = List.split_at (n-1) s in
       let y, s = List.pop s in
-      let a = vlocal () in
-      let wri1 = write_var (dvar a) x in
-      let wri2 = write_var (dvar a) y in
-      mkdecomp (pre @ (a :> rstack1) :: s) (wri1 @ wri2)
+      let a, ra = vlocal_of_rstack1 x in
+      let wri1 = write_var a x in
+      let wri2 = write_var a y in
+      mkdecomp (pre @ ra  :: s) (wri1 @ wri2)
 
     | PUSH (t, d) ->
       let x, s = List.pop s in
@@ -698,10 +709,10 @@ end = struct
 
     | CAR ->
       let x, s = List.pop s in
-      mkdecomp (`Paired (x, (vlocal () :> rstack1)) :: s) []
+      mkdecomp (`Paired (x, (vlocal (fresh_tvar ()) :> rstack1)) :: s) []
     | CDR ->
       let y, s = List.pop s in
-      mkdecomp (`Paired ((vlocal () :> rstack1), y) :: s) []
+      mkdecomp (`Paired ((vlocal (fresh_tvar ()) :> rstack1), y) :: s) []
     | CONCAT               -> decompile_op s (`Bop Bconcat               )
     | CONS                 -> decompile_op s (`Bop Bcons                 )
     | EMPTY_BIG_MAP (k, v) -> decompile_op s (`Zop (Zemptybigmap (k, v)) )
@@ -722,9 +733,10 @@ end = struct
           mkdecomp (x1 :: x2 :: s) []
 
         | #dvar as v ->
-          let x1 = vlocal () in
-          let x2 = vlocal () in
-          let op = DIAssign (v, dfun (`Bop Bpair) [dvar x1; dvar x2]) in
+          let x1 = vlocal (fresh_tvar ()) in
+          let x2 = vlocal (fresh_tvar ()) in
+          (* FIXME: (x1, x2) is a pair *)
+          let op = DIAssign (v, dfun (ty_of_dvar v) (`Bop Bpair) [dvar x1; dvar x2]) in
           mkdecomp ((x1 :> rstack1) :: (x2 :> rstack1) :: s) [op]
       end
 
@@ -741,9 +753,9 @@ end = struct
               x1, x2 :: s, []
 
             | #dvar as v ->
-              let x1 = vlocal () in
-              let x2 = vlocal () in
-              let op = DIAssign (v, dfun (`Bop Bpair) [dvar x1; dvar x2]) in
+              let x1 = vlocal (fresh_tvar ()) in
+              let x2 = vlocal (fresh_tvar ()) in
+              let op = DIAssign (v, dfun (ty_of_dvar v) (`Bop Bpair) [dvar x1; dvar x2]) in
               (x1 :> rstack1), (x2 :> rstack1) :: s, [op]
           in
 
@@ -770,14 +782,14 @@ end = struct
           | 0 when not b ->
             va
           | 0 ->
-            let x2 = vlocal () in
+            let x2 = vlocal (fresh_tvar ()) in (* FIXME *)
             `Paired (a, (x2 :> rstack1))
           | _ ->
-            let x1 = vlocal () in
+            let x1 = vlocal (fresh_tvar ()) in (* FIXME *)
             let a  = doit b (n-1) va a in
             `Paired ((x1 :> rstack1), a) in
 
-        let a = vlocal () in
+        let a = vlocal (fresh_tvar ()) in (* FIXME *)
         let y = doit (n mod 2 <> 0) (n / 2) (a :> rstack1) x in
 
         let wri1 = write_var (dvar a) x in
@@ -794,10 +806,10 @@ end = struct
           | 0 when not b ->
             a
           | 0 ->
-            let x2 = vlocal () in
+            let x2 = vlocal (fresh_tvar ()) in (* FIXME *)
             `Paired (a, (x2 :> rstack1))
           | _ ->
-            let x1 = vlocal () in
+            let x1 = vlocal (fresh_tvar ()) in (* FIXME *)
             let a  = doit b (n-1) a in
             `Paired ((x1 :> rstack1), a) in
 
@@ -845,13 +857,13 @@ end = struct
       let s    = rstack_apply_uf uf (x1 :: s1) in
       let x, s = List.pop s in
 
-      let xs = vlocal () in
+      let xs = vlocal (fresh_tvar ()) in (* FIXME *)
       mkdecomp
         ((xs :> rstack1) :: s)
         [DIIter (as_dvar x, dvar xs, bd)]
 
     | LOOP cs ->
-      let cond = vlocal () in
+      let cond = vlocal (fresh_tvar ()) in (* FIXME *)
 
       let { failure; stack = s1; code = bd1 } =
         decompile_s ((cond :> rstack1) :: s) cs in
@@ -881,7 +893,7 @@ end = struct
       compile_match s [("none", 0), c1; ("some", 1), c2]
 
     | FAILWITH ->
-      let s    = List.map (fun _ -> (vlocal () :> rstack1)) s in
+      let s    = List.map (fun _ -> (vlocal (fresh_tvar ()) :> rstack1)) s in
       let x, _ = List.pop s in
       mkdecomp ~failure:true s [DIFailwith (dexpr_of_rstack1 x)]
 
@@ -892,10 +904,10 @@ end = struct
   and decompile_op (s : rstack) (op : g_operator) =
     let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3 in
     let x, s = List.pop s in
-    let args = List.init n (fun _ -> vlocal ()) in
+    let args = List.init n (fun _ -> vlocal (fresh_tvar ())) in (* FIXME *)
     mkdecomp
       ((args :> rstack) @ s)
-      (write_var (dfun op (List.map (fun v -> dvar v) args)) x)
+      (write_var (dfun (ty_of_rstack1 x) op (List.map (fun v -> dvar v) args)) x) (* FIXME *)
 
   and compile_match (s : rstack) (bs : ((string * int) * code list) list) =
     let sc, subs = List.split (List.map (fun ((name, n), b) ->
@@ -906,7 +918,7 @@ end = struct
         let p, dp = List.split (List.map dptn_of_rstack1 p) in
         (sc, (name, p, List.flatten dp @ bc))) bs) in
 
-    let x  = vlocal () in
+    let x  = vlocal (fresh_tvar ()) in
     let sc = List.fold_left (fun x y -> snd (merge_rstack x y)) (List.hd sc) (List.tl sc) in
 
     mkdecomp ((x :> rstack1) :: sc) [DIMatch (dvar x, subs)]
@@ -990,7 +1002,7 @@ end = struct
   (* -------------------------------------------------------------------- *)
   let rec expr_cttprop (env : dexpr Mint.t) (e : dexpr) =
     match e.node with
-    | Dvar (`VLocal x) ->
+    | Dvar (`VLocal (_, x)) ->
       Option.get_dfl e (Mint.find_opt x env)
 
     | Dvar _ ->
@@ -1006,14 +1018,14 @@ end = struct
 
     | Dfun (op, es) ->
       let es = List.map (expr_cttprop env) es in
-      dfun op es
+      dfun e.type_ op es
 
   type cttenv = dexpr Mint.t
 
   let cttenv_remove_wr (env : cttenv) (wr : Sdvar.t) =
     Sdvar.fold (fun x env ->
         match x with
-        | `VLocal  i -> Mint.remove i env
+        | `VLocal  (_, i) -> Mint.remove i env
         | `VGlobal _ -> env) wr env
 
   let rec instr_cttprop (env0 : cttenv) (code : dinstr) =
@@ -1021,7 +1033,7 @@ end = struct
     | DIAssign ((`VLocal i), {node = Dvar (`VLocal j)}) when i = j ->
       env0, []
 
-    | DIAssign ((`VLocal i) as x, e) ->
+    | DIAssign ((`VLocal (_, i)) as x, e) ->
       let env = Mint.remove i env0 in
       let e   = expr_cttprop env e in
       let env = Mint.filter (fun _ se -> not (Sdvar.mem x (expr_fv se))) env in
@@ -1147,22 +1159,22 @@ end = struct
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
 
     let args prefix =
-      let mkvar i : rstack1 =
-        `VGlobal (Printf.sprintf "%s%d" prefix i) in
+      let mkvar ty i : rstack1 =
+        `VGlobal (ty, Printf.sprintf "%s%d" prefix i) in
 
       let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
         match ty with
         | { node = Tpair (_::ty::_); _} ->
-          `Paired (mkvar i, create (i + 1) ty)
+          `Paired (mkvar ty i, create (i + 1) ty)
         | _ ->
-          mkvar i
+          mkvar ty i
       in create 1 in
 
     let pst = args "args_" pty in
     let ast = args "sto_"  aty in
 
     let { stack = ost; code = dc; } =
-      decompile_s [`Paired (`VGlobal "ops", ast)] code in
+      decompile_s [`Paired (`VGlobal (tlist toperation, "ops"), ast)] code in
 
     let code =
       match ost with
@@ -1232,6 +1244,7 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tnever                 -> M.tnever
   | Tchest                 -> M.tchest
   | Tchest_key             -> M.tchest_key
+  | Tvar _                  -> assert false
 
 let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
   let f = data_to_mterm ?omap_var in
@@ -1309,8 +1322,8 @@ end = struct
 
     let for_dvar (v : dvar) : ident =
       match v with
-      | `VLocal  x  -> "$" ^ (string_of_int x)
-      | `VGlobal id -> id
+      | `VLocal  (_, x ) -> "$" ^ (string_of_int x)
+      | `VGlobal (_, id) -> id
     in
 
     let rec for_expr (e : dexpr) : mterm =

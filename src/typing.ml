@@ -2628,6 +2628,7 @@ end = struct
       | Tnever                 -> A.Tbuiltin VTnever
       | Tchest                 -> A.Tbuiltin VTchest
       | Tchest_key             -> A.Tbuiltin VTchest_key
+      | Tvar _                 -> assert false
     in
     aux (T.to_type obj) |> normalize_type
 

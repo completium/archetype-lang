@@ -528,6 +528,7 @@ let rec tz_type_to_type_ (ty : T.type_) : type_=
   | Tnever                 -> mk_type "never"                ty.annotation None []
   | Tchest                 -> mk_type "chest"                ty.annotation None []
   | Tchest_key             -> mk_type "chest_key"            ty.annotation None []
+  | Tvar _                 -> assert false
 
 let tz_type_to_args (ty : T.type_) : argument list=
   match ty with

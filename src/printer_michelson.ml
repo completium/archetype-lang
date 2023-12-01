@@ -43,6 +43,7 @@ let rec pp_type fmt (t : type_) =
   | Tnever                 -> pp_simple_a "never"
   | Tchest                 -> pp_simple_a "chest"
   | Tchest_key             -> pp_simple_a "chest_key"
+  | Tvar n                 -> Format.fprintf fmt "#%d" n
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -855,8 +856,8 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
 
   | DIMatch (c, bs) ->
     let rec pp_pattern fmt = function
-      | DVar x ->
-        Format.fprintf fmt "%a" pp_var (`VLocal x)
+      | DVar (ty, x) ->
+        Format.fprintf fmt "%a" pp_var (`VLocal (ty, x))
       | DPair (p1, p2) ->
         Format.fprintf fmt "(%a, %a)" pp_pattern p1 pp_pattern p2 in
 
@@ -905,10 +906,10 @@ and pp_expr (fmt : Format.formatter) (e : dexpr) =
 
 and pp_var (fmt : Format.formatter) (v : dvar) =
   match v with
-  | `VGlobal n ->
+  | `VGlobal (_, n) ->
     Format.fprintf fmt "%s" n
 
-  | `VLocal x ->
+  | `VLocal (_, x) ->
     Format.fprintf fmt "#%d" x
 
 (* let pp_dview fmt (dv : dview) : unit =

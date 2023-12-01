@@ -89,6 +89,7 @@ type type_node =
   | Tnever
   | Tchest
   | Tchest_key
+  | Tvar of int
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -586,122 +587,8 @@ type offchain_view = {
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-
-(***
-   type proposal :
-
-   ```
-   type dvar = ident
-
-   and dvkind =
-   | DVKvar of ident
-   | DVKdup
-   | DVKexpr of dexpr option
-
-   and  dexpr =
-   | Dvar       of dvar
-   | Ddata      of data
-   | Dfun       of g_operator * dexpr list
-   ```
-
-   with an environment which contains a map
-   map (ident -> vkind)
-
- ***)
-
-type dvar   = [`VLocal of int | `VGlobal of ident]
-
-and  dexpr_node =
-  | Dvar       of dvar
-  | Depair     of dexpr * dexpr
-  | Ddata      of type_ * data
-  | Dfun       of g_operator * dexpr list
-[@@deriving show {with_path = false}]
-
-and dexpr = { node : dexpr_node; type_ : type_ option }
-[@@deriving show {with_path = false}]
-
-let mk_dexpr ?type_ node = {node; type_}
-
-let dvar   dv    = mk_dexpr (Dvar dv)
-let depair a  b  = mk_dexpr (Depair (a, b))
-let ddata  ty d  = mk_dexpr (Ddata (ty, d))
-let dfun   op ld = mk_dexpr (Dfun (op, ld))
-
-type dinstr =
-  (* | DIAssign   of dtyvar * dexpr *)
-  | DIAssign   of dvar * dexpr
-  | DIIf       of dexpr * (dcode * dcode)
-  | DIMatch    of dexpr * (ident * dpattern list * dcode) list
-  | DIFailwith of dexpr
-  | DIWhile    of dexpr * dcode
-  | DIIter     of dtyvar * dexpr * dcode
-  | DILoop     of dtyvar * dcode
-  (* | DICall     of ident * dexpr list *)
-
-(* and dtyvar = dvar * type_ *)
-and dtyvar = dvar
-
-and dpattern =
-  (* | DVar  of int * type_ *)
-  | DVar  of int
-  | DPair of dpattern * dpattern
-
-and dcode = dinstr list
-[@@deriving show {with_path = false}]
-
-type dprogram = {
-  name: ident;
-  storage: type_;
-  parameter: type_;
-  storage_data: data;
-  code: dcode;
-  procs: (string * (string * type_) list * dcode) list;
-}
-[@@deriving show {with_path = false}]
-
-(* -------------------------------------------------------------------- *)
-
-type rstack1 = [dvar | `Paired of rstack1 * rstack1]
-[@@deriving show {with_path = false}]
-
-type rstack  = rstack1 list
-[@@deriving show {with_path = false}]
-
 let mk_type ?annotation node : type_ =
   { node; annotation }
-
-let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
-  { args; stovars }
-
-let mk_code ?type_ ?debug node : code =
-  { node; type_ = ref type_; debug }
-
-let mk_func name targ tret ctx body loc : func =
-  { name; targ; tret; ctx; body; loc }
-
-let mk_entry name args eargs body loc : entry =
-  { name; args; eargs; body; loc }
-
-let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views offchain_views entries : ir =
-  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; offchain_views; entries; parameters }
-
-let mk_view_struct id param ret body : view_struct =
-  { id; param; ret; body }
-
-let mk_michelson ?(parameters = []) storage parameter ?(views = []) code : michelson =
-  { storage; parameter; code; views; parameters }
-
-let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
-  { prim; args; annots }
-
-let mk_micheline ?(parameters = []) ?(views = []) code storage : micheline =
-  { code; storage; parameters; views }
-
-let mk_dprogram ?(procs = []) storage parameter storage_data name code =
-  { name; storage; parameter; storage_data; code; procs }
-
-(* -------------------------------------------------------------------- *)
 
 let taddress                   = mk_type Taddress
 let tbig_map             t1 t2 = mk_type (Tbig_map (t1, t2))
@@ -739,6 +626,129 @@ let tchest_key                 = mk_type Tchest_key
 (* -- *)
 
 let trat          = tpair [tint; tnat]
+
+(* -------------------------------------------------------------------- *)
+
+(***
+   type proposal :
+
+   ```
+   type dvar = ident
+
+   and dvkind =
+   | DVKvar of ident
+   | DVKdup
+   | DVKexpr of dexpr option
+
+   and  dexpr =
+   | Dvar       of dvar
+   | Ddata      of data
+   | Dfun       of g_operator * dexpr list
+   ```
+
+   with an environment which contains a map
+   map (ident -> vkind)
+
+ ***)
+
+type dvar = [
+  | `VLocal  of (type_ * int)
+  | `VGlobal of (type_ * ident)
+]
+
+and dexpr_node =
+  | Dvar       of dvar
+  | Depair     of dexpr * dexpr
+  | Ddata      of type_ * data
+  | Dfun       of g_operator * dexpr list
+[@@deriving show {with_path = false}]
+
+and dexpr = { node : dexpr_node; type_ : type_ }
+[@@deriving show {with_path = false}]
+
+let mk_dexpr type_ node = {node; type_}
+
+let ty_of_dvar (dv : dvar) =
+  match dv with
+  | `VLocal  (ty, _) -> ty
+  | `VGlobal (ty, _) -> ty
+
+let dvar   dv       = mk_dexpr (ty_of_dvar dv) (Dvar dv)
+let depair a  b     = mk_dexpr (tpair [a.type_; b.type_]) (Depair (a, b))
+let ddata  ty d     = mk_dexpr ty (Ddata (ty, d))
+let dfun   ty op ld = mk_dexpr ty (Dfun (op, ld))
+
+type dinstr =
+  (* | DIAssign   of dtyvar * dexpr *)
+  | DIAssign   of dvar * dexpr
+  | DIIf       of dexpr * (dcode * dcode)
+  | DIMatch    of dexpr * (ident * dpattern list * dcode) list
+  | DIFailwith of dexpr
+  | DIWhile    of dexpr * dcode
+  | DIIter     of dvar * dexpr * dcode
+  | DILoop     of dvar * dcode
+  (* | DICall     of ident * dexpr list *)
+
+and dpattern =
+  | DVar  of (type_ * int)
+  | DPair of dpattern * dpattern
+
+and dcode = dinstr list
+[@@deriving show {with_path = false}]
+
+type dprogram = {
+  name: ident;
+  storage: type_;
+  parameter: type_;
+  storage_data: data;
+  code: dcode;
+  procs: (string * (string * type_) list * dcode) list;
+}
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+type rstack1 = [dvar | `Paired of rstack1 * rstack1]
+[@@deriving show {with_path = false}]
+
+type rstack  = rstack1 list
+[@@deriving show {with_path = false}]
+
+let rec ty_of_rstack1 (rs : rstack1) =
+  match rs with
+  | #dvar as dv ->
+     ty_of_dvar dv
+  | `Paired (rs1, rs2) ->
+     tpair [ty_of_rstack1 rs1; ty_of_rstack1 rs2]
+
+let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
+  { args; stovars }
+
+let mk_code ?type_ ?debug node : code =
+  { node; type_ = ref type_; debug }
+
+let mk_func name targ tret ctx body loc : func =
+  { name; targ; tret; ctx; body; loc }
+
+let mk_entry name args eargs body loc : entry =
+  { name; args; eargs; body; loc }
+
+let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views offchain_views entries : ir =
+  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; offchain_views; entries; parameters }
+
+let mk_view_struct id param ret body : view_struct =
+  { id; param; ret; body }
+
+let mk_michelson ?(parameters = []) storage parameter ?(views = []) code : michelson =
+  { storage; parameter; code; views; parameters }
+
+let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
+  { prim; args; annots }
+
+let mk_micheline ?(parameters = []) ?(views = []) code storage : micheline =
+  { code; storage; parameters; views }
+
+let mk_dprogram ?(procs = []) storage parameter storage_data name code =
+  { name; storage; parameter; storage_data; code; procs }
 
 (* -------------------------------------------------------------------- *)
 
@@ -1290,6 +1300,7 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
     | Tnever                 -> Tnever
     | Tchest                 -> Tchest
     | Tchest_key             -> Tchest_key
+    | Tvar x                 -> Tvar x
   in
   {node = node; annotation = t.annotation}
 
@@ -1308,11 +1319,14 @@ let normalize_type (ty : type_) : type_ =
   aux ty
 
 (* -------------------------------------------------------------------- *)
-
 let rec cmp_dvar (v1 : dvar) (v2 : dvar) =
   match v1, v2 with
-  | `VLocal  l1, `VLocal l2  -> l1 = l2
-  | `VGlobal g1, `VGlobal g2 -> String.equal g1 g2
+  | `VLocal (ty1, l1), `VLocal (ty2, l2) ->
+     cmp_type ty1 ty2 && l1 = l2
+
+  | `VGlobal (ty1, g1), `VGlobal (ty2, g2) ->
+     cmp_type ty1 ty2 && String.equal g1 g2
+
   | _ -> false
 
 and cmp_dlocal l1 l2 =
@@ -1327,10 +1341,9 @@ and cmp_dexpr_node e1 e2 =
   | _ -> false
 
 and cmp_dexpr (e1 : dexpr) (e2 : dexpr) =
-  cmp_dexpr_node e1.node e2.node && Option.cmp cmp_type e1.type_ e2.type_
+  cmp_dexpr_node e1.node e2.node && cmp_type e1.type_ e2.type_
 
 (* -------------------------------------------------------------------- *)
-
 let map_data (f : data -> data) = function
   | Dint n          -> Dint n
   | Dstring v       -> Dstring v
@@ -1769,6 +1782,7 @@ end = struct
       | Tnever                 -> "never", []
       | Tchest                 -> "chest", []
       | Tchest_key             -> "chest_key", []
+      | Tvar _                 -> assert false
     in
     let args = if List.is_empty args then None else Some args in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
@@ -1825,6 +1839,7 @@ end = struct
         | Tnever                  -> Ovar (OMVfree x)
         | Tchest                  -> Ovar (OMVfree x)
         | Tchest_key              -> Ovar (OMVfree x)
+        | Tvar _                  -> assert false
       end
     | DIrCode (_id, _c) -> Oarray ([])
     | Dcode c           -> code_to_micheline c
@@ -2034,6 +2049,7 @@ end = struct
     | Tnever                  -> true
     | Tchest                  -> true
     | Tchest_key              -> true
+    | Tvar _                  -> false
 end
 
 (***)
