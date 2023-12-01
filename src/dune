@@ -22,7 +22,7 @@
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_extra mtyping
   binding gen_contract_interface gen_debug_trace compile
-  lsp
+  lsp ufind
   )
   (libraries menhirLib num str yojson ppx_deriving_yojson.runtime hex unix xmlm)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
