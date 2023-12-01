@@ -1,0 +1,13 @@
+# 0
+{
+  storage int;
+  parameter unit;
+  code { UNPAIR;
+         DROP;
+         PUSH int 2;
+         SWAP;
+         DROP;
+         NIL operation;
+         PAIR };
+}
+
