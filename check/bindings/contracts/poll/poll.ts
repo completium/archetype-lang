@@ -416,7 +416,7 @@ export class Poll {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "Response"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return Response.from_mich(x);
+                        return Response.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
@@ -428,7 +428,7 @@ export class Poll {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "NewPoll"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return NewPoll.from_mich(x);
+                        return NewPoll.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
@@ -440,7 +440,7 @@ export class Poll {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "ApprovePoll"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return ApprovePoll.from_mich(x);
+                        return ApprovePoll.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });

@@ -1365,7 +1365,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function_node =
     let process_calledby env (body : M.mterm) : M.mterm =
-      let process_cb ((caller, fa) : M.mterm * M.fail_type) (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
+      let process_cb (locc : Location.t) ((caller, fa) : M.mterm * M.fail_type) (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
           match rq.node with
           | Rany -> None
@@ -1395,7 +1395,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
             | Some o -> fail (Invalid (to_mterm env o))
             | None -> fail fa
           in
-          let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.tunit in
+          let cond_if = M.mk_mterm ~loc:locc (M.Mif (require, fail_auth, None)) M.tunit in
           add_seq cond_if body
         | _ -> body
       in
@@ -1403,7 +1403,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let process tc caller body =
           match tc with
           | None -> body
-          | Some cb -> process_cb caller cb body
+          | Some {pldesc = cb; plloc = loc} -> process_cb loc caller cb body
         in
 
         body
@@ -1414,13 +1414,13 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
 
     let process_state_is env (body : M.mterm) : M.mterm =
       match transaction.state_is with
-      | Some (id, o) -> begin
+      | Some {pldesc = (id, o); plloc = locc} -> begin
           let var     = M.mk_state_value (M.mk_mident id) in
           let state   = M.mk_state_var () in
           let c       = M.mk_mterm (M.Mnequal (M.tstate, var, state)) (M.tbool) ~loc:(loc id) in
           let cond_if =
             let fail = match o with Some o -> fail (Invalid (to_mterm env o)) | None -> fail InvalidState in
-            M.mk_mterm (M.Mif (c, fail, None)) M.tunit in
+            M.mk_mterm ~loc:locc (M.Mif (c, fail, None)) M.tunit in
           add_seq cond_if body
         end
       | _ -> body
@@ -1453,7 +1453,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | Some fa -> M.Mdeclvaropt([M.mk_mident id], Some (as_option value.type_), value, Some fa, true)
           | None    -> M.Mdeclvar   ([M.mk_mident id], Some value.type_, value, true)
         in
-        let term  = M.mk_mterm node M.tunit in
+        let term  = M.mk_mterm ~loc:x.loc node M.tunit in
         add_seq term body
       in
       match li with

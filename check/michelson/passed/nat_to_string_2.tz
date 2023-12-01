@@ -1,5 +1,5 @@
-{ storage string ;
-  parameter (nat %exec) ;
+{ storage (pair (string %s1) (string %s2) (nat %bal)) ;
+  parameter (nat %callback) ;
   code { LAMBDA
            nat
            string
@@ -88,12 +88,22 @@
              DROP 1 } ;
          SWAP ;
          UNPAIR ;
-         DUP 3 ;
-         DUP 2 ;
+         DIP 1 { UNPAIR 3 } ;
+         DUP 5 ;
+         PUSH nat 1000 ;
+         EXEC ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DUP ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DUP 5 ;
+         DUP 5 ;
          EXEC ;
          DIP 1 { SWAP ; DROP 1 } ;
          SWAP ;
          DROP 1 ;
+         PAIR 3 ;
          NIL operation ;
          PAIR ;
          DIP 1 { DROP 1 } } }

@@ -1042,17 +1042,17 @@ let pp_entry_properties fmt (props : entry_properties) =
     Format.fprintf fmt "no transfer%a@\n"
       (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) (snd props.accept_transfer)
   end;
-  map_option (fun (e, o) ->
+  map_option (fun {pldesc = (e, o)} ->
       Format.fprintf fmt "sourced by %a%a@\n"
         (pp_expr e_default PNone) e
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
     ) props.sourcedby;
-  map_option (fun (e, o) ->
+  map_option (fun {pldesc = (e, o)} ->
       Format.fprintf fmt "called by %a%a@\n"
         (pp_expr e_default PNone) e
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
     ) props.calledby;
-  map_option (fun (x, o) ->
+  map_option (fun {pldesc = (x, o)} ->
       Format.fprintf fmt "state is %a%a@\n"
         pp_id x
         (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
@@ -1060,7 +1060,7 @@ let pp_entry_properties fmt (props : entry_properties) =
   let pp_rf s1 s2 fmt l =
     Format.fprintf fmt "%s {@\n  @[%a@]@\n}@\n"
       s1
-      (pp_list ";@\n" (fun fmt (id, e, f) ->
+      (pp_list ";@\n" (fun fmt {pldesc = (id, e, f)} ->
            Format.fprintf fmt "%a: %a%a"
              pp_id id
              (pp_expr e_default PNone) e
@@ -1069,7 +1069,7 @@ let pp_entry_properties fmt (props : entry_properties) =
   in
   let pp_cf fmt l =
     Format.fprintf fmt "constant {@\n  @[%a@]@\n}@\n"
-      (pp_list ";@\n" (fun fmt (id, e, f) ->
+      (pp_list ";@\n" (fun fmt {pldesc = (id, e, f)} ->
            Format.fprintf fmt "%a %s %a%a"
              pp_id id
              (if Option.is_some f then "?is" else "is")

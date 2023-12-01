@@ -1031,7 +1031,7 @@ let pp_error_desc fmt e =
   | InvalidFieldsCountInAssetOrRecordLiteral -> pp "Invalid fields count in asset or record literal"
   | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
-  | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
+  | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excepted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidKeyFieldInAssetValueType    -> pp "Key field asset is not in asset_value type"
@@ -1641,7 +1641,7 @@ let bls_ops : opinfo list =
 let timelock_ops : opinfo list =
   [
     op "open_chest" A.Copen_chest `Total None
-      [A.vtchest_key; A.vtchest; A.vtnat] (`Ty (A.Tor (A.vtbytes, A.vtbool))) Mint.empty;
+      [A.vtchest_key; A.vtchest; A.vtnat] (`Ty (A.Toption (A.vtbytes))) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1745,15 +1745,16 @@ type tentrydecl = {
   ad_args   : (A.lident * A.ptyp) list;
   ad_getter : bool;
   ad_ret_t  : A.ptyp option;
-  ad_srcby  : (A.pterm option) loced list * A.pterm option;
-  ad_callby : (A.pterm option) loced list * A.pterm option;
-  ad_stateis: (A.lident * A.pterm option) option;
+  ad_srcby  : ((A.pterm option) loced list * A.pterm option) loced;
+  ad_callby : ((A.pterm option) loced list * A.pterm option) loced;
+  ad_stateis: (A.lident * A.pterm option) loced option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : fundecl option list;
-  ad_csts   : (A.lident option * A.pterm * A.pterm option) list;
-  ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
-  ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
+  ad_csts   : (A.lident option * A.pterm * A.pterm option) loced list;
+  ad_reqs   : (A.lident option * A.pterm * A.pterm option) loced list;
+  ad_fais   : (A.lident option * A.pterm * A.pterm option) loced list;
   ad_actfs  : bool * A.pterm option;
+  ad_loc    : Location.t;
 }
 
 and transition = A.sexpr * txeffect list
@@ -5264,15 +5265,15 @@ let for_rf
     (ekind : ekind)
     ?(ety   : A.ptyp option)
     (env   : env)
-    (topf  : (PT.lident * PT.expr * PT.expr option) list)
-  : env * (A.lident option * A.pterm * A.pterm option) list
+    (topf  : (PT.lident * PT.expr * PT.expr option) loced list)
+  : env * (A.lident option * A.pterm * A.pterm option) loced list
   =
   let aux
       ?ety
       (ekind        : ekind)
       (env          : env)
-      ((id, e, err) : PT.lident * PT.expr * PT.expr option)
-    : env * (A.lident option * A.pterm * A.pterm option)
+      ({pldesc = (id, e, err); plloc = loc} : (PT.lident * PT.expr * PT.expr option) loced)
+    : env * (A.lident option * A.pterm * A.pterm option) loced
     =
 
     let error = Option.map (for_expr ekind env) err in
@@ -5284,9 +5285,9 @@ let for_rf
 
     if check_and_emit_name_free env id then
       let env = Env.Label.push env (id, `Plain) in
-      env, (Some id, for_expr ekind env ?ety e, error)
+      env, mkloc loc (Some id, for_expr ekind env ?ety e, error)
     else
-      env, (None, for_expr ekind env ?ety e, error)
+      env, mkloc loc (None, for_expr ekind env ?ety e, error)
   in
   List.fold_left_map (aux ?ety ekind) env topf
 
@@ -5298,15 +5299,15 @@ let for_cf
     (ekind : ekind)
     ?(ety   : A.ptyp option)
     (env   : env)
-    (topf  : (PT.lident * PT.expr * PT.expr option) list)
-  : env * (A.lident option * A.pterm * A.pterm option) list
+    (topf  : (PT.lident * PT.expr * PT.expr option) loced list)
+  : env * (A.lident option * A.pterm * A.pterm option) loced list
   =
   let aux
       (ekind        : ekind)
-      ?(ety          : A.ptyp option)
+      ?(ety         : A.ptyp option)
       (env          : env)
-      ((id, e, err) : PT.lident * PT.expr * PT.expr option)
-    : env * (A.lident option * A.pterm * A.pterm option)
+      ({pldesc = (id, e, err); plloc = loc} : (PT.lident * PT.expr * PT.expr option) loced)
+    : env * (A.lident option * A.pterm * A.pterm option) loced
     =
     let error = Option.map (for_expr ekind env) err in
     error
@@ -5325,9 +5326,9 @@ let for_cf
         end else vty
       in
       let env = Env.Local.push env (id, Option.get ty) ~kind:`Const in
-      env, (Some id, v, error)
+      env, mkloc loc (Some id, v, error)
     else
-      env, (None, for_expr ekind env ?ety e, error)
+      env, mkloc loc (None, for_expr ekind env ?ety e, error)
   in
   List.fold_left_map (aux ?ety ekind) env topf
 
@@ -6153,36 +6154,36 @@ let for_effect ~(ret : A.type_ option) (kind : ekind) (env : env) (effect : PT.e
       let env, i = for_instruction kind env effect ~ret in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
-let for_named_state ?enum (env : env) (x : PT.lident) =
+let for_named_state (locc : Location.t) ?enum (env : env) (x : PT.lident) =
   match Env.State.byctor env (Current, unloc x) with (* FIXME: namespace *)
   | None ->
-    Env.emit_error env (loc x, UnknownState (unloc x));
-    mkloc (loc x) "<error>"
+    Env.emit_error env (locc, UnknownState (unloc x));
+    mkloc locc "<error>"
 
   | Some state ->
     let sname = unloc (snd state.sd_name) in
 
     if Option.get_dfl ("$" ^ statename) enum <> sname then begin
-      Env.emit_error env (loc x, ForeignState (enum, Some sname));
-      mkloc (loc x) "<error>"
+      Env.emit_error env (locc, ForeignState (enum, Some sname));
+      mkloc locc "<error>"
     end else
-      x
+      mkloc locc (unloc x)
 
 (* -------------------------------------------------------------------- *)
-let rec for_state_formula ?enum (env : env) (st : PT.expr) : A.sexpr =
-  let mk_sp = A.mk_sp ~loc:(loc st) in
+let rec for_state_formula (locc : Location.t) ?enum (env : env) (st : PT.expr) : A.sexpr =
+  let mk_sp = A.mk_sp ~loc:locc in
 
   match unloc st with
   | Eterm (_, x) ->
-    mk_sp (A.Sref (for_named_state ?enum env x))
+    mk_sp (A.Sref (for_named_state locc ?enum env x))
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
-    let s1 = for_state_formula ?enum env e1 in
-    let s2 = for_state_formula ?enum env e2 in
+    let s1 = for_state_formula locc ?enum env e1 in
+    let s2 = for_state_formula locc ?enum env e2 in
     mk_sp (A.Sor (s1, s2))
 
   | Eany ->
-    mk_sp (A.Sany)
+    mk_sp (let res : A.sexpr_node = A.Sany in res)
 
   | _ ->
     Env.emit_error env (loc st, InvalidStateExpression);
@@ -6237,12 +6238,12 @@ let for_function (env : env) ({ pldesc = fdecl } : PT.s_function loced) =
       else (env, None))
 
 (* -------------------------------------------------------------------- *)
-let rec for_callby (env : env) kind (cb : PT.expr) =
+let rec for_callby (locc : Location.t) (env : env) kind (cb : PT.expr) =
   match unloc cb with
   | Eany -> [mkloc (loc cb) None]
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
-    (for_callby env kind e1) @ (for_callby env kind e2)
+    (for_callby locc env kind e1) @ (for_callby locc env kind e2)
 
   | Eterm ((SINone, _) as an) when Env.Asset.exists env (unloc_nmid an)->
     let asset = as_full (Option.get (Env.Asset.lookup env (unloc_nmid an))) in
@@ -6256,9 +6257,9 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_entry (env : env) (act : PT.entry_properties) i (ret : PT.type_t option) =
   let fe = for_expr `Entry env in
-  let sourcedby = Option.map (fun (x, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd) act.sourcedby in
-  let calledby  = Option.map (fun (x, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd) act.calledby  in
-  let stateis   = Option.map (fun (x, o) -> for_named_state env x, Option.map fe o) act.state_is in
+  let sourcedby = Option.map (fun {pldesc =(x, _);  plloc = locc} -> for_callby locc env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ snd |@ unloc) act.sourcedby, Option.map Location.loc act.sourcedby in
+  let calledby  = Option.map (fun {pldesc =(x, _);  plloc = locc} -> for_callby locc env `Called x)  act.calledby  , Option.bind (Option.map fe |@ snd |@ unloc) act.calledby , Option.map Location.loc act.calledby in
+  let stateis   = Option.map (fun {pldesc =(x, o);  plloc = loc} -> mkloc loc (for_named_state x.plloc env x, Option.map fe o)) act.state_is in
   let actfs     = fst act.accept_transfer, Option.map fe (snd act.accept_transfer) in
   let env, cst  = Option.foldmap (for_cfs `Entry) env act.constants in
   let env, req  = Option.foldmap (for_rfs `Entry) env act.require in
@@ -6271,7 +6272,7 @@ let for_entry (env : env) (act : PT.entry_properties) i (ret : PT.type_t option)
 
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
-  let tx_state  = for_named_state ?enum env state in
+  let tx_state  = for_named_state Location.dummy ?enum env state in
   let tx_when   = Option.map (for_expr ~ety:(A.Tbuiltin A.VTbool) `Function env) when_ in
   let env, tx_effect = snd_map (Option.map snd)
       (Option.foldmap (for_effect ~ret:None `Entry) env effect) in
@@ -6862,9 +6863,13 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
 let for_events_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map (for_record_decl `Event) env decls
 
+let for_csby ((a, b, loc) : ((A.pterm option) loced list option) * (A.pterm option) * (Location.t option)) : ((A.pterm option) loced list * A.pterm option) loced =
+  mkloc (Option.get_dfl Location.dummy loc) (Option.get_dfl [] a, b)
+
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced)
   =
+  let decl_loc = loc decl in
   match unloc decl with
   | `Entry (x, args, pt, i) -> begin
       let env, decl =
@@ -6878,15 +6883,16 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_args   = List.pmap (fun x -> x) args;
                 ad_getter = false;
                 ad_ret_t  = ret;
-                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
-                ad_callby = Option.get_dfl [] (fst callby), snd callby;
+                ad_srcby  = for_csby srcby;
+                ad_callby = for_csby callby;
                 ad_stateis= stateis;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_funs   = funs;
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_actfs  = actfs; } in
+                ad_actfs  = actfs;
+                ad_loc    = decl_loc; } in
 
             (env, decl))
 
@@ -6909,15 +6915,16 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_args   = List.pmap (fun x -> x) args;
                 ad_getter = true;
                 ad_ret_t  = ret;
-                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
-                ad_callby = Option.get_dfl [] (fst callby), snd callby;
+                ad_srcby  = for_csby srcby;
+                ad_callby = for_csby callby;
                 ad_stateis= stateis;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_funs   = funs;
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_actfs  = actfs; } in
+                ad_actfs  = actfs;
+                ad_loc    = decl_loc; } in
 
             (env, decl))
 
@@ -6947,7 +6954,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 env None in
             env, Option.map fst aout, Option.map snd aout in
 
-          let from_ = for_state_formula ?enum env from_ in
+          let from_ = for_state_formula from_.plloc ?enum env from_ in
           let env, (_ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, _effect) =
             for_entry env entrys None None in
 
@@ -6959,15 +6966,16 @@ let for_acttx_decl (env : env) (decl : acttx loced)
               ad_args   = List.pmap (fun x -> x) args;
               ad_getter = false;
               ad_ret_t  = None;
-              ad_srcby  = Option.get_dfl [] (fst srcby),  snd srcby;
-              ad_callby = Option.get_dfl [] (fst callby), snd callby;
+              ad_srcby  = for_csby srcby;
+              ad_callby = for_csby callby;
               ad_stateis= stateis;
               ad_effect = Some (`Tx (from_, tx));
               ad_funs   = funs;
               ad_csts   = Option.get_dfl [] csts;
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
-              ad_actfs  = actfs; }
+              ad_actfs  = actfs;
+              ad_loc    = decl_loc; }
 
           in (env, decl))
 
@@ -7154,7 +7162,7 @@ let functions_of_fdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let transentrys_of_tdecls tdecls =
-  let for_calledby ocb : (A.rexpr * A.pterm option) option =
+  let for_calledby {pldesc = ocb; plloc = locc} : (A.rexpr * A.pterm option) loced option =
     match fst ocb with [] -> None | c :: cb ->
 
       let for1 = fun (x : A.pterm option loced) ->
@@ -7173,11 +7181,11 @@ let transentrys_of_tdecls tdecls =
       let aout = List.fold_left
           (fun acc c' ->  A.mk_sp (A.Ror (acc, for1 c')))
           (for1 c) cb
-      in Some (aout, snd ocb)
+      in Some (mkloc locc (aout, snd ocb))
   in
 
   let for1 tdecl =
-    let mkl (x, c, e) =  A.{ label = x; term = c; error = e; loc = L.dummy; } in
+    let mkl {pldesc = (x, c, e); plloc = loc} =  A.{ label = x; term = c; error = e; loc = loc; } in
 
     let transition =
       match tdecl.ad_effect with
@@ -7209,7 +7217,7 @@ let transentrys_of_tdecls tdecls =
         transition      = transition;
         functions       = functions_of_fdecls tdecl.ad_funs;
         effect          = effect;
-        loc             = loc tdecl.ad_name; }
+        loc             = tdecl.ad_loc; }
 
   in
   let getters, entries = List.fold_right (fun (x : A.transaction) (g, e) -> match x.kind with | Entry -> (g, x::e) | Getter _ -> (x::g, e) ) (List.map for1 (List.pmap id tdecls)) ([], []) in

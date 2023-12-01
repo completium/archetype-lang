@@ -256,12 +256,12 @@ and s_function = {
 
 and entry_properties = {
   accept_transfer : bool * expr option;
-  sourcedby       : (expr * expr option) option;
-  calledby        : (expr * expr option) option;
-  state_is        : (lident * expr option) option;
-  constants       : ((lident * expr * expr option) list) option;
-  require         : ((lident * expr * expr option) list) option;
-  failif          : ((lident * expr * expr option) list) option;
+  sourcedby       : (expr * expr option) loced option;
+  calledby        : (expr * expr option) loced option;
+  state_is        : (lident * expr option) loced option;
+  constants       : ((lident * expr * expr option) loced list) option;
+  require         : ((lident * expr * expr option) loced list) option;
+  failif          : ((lident * expr * expr option) loced list) option;
   functions       : (s_function loced) list;
 }
 

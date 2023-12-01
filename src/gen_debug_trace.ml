@@ -1,4 +1,19 @@
+module M = Model
 module T = Michelson
+
+type lcc = {
+  line: int;
+  col: int;
+  char: int
+}
+[@@deriving yojson, show {with_path = false}]
+
+type range = {
+  name: string;
+  begin_: lcc;
+  end_: lcc;
+}
+[@@deriving yojson, show {with_path = false}]
 
 type node_micheline =
   | Nprim of prim
@@ -19,9 +34,37 @@ and micheline = {
 }
 [@@deriving show {with_path = false}]
 
+type arg = {
+  name: string;
+  type_: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entrypoint = {
+  name: string;
+  args: arg list;
+  range: range;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type storage_item = {
+  name: string;
+  type_: string;
+  value: string option;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type interface = {
+  entrypoints: entrypoint list;
+  storage: storage_item list;
+  const_params: storage_item list;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type debug_trace = {
   name: string;
   path: string;
+  interface: interface;
   contract: micheline;
 }
 [@@deriving show {with_path = false}]
@@ -93,7 +136,7 @@ and data_to_micheline (d : T.data) : micheline =
   | Dnone        -> mk_mich_prim "None"
   | Dlist l      -> mk_mich_array (List.map f l)
   | Delt (l, r)  -> mk_mich_prim ~args:[f l; f r] "Elt"
-  | Dvar (_x, _t, _b)  -> assert false (* TODO *)
+  | Dvar (x, _t, _b)  -> mk_mich_prim x (* TODO *)
   (* begin
       match t.node with
       | Taddress                -> Ovar (OMVstring x)
@@ -133,6 +176,27 @@ and data_to_micheline (d : T.data) : micheline =
   | Dcode c           -> code_to_micheline c
   | Dlambda_rec c     -> mk_mich_prim ~args:[code_to_micheline c] "Lambda_rec"
   | Dconstant v       -> mk_mich_prim ~args:[mk_mich_string v] "constant"
+
+and obj_micheline_to_micheline (obj : T.obj_micheline) : micheline =
+  let mk node : micheline =  {node = node; debug = None} in
+  let rec aux (obj : T.obj_micheline) : micheline =
+    match obj with
+    | Oprim p -> mk (Nprim ({prim = p.prim; args = List.map aux p.args; annots = p.annots}))
+    | Ostring v -> mk (Nstring v)
+    | Obytes v -> mk (Nbytes v)
+    | Oint v ->  mk (Nint v)
+    | Oarray v -> mk (Narray (List.map aux v))
+    | Ovar v -> begin
+        let f id = mk (Nprim ({prim = id; args = []; annots = []})) in
+        match v with
+        | OMVfree id -> f id
+        | OMVint (id, _) -> f id
+        | OMVstring id -> f id
+        | OMVbytes id -> f id
+        | OMVif (id, _, _) -> f id
+      end
+  in
+  aux obj
 
 and code_to_micheline (code : T.code) : micheline =
   let f = code_to_micheline in
@@ -209,7 +273,7 @@ and code_to_micheline (code : T.code) : micheline =
   | BALANCE                  -> mk "BALANCE"
   | CHAIN_ID                 -> mk "CHAIN_ID"
   | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
-  | CREATE_CONTRACT _c       -> mk ~args:[] "CREATE_CONTRACT" (* TODO: obj_micheline *)
+  | CREATE_CONTRACT c        -> mk ~args:[obj_micheline_to_micheline c] "CREATE_CONTRACT"
   | EMIT (t, a)              -> mk ~args:[ft t] ~annots:(fan a) "EMIT"
   | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
   | LEVEL                    -> mk "LEVEL"
@@ -269,12 +333,50 @@ and code_to_micheline (code : T.code) : micheline =
   (* Custom *)
   | CUSTOM _c                -> assert false (* TODO: obj_micheline *)
 
-let generate_debug_trace_json (michelson : T.michelson) : debug_trace =
+let for_interface (model : M.model) : interface =
+  let for_range (l : Location.t) : range =
+    let for_fcc line col char : lcc = {line; col; char} in
+    let sl, sc = l.loc_start in
+    let el, ec = l.loc_end in
+    {name = l.loc_fname; begin_ = for_fcc sl sc l.loc_bchar ; end_ = for_fcc el ec l.loc_echar  }
+  in
+
+  let for_type (ty : M.type_) : string =
+    let type_michelson = Gen_michelson.to_type model ty in
+    Format.asprintf "%a" Printer_michelson.pp_type type_michelson
+  in
+
+  let for_data (model : M.model) (d : M.mterm) : string option =
+    d
+    |> Gen_michelson.to_simple_data model
+    |> Option.map (Format.asprintf "%a" Printer_michelson.pp_data)
+  in
+
+  let for_interface_entrypoint (fs : M.function_struct) : entrypoint =
+    let for_argument arg : arg =
+      {name = (M.unloc_mident (Tools.proj3_1 arg)); type_ = (for_type (Tools.proj3_2 arg))}
+    in
+    {name = (M.unloc_mident fs.name); args = List.map for_argument fs.args; range = for_range fs.loc }
+  in
+  let for_interface_storage (model : M.model) =
+    (* let po = Gen_contract_interface.get_var_decls_size model in
+       let s = Gen_contract_interface.for_storage_internal model po in *)
+    List.map (fun (si : Model.storage_item) -> {name = (Model.unloc_mident si.id); type_ = for_type (si.typ); value = for_data model si.default }) model.storage
+    (* List.map (fun (name, ty, _const, default) -> {name = name; type_ = for_type ty; value = Option.bind default (for_data model)}) s *)
+  in
+  let interface_entrypoints = List.map for_interface_entrypoint (List.fold_right (fun (x : M.function_node) accu -> match x with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
+  let interface_storage = for_interface_storage model in
+  let interface_const_params = model.parameters |> List.filter (fun (x : Model.parameter) -> x.const) |> List.map (fun (x : Model.parameter) -> {name = (Model.unloc_mident x.name); type_ = for_type (x.typ); value = Option.bind x.value (for_data model) }) in
+  let interface : interface = {entrypoints = interface_entrypoints; storage = interface_storage; const_params = interface_const_params } in
+  interface
+
+let generate_debug_trace_json (model : M.model) (michelson : T.michelson) : debug_trace =
   let storage = mk_mich_prim "storage" ~args:[type_to_micheline michelson.storage] in
   let parameter = mk_mich_prim "parameter" ~args:[type_to_micheline michelson.parameter] in
   let code = mk_mich_prim "code" ~args:[code_to_micheline michelson.code] in
   let contract = mk_mich_array [storage; parameter; code] in
-  let res : debug_trace = {name = ""; path = ""; contract = contract} in
+  let interface = for_interface model in
+  let res : debug_trace = {name = (Location.unloc model.name); path = ""; interface = interface; contract = contract} in
   res
 
 let pp_range fmt (l : Location.t) =
@@ -298,7 +400,7 @@ let pp_decl_bound fmt (decl_bound : T.decl_bound) =
 let pp_debug_ fmt (debug : T.debug) =
   let pp_option = Printer_tools.pp_option in
   let pp_list = Printer_tools.pp_list in
-  let pp_stack_item fmt (si : T.stack_item) = Format.fprintf fmt "{\"name\":\"%s\"}" si.stack_item_name in
+  let pp_stack_item fmt (si : T.stack_item) = Format.fprintf fmt "{\"name\":\"%s\", \"kind\":\"%s\"}" si.stack_item_name si.stack_item_kind in
   Format.fprintf fmt ",\"debug\":{\"stack\":[%a]%a%a}"
     (pp_list "," pp_stack_item) debug.stack
     (pp_option pp_range) debug.loc
@@ -324,4 +426,7 @@ let rec pp_micheline_ fmt (mich : micheline) =
   | Narray  v -> Format.fprintf fmt "[%a]" (Printer_tools.pp_list "," pp_micheline_) v
 
 let pp_trace_json fmt (debug_trace : debug_trace) =
-  Format.fprintf fmt "{\"contract\":%a}\n" pp_micheline_ debug_trace.contract
+  Format.fprintf fmt "{\"name\":\"%s\",\"interface\":%s,\"contract\":%a}\n"
+    debug_trace.name
+    (Yojson.Safe.to_string (interface_to_yojson debug_trace.interface))
+    pp_micheline_ debug_trace.contract

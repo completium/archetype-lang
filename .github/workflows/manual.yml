@@ -63,9 +63,17 @@ jobs:
       working-directory: ./check
       run: npm run set_binary
 
+    - name: show_completium_cli_version
+      working-directory: ./check
+      run: npm run show_completium_cli_version
+
     - name: show_archetype_version
       working-directory: ./check
       run: npm run show_archetype_version
+
+    - name: show_tezos_client_version
+      working-directory: ./check
+      run: npm run show_tezos_client_version
 
     - name: completium_add_users
       working-directory: ./check
@@ -78,3 +86,4 @@ jobs:
     - name: test
       working-directory: ./check
       run: npm test
+

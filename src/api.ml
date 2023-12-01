@@ -67,6 +67,7 @@ let set_options settings =
   Archetype.Options.opt_with_parameters := process_boolean_false "with_parameters";
   Archetype.Options.opt_contract_interface := process_boolean_false "contract_interface";
   Archetype.Options.opt_contract_interface_michelson := process_boolean_false "contract_interface_michelson";
+  Archetype.Options.opt_g := process_boolean_false "g";
 
   (* Archetype.Options.opt_vids             := "vids" []; *)
   ()

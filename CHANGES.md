@@ -6,8 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+  - new feature
+
+## [1.5.0] - 2023-11-23
+### Added
+  - debugger output
   - `match_detach` instruction
   - multiple variable declaration
+  - `open_chest` update
+### Fixed
+  - `nat_to_string` bug (since 1.4.3 version)
 
 ## [1.4.3] - 2023-06-02
 ### Added

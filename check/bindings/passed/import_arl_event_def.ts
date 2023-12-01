@@ -41,7 +41,7 @@ export class Import_arl_event_def {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "my_event"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return my_event.from_mich(x);
+                        return my_event.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });

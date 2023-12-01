@@ -203,7 +203,7 @@ let output (model : Model.model) : string =
                       Format.fprintf fmt "%s" (Gen_extra.generate_contract_metadata ~only_views:false model offchain_views)
                     end
                   | DebugTrace -> begin
-                      let debug_trace : Gen_debug_trace.debug_trace = Gen_debug_trace.generate_debug_trace_json michelson in
+                      let debug_trace : Gen_debug_trace.debug_trace = Gen_debug_trace.generate_debug_trace_json model michelson in
                       if !Options.opt_raw_debug_trace
                           then Format.fprintf fmt "%a@." Gen_debug_trace.pp_debug_trace  debug_trace
                           else Format.fprintf fmt "%a@." Gen_debug_trace.pp_trace_json   debug_trace
@@ -253,6 +253,7 @@ let rec toolchain ?(debug=false) model =
     let rec aux (mt : Model.mterm) : Model.mterm =
       match mt.node with
       | Mcreatecontract (Model.CCArl(id, args), okh, am) -> begin
+          let mloc = mt.loc in
           let cc_model = List.find (fun (x : Model.model) -> String.equal id (Location.unloc x.name)) model.cc_models in
           let cc_model = {cc_model with parameters = List.map (fun (p : M.parameter) ->
               if p.const
@@ -287,7 +288,7 @@ let rec toolchain ?(debug=false) model =
               v
             ) |> M.mk_pair in
           let ms_content = Michelson.Utils.michelson_to_obj_micheline michelson in
-          Model.mk_mterm (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
+          Model.mk_mterm ~loc:mloc (Model.Mcreatecontract(Model.CCTz({ms_content = ms_content}, storage_data), okh, am)) Model.tunit
         end
       | _ -> Model.map_mterm aux mt
     in

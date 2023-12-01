@@ -35,6 +35,7 @@ import * as asset_init_by_const_key from '../bindings/passed/asset_init_by_const
 import * as asset_init_by_const_key_parameter from '../bindings/passed/asset_init_by_const_key_parameter'
 import * as asset_initializedby_aggregate_empty from '../bindings/passed/asset_initializedby_aggregate_empty'
 import * as asset_initializedby_aggregate_filled from '../bindings/passed/asset_initializedby_aggregate_filled'
+import * as asset_instructions from '../bindings/passed/asset_instructions'
 import * as asset_iterable_big_map from '../bindings/passed/asset_iterable_big_map'
 import * as asset_iterable_big_map_effect_add from '../bindings/passed/asset_iterable_big_map_effect_add'
 import * as asset_iterable_big_map_effect_addupdate from '../bindings/passed/asset_iterable_big_map_effect_addupdate'
@@ -854,6 +855,7 @@ import * as multivars1 from '../bindings/passed/multivars1'
 import * as multivars_simple from '../bindings/passed/multivars_simple'
 import * as mutez_to_nat from '../bindings/passed/mutez_to_nat'
 import * as nat_to_string from '../bindings/passed/nat_to_string'
+import * as nat_to_string_2 from '../bindings/passed/nat_to_string_2'
 import * as nested_for from '../bindings/passed/nested_for'
 import * as nested_if_return from '../bindings/passed/nested_if_return'
 import * as no_entrypoint from '../bindings/passed/no_entrypoint'
@@ -1860,6 +1862,18 @@ describe('passed', async () => {
     assert(o_asset[4][1] == "str4")
     assert(o_asset[5][0].equals(new Nat(5)))
     assert(o_asset[5][1] == "str5")
+  })
+
+  it('asset_instructions', async () => {
+    await asset_instructions.asset_instructions.deploy({ as: alice })
+
+    const my_asset_before = asset_instructions.asset_instructions.get_my_asset()
+    assert((await my_asset_before).length == 0)
+
+    await asset_instructions.asset_instructions.exec({ as: alice })
+
+    const my_asset_after = asset_instructions.asset_instructions.get_my_asset()
+    assert((await my_asset_after).length == 0)
   })
 
   it('asset_iterable_big_map', async () => {
@@ -15386,6 +15400,26 @@ describe('passed', async () => {
 
     const res_0 = await nat_to_string.nat_to_string.get_res()
     assert(res_0 == "0")
+  })
+
+  it('nat_to_string_2', async () => {
+    await nat_to_string_2.nat_to_string_2.deploy({ as: alice })
+
+    const s1_before = await nat_to_string_2.nat_to_string_2.get_s1()
+    const s2_before = await nat_to_string_2.nat_to_string_2.get_s2()
+    const bal_before = await nat_to_string_2.nat_to_string_2.get_bal()
+    assert(s1_before == "")
+    assert(s2_before == "")
+    assert(bal_before.equals(new Nat(1)))
+
+    await nat_to_string_2.nat_to_string_2.callback(new Nat(100), { as: alice })
+
+    const s1_after = await nat_to_string_2.nat_to_string_2.get_s1()
+    const s2_after = await nat_to_string_2.nat_to_string_2.get_s2()
+    const bal_after = await nat_to_string_2.nat_to_string_2.get_bal()
+    assert(s1_after == "100")
+    assert(s2_after == "1000")
+    assert(bal_after.equals(new Nat(100)))
   })
 
   it('nested_for', async () => {

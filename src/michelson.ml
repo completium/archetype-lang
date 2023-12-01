@@ -245,6 +245,7 @@ and code_node =
 
 and stack_item = {
   stack_item_name: string;
+  stack_item_kind: string;
   stack_item_type: type_ option;
 }
 
@@ -1678,18 +1679,19 @@ end = struct
         b0 && b1, f x y
       in
 
+      let debug = c.debug in
       match c.node with
-      | SEQ x             -> g x (fun l -> mk_code (SEQ (l)))
-      | IF (x, y)         -> h x y (fun a b -> mk_code (IF (a, b)))
-      | IF_NONE (x, y)    -> h x y (fun a b -> mk_code (IF_NONE (a, b)))
-      | IF_LEFT (x, y)    -> h x y (fun a b -> mk_code (IF_LEFT (a, b)))
-      | IF_CONS (x, y)    -> h x y (fun a b -> mk_code (IF_CONS (a, b)))
-      | MAP x             -> g x (fun l -> mk_code (MAP (l)))
-      | ITER x            -> g x (fun l -> mk_code (ITER (l)))
-      | LOOP x            -> g x (fun l -> mk_code (LOOP (l)))
-      | LOOP_LEFT x       -> g x (fun l -> mk_code (LOOP_LEFT (l)))
-      | DIP (n, x)        -> g x (fun l -> mk_code (DIP (n, l)))
-      | LAMBDA (a, b, c)  -> g c (fun l -> mk_code (LAMBDA (a, b, l)))
+      | SEQ x             -> g x   (fun l   -> mk_code ?debug (SEQ (l)))
+      | IF (x, y)         -> h x y (fun a b -> mk_code ?debug (IF (a, b)))
+      | IF_NONE (x, y)    -> h x y (fun a b -> mk_code ?debug (IF_NONE (a, b)))
+      | IF_LEFT (x, y)    -> h x y (fun a b -> mk_code ?debug (IF_LEFT (a, b)))
+      | IF_CONS (x, y)    -> h x y (fun a b -> mk_code ?debug (IF_CONS (a, b)))
+      | MAP x             -> g x   (fun l   -> mk_code ?debug (MAP (l)))
+      | ITER x            -> g x   (fun l   -> mk_code ?debug (ITER (l)))
+      | LOOP x            -> g x   (fun l   -> mk_code ?debug (LOOP (l)))
+      | LOOP_LEFT x       -> g x   (fun l   -> mk_code ?debug (LOOP_LEFT (l)))
+      | DIP (n, x)        -> g x   (fun l   -> mk_code ?debug (DIP (n, l)))
+      | LAMBDA (a, b, c)  -> g c   (fun l   -> mk_code ?debug (LAMBDA (a, b, l)))
       | _                 -> false, c
     in
     aux c |> snd

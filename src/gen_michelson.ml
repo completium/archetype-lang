@@ -275,6 +275,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mlitset    l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
   | Mlitlist   l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
   | Mlitmap    (_, l)          -> let v = dolist2 l in (match v with | Some l -> Some (T.Dlist (List.map (fun (x, y) -> T.Delt (x, y)) l)) | None -> None)
+  | Mlitrecord l               -> l |> List.map snd |> dolist |> (fun x -> match x with | Some v -> Some (to_one_data v) | None -> None)
   | Muminus    v               -> let v = f v in (match v with | Some (Dint n) -> Some (T.Dint (Big_int.mult_int_big_int (-1) n)) | _ -> None)
   | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
   | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)
@@ -1622,27 +1623,50 @@ type stack_item = {
 }
 [@@deriving show {with_path = false}]
 
+type var_location =
+  | VLstorage
+  | VLargument
+  | VLlocal
+[@@deriving show {with_path = false}]
+
 type env = {
   stack : stack_item list;
+  vars : (string * var_location) list;
   fail : bool;
 }
 [@@deriving show {with_path = false}]
 
-let process_debug ?decl_bound ?loc (env : env) : T.debug =
-  let stack : T.stack_item list = List.map (fun (x : stack_item) -> T.{stack_item_name = x.id; stack_item_type = None} ) env.stack in
-  let res : T.debug = { decl_bound; stack; loc } in
-  res
+let process_debug ?decl_bound ?loc (env : env) : T.debug option =
+  let get_stack (env : env) : T.stack_item list = List.map (fun (x : stack_item) ->
+      let kind = (match (List.assoc_opt x.id env.vars) with | Some VLstorage -> "storage" | Some VLargument -> "argument" | Some VLlocal | None -> "local") in
+      T.{stack_item_name = x.id; stack_item_kind = kind; stack_item_type = None} ) env.stack
+  in
+  match loc, decl_bound with
+  | Some loc, _ when not (Location.isdummy loc) -> begin
+      let stack = get_stack env in
+      let res : T.debug = { decl_bound; stack; loc = Some loc } in
+      Some res
+    end
+  | _, Some _ ->
+    let stack = get_stack env in
+    Some { decl_bound; stack; loc = None }
+  | _ -> None
 
-let rec assign_last_seq (debug : T.debug) (cs : T.code list) =
+
+let rec assign_last_seq_gen f (cs : T.code list) =
   match List.rev cs with
   | a::l -> begin
       match a.node with
-      | T.SEQ ll -> List.rev ({a with node = T.SEQ (assign_last_seq debug ll)}::l)
-      | _ -> List.rev ({a with debug = Some debug}::l)
+      | T.SEQ ll -> List.rev ({a with node = T.SEQ (assign_last_seq_gen f ll)}::l)
+      | _ -> List.rev ({a with debug = f a.debug}::l)
     end
   | [] -> []
 
-let mk_env ?(stack=[]) () = { stack = stack; fail = false; }
+let assign_last_seq (debug : T.debug option) (cs : T.code list) =
+  let f _ = debug in
+  assign_last_seq_gen f cs
+
+let mk_env ?(stack=[]) ?(vars=[]) () = { stack = stack; vars = vars; fail = false; }
 let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with stack = { id = "_"; populated = true}::env.stack }
 let dec_env (env : env) = { env with stack = match env.stack with | _::t -> t | _ -> emit_error StackEmptyDec }
@@ -1899,14 +1923,21 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       (* Format.eprintf "%a@\n" (pp_list "," pp_str) ids; *)
       let v = if n <= 1 then v else T.cseq [v; T.cunpair_n n] in
       let env = List.fold_right (fun x env -> add_var_env env x) ids (dec_env env) in
-      let debug = process_debug ?loc:i.loc env in
-      let v = {v with debug = Some debug} in
       (* print_env ~str:("IletIn " ^ id ^ " before") env; *)
       let b, env = fe env b in
       (* print_env ~str:("IletIn " ^ id ^ " after") env; *)
       let cs, nenv =
         List.fold_left (fun (b, env) id -> begin
               let idx, si = get_pos_stack_item env id in
+              let debug = process_debug ?loc:i.loc env in
+              let b =
+                match b with
+                | [] -> []
+                | hd::t -> begin
+                    let nhd = if (match ids with | [id] -> String.equal (String.sub id 0 1) "_" | _ -> false) then [hd] else assign_last_seq debug [hd]  in
+                    nhd @ t
+                  end
+              in
               let env = rm_var_env env id in
               (* Format.eprintf "IletIn: id:%s idx:%d si:%a " id idx pp_stack_item si; *)
               let c =
@@ -1915,6 +1946,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
                 | 0  -> b @ (if si.populated then [T.cdrop 1] else [])
                 | 1  -> b @ (if si.populated then [T.cswap (); T.cdrop 1 ] else [])
                 | _  -> b @ (if si.populated then [T.cdip (idx, [T.cdrop 1])] else [])
+              in
+              let c =
+                if (match ids with | [id] -> String.equal (String.sub id 0 1) "_" | _ -> false)
+                then let debug = process_debug ?loc:i.loc env in assign_last_seq debug c
+                else c
               in
               (* print_env ~str:("IletIn " ^ id ^ " final") nenv; *)
               c, env
@@ -2010,7 +2046,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         | _, true     -> envt
         | _           -> enve
       in
-      T.cseq [ c; T.cif ([t], [e]) ], env
+      let debug = process_debug ?loc:i.loc env in
+      T.cseq [ c; T.cif ?debug ([t], [e]) ], env
     end
 
   | Iifnone (v, t, id, s, _ty) -> begin
@@ -2075,23 +2112,27 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iiter (ids, c, b) -> begin
       let c, env = f c in
-      match ids with
-      | [id] -> begin
-          let nenv = dec_env env in
-          let env_body = add_var_env nenv id in
-          let b, env_body2 = fe env_body b in
-          let _, si = get_pos_stack_item env_body2 id in
-          T.cseq T.[c; citer ([b] @ (if si.populated then [cdrop 1] else []))], nenv
-        end
-      | [k; v] -> begin
-          let nenv = dec_env env in
-          let env_body = add_var_env (add_var_env nenv v) k in
-          let b, env_body2 = fe env_body b in
-          let _, si_k = get_pos_stack_item env_body2 k in
-          let _, si_v = get_pos_stack_item env_body2 v in
-          T.cseq T.[c; citer ([cunpair (); b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
-        end
-      | _ -> assert false
+      let l, nenv = match ids with
+        | [id] -> begin
+            let nenv = dec_env env in
+            let env_body = add_var_env nenv id in
+            let b, env_body2 = fe env_body b in
+            let _, si = get_pos_stack_item env_body2 id in
+            T.[c; citer ([b] @ (if si.populated then [cdrop 1] else []))], nenv
+          end
+        | [k; v] -> begin
+            let nenv = dec_env env in
+            let env_body = add_var_env (add_var_env nenv v) k in
+            let b, env_body2 = fe env_body b in
+            let _, si_k = get_pos_stack_item env_body2 k in
+            let _, si_v = get_pos_stack_item env_body2 v in
+            T.[c; citer ([cunpair (); b] @ (if si_k.populated then [cdrop 1] else []) @ (if si_v.populated then [cdrop 1] else []))], nenv
+          end
+        | _ -> assert false
+      in
+      let debug = process_debug ?loc:i.loc nenv in
+      let l = match List.rev l with | i::tl -> List.rev tl @ [{i with debug = debug}] | [] -> [] in
+      T.cseq l, nenv
     end
 
   | Iloopleft (l, i, b) -> begin
@@ -2222,8 +2263,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iconst (t, e) -> begin
       let nenv = inc_env env in
-      let debug = process_debug ?loc:i.loc nenv in
-      T.cpush ~debug (rar t, e), nenv
+      (* let debug = process_debug ?loc:i.loc nenv in *)
+      T.cpush (rar t, e), nenv
     end
 
   | Icompare (op, lhs, rhs) -> begin
@@ -2480,14 +2521,18 @@ and build_view storage_list (v : T.func) : T.view_struct =
 
     | args, [] ->
       let code = [T.ccar ()] @ unfold_all args in
-      let env = { env with stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
+      let env = { env with
+                  vars = (List.map (fun x -> (fst x, VLargument))) args;
+                  stack = (List.map (fun x -> {id = fst x; populated = true}) args) @ env.stack } in
       code, env, List.length args
 
     | [], stovars ->
       let scode, svs = extract_storage_vars stovars in
       (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
       let code = [T.ccdr ()] @ scode in
-      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
+      let env = { env with
+                  vars = (List.map (fun x -> (x, VLstorage))) stovars;
+                  stack = (List.map (fun x -> {id = x; populated = true}) svs) @ env.stack } in
       code, env, List.length svs
 
     | args, stovars ->
@@ -2496,7 +2541,9 @@ and build_view storage_list (v : T.func) : T.view_struct =
       let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
       let code = [T.cunpair ()] @ scode @ acode in
       let avs = List.map fst args in
-      let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
+      let env = { env with
+                  vars = ((List.map (fun x -> (x, VLargument))) avs) @ ((List.map (fun x -> (x, VLstorage))) svs);
+                  stack = (List.map (fun x -> {id = x; populated = true}) (avs @ svs)) @ env.stack } in
       code, env, List.length (svs @ avs)
 
   in
@@ -2553,7 +2600,7 @@ and to_michelson (ir : T.ir) : T.michelson =
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~stack:(args |> List.map (fun x -> {id = fst x; populated = true})) () in
+                let env = mk_env ~vars:(args |> List.map (fun x -> (fst x, VLargument))) ~stack:(args |> List.map (fun x -> {id = fst x; populated = true})) () in
                 let nb_args = List.length args in
                 (* let nb_as = nb_args - 1 in *)
                 let unfold_args = unfold_n nb_args in
@@ -2580,8 +2627,9 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.cdig n] else []), (if df > 0 then [T.cdip (1, [T.cdrop df]) ] else []) in
 
-    let stack            = (let l = ir.storage_list in if List.is_empty l then [{id = "_"; populated = true}] else List.map (fun (x, _, _) -> {id = x; populated = true}) l) @ (List.map (fun x -> {id = x; populated = true}) ops_var) @ (List.rev (List.map (fun x -> {id = x; populated = true}) funids)) in
-    let env             = mk_env () ~stack in
+    let stack           = (let l = ir.storage_list in if List.is_empty l then [{id = "_"; populated = true}] else List.map (fun (x, _, _) -> {id = x; populated = true}) l) @ (List.map (fun x -> {id = x; populated = true}) ops_var) @ (List.rev (List.map (fun x -> {id = x; populated = true}) funids)) in
+    let vars            = (List.map (fun x -> (Tools.proj3_1 x, VLstorage)) ir.storage_list) in
+    let env             = mk_env () ~vars ~stack in
     let nb_storage_item = List.length ir.storage_list in
     let unfold_storage  = unfold_n nb_storage_item  in
     let fold_storage    = fold_n nb_storage_item in
@@ -2591,12 +2639,12 @@ and to_michelson (ir : T.ir) : T.michelson =
       (* stack state : functions, (operations list)?, unfolded storage, extra_argument? , argument *)
       match e.args, e.eargs with
       | [], [] -> begin
-          let debug_begin = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "begin"} env in
           let code, env = instruction_to_code env e.body in
-          let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
+          let decl_bound : T.decl_bound = {db_kind = "entry"; db_name = e.name; db_bound = "end"} in
+          let f (od : T.debug option) = (match od with | Some d -> Some {d with decl_bound = Some decl_bound} | None -> process_debug ~decl_bound env) in
           let seq_code = [code] in
-          let seq_code = assign_last_seq debug_end seq_code in
-          T.cseq ([T.cdrop ~debug:debug_begin 1] @ seq_code @ fold_storage @ eops @ [T.cpair ()])
+          let seq_code = assign_last_seq_gen f seq_code in
+          T.cseq ([T.cdrop 1] @ seq_code @ fold_storage @ eops @ [T.cpair ()])
         end
       | l, m -> begin
           let nb_eargs = List.length m in
@@ -2613,11 +2661,12 @@ and to_michelson (ir : T.ir) : T.michelson =
           let nb_as = nb_args - 1 in
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
-          let env = { env with stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
+          let env = { env with vars = env.vars @ (List.map (fun x -> (x, VLargument)) args) ; stack = (List.map (fun x -> {id = x; populated = true}) (args @ eargs)) @ env.stack } in
           let code, nenv = instruction_to_code env e.body in
           let diff = List.count (fun x -> not x.populated) nenv.stack in
           (* Format.eprintf "diff: %n\n" diff; *)
-          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
+          let debug_end = process_debug ~decl_bound:{db_kind = "entry"; db_name= e.name; db_bound = "end"} env in
+          T.cseq (unfold_eargs @ unfold_args @ [code] @ [T.cdrop ?debug:debug_end (nb_args + nb_eargs - diff)] @ fold_storage @ eops @ [T.cpair ()])
         end
     in
 

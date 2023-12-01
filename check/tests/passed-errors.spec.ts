@@ -133,6 +133,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/asset_initializedby_aggregate_filled.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('asset_instructions', async () => {
+    const stat = compile("../tests/passed/asset_instructions.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('asset_iterable_big_map', async () => {
     const stat = compile("../tests/passed/asset_iterable_big_map.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -3407,6 +3411,10 @@ describe('passed-errors', async () => {
   })
   it('nat_to_string', async () => {
     const stat = compile("../tests/passed/nat_to_string.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('nat_to_string_2', async () => {
+    const stat = compile("../tests/passed/nat_to_string_2.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
   it('nested_for', async () => {

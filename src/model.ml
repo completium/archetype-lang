@@ -479,7 +479,7 @@ and transfer_kind = mterm transfer_kind_gen
 and mterm_gen = {
   node: mterm_gen mterm_node;
   type_: type_;
-  loc : Location.t [@opaque];
+  loc : Location.t;
 }
 [@@deriving show {with_path = false}]
 
@@ -990,9 +990,9 @@ let mk_state_value id = mk_enum_value id (mk_mident (dumloc "state"))
 let mk_btez v = mk_mterm (Mmutez v) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
 
-let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
+let mk_tuple ?loc (l : mterm list) = mk_mterm ?loc (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
 
-let mk_letin id v b = mk_mterm (Mletin([id], LVsimple v, Some v.type_, b, None)) b.type_
+let mk_letin ?loc id v b = mk_mterm ?loc (Mletin([id], LVsimple v, Some v.type_, b, None)) b.type_
 
 let mk_declvar id ty v = mk_mterm (Mdeclvar ([id], Some ty, v, false)) tunit
 let mk_iter id bound_min bound_max body is_nat = mk_mterm (Miter (id, bound_min, bound_max, body, is_nat)) tunit

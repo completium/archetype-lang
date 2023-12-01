@@ -48,14 +48,9 @@
              PUSH nat 0 ;
              UPDATE ;
              PUSH nat 0 ;
-             PUSH nat 10 ;
-             DUP 5 ;
-             EDIV ;
-             IF_NONE
-               { PUSH string "DIV_BY_ZERO" ; FAILWITH }
-               { DUP ; CDR ; SWAP ; DROP 1 } ;
+             DUP 4 ;
              COMPARE ;
-             NEQ ;
+             GT ;
              LOOP { DUP 2 ;
                     DUP 2 ;
                     PUSH nat 10 ;
@@ -78,14 +73,9 @@
                     DIP 1 { DIG 2 ; DROP 1 } ;
                     DUG 2 ;
                     PUSH nat 0 ;
-                    PUSH nat 10 ;
-                    DUP 5 ;
-                    EDIV ;
-                    IF_NONE
-                      { PUSH string "DIV_BY_ZERO" ; FAILWITH }
-                      { DUP ; CDR ; SWAP ; DROP 1 } ;
+                    DUP 4 ;
                     COMPARE ;
-                    NEQ } ;
+                    GT } ;
              DUP 5 ;
              PUSH nat 0 ;
              COMPARE ;

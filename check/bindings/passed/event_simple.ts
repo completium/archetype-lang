@@ -56,7 +56,7 @@ export class Event_simple {
         if (this.address != undefined) {
             el.registerEvent({ source: this.address, filter: tag => { return tag == "even"; }, process: (raw: any, data: el.EventData | undefined) => {
                     const event = (x => {
-                        return even.from_mich(x);
+                        return even.from_mich((att.normalize(x) as att.Micheline));
                     })(raw);
                     ep(event, data);
                 } });
