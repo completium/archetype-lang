@@ -357,13 +357,13 @@ end = struct
   let rec vlocal_of_rstack1 (r : rstack1) =
     match r with
     | #dvar as dv ->
-       let x = vlocal (ty_of_dvar dv) in
-       dvar x, (x :> rstack1)
+      let x = vlocal (ty_of_dvar dv) in
+      dvar x, (x :> rstack1)
 
     | `Paired (r1, r2) ->
-       let e1, x1 = vlocal_of_rstack1 r1 in
-       let e2, x2 = vlocal_of_rstack1 r2 in
-       depair e1 e2, `Paired (x1, x2)
+      let e1, x1 = vlocal_of_rstack1 r1 in
+      let e2, x2 = vlocal_of_rstack1 r2 in
+      depair e1 e2, `Paired (x1, x2)
 
   let rec pp_rstack1 fmt (x : rstack1) =
     match x with
@@ -386,7 +386,7 @@ end = struct
     | #dvar as x, _ -> [DIAssign (x, e)]
     | `Paired (x1, x2), Depair (e1, e2) ->
       let a = vlocal (ty_of_rstack1 x1) in
-        write_var e1 (a :> rstack1)
+      write_var e1 (a :> rstack1)
       @ write_var e2 x2
       @ write_var (dvar a) x1
     | _ -> assert false
@@ -1317,12 +1317,14 @@ end = struct
     | Tpair l      -> T.Dpair (List.map f l)
     | _ -> T.Dint Big_int.zero_big_int(* assert false *)
 
+  let int_to_var (n : int) : string = "x" ^ (string_of_int n)
+
   let for_code (code : dcode) : mterm =
     let ft = for_type in
 
     let for_dvar (v : dvar) : ident =
       match v with
-      | `VLocal  (_, x ) -> "$" ^ (string_of_int x)
+      | `VLocal  (_, x ) -> int_to_var x
       | `VGlobal (_, id) -> id
     in
 
@@ -1447,8 +1449,16 @@ end = struct
                ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
                pp_branch) bs *)
 
-        | DIMatch (c, [("left", _lv, lc) ; ("right", _rv, rc)]) ->
-          mk_mterm (Minstrmatchor (g c, M.mk_mident (dumloc "_"), seq rc, M.mk_mident (dumloc "_"), seq lc)) tunit
+        | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
+          let extract_or_pattern input : mident =
+            match input with
+            | [DVar (_ty, n)] -> M.mk_mident (dumloc (int_to_var n))
+            | [DPair (_p1, _p2)] -> assert false
+            | _ -> assert false
+          in
+          let li = extract_or_pattern lv in
+          let ri = extract_or_pattern rv in
+          mk_mterm (Minstrmatchor (g c, li, seq lc, ri, seq rc)) tunit
 
         | DIFailwith e -> failg (for_expr e)
         | _ -> assert false

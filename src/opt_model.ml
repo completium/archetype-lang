@@ -10,7 +10,7 @@ let build_entries (model : model) : model =
     | _ -> None
   in
   let rec split (code : mterm) : (mterm * mterm) option = match code.node with | Mseq [a] -> split a | Minstrmatchor (_a, _b, c, _d, e) -> Some (c, e) | _ -> None in
-  let process_arg t =
+  let process_arg (t : type_) =
     match t with
     | _ -> [mk_mident (dumloc "arg"), t, None]
   in
