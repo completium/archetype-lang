@@ -9,7 +9,7 @@ export function compile(src : string, settings : object = {}) {
 }
 
 export function compile_from_string(src : string, settings : object = {}) {
-  return api.compile_from_string()(src, settings).trim();
+  return api.compileFromString()(src, settings).trim();
 }
 
 export function decompile(src : string, settings : object = {}) {
@@ -17,7 +17,7 @@ export function decompile(src : string, settings : object = {}) {
 }
 
 export function decompile_from_string(src : string, settings : object = {}) {
-  return api.decompile_from_string()(src, settings).trim();
+  return api.decompileFromString()(src, settings).trim();
 }
 
 export function get_expr(data, settings : object = {}) {

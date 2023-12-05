@@ -113,7 +113,7 @@ let _ =
         set_options s;
         doit Compile.compile_from_path i
       end
-      method compile_from_string i s = begin
+      method compileFromString i s = begin
         set_options s;
         doit Compile.compile_from_string i
       end
@@ -121,7 +121,7 @@ let _ =
         set_options s;
         doit Compile.decompile_from_path i
       end
-      method decompile_from_string i s = begin
+      method decompileFromString i s = begin
         set_options s;
         doit Compile.decompile_from_string i
       end
