@@ -12,6 +12,7 @@ type error_desc =
   | ContainersInAssetContainers of string * string * string
   | DefaultValueOnKeyAsset of ident
   | DuplicatedKeyAsset of ident
+  | ExecOperationsLambda
   | InvalidInitValue
   | NoClearForPartitionAsset of ident
   | NoEmptyContainerForDefaultValue of string * string * container
@@ -33,6 +34,7 @@ let pp_error_desc fmt = function
   | ContainersInAssetContainers (an, fn, an2) -> Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself." an fn an2
   | DefaultValueOnKeyAsset an -> Format.fprintf fmt "Default value on key for asset \"%s\"" an
   | DuplicatedKeyAsset an -> Format.fprintf fmt "duplicate key for '%s'" an
+  | ExecOperationsLambda -> Format.fprintf fmt "ExecOperationsLambda"
   | InvalidInitValue -> Format.fprintf fmt "Invalid value for initialization"
   | NoClearForPartitionAsset an -> Format.fprintf fmt "Clear is not allowed for asset '%s', because this asset is used in a partition." an
   | NoEmptyContainerForDefaultValue (an, fn, c) -> Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container." fn an Printer_model.pp_container c
@@ -4657,6 +4659,27 @@ let check_unused_variables (model : model) =
   in
   List.iter for_function model.functions;
   model
+
+let check_exec_operation_lambda (model : model) =
+  let type_with_operation ty =
+    let rec aux accu (ty : type_) =
+      match get_ntype ty with
+      | Toperation -> true
+      | _ -> fold_typ aux accu ty
+    in
+    aux false ty
+  in
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mexeclambda (l, r) when type_with_operation mt.type_ -> begin
+        let _ = aux ctx l in
+        let _ = aux ctx r in
+        emit_warning (mt.loc, ExecOperationsLambda);
+        mt
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
 
 let remove_import_mterm (model : model) =
   let rec aux ctx (mt : mterm) : mterm =

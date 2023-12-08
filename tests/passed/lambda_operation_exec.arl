@@ -1,0 +1,6 @@
+archetype lambda_op
+
+entry exec(l : lambda<unit, list<operation>>) {
+  const a = 0;
+  operations := exec_lambda(l, Unit)
+}

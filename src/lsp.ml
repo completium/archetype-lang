@@ -246,6 +246,7 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
                       |> Gen_transform.check_asset_key
                       |> Gen_transform.check_invalid_init_value
                       |> Gen_transform.check_unused_variables
+                      |> Gen_transform.check_exec_operation_lambda
               in
               ();
               process_errors ()
