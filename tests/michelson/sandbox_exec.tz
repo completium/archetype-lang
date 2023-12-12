@@ -1,0 +1,5 @@
+{
+  storage unit;
+  parameter (pair (list (ticket (pair nat (option bytes)))) (lambda (list (ticket (pair nat (option bytes)))) (list operation)));
+  code { UNPAIR; UNPAIR; EXEC; PAIR}
+}

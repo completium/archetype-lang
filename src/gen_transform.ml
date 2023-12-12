@@ -21,6 +21,7 @@ type error_desc =
   | NoInitValueForConstParam of ident
   | NoInitValueForParameter of ident
   | NoPutRemoveForIterableBigMapAsset
+  | NoSandboxExecAddress
   | NoSortOnKeyWithMultiKey of ident
   | OnlyLiteralInAssetInit
   | UnknownContract of ident
@@ -43,6 +44,7 @@ let pp_error_desc fmt = function
   | NoInitValueForConstParam id -> Format.fprintf fmt "No initialized value for const parameter: %s" id
   | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
   | NoPutRemoveForIterableBigMapAsset -> Format.fprintf fmt "NoPutRemoveForIterableBigMapAsset"
+  | NoSandboxExecAddress -> Format.fprintf fmt "No sandbox execution contract address found"
   | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
   | OnlyLiteralInAssetInit -> Format.fprintf fmt "Only literal is allowed for asset field initialisation"
   | UnknownContract id -> Format.fprintf fmt "Cannot find type for '%s'" id
@@ -4911,3 +4913,18 @@ let add_builtin_functions (model : model) : model =
 
   let model = {model with functions = funs @ model.functions } in
   model
+
+let remove_sandbox_exec (model : model) : model =
+let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Msandboxexec (a, b, c) -> begin
+        let sandbox_exec_address = match !Options.opt_sandbox_exec_address with | Some v -> v | None -> (emit_error (mt.loc, NoSandboxExecAddress); raise (Error.Stop 5)) in
+        let dest = mk_mterm (Maddress sandbox_exec_address) taddress in
+        let args = mk_tuple [b; a] in
+        let cty = tlist (tticket (ttuple [tnat; toption tbytes])) in
+        let type_ = ttuple [cty; tlambda cty (tlist toperation)] in
+        mk_mterm ~loc:mt.loc (Mtransfer (TKcall(c, "default", type_, dest, args))) tunit
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

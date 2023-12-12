@@ -336,6 +336,8 @@ let to_const = function
   | Copen_chest            -> "open_chest"
   (* event *)
   | Cemit                  -> "emit"
+  (* instrs *)
+  | Csandbox_exec          -> "sandbox_exec"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_longident fmt id

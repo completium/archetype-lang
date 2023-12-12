@@ -793,6 +793,7 @@ let to_ir (model : M.model) : T.ir =
         let op = T.iunop ~loc:mtt.loc (Uemit((to_type model (M.tevent e)), Some ("%" ^ (M.unloc_mident e)))) (f value) in
         T.iassign ~loc:mtt.loc operations (T.ireverse T.toperation (T.ibinop Bcons op (T.ireverse T.toperation vops)))
       end
+    | Msandboxexec _  -> emit_error (UnsupportedTerm ("Msandboxexec"))
     | Mdetach _  -> emit_error (UnsupportedTerm ("Mdetach"))
     | Mmicheline micheline  -> T.imicheline ~loc:mtt.loc micheline [] []
 

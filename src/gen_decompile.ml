@@ -1737,6 +1737,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         A.etransfer tr
       end
     | Memit (a, b) -> A.eemit (dumloc (A.Tref (mident_to_sid a)), None) (f b)
+    | Msandboxexec (_a, _b, _c) -> assert false
     | Mdetach (a, b, _c, d) ->
       let to_detach_kind = function
         | M.DK_option (_, id) -> A.eterm (dumloc id)

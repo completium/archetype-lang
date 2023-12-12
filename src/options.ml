@@ -76,6 +76,7 @@ let opt_out = ref ""
 let opt_contract_interface = ref false
 let opt_contract_interface_michelson = ref false
 let opt_event_well_address : (string option) ref = ref (None : string option)
+let opt_sandbox_exec_address : (string option) ref = ref (Some ("KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL") : string option) (* ghostnet address *)
 let opt_g = ref false
 let opt_path = ref "."
 let opt_ama = ref false

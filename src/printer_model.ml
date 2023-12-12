@@ -377,6 +377,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid e
         f x
 
+    | Msandboxexec (a, b, c) ->
+      Format.fprintf fmt "sandbox_exec(%a, %a, %a)"
+        f a
+        f b
+        f c
+
     | Mdetach (id, dk, _ty, fa) ->
       Format.fprintf fmt "detach %a as %a : %a"
         pp_dk dk

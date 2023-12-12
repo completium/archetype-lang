@@ -1,0 +1,9 @@
+archetype sample_sandbox_exec
+
+entry exec(l : lambda<list<ticket<nat * option<bytes>>>, list<operation>>) {
+  const content : (nat * option<bytes>) = (1, none);
+  const my_ticket ?= create_ticket(content, 1) : "ERROR";
+  sandbox_exec(l, [my_ticket], 1tz)
+  // transfer 0tz to KT1LT82kqFSW1j2wcwVCpiEjUTpkHby98NdZ call default<lambda<list<ticket<nat * option<bytes>>>, list<operation>> * list<ticket<nat * option<bytes>>>>((l, [my_ticket]));
+
+}

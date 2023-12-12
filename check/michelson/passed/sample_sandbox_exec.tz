@@ -1,0 +1,37 @@
+{ storage unit ;
+  parameter (lambda %exec (list (ticket (pair nat (option bytes)))) (list operation)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         NONE bytes ;
+         PUSH nat 1 ;
+         PAIR ;
+         PUSH nat 1 ;
+         DUP 2 ;
+         TICKET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         NIL operation ;
+         NIL operation ;
+         DUP 7 ;
+         ITER { CONS } ;
+         PUSH address "KT1LT82kqFSW1j2wcwVCpiEjUTpkHby98NdZ" ;
+         CONTRACT
+           (pair (lambda (list (ticket (pair nat (option bytes)))) (list operation))
+                 (list (ticket (pair nat (option bytes))))) ;
+         IF_NONE
+           { PUSH string "default" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         PUSH mutez 1000000 ;
+         NIL (ticket (pair nat (option bytes))) ;
+         DIG 5 ;
+         CONS ;
+         DIG 6 ;
+         PAIR ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         ITER { CONS } ;
+         DIP 1 { DIG 2 ; DROP 1 } ;
+         DUG 2 ;
+         DROP 1 ;
+         SWAP ;
+         PAIR } }

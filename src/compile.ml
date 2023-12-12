@@ -297,6 +297,7 @@ let rec toolchain ?(debug=false) model =
   let f = print_debug debug in
   model
   |> f "process_create_contract" process_create_contract
+  |> f "remove_sandbox_exec" remove_sandbox_exec
   |> f "add_builtin_functions" add_builtin_functions
   |> f "remove_unused_function" remove_unused_function
   |> f "process_fail" process_fail

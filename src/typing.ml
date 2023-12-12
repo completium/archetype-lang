@@ -1651,6 +1651,28 @@ let allops : opinfo list =
   ticket_ops @ bls_ops @ mathops @ timelock_ops
 
 (* -------------------------------------------------------------------- *)
+
+type instr_info = {
+  instr_name    : string;
+  instr_const   : A.const;
+  instr_sig     : A.type_ list;
+  instr_side_effect : bool;
+}
+
+let instr instr_name instr_const instr_sig instr_side_effect =
+  {instr_name; instr_const; instr_sig; instr_side_effect}
+
+let instrs = [
+  let cty = A.Tlist (A.Tticket (A.Ttuple [A.vtnat; A.Toption A.vtbytes])) in
+  instr "sandbox_exec" A.Csandbox_exec [A.Tlambda (cty, (A.Tlist A.Toperation)); cty; A.vtcurrency] true
+]
+
+let get_opt_instr name instrs =
+  match List.filter (fun x -> String.equal x.instr_name name) instrs with
+  | [v] -> Some v
+  | _ -> None
+
+(* -------------------------------------------------------------------- *)
 type 'env importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
@@ -6089,45 +6111,71 @@ let rec for_instruction_r
 
     | Eapp (Fident f, args) -> begin
         let lid : A.lident = f |> snd in
-        let opt_f_info = Env.Function.lookup env (unloc_nmid f) in
-
-        if (Option.is_none opt_f_info)
+        let instr_opt = get_opt_instr (unloc lid) instrs in
+        if Option.is_some instr_opt
         then begin
-          Env.emit_error env (loc i, FunctionNotFound (unloc lid));
-          env, mki (Iseq [])
-        end
-        else begin
-
-          let f_info = Option.get opt_f_info in
+          let instr = Option.get instr_opt in
 
           begin
-            match f_info.fs_retty with
-            | Void -> ()
-            | Typed _ -> Env.emit_error env (loc i, FunctionInvalidInstructionVoid)
-          end;
-
-          begin
-            match kind, f_info.fs_side_effect with
+            match kind, instr.instr_side_effect with
             | `View, true -> Env.emit_error env (loc i, CannotCallSideEffectFunctionInView)
             | _ -> ()
           end;
 
-          let is_imported = f |> unloc_nmid |> fst |> (function | Named _ -> true | _ -> false) in
-          begin
-            if is_imported && f_info.fs_side_effect
-            then Env.emit_error env (loc i, CannotImportFunctionWithSideEffect)
-          end;
-
-          if (List.length f_info.fs_args <> List.length args)
+          if (List.length instr.instr_sig <> List.length args)
           then begin
-            Env.emit_error env (loc i, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+            Env.emit_error env (loc i, InvalidNumberOfArguments (List.length instr.instr_sig, List.length args));
             env, mki (Iseq [])
           end
           else begin
-            let tys = List.map snd f_info.fs_args in
+            let tys = instr.instr_sig in
 
             let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
-            env, mki (A.Icall (None, Cid (pt_to_longident f), args))
+            env, mki (A.Icall (None, Cconst instr.instr_const, args))
+          end
+
+        end
+        else begin
+          let opt_f_info = Env.Function.lookup env (unloc_nmid f) in
+
+          if (Option.is_none opt_f_info)
+          then begin
+            Env.emit_error env (loc i, FunctionNotFound (unloc lid));
+            env, mki (Iseq [])
+          end
+          else begin
+
+            let f_info = Option.get opt_f_info in
+
+            begin
+              match f_info.fs_retty with
+              | Void -> ()
+              | Typed _ -> Env.emit_error env (loc i, FunctionInvalidInstructionVoid)
+            end;
+
+            begin
+              match kind, f_info.fs_side_effect with
+              | `View, true -> Env.emit_error env (loc i, CannotCallSideEffectFunctionInView)
+              | _ -> ()
+            end;
+
+            let is_imported = f |> unloc_nmid |> fst |> (function | Named _ -> true | _ -> false) in
+            begin
+              if is_imported && f_info.fs_side_effect
+              then Env.emit_error env (loc i, CannotImportFunctionWithSideEffect)
+            end;
+
+            if (List.length f_info.fs_args <> List.length args)
+            then begin
+              Env.emit_error env (loc i, InvalidNumberOfArguments (List.length f_info.fs_args, List.length args));
+              env, mki (Iseq [])
+            end
+            else begin
+              let tys = List.map snd f_info.fs_args in
+
+              let args = List.map2 (fun ty v -> A.AExpr (for_expr kind env ~ety:ty v)) tys args in
+              env, mki (A.Icall (None, Cid (pt_to_longident f), args))
+            end
           end
         end
       end

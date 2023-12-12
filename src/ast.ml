@@ -262,6 +262,8 @@ type const =
   | Copen_chest
   (* event *)
   | Cemit
+  (* instrs *)
+  | Csandbox_exec
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {

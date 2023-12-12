@@ -3817,6 +3817,10 @@ describe('decomp-dir-passed', async () => {
     const stat = compile("michelson/passed/sample_asset_view.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('sample_sandbox_exec', async () => {
+    const stat = compile("michelson/passed/sample_sandbox_exec.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('sample_view_asset_value', async () => {
     const stat = compile("michelson/passed/sample_view_asset_value.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -5466,4 +5470,3 @@ describe('decomp-dir-passed', async () => {
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
 })
-  

@@ -1317,6 +1317,12 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | _ -> assert false
         end
 
+      | A.Icall (None, A.Cconst A.Csandbox_exec, [AExpr a; AExpr b; AExpr c]) ->
+        let fa = f a in
+        let fb = f b in
+        let fc = f c in
+        M.Msandboxexec (fa, fb, fc)
+
       | A.Icall (aux, A.Cconst c, args) ->
         Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
           A.pp_const c

@@ -113,6 +113,7 @@ let main () : unit =
       "--show-contract-interface-michelson", Arg.Set Options.opt_contract_interface_michelson, " Show contract interface from michelson";
       "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
       "--event-well-address", Arg.String (fun s -> Options.opt_event_well_address := Some s), " Deprecated";
+      "--sandbox-exec-address", Arg.String (fun s -> Options.opt_event_well_address := Some s), " Set address contract for sandbox execution";
       "--debug", Arg.Set Options.debug, " Debug";
       "-g", Arg.Set Options.opt_g, " No michelson optimization";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

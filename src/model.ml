@@ -216,6 +216,7 @@ type 'term mterm_node  =
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
+  | Msandboxexec      of 'term * 'term * 'term
   | Mdetach           of mident * 'term detach_kind_gen * type_ * 'term
   | Mmicheline        of Michelson.obj_micheline
   (* entrypoint *)
@@ -1292,6 +1293,7 @@ let cmp_mterm_node
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
+    | Msandboxexec (a1, b1, c1), Msandboxexec (a2, b2, c2)                             -> cmp a1 a2 && cmp b1 b2 && cmp c1 c2
     | Mdetach (id1, dk1, ty1, f1), Mdetach (id2, dk2, ty2, f2)                         -> cmpi id1 id2 && cmp_detach_kind dk1 dk2 && cmp_type ty1 ty2 && cmp f1 f2
     | Mmicheline m1, Mmicheline m2                                                     -> cmp_obj_micheline m1 m2
     (* entrypoint *)
@@ -1760,6 +1762,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
+  | Msandboxexec (a, b, c)         -> Msandboxexec (f a, f b, f c)
   | Mdetach (id, dk, ty, fa)       -> Mdetach (g id, map_detach_kind fi ft f dk, ft ty, f fa)
   | Mmicheline m                   -> Mmicheline m
   (* entrypoint *)
@@ -2141,6 +2144,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
+  | Msandboxexec (a, b, c)                -> f (f (f accu a) b) c
   | Mdetach (_, dk, _, x)                 -> f (fold_detach_kind f accu dk) x
   | Mmicheline _                          -> accu
   (* entrypoint *)
@@ -2637,6 +2641,12 @@ let fold_map_term
   | Memit (e, x) ->
     let xe, xa = f accu x in
     g (Memit (e, xe)), xa
+
+  | Msandboxexec (a, b, c) ->
+    let ae, aa = f accu a in
+    let be, ba = f aa b in
+    let ce, ca = f ba c in
+    g (Msandboxexec (ae, be, ce)), ca
 
   | Mdetach (id, dk, ty, fa) ->
     let dke, dka = fold_map_detach_kind f accu dk in
