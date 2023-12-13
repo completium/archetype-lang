@@ -24,7 +24,7 @@ let string_to_target_lang = function
   | "debug-trace"       -> DebugTrace
   | v                   -> raise (UnknownTarget v)
 
-let version = "1.5.1"
+let version = "1.5.0-rev1"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
@@ -76,7 +76,7 @@ let opt_out = ref ""
 let opt_contract_interface = ref false
 let opt_contract_interface_michelson = ref false
 let opt_event_well_address : (string option) ref = ref (None : string option)
-let opt_sandbox_exec_address : (string option) ref = ref (Some ("KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL") : string option) (* ghostnet address *)
+let opt_sandbox_exec_address : (string option) ref = ref (None : string option)
 let opt_g = ref false
 let opt_path = ref "."
 let opt_ama = ref false
