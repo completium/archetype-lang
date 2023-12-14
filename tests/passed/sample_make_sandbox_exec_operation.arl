@@ -1,0 +1,8 @@
+archetype sample_make_sandbox_exec_operation
+
+entry exec(l : lambda<list<ticket<nat * option<bytes>>>, list<operation>>) {
+  const content : (nat * option<bytes>) = (1, none);
+  const my_ticket ?= create_ticket(content, 1) : "ERROR";
+  const op = make_sandbox_exec_operation(l, [my_ticket], 1tz);
+  operations := [op]
+}
