@@ -1761,6 +1761,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Moperations                       -> f_cst "operations"
     | Mmakeoperation (v, d, a)          -> f_app "make_operation" [f v; f d; f a]
     | Mmakeevent (t, id, a)             -> f_app "make_event" ~ts:[ft t] [(A.estring (M.unloc_mident id)); f a]
+    | Mmakesandboxexecoperation (a, b, c) -> f_app "make_sandbox_exec_operation" [f a; f b; f c]
     | Mcreatecontract (cc, d, a) -> begin
         let code, storage =
           match cc with

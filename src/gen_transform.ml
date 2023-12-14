@@ -4915,15 +4915,30 @@ let add_builtin_functions (model : model) : model =
   model
 
 let remove_sandbox_exec (model : model) : model =
-let rec aux ctx (mt : mterm) : mterm =
+  let get_sandbox_exec_address loc =
+    let sandbox_exec_address = match !Options.opt_sandbox_exec_address with | Some v -> v | None -> (emit_error (loc, NoSandboxExecAddress); raise (Error.Stop 5)) in
+    mk_mterm (Maddress sandbox_exec_address) taddress
+  in
+  let get_entrypoint_type _ =
+    let cty = tlist (tticket (ttuple [tnat; toption tbytes])) in
+    let type_ = ttuple [cty; tlambda cty (tlist toperation)] in
+    type_
+  in
+  let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Msandboxexec (a, b, c) -> begin
-        let sandbox_exec_address = match !Options.opt_sandbox_exec_address with | Some v -> v | None -> (emit_error (mt.loc, NoSandboxExecAddress); raise (Error.Stop 5)) in
-        let dest = mk_mterm (Maddress sandbox_exec_address) taddress in
+        let dest = get_sandbox_exec_address mt.loc in
         let args = mk_tuple [b; a] in
-        let cty = tlist (tticket (ttuple [tnat; toption tbytes])) in
-        let type_ = ttuple [cty; tlambda cty (tlist toperation)] in
+        let type_ = get_entrypoint_type () in
         mk_mterm ~loc:mt.loc (Mtransfer (TKcall(c, "default", type_, dest, args))) tunit
+      end
+    | Mmakesandboxexecoperation(a, b, c) -> begin
+        let dest = get_sandbox_exec_address mt.loc in
+        let type_ = get_entrypoint_type () in
+        let contract_opt = mk_mterm (Mgetentrypoint (type_, (mk_mident (dumloc "default")), dest)) (toption (tcontract type_)) in
+        let contract = mk_mterm (Mternaryoption (contract_opt, mk_mvar (mk_mident (dumloc "the")) (tcontract type_), fail "ERROR")) (tcontract type_) in
+        let args = mk_tuple [b; a] in
+        mk_mterm ~loc:mt.loc (Mmakeoperation (c, contract, args)) tunit
       end
     | _ -> map_mterm (aux ctx) mt
   in

@@ -806,7 +806,6 @@ import * as iterable_big_map_remove from '../bindings/passed/iterable_big_map_re
 import * as iterable_big_map_storage_decl from '../bindings/passed/iterable_big_map_storage_decl'
 import * as iterable_big_map_test from '../bindings/passed/iterable_big_map_test'
 import * as key_to_address from '../bindings/passed/key_to_address'
-import * as lambda_operation_exec from '../bindings/passed/lambda_operation_exec'
 import * as lang_arith from '../bindings/passed/lang_arith'
 import * as lang_asset from '../bindings/passed/lang_asset'
 import * as lang_assign from '../bindings/passed/lang_assign'
@@ -907,6 +906,7 @@ import * as rf_failif_with from '../bindings/passed/rf_failif_with'
 import * as rf_require_otherwise from '../bindings/passed/rf_require_otherwise'
 import * as same_varname_in_two_distinct_scope from '../bindings/passed/same_varname_in_two_distinct_scope'
 import * as sample_asset_view from '../bindings/passed/sample_asset_view'
+import * as sample_make_sandbox_exec_operation from '../bindings/passed/sample_make_sandbox_exec_operation'
 import * as sample_sandbox_exec from '../bindings/passed/sample_sandbox_exec'
 import * as sample_view_asset_value from '../bindings/passed/sample_view_asset_value'
 import * as sapling_empty_state from '../bindings/passed/sapling_empty_state'
@@ -16285,6 +16285,53 @@ describe('passed', async () => {
     assert(v[1].equals(new Nat(2)))
   })
 
+  it('sample_make_sandbox_exec_operation', async () => {
+    await sample_make_sandbox_exec_operation.sample_make_sandbox_exec_operation.deploy({ as: alice })
+
+    const lambda: Micheline = [
+      {
+        prim: "DROP"
+      },
+      {
+        prim: "NIL",
+        args: [{ prim: "operation" }]
+      },
+      {
+        prim: "PUSH",
+        args: [{ prim: "address" }, { string: "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" }]
+      },
+      {
+        prim: "CONTRACT",
+        args: [{ prim: "unit" }]
+      },
+      {
+        prim: "IF_NONE",
+        args: [[{ prim: "PUSH", args: [{ prim: "string" }, { string: "NOT_FOUND" }] }, { prim: "FAILWITH" }], []]
+      },
+      {
+        prim: "PUSH",
+        args: [{ prim: "mutez" }, { int: "1000000" }]
+      },
+      {
+        prim: "PUSH",
+        args: [{ prim: "unit" }, { prim: "Unit" }]
+      },
+      {
+        prim: "TRANSFER_TOKENS"
+      },
+      {
+        prim: "CONS"
+      }
+    ];
+    const bob_balance_before = await bob.get_balance()
+
+    await sample_make_sandbox_exec_operation.sample_make_sandbox_exec_operation.exec(lambda, { as: alice, amount: new Tez(1) })
+
+    const bob_balance_after = await bob.get_balance()
+
+    assert(bob_balance_before.plus(new Tez(1)).equals(bob_balance_after), "Invalid Value")
+  })
+
   it('sample_sandbox_exec', async () => {
     await sample_sandbox_exec.sample_sandbox_exec.deploy({ as: alice })
 
@@ -16306,7 +16353,7 @@ describe('passed', async () => {
       },
       {
         prim: "IF_NONE",
-        args: [[{ prim: "PUSH", args: [{ prim: "string" }, { string: "NOT_FOUND" }] }, {prim: "FAILWITH"}], []]
+        args: [[{ prim: "PUSH", args: [{ prim: "string" }, { string: "NOT_FOUND" }] }, { prim: "FAILWITH" }], []]
       },
       {
         prim: "PUSH",

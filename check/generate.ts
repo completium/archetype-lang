@@ -21,7 +21,7 @@ const create_folder = (dir: string) => {
 
 const generation_interface_contract = (i: string, p : string): string => {
   const arl_path = i + '.arl'
-  const res = compile(['--show-contract-interface', arl_path])
+  const res = compile(['--sandbox-exec-address', 'KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL', '--show-contract-interface', arl_path])
   if (res.status != 0) {
     throw new Error(res.stderr.toString())
   }
@@ -34,7 +34,7 @@ const generation_interface_contract = (i: string, p : string): string => {
 
 const generation_tz_file = (i: string, p: string): string => {
   const arl_path = i + '.arl'
-  const res = compile([arl_path])
+  const res = compile(['--sandbox-exec-address', 'KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL', arl_path])
   if (res.status != 0) {
     throw new Error(res.stderr.toString())
   }

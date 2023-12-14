@@ -1,0 +1,114 @@
+{
+  "name": "sample_make_sandbox_exec_operation",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [],
+  "storage_type": {
+    "value": {
+      "prim": "unit",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": [
+        {
+          "name": "l",
+          "type": {
+            "node": "lambda",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "list",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "ticket",
+                    "name": null,
+                    "int_value": null,
+                    "args": [
+                      {
+                        "node": "tuple",
+                        "name": null,
+                        "int_value": null,
+                        "args": [
+                          {
+                            "node": "nat",
+                            "name": null,
+                            "int_value": null,
+                            "args": []
+                          },
+                          {
+                            "node": "option",
+                            "name": null,
+                            "int_value": null,
+                            "args": [
+                              {
+                                "node": "bytes",
+                                "name": null,
+                                "int_value": null,
+                                "args": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "node": "list",
+                "name": null,
+                "int_value": null,
+                "args": [
+                  {
+                    "node": "operation",
+                    "name": null,
+                    "int_value": null,
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": [
+    {
+      "kind": "Invalid",
+      "args": [],
+      "expr": {
+        "prim": null,
+        "int": null,
+        "bytes": null,
+        "string": "ERROR",
+        "args": [],
+        "annots": [],
+        "array": [],
+        "var_id": null,
+        "var_type": null
+      }
+    }
+  ]
+}

@@ -814,6 +814,7 @@ let to_ir (model : M.model) : T.ir =
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.iterop ~loc:mtt.loc Ttransfer_tokens (f a) (f v) (f e)
     | Mmakeevent (t, id, a)          -> T.iunop ~loc:mtt.loc (Uemit (to_type model t, Some (M.unloc_mident id))) (f a)
+    | Mmakesandboxexecoperation (_a, _b, _c)   -> emit_error (UnsupportedTerm ("Mmakesandboxexecoperation"))
     | Mcreatecontract (cc, d, a) -> begin
         match cc with
         | CCTz (tz, arg) -> T.iunop ~loc:mtt.loc UforcePair (T.iterop (Tcreate_contract tz.ms_content) (f d) (f a) (f arg))

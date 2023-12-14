@@ -1611,7 +1611,10 @@ let packops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
   [op "make_operation" A.Cmakeoperation `Total None
-     [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty]
+     [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty;
+   let cty = A.Tlist (A.Tticket (A.Ttuple [A.vtnat; A.Toption A.vtbytes])) in
+   op "make_sandbox_exec_operation" A.Cmakesandboxexecoperation `Total None
+     [A.Tlambda (cty, (A.Tlist A.Toperation)); cty; A.vtcurrency] (`Ty A.Toperation) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let lambdaops : opinfo list = [

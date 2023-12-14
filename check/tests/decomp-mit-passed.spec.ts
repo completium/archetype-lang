@@ -3817,6 +3817,10 @@ describe('decomp-mit-passed', async () => {
     const stat = compile("michelson/passed/sample_asset_view.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('sample_make_sandbox_exec_operation', async () => {
+    const stat = compile("michelson/passed/sample_make_sandbox_exec_operation.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('sample_sandbox_exec', async () => {
     const stat = compile("michelson/passed/sample_sandbox_exec.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -5470,3 +5474,4 @@ describe('decomp-mit-passed', async () => {
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
 })
+  

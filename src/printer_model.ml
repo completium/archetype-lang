@@ -443,6 +443,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_mid id
         f a
 
+    | Mmakesandboxexecoperation (a, b, c) ->
+      Format.fprintf fmt "make_sandbox_exec_operation(%a, %a, %a)"
+        f a
+        f b
+        f c
+
     | Mcreatecontract (cc, d, a) ->
       let pp_create_contract fmt = function
         | CCTz (_, arg) -> Format.fprintf fmt "Tz(%a)" f arg

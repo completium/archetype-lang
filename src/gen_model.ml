@@ -947,6 +947,12 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Pcall (None, A.Cconst (A.Cmakeevent), [ty], [AIdent id; AExpr a]) ->
         M.Mmakeevent (type_to_type ty, M.mk_mident id, f a)
 
+      | A.Pcall (None, A.Cconst (A.Cmakesandboxexecoperation), [], [AExpr a; AExpr b; AExpr c]) ->
+        let fa = f a in
+        let fb = f b in
+        let fc = f c in
+        M.Mmakesandboxexecoperation (fa, fb, fc)
+
       (* Lambda *)
 
       | A.Pcall (None, A.Cconst (A.Cexec), [], [AExpr a; AExpr b]) ->

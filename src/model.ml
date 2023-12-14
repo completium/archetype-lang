@@ -229,6 +229,7 @@ type 'term mterm_node  =
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
   | Mmakeevent        of type_ * mident * 'term    (* type * id * arg *)
+  | Mmakesandboxexecoperation of 'term * 'term * 'term
   | Mcreatecontract   of create_contract_type * 'term * 'term  (* value * option key_hash * amount *)
   (* literals *)
   | Mint              of Core.big_int
@@ -1306,6 +1307,7 @@ let cmp_mterm_node
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
     | Mmakeevent (t1, id1, a1), Mmakeevent (t2, id2, a2)                               -> cmp_type t1 t2 && cmp_mident id1 id2 && cmp a1 a2
+    | Mmakesandboxexecoperation (a1, b1, c1), Mmakesandboxexecoperation (a2, b2, c2)   -> cmp a1 a2 && cmp b1 b2 && cmp c1 c2
     | Mcreatecontract (cc1, d1, a1), Mcreatecontract (cc2, d2, a2)                     -> cmp_create_contract_type cc1 cc2 && cmp d1 d2 && cmp a1 a2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1775,6 +1777,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
   | Mmakeevent (t, id, a)          -> Mmakeevent (ft t, g id, f a)
+  | Mmakesandboxexecoperation (a, b, c) -> Mmakesandboxexecoperation(f a, f b, f c)
   | Mcreatecontract (cc, d, a)     -> Mcreatecontract (map_create_contract_type f fi cc, f d, f a)
   (* literals *)
   | Mint v                         -> Mint v
@@ -2157,6 +2160,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
   | Mmakeevent (_, _, a)                  -> f accu a
+  | Mmakesandboxexecoperation (a, b, c)   -> f (f (f accu a) b) c
   | Mcreatecontract (cc, d, a)            -> (let naccu = List.fold_left (fun accu x -> f accu x) accu (match cc with | CCArl (_,args) -> List.map snd args | CCTz (_, si) -> [si]) in f (f naccu d) a)
   (* literals *)
   | Mint _                                -> accu
@@ -2697,6 +2701,12 @@ let fold_map_term
   | Mmakeevent (t, id, a) ->
     let ae, aa = f accu a in
     g (Mmakeevent (t, id, ae)), aa
+
+  | Mmakesandboxexecoperation (a, b, c) ->
+    let ae, aa = f accu a in
+    let be, ba = f aa b in
+    let ce, ca = f ba c in
+    g (Mmakesandboxexecoperation (ae, be, ce)), ca
 
   | Mcreatecontract (cc, d, a) ->
     let cce, cca = (

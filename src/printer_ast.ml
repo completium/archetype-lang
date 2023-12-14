@@ -258,6 +258,7 @@ let to_const = function
   | Cupdate                -> "update"
   | Cupdateall             -> "update_all"
   | Cmakeoperation         -> "make_operation"
+  | Cmakesandboxexecoperation -> "make_sandbox_exec_operation"
   | CtoContainer           -> "to_container"
   | Cnattostring           -> "nat_to_string"
   | Cbytestonat            -> "bytes_to_nat"

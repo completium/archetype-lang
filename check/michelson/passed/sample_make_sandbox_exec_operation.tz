@@ -10,28 +10,23 @@
          DUP 2 ;
          TICKET ;
          IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
-         NIL operation ;
-         NIL operation ;
-         DUP 7 ;
-         ITER { CONS } ;
          PUSH address "KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL" ;
          CONTRACT
            (pair (list (ticket (pair nat (option bytes))))
                  (lambda (list (ticket (pair nat (option bytes)))) (list operation))) ;
-         IF_NONE
-           { PUSH string "default" ; PUSH string "ENTRY_NOT_FOUND" ; PAIR ; FAILWITH }
-           {} ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
          PUSH mutez 1000000 ;
-         DIG 6 ;
+         DIG 4 ;
          NIL (ticket (pair nat (option bytes))) ;
-         DIG 6 ;
+         DIG 4 ;
          CONS ;
          PAIR ;
          TRANSFER_TOKENS ;
+         NIL operation ;
+         DUP 2 ;
          CONS ;
-         ITER { CONS } ;
-         DIP 1 { DIG 2 ; DROP 1 } ;
-         DUG 2 ;
-         DROP 1 ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 2 ;
          SWAP ;
          PAIR } }

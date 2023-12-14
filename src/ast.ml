@@ -183,6 +183,7 @@ type const =
   | Cupdateall
   | Cmakeoperation
   | Cmakeevent
+  | Cmakesandboxexecoperation
   | Cnattostring
   | Cbytestonat
   | Cnattobytes
