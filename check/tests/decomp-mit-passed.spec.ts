@@ -5129,6 +5129,10 @@ describe('decomp-mit-passed', async () => {
     const stat = compile("michelson/passed/ticket_fun_split_ticket.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('ticket_in_view', async () => {
+    const stat = compile("michelson/passed/ticket_in_view.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('ticket_read_ticket', async () => {
     const stat = compile("michelson/passed/ticket_read_ticket.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

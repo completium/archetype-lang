@@ -1203,6 +1203,7 @@ import * as ticket_detach_map_tuple from '../bindings/passed/ticket_detach_map_t
 import * as ticket_detach_option from '../bindings/passed/ticket_detach_option'
 import * as ticket_fun_join_tickets from '../bindings/passed/ticket_fun_join_tickets'
 import * as ticket_fun_split_ticket from '../bindings/passed/ticket_fun_split_ticket'
+import * as ticket_in_view from '../bindings/passed/ticket_in_view'
 import * as ticket_read_ticket from '../bindings/passed/ticket_read_ticket'
 import * as ticket_read_ticket_arg from '../bindings/passed/ticket_read_ticket_arg'
 import * as ticket_read_ticket_arg_list from '../bindings/passed/ticket_read_ticket_arg_list'
@@ -23789,6 +23790,13 @@ describe('passed', async () => {
     await ticket_fun_split_ticket.ticket_fun_split_ticket.exec({ as: alice });
     const res_after = await ticket_fun_split_ticket.ticket_fun_split_ticket.get_res();
     assert(res_after.equals(Option.Some([new Ticket<string>(ticket_fun_split_ticket.ticket_fun_split_ticket.get_address(), "mystr", new Nat(1)), new Ticket<string>(ticket_fun_split_ticket.ticket_fun_split_ticket.get_address(), "mystr", new Nat(2))])))
+  })
+
+  it('ticket_in_view', async () => {
+    await ticket_in_view.ticket_in_view.deploy({ as: alice })
+
+    const res = await ticket_in_view.ticket_in_view.view_check({ as: alice })
+    assert(res !== undefined && !res)
   })
 
   it('ticket_read_ticket', async () => {

@@ -1,0 +1,7 @@
+archetype ticket_in_view
+
+variable some_ticket : option<ticket<unit>> = none
+
+view check() : bool {
+    return (some_ticket ? true : false)
+}

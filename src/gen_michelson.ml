@@ -2555,7 +2555,7 @@ and build_view storage_list (v : T.func) : T.view_struct =
   let env = add_var_env env fun_result in
   (* print_env env; *)
 
-  let code, _env =
+  let code, env =
     match v.body with
     | Concrete (_args, instr) -> instruction_to_code env instr
     | Abstract _ -> assert false
@@ -2564,7 +2564,7 @@ and build_view storage_list (v : T.func) : T.view_struct =
   let post =
     match nb_args with
     | 0 -> []
-    | _ -> [T.cdip (1, [T.cdrop nb_args])]
+    | _ -> let diff = List.count (fun x -> not x.populated) env.stack in [T.cdip (1, [T.cdrop (nb_args - diff)])]
   in
 
   let code = T.cseq (code::post) in

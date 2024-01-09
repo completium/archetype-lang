@@ -1,0 +1,12 @@
+{ storage (option (ticket unit)) ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } ;
+  view "check"
+       unit
+       bool
+       { CDR ;
+         UNIT ;
+         SWAP ;
+         IF_NONE { PUSH bool False } { PUSH bool True ; SWAP ; DROP 1 } ;
+         SWAP ;
+         DROP 1 } }
