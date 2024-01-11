@@ -2163,7 +2163,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         let d : A.asset_post_option list =
           match dasset.init with
           | [] -> []
-          | xs -> let l = List.map for_expr xs in [A.APOinit (A.AISliterral l)]
+          | xs -> let l = List.map for_expr xs in [A.APOinit (A.AIliterral l)]
         in
         let e : A.asset_operation option = None in
         A.mk_asset (a, b, c, d, e)

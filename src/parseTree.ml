@@ -356,12 +356,12 @@ and asset_option =
   | AOsortedby of lident
   | AOtoMapKind of map_kind
 
-and asset_init_shape =
-  | AISliterral of expr list
-  | AISident of lident
+and asset_init =
+  | AIliterral of expr list
+  | AIident of lident
 
 and asset_post_option =
-  | APOinit of asset_init_shape
+  | APOinit of asset_init
 
 and enum_option =
   | EOinitial

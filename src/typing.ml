@@ -6497,6 +6497,7 @@ type pre_assetdecl = {
   pas_sortk  : A.lident list;
   pas_bm     : A.map_kind;
   pas_init   : PT.expr list;
+  pas_init_id: A.lident option;
 }
 
 let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced) =
@@ -6533,7 +6534,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let pks     = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
   let sortks  = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
-  let inits   = List.pmap (function PT.APOinit        v -> (match v with | AISliterral it -> Some it | AISident _ -> None)) postopts in
+  let inits   = List.pmap (function PT.APOinit        v -> (match v with | AIliterral it -> Some it | AIident _ -> None)) postopts in
+  let init_id = List.fold_left (fun accu x -> match x with | PT.APOinit (AIident id) -> Some id | _ -> accu) None postopts in
 
   let to_a_map_kind = function
     | PT.MKMap -> A.MKMap
@@ -6636,7 +6638,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
           pas_pk     = pks;
           pas_sortk  = sortks;
           pas_bm     = bigmaps;
-          pas_init   = List.flatten inits; }
+          pas_init   = List.flatten inits;
+          pas_init_id= init_id; }
 
       in env, Some aout
 
@@ -6792,9 +6795,18 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
 
           | { plloc = thisloc } ->
-            Env.emit_error env (thisloc, InvalidAssetExpression); None in
+            Env.emit_error env (thisloc, InvalidAssetExpression); None
+        in
 
-        { adecl with as_init = A.IAliteral (List.pmap forinit decl.pas_init) } in
+        let init = 
+        match decl.pas_init_id with
+        | Some id -> A.IAident id
+        | None -> A.IAliteral (List.pmap forinit decl.pas_init)
+        in
+
+        { adecl with as_init = init }
+        
+        in
 
       List.map2 for1 adecls decls in
 

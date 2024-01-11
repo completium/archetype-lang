@@ -649,6 +649,10 @@ type asset_item = {
 }
 [@@deriving show {with_path = false}]
 
+(* type init_asset =
+| IAliteral of mterm list
+| IAident of lident *)
+
 type asset = {
   name: mident;
   values: asset_item list;
