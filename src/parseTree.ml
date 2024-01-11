@@ -356,8 +356,12 @@ and asset_option =
   | AOsortedby of lident
   | AOtoMapKind of map_kind
 
+and asset_init_shape =
+  | AISliterral of expr list
+  | AISident of lident
+
 and asset_post_option =
-  | APOinit of expr list
+  | APOinit of asset_init_shape
 
 and enum_option =
   | EOinitial
@@ -580,7 +584,7 @@ let mk_asset_option_identifiedby ids = AOidentifiedby ids
 let mk_asset_option_sortedby id      = AOsortedby id
 let mk_asset_option_to_map_kind x    = AOtoMapKind x
 
-let mk_asset_post_option_init l         = APOinit l
+let mk_asset_post_option_init l      = APOinit l
 
 let mk_enum_option_initial _        = EOinitial
 

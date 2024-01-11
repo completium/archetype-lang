@@ -489,8 +489,12 @@ asset:
 | BY {}
 | WITH {}
 
+asset_init:
+| LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { AISliterral l }
+| x=ident                                                          { AISident x }
+
 asset_post_option:
-| INITIALIZED by_or_with LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
+| INITIALIZED by_or_with v=asset_init { APOinit v }
 
 %inline record_expr:
  | x=loc(record_expr_unloc) { x }

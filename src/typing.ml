@@ -6533,7 +6533,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let pks     = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
   let sortks  = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
-  let inits   = List.pmap (function PT.APOinit        it -> Some it) postopts in
+  let inits   = List.pmap (function PT.APOinit        v -> (match v with | AISliterral it -> Some it | AISident _ -> None)) postopts in
 
   let to_a_map_kind = function
     | PT.MKMap -> A.MKMap
