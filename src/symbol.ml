@@ -472,6 +472,7 @@ let string_of_symbol = function
   | X (N N_asset) -> "an asset"
   | X (N N_asset_post_option) -> "asset post option"
   | X (N N_asset_option) -> "an asset option"
+  | X (N N_asset_init) -> "asset_init"
   | X (N N_archetype) -> "archetype"
   | X (N N_archetype_r) -> "archetype"
 

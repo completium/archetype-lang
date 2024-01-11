@@ -1697,7 +1697,7 @@ type assetdecl = {
   as_sortk  : A.lident list;
   as_bm     : A.map_kind;
   as_invs   : (A.lident option * A.pterm) list;
-  as_init   : (A.pterm list) list;
+  as_init   : A.init_asset;
 }
 [@@deriving show {with_path = false}]
 
@@ -6654,7 +6654,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 as_sortk  = [];
                 as_bm     = A.MKMap;
                 as_invs   = [];
-                as_init   = []; } in
+                as_init   = A.IAliteral []; } in
       ((b, Env.Asset.push env (`Full d)), d)) (true, env) decls in
 
   let module E = struct exception Bailout end in
@@ -6707,7 +6707,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           as_sortk  = decl.pas_sortk;
           as_bm     = decl.pas_bm;
           as_invs   = [];
-          as_init   = []; }
+          as_init   = A.IAliteral []; }
 
       in List.map for1 decls in
 
@@ -6794,7 +6794,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           | { plloc = thisloc } ->
             Env.emit_error env (thisloc, InvalidAssetExpression); None in
 
-        { adecl with as_init = List.pmap forinit decl.pas_init } in
+        { adecl with as_init = A.IAliteral (List.pmap forinit decl.pas_init) } in
 
       List.map2 for1 adecls decls in
 
