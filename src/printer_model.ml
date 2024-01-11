@@ -1823,6 +1823,12 @@ let pp_map_kind fmt = function
 let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
+  let pp_init fmt init =
+  match init with
+  | IAident id -> Format.fprintf fmt "@\ninitialized by %a@\n" pp_id id
+  | IAliteral [] -> ()
+  | IAliteral xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs
+  in
   Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_mid asset.name
     (pp_list " " pp_str) asset.keys
@@ -1830,7 +1836,7 @@ let pp_asset fmt (asset : asset) =
     pp_map_kind asset.map_kind
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
-    (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init
+    pp_init asset.init
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
 
 let pp_record fmt (r : record) =

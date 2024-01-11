@@ -3297,6 +3297,10 @@ describe('decomp-dir-passed', async () => {
     const stat = compile("michelson/passed/import_tz_view_use.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('init_asset_with_const', async () => {
+    const stat = compile("michelson/passed/init_asset_with_const.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('init_lambda', async () => {
     const stat = compile("michelson/passed/init_lambda.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

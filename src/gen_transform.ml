@@ -478,7 +478,7 @@ let check_invalid_init_value (model : model) : model =
     in
     match d with
     | Dvar ({default = Some v; kind = k}) when (match k with | VKvariable -> true | _ -> false) -> for_mterm v
-    | Dasset a -> List.iter for_mterm a.init
+    | Dasset a -> let inits = match a.init with | IAliteral xs -> xs | IAident _ -> [] in List.iter for_mterm inits
     | _ -> ()
   in
   List.iter for_decl model.decls;
@@ -535,7 +535,7 @@ let check_init_partition_in_asset (model : model) : model =
     List.map (function
         | Dasset da -> begin
             let an : ident = unloc_mident da.name in
-            let init : mterm list = da.init in
+            let init : mterm list = match da.init with | IAliteral xs -> xs | IAident _ -> [] in
             if
               List.exists (String.equal an) an_partition &&
               not (List.is_empty init)
@@ -621,7 +621,7 @@ let check_duplicated_keys_in_asset (model : model) : model =
                        | _ -> ()) dasset.values l
                  end
                | _ -> ()
-             ) dasset.init;
+             ) (match dasset.init with | IAliteral xs -> xs | IAident _ -> []);
          end
        | _ -> ()
     ) model.decls;
@@ -669,7 +669,8 @@ let move_partition_init_asset (model : model) : model =
                       | _ -> assert false
                     in
                     map, assets
-                ) (map, []) a.init in
+                ) (map, []) (match a.init with | IAliteral xs -> xs | IAident _ -> []) in
+              let init = match a.init with | IAident id -> IAident id | IAliteral _ -> IAliteral init in
               map, (decls @ [Dasset {a with init = init}])
             end
           | _ -> (map, decls @ [decl])
@@ -683,7 +684,7 @@ let move_partition_init_asset (model : model) : model =
   let add_assets (map, model : (mterm list) MapString.t * model) : model =
     let f (d : decl_node) : decl_node =
       match d with
-      | Dasset a when MapString.mem (unloc_mident a.name) map -> Dasset { a with init = a.init @ (MapString.find (unloc_mident a.name) map )}
+      | Dasset a when MapString.mem (unloc_mident a.name) map -> Dasset { a with init = match a.init with | IAliteral ls -> IAliteral (ls @ (MapString.find (unloc_mident a.name) map)) | IAident id -> IAident id }
       | _ -> d
     in
     { model with
@@ -1426,7 +1427,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
                              type_   = ai.type_   |> process_type;
                              default = ai.default |> Option.map process_mterm;
                            });
-             init = List.map process_mterm a.init;
+             init = match a.init with | IAident id -> IAident id | IAliteral xs -> IAliteral (List.map process_mterm xs);
             }
         | _ as x -> x)
   in
@@ -1594,6 +1595,7 @@ let split_key_values (model : model) : model =
           let default =
             match x.default.node with
             | Massets l -> mk_mterm (Mlitmap (asset.map_kind, List.map (fun x -> get_asset_assoc_key_value an x) l)) type_asset
+            | Mvar _ -> x.default
             | _ -> assert false
           in
           let asset_assets =
@@ -1787,7 +1789,7 @@ let process_multi_keys (model : model) : model =
               a with
               values = new_key_field::new_values;
               keys = [new_key];
-              init = List.map for_init a.init;
+              init = (match a.init with | IAident id -> IAident id | IAliteral xs -> IAliteral (List.map for_init xs));
             }
           in
           match d with

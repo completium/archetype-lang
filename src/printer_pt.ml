@@ -979,7 +979,7 @@ let pp_ident_state fmt item =
 let pp_asset_post_option fmt (apo : asset_post_option) =
   let pp_init fmt v = 
   match v with
-  | AIliterral l -> begin
+  | IAliteral l -> begin
   Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n"
          (fun fmt x ->
@@ -987,7 +987,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
               Erecord (scope, l) -> pp_record_expr_internal fmt (scope, l)
             | _ -> assert false)) l
             end
-  | AIident id -> pp_id fmt id
+  | IAident id -> pp_id fmt id
   in
   match apo with
   | APOinit v ->

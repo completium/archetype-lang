@@ -490,8 +490,8 @@ asset:
 | WITH {}
 
 asset_init:
-| LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { AIliterral l }
-| x=ident                                                          { AIident x }
+| LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { IAliteral l }
+| x=ident                                                          { IAident x }
 
 asset_post_option:
 | INITIALIZED by_or_with v=asset_init { APOinit v }
