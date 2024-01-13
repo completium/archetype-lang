@@ -3113,6 +3113,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/import_tz_view_use.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('init_asset_with_const', async () => {
+    const stat = compile("../tests/passed/init_asset_with_const.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('init_lambda', async () => {
     const stat = compile("../tests/passed/init_lambda.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

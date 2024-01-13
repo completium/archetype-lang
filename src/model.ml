@@ -649,6 +649,11 @@ type asset_item = {
 }
 [@@deriving show {with_path = false}]
 
+type init_asset =
+| IAliteral of mterm list
+| IAident of lident
+[@@deriving show {with_path = false}]
+
 type asset = {
   name: mident;
   values: asset_item list;
@@ -656,7 +661,7 @@ type asset = {
   sort: mident list;
   map_kind: map_kind;
   state: lident option;
-  init: mterm list;
+  init: init_asset;
   no_storage: bool;
   loc: Location.t [@opaque];
 }
@@ -826,7 +831,7 @@ let mk_enum ?(values = []) name initial : enum =
 let mk_enum_item ?(args = []) name : enum_item =
   { name; args }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(init = []) ?(loc = Location.dummy) ?(no_storage = false) name : asset =
+let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(init = (IAliteral [])) ?(loc = Location.dummy) ?(no_storage = false) name : asset =
   { name; values; sort; map_kind; state; keys; init; no_storage; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : asset_item =
@@ -3983,7 +3988,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         sort          = List.map (g KIassetfield) a.sort;
         map_kind      = a.map_kind;
         state         = Option.map (h KIassetstate) a.state;
-        init          = List.map for_mterm a.init;
+        init          = (match a.init with | IAident id -> IAident id | IAliteral l -> IAliteral (List.map for_mterm l));
         no_storage    = a.no_storage;
         loc           = a.loc;
       }

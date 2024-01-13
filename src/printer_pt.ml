@@ -977,14 +977,21 @@ let pp_ident_state fmt item =
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
-  match apo with
-  | APOinit l ->
-    Format.fprintf fmt " initialized by {@\n  @[%a@]@\n}"
+  let pp_init fmt v = 
+  match v with
+  | IAliteral l -> begin
+  Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n"
          (fun fmt x ->
             match unloc x with
               Erecord (scope, l) -> pp_record_expr_internal fmt (scope, l)
             | _ -> assert false)) l
+            end
+  | IAident id -> pp_id fmt id
+  in
+  match apo with
+  | APOinit v ->
+    Format.fprintf fmt " initialized by %a" pp_init v
 
 let map_option f x =
   match x with

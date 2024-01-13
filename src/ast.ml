@@ -617,13 +617,18 @@ type map_kind =
   | MKIterableBigMap
 [@@deriving show {with_path = false}]
 
+type init_asset =
+  | IAliteral of pterm list list
+  | IAident of lident
+[@@deriving show {with_path = false}]
+
 type asset = {
   name     : longident;
   fields   : lident decl_gen list;
   keys     : lident list;   (* TODO: option ? *)
   sort     : lident list;
   map_kind : map_kind;
-  init     : pterm list list;
+  init     : init_asset;
   specs    : label_term list;
   loc      : Location.t [@opaque];
 }
@@ -751,7 +756,7 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
+let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?(init = (IAliteral [])) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; map_kind; init; specs; loc }
 
 let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(loc = Location.dummy) name =

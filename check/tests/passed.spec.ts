@@ -780,6 +780,7 @@ import * as import_arl_view_use_all from '../bindings/passed/import_arl_view_use
 import * as import_arl_view_use_collide from '../bindings/passed/import_arl_view_use_collide'
 import * as import_tz_entry_use from '../bindings/passed/import_tz_entry_use'
 import * as import_tz_view_use from '../bindings/passed/import_tz_view_use'
+import * as init_asset_with_const from '../bindings/passed/init_asset_with_const'
 import * as init_lambda from '../bindings/passed/init_lambda'
 import * as instr_list_prepend from '../bindings/passed/instr_list_prepend'
 import * as instr_map_put from '../bindings/passed/instr_map_put'
@@ -14240,6 +14241,18 @@ describe('passed', async () => {
 
     const res_after = await import_tz_view_use.import_tz_view_use.get_res()
     assert(res_after.equals(new Nat(2)))
+  })
+
+  it('init_asset_with_const', async () => {
+    await init_asset_with_const.init_asset_with_const.deploy([["a", new Nat(1)], ["b", new Nat(2)], ["c", new Nat(3)]], { as: alice })
+
+    const n_before = await init_asset_with_const.init_asset_with_const.get_n()
+    assert(n_before.equals(new Nat(0)))
+
+    await init_asset_with_const.init_asset_with_const.exec({ as: alice })
+
+    const n_after = await init_asset_with_const.init_asset_with_const.get_n()
+    assert(n_after.equals(new Nat(6)))
   })
 
   it('init_lambda', async () => {

@@ -739,6 +739,9 @@ type error_desc =
   | InvalidAssetExpression
   | InvalidAssetFieldTypeValueBigMap
   | InvalidAssetGetContainer           of A.container
+  | InvalidAssetInitIdBadType          of string * A.ptyp * A.ptyp
+  | InvalidAssetInitIdParamConst       of string
+  | InvalidAssetInitIdNotFound         of string
   | InvalidCallByAsset
   | InvalidCallByExpression
   | InvalidContractValueForCreateContract
@@ -1017,6 +1020,9 @@ let pp_error_desc fmt e =
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidAssetFieldTypeValueBigMap   -> pp "Invalid type for big map asset field value"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
+  | InvalidAssetInitIdBadType (id, ty1, ty2) -> pp "Invalid asset initialize variable: `%s` is typed %a, expected %a" id Printer_ast.pp_ptyp ty1 Printer_ast.pp_ptyp ty2
+  | InvalidAssetInitIdParamConst id    -> pp "Invalid asset initialize variable: `%s` must be a constant parameter" id
+  | InvalidAssetInitIdNotFound id      -> pp "Invalid asset initialize variable: `%s` not found" id
   | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidContractValueForCreateContract -> pp "Invalid argument for `create_contract`"
@@ -1697,7 +1703,7 @@ type assetdecl = {
   as_sortk  : A.lident list;
   as_bm     : A.map_kind;
   as_invs   : (A.lident option * A.pterm) list;
-  as_init   : (A.pterm list) list;
+  as_init   : A.init_asset;
 }
 [@@deriving show {with_path = false}]
 
@@ -6497,6 +6503,7 @@ type pre_assetdecl = {
   pas_sortk  : A.lident list;
   pas_bm     : A.map_kind;
   pas_init   : PT.expr list;
+  pas_init_id: A.lident option;
 }
 
 let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced) =
@@ -6533,7 +6540,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let pks     = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
   let sortks  = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
-  let inits   = List.pmap (function PT.APOinit        it -> Some it) postopts in
+  let inits   = List.pmap (function PT.APOinit        v -> (match v with | IAliteral it -> Some it | IAident _ -> None)) postopts in
+  let init_id = List.fold_left (fun accu x -> match x with | PT.APOinit (IAident id) -> Some id | _ -> accu) None postopts in
 
   let to_a_map_kind = function
     | PT.MKMap -> A.MKMap
@@ -6636,7 +6644,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
           pas_pk     = pks;
           pas_sortk  = sortks;
           pas_bm     = bigmaps;
-          pas_init   = List.flatten inits; }
+          pas_init   = List.flatten inits;
+          pas_init_id= init_id; }
 
       in env, Some aout
 
@@ -6654,7 +6663,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 as_sortk  = [];
                 as_bm     = A.MKMap;
                 as_invs   = [];
-                as_init   = []; } in
+                as_init   = A.IAliteral []; } in
       ((b, Env.Asset.push env (`Full d)), d)) (true, env) decls in
 
   let module E = struct exception Bailout end in
@@ -6707,7 +6716,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           as_sortk  = decl.pas_sortk;
           as_bm     = decl.pas_bm;
           as_invs   = [];
-          as_init   = []; }
+          as_init   = A.IAliteral []; }
 
       in List.map for1 decls in
 
@@ -6792,9 +6801,60 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
 
           | { plloc = thisloc } ->
-            Env.emit_error env (thisloc, InvalidAssetExpression); None in
+            Env.emit_error env (thisloc, InvalidAssetExpression); None
+        in
 
-        { adecl with as_init = List.pmap forinit decl.pas_init } in
+        let init =
+          match decl.pas_init_id with
+          | Some id -> begin
+              let var = Env.Var.lookup env (Current, unloc id) in
+              begin
+                match var with
+                | Some var -> begin
+                    match var.vr_kind with
+                    | `Constant -> begin
+                        let compute_asset_type decl =
+                          let mk_map kt vt =
+                            match decl.pas_bm with
+                            | MKMap -> begin
+                                match vt with
+                                | A.Tbuiltin VTunit -> A.Tset kt
+                                | _ -> A.Tmap (kt, vt)
+                              end
+                            | MKBigMap -> A.Tbig_map (kt, vt)
+                            | MKIterableBigMap -> A.Titerable_big_map (kt, vt)
+                          in
+                          let vt =
+                            let fields =
+                              List.filter
+                                (fun fd -> not (List.exists (fun f -> unloc f = proj3_1 (L.unloc fd)) decl.pas_pk))
+                                decl.pas_fields in
+                            let tys = List.map (fun fd -> proj3_2 (unloc fd)) fields in
+                            Type.create_tuple tys
+                          in
+                          mk_map decl.pas_pkty vt
+                        in
+                        let ety = var.vr_type in
+                        let aty = compute_asset_type decl in
+                        if not (Type.compatible ~autoview:false ~for_eq:true ~from_:aty ~to_:ety)
+                        then Env.emit_error env (loc id, InvalidAssetInitIdBadType (unloc id, ety, aty))
+                      end
+                    | _ -> begin
+                        Env.emit_error env (loc id, InvalidAssetInitIdParamConst (unloc id))
+                      end
+                  end
+                | None -> begin
+                    Env.emit_error env (loc id, InvalidAssetInitIdNotFound (unloc id))
+                  end
+              end;
+              A.IAident id
+            end
+          | None -> A.IAliteral (List.pmap forinit decl.pas_init)
+        in
+
+        { adecl with as_init = init }
+
+      in
 
       List.map2 for1 adecls decls in
 

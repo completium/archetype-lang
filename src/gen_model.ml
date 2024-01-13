@@ -1064,7 +1064,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     let mk_asset an l : M.mterm = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
     let mp = match a.map_kind with | A.MKMap -> M.MKMap | A.MKBigMap -> M.MKBigMap | A.MKIterableBigMap -> M.MKIterableBigMap in
     let no_storage = not (is_current_namespace (fst a.name)) in
-    let r : M.asset = M.mk_asset (to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(List.map (fun x -> (mk_asset (to_mident a.name)) x) a.init) ~no_storage ~loc:a.loc in
+    let r : M.asset = M.mk_asset (to_mident a.name) ~keys:(List.map unloc (a.keys)) ~values:values ~sort:(List.map M.mk_mident a.sort) ~map_kind:mp ~init:(match a.init with | IAliteral l -> M.IAliteral (List.map (fun x -> (mk_asset (to_mident a.name)) x) l) | IAident id -> M.IAident id) ~no_storage ~loc:a.loc in
     M.Dasset r
   in
 
