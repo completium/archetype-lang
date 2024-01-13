@@ -1,0 +1,6 @@
+archetype invalid_init_asset_with_const_not_found
+
+asset my_asset {
+    k : string;
+    v : nat;
+} initialized with init_value

@@ -1,0 +1,14 @@
+archetype invalid_init_asset_with_const_bad_not_const(init_value : map<string, nat>)
+
+asset my_asset {
+    k : string;
+    v : nat;
+} initialized with init_value
+
+variable n : nat = 0
+
+entry exec () {
+  for i in my_asset do
+    n += my_asset[i].v
+  done
+}
