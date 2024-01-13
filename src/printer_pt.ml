@@ -107,15 +107,15 @@ let container_to_str c =
   | AssetKey       -> "asset_key"
 
 let skip_keyword = function
-| "address_to_contract"
-(* | "make_asset" *)
-| "make_big_map"
-| "make_event"
-| "make_list"
-| "make_map"
-| "make_set"
-| "global_constant" -> true
-| _ -> false
+  | "address_to_contract"
+  (* | "make_asset" *)
+  | "make_big_map"
+  | "make_event"
+  | "make_list"
+  | "make_map"
+  | "make_set"
+  | "global_constant" -> true
+  | _ -> false
 
 let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || (not (skip_keyword str) && is_keyword str)
 
@@ -977,17 +977,17 @@ let pp_ident_state fmt item =
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
-  let pp_init fmt v = 
-  match v with
-  | IAliteral l -> begin
-  Format.fprintf fmt "{@\n  @[%a@]@\n}"
-      (pp_list ";@\n"
-         (fun fmt x ->
-            match unloc x with
-              Erecord (scope, l) -> pp_record_expr_internal fmt (scope, l)
-            | _ -> assert false)) l
-            end
-  | IAident id -> pp_id fmt id
+  let pp_init fmt v =
+    match v with
+    | IAliteral l -> begin
+        Format.fprintf fmt "{@\n  @[%a@]@\n}"
+          (pp_list ";@\n"
+             (fun fmt x ->
+                match unloc x with
+                  Erecord (scope, l) -> pp_record_expr_internal fmt (scope, l)
+                | _ -> assert false)) l
+      end
+    | IAident id -> pp_id fmt id
   in
   match apo with
   | APOinit v ->
@@ -1203,9 +1203,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
             Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
               pp_entry_properties pr
               (fun fmt code ->
-                   Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
-                     (pp_expr e_default PNone) code
-                 ) cod)) (entry_properties, body)
+                 Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
+                   (pp_expr e_default PNone) code
+              ) cod)) (entry_properties, body)
 
   | Dtransition (id, args, from, props, trs) ->
     Format.fprintf fmt "transition %a%a%a"

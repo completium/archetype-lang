@@ -15,10 +15,10 @@ let generate_storage (model : model) : model =
   let asset_to_storage_items (asset : asset) : storage_item =
     let asset_name = asset.name in
     let typ_ = tcollection asset_name in
-    let init : mterm = 
-     match asset.init with
-     | IAident id -> mk_mterm (Mvar (mk_mident id, Vlocal)) typ_
-     | IAliteral init ->  (mk_mterm (Massets init) typ_)
+    let init : mterm =
+      match asset.init with
+      | IAident id -> mk_mterm (Mvar (mk_mident id, Vlocal)) typ_
+      | IAliteral init ->  (mk_mterm (Massets init) typ_)
     in
     mk_storage_item
       ~no_storage:asset.no_storage

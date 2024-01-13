@@ -1824,10 +1824,10 @@ let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
   let pp_init fmt init =
-  match init with
-  | IAident id -> Format.fprintf fmt "@\ninitialized by %a@\n" pp_id id
-  | IAliteral [] -> ()
-  | IAliteral xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs
+    match init with
+    | IAident id -> Format.fprintf fmt "@\ninitialized by %a@\n" pp_id id
+    | IAliteral [] -> ()
+    | IAliteral xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs
   in
   Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_mid asset.name

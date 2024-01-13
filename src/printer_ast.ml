@@ -1028,17 +1028,17 @@ let pp_asset fmt (a : asset) =
           Format.fprintf fmt " shadow {@\n  @[%a@]@\n} "
             (pp_list "@\n" pp_field) fields)) shadow_fields
     (pp_do_if (match a.init with | IAliteral [] -> false | _ -> true) (
-        let pp1 fmt init1 =
-          Format.fprintf fmt "  {%a};"
-            (pp_list "; " pp_pterm) init1
-        in
-        let pp2 fmt v =
-        match v with
-        | IAliteral l -> Format.fprintf fmt "{@\n%a@\n} " (pp_list "@\n" pp1) l
-        | IAident id -> pp_id fmt id
-        in
-        fun fmt init ->
-          Format.fprintf fmt " initialized by %a " pp2 init)) a.init
+         let pp1 fmt init1 =
+           Format.fprintf fmt "  {%a};"
+             (pp_list "; " pp_pterm) init1
+         in
+         let pp2 fmt v =
+           match v with
+           | IAliteral l -> Format.fprintf fmt "{@\n%a@\n} " (pp_list "@\n" pp1) l
+           | IAident id -> pp_id fmt id
+         in
+         fun fmt init ->
+           Format.fprintf fmt " initialized by %a " pp2 init)) a.init
     (pp_do_if (not (List.is_empty a.specs)) (
         fun fmt ->
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"
