@@ -389,6 +389,18 @@ describe('type-errors', async () => {
     const stat = compile("../tests/type-errors/invalid_bytes_literal.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('invalid_init_asset_with_const_bad_not_const', async () => {
+    const stat = compile("../tests/type-errors/invalid_init_asset_with_const_bad_not_const.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_init_asset_with_const_bad_type', async () => {
+    const stat = compile("../tests/type-errors/invalid_init_asset_with_const_bad_type.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('invalid_init_asset_with_const_not_found', async () => {
+    const stat = compile("../tests/type-errors/invalid_init_asset_with_const_not_found.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('invalid_instruction_view_asset', async () => {
     const stat = compile("../tests/type-errors/invalid_instruction_view_asset.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
