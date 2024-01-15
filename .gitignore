@@ -35,3 +35,4 @@ npm-package/src/api.bc.js
 .vscode/
 node_modules
 octez_client_man_v3
+./npm-package/dist/api.bc.js

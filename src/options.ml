@@ -24,7 +24,7 @@ let string_to_target_lang = function
   | "debug-trace"       -> DebugTrace
   | v                   -> raise (UnknownTarget v)
 
-let version = "1.5.1"
+let version = "1.5.1-rev1"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
