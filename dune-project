@@ -37,4 +37,5 @@ on the Tezos blockchain, with a specific focus on contract security
     xmlm
     alcotest
   )
+  (conflicts "ocaml-option-bytecode-only")
 )

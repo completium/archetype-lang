@@ -37,7 +37,7 @@
   (modules api)
   (libraries js_of_ocaml archetype menhirLib unix)
   (public_name api)
-  (modes native js)
+  (modes native byte js)
   (name  api))
 
 (executable
