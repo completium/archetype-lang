@@ -32,6 +32,7 @@ depends: [
   "alcotest"
   "odoc" {with-doc}
 ]
+conflicts: ["ocaml-option-bytecode-only"]
 build: [
   ["dune" "subst"] {dev}
   [
