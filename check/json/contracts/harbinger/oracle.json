@@ -11,6 +11,73 @@
       },
       "const": false,
       "default": null
+    },
+    {
+      "name": "init_data",
+      "type": {
+        "node": "big_map",
+        "name": null,
+        "int_value": null,
+        "args": [
+          {
+            "node": "string",
+            "name": null,
+            "int_value": null,
+            "args": []
+          },
+          {
+            "node": "tuple",
+            "name": null,
+            "int_value": null,
+            "args": [
+              {
+                "node": "date",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "date",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              },
+              {
+                "node": "nat",
+                "name": null,
+                "int_value": null,
+                "args": []
+              }
+            ]
+          }
+        ]
+      },
+      "const": true,
+      "default": null
     }
   ],
   "types": {

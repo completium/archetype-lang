@@ -1,4 +1,4 @@
-archetype oracle(publickey : key)
+archetype oracle(publickey : key, const init_data : big_map<string, (date * date * nat * nat * nat * nat * nat)>)
 
 asset oracleData to big_map {
   code     : string;
@@ -9,10 +9,7 @@ asset oracleData to big_map {
   low      : nat;
   close    : nat;
   volume   : nat
-} initialized by {
-  { "XTZ-USD"; int_to_date(0); int_to_date(0); 0; 0; 0; 0; 0 };
-  { "BTC-USD"; int_to_date(0); int_to_date(0); 0; 0; 0; 0; 0 }
-}
+} initialized by init_data
 
 states =
 | Running initial

@@ -89,9 +89,25 @@ export class Oracle {
         }
         throw new Error("Contract not initialised");
     }
-    async deploy(publickey: att.Key, params: Partial<ex.Parameters>) {
+    async deploy(publickey: att.Key, init_data: Array<[
+        string,
+        [
+            Date,
+            Date,
+            att.Nat,
+            att.Nat,
+            att.Nat,
+            att.Nat,
+            att.Nat
+        ]
+    ]>, params: Partial<ex.Parameters>) {
         const address = (await ex.deploy("../tests/contracts/harbinger/oracle.arl", {
-            publickey: publickey.to_mich()
+            publickey: publickey.to_mich(),
+            init_data: att.list_to_mich(init_data, x => {
+                const x_key = x[0];
+                const x_value = x[1];
+                return att.elt_to_mich(att.string_to_mich(x_key), att.pair_to_mich([att.date_to_mich(x_value[0]), att.date_to_mich(x_value[1]), x_value[2].to_mich(), x_value[3].to_mich(), x_value[4].to_mich(), x_value[5].to_mich(), x_value[6].to_mich()]));
+            })
         }, params)).address;
         this.address = address;
     }

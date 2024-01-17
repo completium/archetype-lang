@@ -96,11 +96,16 @@ const input4 = new oracleData_value(
   new Nat(28)
 )
 
+const init_date = new Date('1970-01-01')
+const zero = new Nat(0)
+const init_data_value : [ Date, Date, Nat, Nat, Nat, Nat, Nat] = [init_date, init_date, zero, zero, zero, zero, zero]
+export const init_data : Array<[string, [ Date, Date, Nat, Nat, Nat, Nat, Nat]]> = [[asset2, init_data_value], [asset1, init_data_value]]
+
 /* Scenario ---------------------------------------------------------------- */
 
 describe('[Oracle] Contract deployment', async () => {
   it('Deploy Oracle', async () => {
-    await oracle.deploy(alice.get_public_key(), { as: alice })
+    await oracle.deploy(alice.get_public_key(), init_data, { as: alice })
   });
 })
 

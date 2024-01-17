@@ -3,7 +3,7 @@
 import { Entrypoint, Int, Nat } from '@completium/archetype-ts-types'
 import { expect_to_fail, get_account, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
-import { asset1, sign_oracle_data } from './harbinger.oracle.spec'
+import { asset1, init_data, sign_oracle_data } from './harbinger.oracle.spec'
 import { normalizer, queue } from '../../bindings/contracts/harbinger/normalizer'
 import { oracle, oracleData_value } from '../../bindings/contracts/harbinger/oracle'
 
@@ -125,7 +125,7 @@ const VWAP6 = computeVWAP(input6.high, input6.low, input6.close, input6.volume)
 
 describe('[Normalizer] Contracts deployment', async () => {
   it('Deploy Oracle', async () => {
-    await oracle.deploy(alice.get_public_key(), { as: alice })
+    await oracle.deploy(alice.get_public_key(), init_data, { as: alice })
   });
   it('Deploy Normalizer', async () => {
     const oracle_addr = oracle.get_address()
