@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -1234,6 +1234,8 @@ import * as ticket_var_option from '../bindings/passed/ticket_var_option'
 import * as ticket_var_or_left from '../bindings/passed/ticket_var_or_left'
 import * as ticket_var_or_right from '../bindings/passed/ticket_var_or_right'
 import * as ticket_var_simple from '../bindings/passed/ticket_var_simple'
+import * as timelock from '../bindings/passed/timelock'
+import * as timelock_hardcoded from '../bindings/passed/timelock_hardcoded'
 import * as transfer_call from '../bindings/passed/transfer_call'
 import * as transfer_entrypoint from '../bindings/passed/transfer_entrypoint'
 import * as transfer_entrypoint2 from '../bindings/passed/transfer_entrypoint2'
@@ -24121,6 +24123,34 @@ describe('passed', async () => {
     await ticket_var_simple.ticket_var_simple.exec({ as: alice })
     const info_after = await ticket_var_simple.ticket_var_simple.get_info()
     assert(info_after.equals(Option.Some([ticket_var_simple.ticket_var_simple.get_address(), "info", new Nat(1)])));
+  })
+
+  it('timelock', async () => {
+    await timelock.timelock.deploy({ as: alice })
+
+    const res_before = await timelock.timelock.get_res()
+    assert(res_before.equals(new Bytes("00")));
+
+    await timelock.timelock.exec(
+      new Chest_key("f18ca686eae9c4a0af9afaddaeb8f189f2bcdd85f2f8aec380e0a4b0d3fb98b1aae1a28bc8b1dce091def4ca96978ddabdf782a2acf5d69bbdbb9cedcfb980989298bcb4dfd1dce6df8fbad98180cbafaccaa2cfbea080ee83c0fbfdbe85c6aefbfeb095bdbbedc9acc0d8c495cf9db4b4c4c8f4ad9e96e8b9fdbf9792fbc090fea1f9c4cd95b283cafdec8eb5e5a9ddbac1adeff3b6cbfeb3bcf1d7e8c4ab97a59697d7e987ad92eb87b99cde93a09a949e92a6d4d092d99c9495e5d8d6a2b5acd5e1e298feaac8f3d8cecde4ea8d8badc0b7f3e283bfabfeb8ff8caec1ea92faacc68f83c38a988bc5a8cedc96bfb7a7d6aeeaa38b8bdb88a99ab994e089edb6c8ee84aead85cdd1abc3d481d3d29cc8b9a0b79e92dfb9ba90cfe8d5ba9098cfa7d4b70898e8a1d498b2a3e7a7d4aab294a2e484e5ea8af6e1b8a9d7dcdbfbffffc4f892a587adcdf1ddb6b28ce586e2c1c7d6bab8b8f48697fd8ccc8595f9e7e39cf6c2b48ffeeae9f2df9ed5dbc0f290edc8e5d08baccb8ad6df80a6f2bf8bab99fee09ac8f3859fcd87bdaed3a2c5bde49eb7b8978fb4b7eb8ecdbccfb3c1aeb089fedeeba3f191dadece97d3cc92c285f0fbc087c8d1ca8fa1cebecfc7c2d7d29690f8f7d4b6eec3c59087c2ea8feec3c5e8f1bb8da6d7aff2a2fbbec6c8d8e7a180f2fdeed3c0c6e1bafdf5e493c5a6e29bbec7be8aa5e3e7a7edef92c793d1a7a9c9ae86c5facba2b7b7c2b290aec3f288c385e6e8b9868ae7ad98c09db3ceb2eac9d6fdabb1a3f180b785c5d1b6a8999c99e5aa9686f38995b19de3b0b78c8af88398bdf707adbfe5f8f0ec90c1ecfda19bffe6f7c2e993f397a997ffc192aeb8b5bdf0dd9cedcbadbad1d5e5f5c6bc96c5fecca5b299dfc2abb499e798a3acabcf8e82ea83bdf586cffccdf8c7928fa892dad2c3ca9ce88992c286f7aed189aad9def7fcd6aca18accf398bdba8b94bc94eddf9599899d8abbabbbbbc3e7aba7c1cdec93eeb9e184fcdbe2cd9499b7a6b38afb95fdbde4b8a1ddc6a1b1bfd8b9c7a5ccd38eafc0dee8cbc796d49eabb983e88882c0998ecd95cab2adb8f3dfbf9ff38191afde8fa69f97edb3c197a2a7d2aba58dd88eafe59d9abae39986f3a4c3c0daebbcc3dbf4b4cfd8eee395defac8ed8fedb9f5fbf9a5cad7d7d5c584abf8dfb78197a5c4d587dff596aae6f5cfd5df8bf1ae85f5e0ced4e086f6cd958bdb899afde790d7c7b30182b8aecef88ede978981a0c4ffe8db94fdba03"),
+      new Chest("dae4b7998aefb7e58aa6d8f59893e4e3aeb0cdaaf2ccada8e9eef7ac8efed8b0e0a7b8f5d0bbffcbdc88e4a1f9a3fba6de8087dbb085f0efb38e86e3f09cf9b0a6fea0dbaad0e68fe1bd98e3a6a7f8bfcee5d0b595abaf9aa5a4c3dcd3e2c38acbbcc9cffdd193cc8390ccc7f3f8a6a3d9b19ac390e6c6d6e2a3cdf9e6d7fec7dffcaeeddaee8eceeac288df939ed0bfadb696c7aac3b4fce1939ed5f0afb2bff2b9e5c1f4bc8cd196fe8490ccc1d2eb9798bdd1e5cbefceeac5c4aa8cec849aeaaa8bd9bac19d90b3c9cd94d5d0c68ff3b9a49ec1f9a9cfbba6cacdafa6e692a4949ba399d083aff4e3cae1ece8c5a2c6bb9dae848083c2c9e5dc98bf9df5ac8ec5c8eae1b7c9a9ee92fee8f0edb7ffecddc5a2c0bb91ae9fc2e0c18f92f0dda3e1abfb027b88ac13b80d13c2540181a679f1021aa4aa94ec1faf384e0000001f0c62bca2656e74df9b28296aa17e03bd476d28d813fd2f44d75e3259d0dc4b"),
+      new Nat(3600),
+      { as: alice })
+
+    const res_after = await timelock.timelock.get_res()
+    assert(res_after.equals(new Bytes("050100000009617263686574797065")));
+  })
+
+  it('timelock_hardcoded', async () => {
+    await timelock_hardcoded.timelock_hardcoded.deploy({ as: alice })
+
+    const res_before = await timelock_hardcoded.timelock_hardcoded.get_res()
+    assert(res_before.equals(new Bytes("00")));
+
+    await timelock_hardcoded.timelock_hardcoded.exec({ as: alice })
+
+    const res_after = await timelock_hardcoded.timelock_hardcoded.get_res()
+    assert(res_after.equals(new Bytes("050100000009617263686574797065")));
   })
 
   it('transfer_call', async () => {

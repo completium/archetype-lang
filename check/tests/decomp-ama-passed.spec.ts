@@ -4929,6 +4929,14 @@ describe('decomp-ama-passed', async () => {
     const stat = compile("../tests/passed/ticket_var_simple.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('timelock', async () => {
+    const stat = compile("../tests/passed/timelock.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('timelock_hardcoded', async () => {
+    const stat = compile("../tests/passed/timelock_hardcoded.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('transfer_call', async () => {
     const stat = compile("../tests/passed/transfer_call.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

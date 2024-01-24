@@ -5253,6 +5253,14 @@ describe('decomp-mic-passed', async () => {
     const stat = compile("michelson/passed/ticket_var_simple.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('timelock', async () => {
+    const stat = compile("michelson/passed/timelock.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('timelock_hardcoded', async () => {
+    const stat = compile("michelson/passed/timelock_hardcoded.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('transfer_call', async () => {
     const stat = compile("michelson/passed/transfer_call.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
