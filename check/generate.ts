@@ -180,7 +180,7 @@ const extract_file_dir = (path: string, ext: string): Array<string> => {
 describe('Generate binding', async () => {
   describe('contracts', async () => {
     const p = '../tests/contracts'
-    const ids = ['a2', 'fa1.2', 'fa2', 'fa2.1', 'harbinger', 'multisig', 'poll']
+    const ids = ['a2', 'fa1.2', 'fa2', 'fa2.1', 'harbinger', 'multisig', 'poll', 'raffle']
     for (const id of ids) {
       it(id, () => {
         const pa = p + '/' + id;

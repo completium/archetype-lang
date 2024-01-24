@@ -1,0 +1,327 @@
+{ storage
+    (pair (address %owner)
+          (mutez %jackpot)
+          (mutez %ticket_price)
+          (option %o_settings
+             (pair (timestamp %open_buy)
+                   (timestamp %close_buy)
+                   (nat %chest_time)
+                   (pair %reveal_fee int nat)))
+          (map %player address (pair (chest %locked_raffle_key) (bool %revealed)))
+          (nat %raffle_key)
+          (int %_state)) ;
+  parameter
+    (or (or (pair %initialise
+               (timestamp %ob)
+               (pair (timestamp %cb) (pair (nat %t) (pair %rf int nat))))
+            (chest %buy))
+        (or (pair %reveal (address %addr) (chest_key %k)) (unit %transfer))) ;
+  code { LAMBDA
+           (pair (pair (pair int nat) (pair int nat)) (or unit (or (or unit unit) (or unit unit))))
+           bool
+           { UNPAIR ;
+             UNPAIR ;
+             DIP 1 { UNPAIR } ;
+             UNPAIR ;
+             DUG 3 ;
+             MUL ;
+             DIP 1 { MUL } ;
+             SWAP ;
+             COMPARE ;
+             SWAP ;
+             IF_LEFT
+               { DROP 1 ; EQ }
+               { IF_LEFT
+                   { IF_LEFT { DROP 1 ; LT } { DROP 1 ; LE } }
+                   { IF_LEFT { DROP 1 ; GT } { DROP 1 ; GE } } } } ;
+         NIL operation ;
+         DIG 2 ;
+         UNPAIR ;
+         DIP 1 { UNPAIR 7 } ;
+         IF_LEFT
+           { IF_LEFT
+               { UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 UNPAIR ;
+                 SWAP ;
+                 DUP 5 ;
+                 SENDER ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                 DUP 4 ;
+                 NOW ;
+                 COMPARE ;
+                 LE ;
+                 IF { DUP 3 ;
+                      DUP 5 ;
+                      COMPARE ;
+                      LT ;
+                      IF { PUSH bool True } { PUSH bool False } }
+                    { PUSH bool False } ;
+                 NOT ;
+                 IF { PUSH string "INVALID_OPEN_CLOSE_BUY" ; FAILWITH } {} ;
+                 DUP 13 ;
+                 UNIT ;
+                 RIGHT unit ;
+                 LEFT (or unit unit) ;
+                 RIGHT unit ;
+                 PUSH nat 1 ;
+                 PUSH int 1 ;
+                 PAIR ;
+                 DUP 4 ;
+                 PAIR ;
+                 PAIR ;
+                 EXEC ;
+                 NOT ;
+                 IF { PUSH string "INVALID_REVEAL_FEE" ; FAILWITH } {} ;
+                 DUP 6 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_AMOUNT" ; FAILWITH } {} ;
+                 DUP 11 ;
+                 DUP ;
+                 PUSH int 0 ;
+                 COMPARE ;
+                 EQ ;
+                 IF { DUP 2 ;
+                      DUP 4 ;
+                      PAIR ;
+                      DUP 5 ;
+                      PAIR ;
+                      DUP 6 ;
+                      PAIR ;
+                      SOME ;
+                      DIP 1 { DIG 8 ; DROP 1 } ;
+                      DUG 8 ;
+                      PUSH int 1 ;
+                      DIP 1 { DIG 11 ; DROP 1 } ;
+                      DUG 11 }
+                    { PUSH string "INVALID_STATE" ; FAILWITH } ;
+                 DROP 5 ;
+                 PAIR 7 ;
+                 SWAP ;
+                 PAIR }
+               { DUP 8 ;
+                 PUSH int 1 ;
+                 COMPARE ;
+                 NEQ ;
+                 IF { PUSH string "INVALID_STATE" ; FAILWITH } {} ;
+                 DUP 5 ;
+                 IF_NONE { PUSH string "SETTINGS_NOT_INITIALIZED" ; FAILWITH } {} ;
+                 DUP 5 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "INVALID_TICKET_PRICE" ; FAILWITH } {} ;
+                 NOW ;
+                 DUP 2 ;
+                 GET 1 ;
+                 COMPARE ;
+                 LT ;
+                 IF { DUP ;
+                      GET 3 ;
+                      NOW ;
+                      COMPARE ;
+                      LT ;
+                      IF { PUSH bool True } { PUSH bool False } }
+                    { PUSH bool False } ;
+                 NOT ;
+                 IF { PUSH string "RAFFLE_CLOSED" ; FAILWITH } {} ;
+                 DUP 7 ;
+                 SENDER ;
+                 MEM ;
+                 IF { PUSH string "player" ; PUSH string "KEY_EXISTS" ; PAIR ; FAILWITH }
+                    { DUP 7 ;
+                      PUSH bool False ;
+                      DUP 4 ;
+                      PAIR ;
+                      SOME ;
+                      SENDER ;
+                      UPDATE ;
+                      DIP 1 { DIG 6 ; DROP 1 } ;
+                      DUG 6 } ;
+                 DROP 2 ;
+                 PAIR 7 ;
+                 SWAP ;
+                 PAIR } }
+           { IF_LEFT
+               { UNPAIR ;
+                 SWAP ;
+                 DUP 9 ;
+                 PUSH int 1 ;
+                 COMPARE ;
+                 NEQ ;
+                 IF { PUSH string "INVALID_STATE" ; FAILWITH } {} ;
+                 DUP 6 ;
+                 IF_NONE { PUSH string "SETTINGS_NOT_INITIALIZED" ; FAILWITH } {} ;
+                 DUP 8 ;
+                 DUP 4 ;
+                 GET ;
+                 IF_NONE { PUSH string "PLAYER_NOT_FOUND" ; FAILWITH } {} ;
+                 NOW ;
+                 DUP 3 ;
+                 GET 3 ;
+                 COMPARE ;
+                 LT ;
+                 NOT ;
+                 IF { PUSH string "RAFFLE_OPEN" ; FAILWITH } {} ;
+                 DUP ;
+                 GET 2 ;
+                 IF { PUSH string "PLAYER_ALREADY_REVEALED" ; FAILWITH } {} ;
+                 DUP 2 ;
+                 GET 5 ;
+                 DUP 2 ;
+                 GET 1 ;
+                 DUP 5 ;
+                 OPEN_CHEST ;
+                 IF_NONE
+                   { PUSH string "INVALID_CHEST_KEY" ; FAILWITH }
+                   { DUP ;
+                     UNPACK nat ;
+                     IF_NONE
+                       { DUP 10 ;
+                         NONE (pair chest bool) ;
+                         DUP 7 ;
+                         UPDATE ;
+                         DIP 1 { DIG 9 ; DROP 1 } ;
+                         DUG 9 }
+                       { DUP ;
+                         DUP 13 ;
+                         ADD ;
+                         DIP 1 { DIG 11 ; DROP 1 } ;
+                         DUG 11 ;
+                         DUP 11 ;
+                         DUP 12 ;
+                         DUP 8 ;
+                         GET ;
+                         IF_NONE
+                           { PUSH string "player" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                           {} ;
+                         UNPAIR ;
+                         SWAP ;
+                         DROP 1 ;
+                         PUSH bool True ;
+                         SWAP ;
+                         PAIR ;
+                         SOME ;
+                         DUP 8 ;
+                         UPDATE ;
+                         DIP 1 { DIG 10 ; DROP 1 } ;
+                         DUG 10 ;
+                         DROP 1 } ;
+                     DROP 1 } ;
+                 NIL operation ;
+                 NIL operation ;
+                 DUP 14 ;
+                 ITER { CONS } ;
+                 SENDER ;
+                 CONTRACT unit ;
+                 IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
+                 DUP 10 ;
+                 DUP 6 ;
+                 GET 6 ;
+                 UNPAIR ;
+                 DIP 2
+                     { PUSH mutez 1 ;
+                       SWAP ;
+                       EDIV ;
+                       IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+                       CAR } ;
+                 ABS ;
+                 DIG 2 ;
+                 MUL ;
+                 EDIV ;
+                 IF_NONE { PUSH string "DIV_BY_ZERO" ; FAILWITH } {} ;
+                 CAR ;
+                 PUSH mutez 1 ;
+                 MUL ;
+                 UNIT ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 11 ; DROP 1 } ;
+                 DUG 11 ;
+                 DROP 4 ;
+                 PAIR 7 ;
+                 SWAP ;
+                 PAIR }
+               { DROP 1 ;
+                 DUP 5 ;
+                 SIZE ;
+                 NIL address ;
+                 NIL address ;
+                 DUP 8 ;
+                 ITER { UNPAIR ;
+                        DUP 2 ;
+                        GET 2 ;
+                        IF { DUP 3 ; DUP 2 ; CONS } { DUP 3 } ;
+                        DIP 1 { DIG 2 ; DROP 1 } ;
+                        DUG 2 ;
+                        DROP 2 } ;
+                 ITER { CONS } ;
+                 SIZE ;
+                 COMPARE ;
+                 EQ ;
+                 NOT ;
+                 IF { PUSH string "EXISTS_NOT_REVEALED" ; FAILWITH } {} ;
+                 DUP 7 ;
+                 DUP ;
+                 PUSH int 1 ;
+                 COMPARE ;
+                 EQ ;
+                 IF { NONE address ;
+                      PUSH nat 0 ;
+                      PAIR ;
+                      DUP 7 ;
+                      ITER { UNPAIR ;
+                             DUP 9 ;
+                             SIZE ;
+                             INT ;
+                             DUP 11 ;
+                             INT ;
+                             EDIV ;
+                             IF_NONE
+                               { PUSH string "DIV_BY_ZERO" ; FAILWITH }
+                               { DUP ; CDR ; SWAP ; DROP 1 } ;
+                             DUP 4 ;
+                             GET 1 ;
+                             COMPARE ;
+                             EQ ;
+                             IF { DUP ; SOME ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR }
+                                { DUP 3 ; GET 2 ; PUSH nat 1 ; DUP 5 ; GET 1 ; ADD ; PAIR } ;
+                             DIP 1 { DIG 2 ; DROP 1 } ;
+                             DUG 2 ;
+                             DROP 2 } ;
+                      CDR ;
+                      IF_NONE { PUSH string "INTERNAL_ERROR" ; FAILWITH } {} ;
+                      NIL operation ;
+                      NIL operation ;
+                      DUP 12 ;
+                      ITER { CONS } ;
+                      DUP 3 ;
+                      CONTRACT unit ;
+                      IF_NONE { PUSH string "ENTRY_NOT_FOUND" ; FAILWITH } {} ;
+                      BALANCE ;
+                      UNIT ;
+                      TRANSFER_TOKENS ;
+                      CONS ;
+                      ITER { CONS } ;
+                      DIP 1 { DIG 9 ; DROP 1 } ;
+                      DUG 9 ;
+                      DROP 1 ;
+                      PUSH int 2 ;
+                      DIP 1 { DIG 7 ; DROP 1 } ;
+                      DUG 7 }
+                    { PUSH string "INVALID_STATE" ; FAILWITH } ;
+                 DROP 1 ;
+                 PAIR 7 ;
+                 SWAP ;
+                 PAIR } } ;
+         DIP 1 { DROP 1 } } }
