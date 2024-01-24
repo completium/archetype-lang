@@ -9,7 +9,7 @@
     "show_tezos_client_version": "tezos-client --version",
     "log:dump": "completium-cli log dump",
     "completium_add_users": "completium-cli generate account as account_0 && completium-cli generate account as account_1 && completium-cli generate account as account_2 && completium-cli generate account as account_3",
-    "mockup_init": "completium-cli mockup init",
+    "mockup_init": "completium-cli mockup init --protocol ProxfordYmVfjWnRcgjWH36fW6PArwqykTFzotUxRs6gmTcZDuH",
     "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts ./tests/type-errors.spec.ts ./tests/model-errors.spec.ts ./tests/contracts/*.spec.ts ./tests/passed.spec.ts",
     "test:errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/syntax-errors.spec.ts ./tests/type-errors.spec.ts ./tests/model-errors.spec.ts ./tests/passed-errors.spec.ts",
     "test:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/passed.spec.ts -g timelock",
