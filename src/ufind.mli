@@ -34,9 +34,8 @@ module type Data = sig
   type data
   type effects
 
-  val default   : data
-  val isvoid    : data -> bool
   val noeffects : effects
+  val fresh     : unit -> data
   val union     : data -> data -> data * effects
 end
 
@@ -52,13 +51,9 @@ module type S = sig
 
   val find  : item -> t -> item
   val same  : item -> item -> t -> bool
-  val data  : item -> t -> data
-  val set   : item -> data -> t -> t
-  val isset : item -> t -> bool
-  val union : item -> item -> t -> t * effects
-  val domain: t -> item list
-  val closed: t -> bool
-  val opened: t -> int
+  val data  : item -> t -> data option
+  val set   : item -> data -> t -> t * effects
+  val union : ?prio:[`Left | `Right] -> item -> item -> t -> t * effects
 end
 
 (* -------------------------------------------------------------------- *)
@@ -66,18 +61,3 @@ module Make (I : Item) (D : Data)
   : S with type item    = I.t
        and type data    = D.data
        and type effects = D.effects
-
-(* -------------------------------------------------------------------- *)
-module type US = sig
-  type item
-  type t
-
-  val initial : t
-
-  val find  : item -> t -> item
-  val union : item -> item -> t -> t
-  val same  : item -> item -> t -> bool
-end
-
-(* -------------------------------------------------------------------- *)
-module UMake (I : Item) : US with type item = I.t

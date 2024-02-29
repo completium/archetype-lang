@@ -1511,5 +1511,5 @@ and tycheck_r (env : env) (stack : stack) (code : M.code_node) : stack option =
 (* -------------------------------------------------------------------- *)
 and tycheck (env : env) (stack : stack) (code : M.code) : stack option =
   let stk = tycheck_r env stack code.node in
-  let stk = Stack.merge stk !(code.type_) in
-  code.type_ := stk; stk
+  let stk = Stack.merge stk (Option.bind snd !(code.type_)) in
+  code.type_ := Some (stack, stk); stk

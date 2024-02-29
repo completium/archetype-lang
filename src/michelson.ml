@@ -263,7 +263,11 @@ and debug = {
   loc: Location.t option;
 }
 
-and code = { node : code_node; type_: (type_ list) option ref; debug : debug option }
+and code = {
+  node : code_node;
+  type_: (type_ list * type_ list option) option ref;
+  debug : debug option;
+}
 
 and z_operator =
   | Znow
@@ -1493,7 +1497,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     (* Custom *)
     | CUSTOM v                 -> CUSTOM v
   in
-  let type_ = Option.map (List.map ft) !(x.type_) in
+  let type_ = Option.map (fun (x, y) -> List.map ft x, Option.map (List.map ft) y) !(x.type_) in
   let debug = x.debug in
   mk_code ?debug ?type_ node
 
