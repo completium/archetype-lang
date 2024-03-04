@@ -1117,9 +1117,9 @@ let pp_metadata fmt (m : metadata) =
   | Mjson v -> Format.fprintf fmt "`%s`" (unloc v)
 
 let rec pp_declaration fmt { pldesc = e; _ } =
-  let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
-    match ap.sourcedby, ap.calledby, ap.require, ap.functions, a with
-    | None, None, None, [], None -> true
+  let is_empty_entry_properties_opt (pr : entry_properties) (a : 'a option) =
+    match pr.accept_transfer, pr.sourcedby, pr.calledby, pr.state_is, pr.require, pr.failif, pr.functions, a with
+    | (true, None), None, None, None, None, None, [], None -> true
     | _ -> false in
   match e with
   | Darchetype (id, ps, m) ->
@@ -1182,15 +1182,16 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "entry %a%a%a"
       pp_id id
       pp_fun_args args
-      (pp_do_if (not (is_empty_entry_properties_opt props code))
-         (fun fmt x ->
-            let pr, cod = x in
-            Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
+      (fun fmt (pr, cod) ->
+      match pr.accept_transfer, pr.sourcedby, pr.calledby, pr.state_is, pr.require, pr.failif, pr.functions, cod with
+      | (true, None), None, None, None, None, None, [], None -> ()
+      | (true, None), None, None, None, None, None, [], Some code -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_expr e_default PNone) code
+      | _ -> Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
               pp_entry_properties pr
               (pp_option (fun fmt code ->
                    Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
                      (pp_expr e_default PNone) code
-                 )) cod)) (props, code)
+                 )) cod) (props, code)
 
   | Dgetter ({name; args; ret_t; entry_properties; body}) ->
     Format.fprintf fmt "getter %a%a : %a%a"

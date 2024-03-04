@@ -372,7 +372,7 @@ end = struct
   let rec pp_rstack1 fmt (x : rstack1) =
     match x with
     | `VLocal  (_, i) -> Format.fprintf fmt "#%d" i
-    | `VGlobal (_, n) -> Format.fprintf fmt "%s" n
+    | `VGlobal (ty, n) -> Format.fprintf fmt "(%s : %a)" n Printer_michelson.pp_type ty
 
     | `Paired(x, y) ->
       Format.fprintf fmt "(%a, %a)" pp_rstack1 x pp_rstack1 y
@@ -422,13 +422,13 @@ end = struct
       let global, effects =     (* FIXME: Unify types? *)
         match d1.global, d2.global with
         | None, None ->
-           None, []
+          None, []
 
         | Some i, None | None, Some i ->
-           Some i, []
+          Some i, []
 
         | Some i, Some j ->
-           Some i, [`ExprUnify (i, j)]
+          Some i, [`ExprUnify (i, j)]
       in
 
       let d = { global; type_ = d1.type_; } in
@@ -450,13 +450,13 @@ end = struct
   and unify_r (uf : UF.t) (effect : effect) : UF.t * effect list =
     match effect with
     | `TyUnify (ty1, ty2) ->
-       unify_type_r uf ty1 ty2
+      unify_type_r uf ty1 ty2
 
     | `DvarUnify (x, y) ->
-       unify_dvar_r uf x y
+      unify_dvar_r uf x y
 
     | `ExprUnify (e1, e2) ->
-       unify_expr_r uf e1 e2
+      unify_expr_r uf e1 e2
 
   and unify_type_r (uf : UF.t) (ty1 : type_) (ty2 : type_) =
     match ty1.node, ty2.node with
@@ -468,35 +468,35 @@ end = struct
   and unify_dvar_r (uf : UF.t) (x : dvar) (y : dvar) =
     match x, y with
     | `VLocal (xty, x), `VLocal (yty, y) ->
-       let x = UF.find x uf in
-       let y = UF.find y uf in
-       let prio =
-         if x < 0 then Some `Left  else
-         if y < 0 then Some `Right else None in
+      let x = UF.find x uf in
+      let y = UF.find y uf in
+      let prio =
+        if x < 0 then Some `Left  else
+        if y < 0 then Some `Right else None in
 
-       let uf, effects = UF.union ?prio x y uf in
-       let uf, effx = UF.set x { global = None; type_ = xty } uf in
-       let uf, effy = UF.set y { global = None; type_ = yty } uf in
-       uf, List.flatten [effects; effx; effy]
+      let uf, effects = UF.union ?prio x y uf in
+      let uf, effx = UF.set x { global = None; type_ = xty } uf in
+      let uf, effy = UF.set y { global = None; type_ = yty } uf in
+      uf, List.flatten [effects; effx; effy]
 
     | `VLocal  (xty, x), `VGlobal (yty, y)
     | `VGlobal (yty, y), `VLocal  (xty, x) ->
 
-       let uf, eff1 =
-         UF.set
-           x
-           { global = Some (dvar (`VGlobal (yty, y)));
-             type_  = yty }
-           uf
-       in
+      let uf, eff1 =
+        UF.set
+          x
+          { global = Some (dvar (`VGlobal (yty, y)));
+            type_  = yty }
+          uf
+      in
 
-       let uf, eff2 = UF.set x { global = None; type_ = xty; } uf in
+      let uf, eff2 = UF.set x { global = None; type_ = xty; } uf in
 
-       uf, (eff1 @ eff2)
+      uf, (eff1 @ eff2)
 
     | `VGlobal (xty, x), `VGlobal (yty, y) ->
-       if x <> y then raise UnificationFailure;
-       uf, [`TyUnify (xty, yty)]
+      if x <> y then raise UnificationFailure;
+      uf, [`TyUnify (xty, yty)]
 
   and unify_expr_r (uf : UF.t) (e1 : dexpr) (e2 : dexpr) =
     let uf = unify_type uf e1.type_ e2.type_ in
@@ -543,29 +543,29 @@ end = struct
   and unify_rstack_r (uf : UF.t) (r1 : rstack) (r2 : rstack) =
     match r1, r2 with
     | i1 :: r1, i2 :: r2 ->
-       let uf, eff1 = unify_rstack1_r uf i1 i2 in
-       let uf, eff2 = unify_rstack_r uf r1 r2 in
-       uf, eff1 @ eff2
+      let uf, eff1 = unify_rstack1_r uf i1 i2 in
+      let uf, eff2 = unify_rstack_r uf r1 r2 in
+      uf, eff1 @ eff2
 
     | [], [] ->
-       uf, []
+      uf, []
 
     | _, _ ->
-       raise UnificationFailure
+      raise UnificationFailure
 
   and unify_rstack1_r (uf : UF.t) (i1 : rstack1) (i2 : rstack1) =
     match i1, i2 with
     | `Paired (r1, s1), `Paired (r2, s2) ->
-       let uf, eff1 = unify_rstack1_r uf r1 r2 in
-       let uf, eff2 = unify_rstack1_r uf s1 s2 in
-       uf, eff1 @ eff2
+      let uf, eff1 = unify_rstack1_r uf r1 r2 in
+      let uf, eff2 = unify_rstack1_r uf s1 s2 in
+      uf, eff1 @ eff2
 
     | (#dvar as i1), (#dvar as i2) ->
-       unify_dvar_r uf i1 i2
+      unify_dvar_r uf i1 i2
 
     | _, _ ->
-       uf, []
-(*       raise UnificationFailure *)
+      uf, []
+  (*       raise UnificationFailure *)
 
   and unify_stack (uf : UF.t) (r1 : rstack) (r2 : rstack) =
     pump (unify_rstack_r uf r1 r2)
@@ -574,10 +574,10 @@ end = struct
   let rec write_var (uf : UF.t) (e : dexpr) (x : rstack1) =
     match x, e.node with
     | #dvar as x, Dvar y ->
-       [], pump (unify_dvar_r uf x y)
-       
+      [], pump (unify_dvar_r uf x y)
+
     | #dvar as x, _ ->
-       [DIAssign (x, e)], uf
+      [DIAssign (x, e)], uf
 
     | `Paired (x1, x2), Depair (e1, e2) ->
       let a = vlocal (ty_of_rstack1 x1) in
@@ -646,9 +646,9 @@ end = struct
     { code; stack; failure; }
 
   let rec decompile_i (uf : UF.t) (s : rstack) (i : code) : UF.t * decomp =
-(*    Format.eprintf "%s@." (String.make 78 '=');    
-    Format.eprintf "%a@." Printer_michelson.pp_code i;
-    List.iteri (fun i r -> Format.eprintf "%i: %a@." i Michelson.pp_rstack1 r) s; *)
+    (*    Format.eprintf "%s@." (String.make 78 '=');
+          Format.eprintf "%a@." Printer_michelson.pp_code i;
+          List.iteri (fun i r -> Format.eprintf "%i: %a@." i Michelson.pp_rstack1 r) s; *)
 
     match i.node with
 
@@ -788,35 +788,35 @@ end = struct
       (uf, d)
 
     | CONS ->
-       let l, s = List.pop s in
-       let a = fresh_tvar () in
-       let uf = unify_type uf (ty_of_rstack1 l) (tlist a) in
-       let hd = vlocal a in
-       let c, uf =
-         write_var uf (dfun (tlist a) (`Bop Bcons) [dvar hd; (dexpr_of_rstack1 l)]) l
-       in
+      let l, s = List.pop s in
+      let a = fresh_tvar () in
+      let uf = unify_type uf (ty_of_rstack1 l) (tlist a) in
+      let hd = vlocal a in
+      let c, uf =
+        write_var uf (dfun (tlist a) (`Bop Bcons) [dvar hd; (dexpr_of_rstack1 l)]) l
+      in
 
-       let d =
-         mkdecomp
-           ((hd :> rstack1) :: (l :> rstack1) :: s)
-           c
-       in
-       (uf, d)
+      let d =
+        mkdecomp
+          ((hd :> rstack1) :: (l :> rstack1) :: s)
+          c
+      in
+      (uf, d)
 
     | GET ->
-       let l, s = List.pop s in
-       let a = fresh_tvar () in
-       let b = fresh_tvar () in
-       let uf = unify_type uf (ty_of_rstack1 l) (toption b) in
-       let k = vlocal a in
-       let m = vlocal (tmap a b) in
-       let c, uf = write_var uf (dfun (toption b) (`Bop Bget) [dvar k; dvar m]) l in
-       let d =
-         mkdecomp
-           ((k :> rstack1) :: (m :> rstack1) :: s)
-           c
-       in
-       (uf, d)
+      let l, s = List.pop s in
+      let a = fresh_tvar () in
+      let b = fresh_tvar () in
+      let uf = unify_type uf (ty_of_rstack1 l) (toption b) in
+      let k = vlocal a in
+      let m = vlocal (tmap a b) in
+      let c, uf = write_var uf (dfun (toption b) (`Bop Bget) [dvar k; dvar m]) l in
+      let d =
+        mkdecomp
+          ((k :> rstack1) :: (m :> rstack1) :: s)
+          c
+      in
+      (uf, d)
 
 
     | CONCAT               -> decompile_op uf s (`Bop Bconcat               )
@@ -961,7 +961,7 @@ end = struct
       let uf = unify_dcode uf bd1 bd2 in
 *)
 
-(*      let uf = pump (unify_rstack1_r uf x1 x2) in *)
+      (*      let uf = pump (unify_rstack1_r uf x1 x2) in *)
       let xs = vlocal (tlist (ty_of_rstack1 x1)) in
       let d =
         mkdecomp
@@ -1047,9 +1047,9 @@ end = struct
   and decompile_s (uf : UF.t) (s : rstack) (c : code list) : UF.t * decomp =
     let (failure, uf, stack), code =
       List.fold_left_map (fun (oldfail, uf, stack) code ->
-        let uf, { failure; stack; code; } = decompile_i uf stack code in
-        (oldfail || failure, uf, stack), code
-       ) (false, uf, s) (List.rev c) in
+          let uf, { failure; stack; code; } = decompile_i uf stack code in
+          (oldfail || failure, uf, stack), code
+        ) (false, uf, s) (List.rev c) in
 
     (uf, { failure; stack; code = List.flatten (List.rev code); })
 
@@ -1286,58 +1286,58 @@ end = struct
   and icode_propagate (uf : UF.t) (code : dinstr) =
     match code with
     | DIAssign (x, e) ->
-       let x = var_propagate uf x in
-       let e = expr_propagate uf e in
-       DIAssign (x, e)
+      let x = var_propagate uf x in
+      let e = expr_propagate uf e in
+      DIAssign (x, e)
 
     | DIIf (e, (d1, d2)) ->
-       let e  = expr_propagate uf e in
-       let d1 = dcode_propagate uf d1 in
-       let d2 = dcode_propagate uf d2 in
+      let e  = expr_propagate uf e in
+      let d1 = dcode_propagate uf d1 in
+      let d2 = dcode_propagate uf d2 in
 
-       DIIf (e, (d1, d2))
+      DIIf (e, (d1, d2))
 
     | DIMatch (e, bs) ->
-       let e = expr_propagate uf e in
+      let e = expr_propagate uf e in
 
-       let bs =
-         let for1 (x, ds, d) =
-           let d = dcode_propagate uf d in
-           let ds = List.map (dpattern_propagate uf) ds in
-           (x, ds, d) in
-         List.map for1 bs in
-       
-       DIMatch (e, bs)
+      let bs =
+        let for1 (x, ds, d) =
+          let d = dcode_propagate uf d in
+          let ds = List.map (dpattern_propagate uf) ds in
+          (x, ds, d) in
+        List.map for1 bs in
+
+      DIMatch (e, bs)
 
     | DIFailwith e ->
-       let e = expr_propagate uf e in
-       DIFailwith e
+      let e = expr_propagate uf e in
+      DIFailwith e
 
     | DIWhile (e, d) ->
-       let e = expr_propagate uf e in
-       let d = dcode_propagate uf d in
-       DIWhile (e, d)
+      let e = expr_propagate uf e in
+      let d = dcode_propagate uf d in
+      DIWhile (e, d)
 
     | DIIter (x, e, d) ->
-       let x = var_propagate uf x in
-       let e = expr_propagate uf e in
-       let d = dcode_propagate uf d in
-       DIIter (x, e, d)
+      let x = var_propagate uf x in
+      let e = expr_propagate uf e in
+      let d = dcode_propagate uf d in
+      DIIter (x, e, d)
 
     | DILoop (x, d) ->
-       let x = var_propagate uf x in
-       let d = dcode_propagate uf d in
-       DILoop (x, d)
+      let x = var_propagate uf x in
+      let d = dcode_propagate uf d in
+      DILoop (x, d)
 
   and dpattern_propagate (uf : UF.t) (dp : dpattern) =
     match dp with
     | DVar (ty, x) ->
-       DVar (ty, UF.find x uf)
+      DVar (ty, UF.find x uf)
 
     | DPair (dp1, dp2) ->
-       let dp1 = dpattern_propagate uf dp1 in
-       let dp2 = dpattern_propagate uf dp2 in
-       DPair (dp1, dp2)
+      let dp1 = dpattern_propagate uf dp1 in
+      let dp2 = dpattern_propagate uf dp2 in
+      DPair (dp1, dp2)
 
   and expr_propagate (uf : UF.t) (e : dexpr) =
     let node =
@@ -1350,39 +1350,39 @@ end = struct
             | `VLocal (_, x) -> begin
                 match UF.data x uf with
                 | Some { global = Some e } ->
-                   (expr_propagate uf e).node
+                  (expr_propagate uf e).node
                 | _ ->
-                   raise Default
+                  raise Default
               end
-          
+
             | _ ->
-               raise Default
+              raise Default
 
           with Default ->
-             Dvar (var_propagate uf x)
-        end  
+            Dvar (var_propagate uf x)
+        end
 
       | Depair (e1, e2) ->
-         let e1 = expr_propagate uf e1 in
-         let e2 = expr_propagate uf e2 in
-         Depair (e1, e2)
-  
+        let e1 = expr_propagate uf e1 in
+        let e2 = expr_propagate uf e2 in
+        Depair (e1, e2)
+
       | Ddata (_, _) ->
-         e.node
-  
+        e.node
+
       | Dfun (f, es) ->
-          let es = List.map (expr_propagate uf) es in
-          Dfun (f, es)
+        let es = List.map (expr_propagate uf) es in
+        Dfun (f, es)
 
     in { e with node }
 
   and var_propagate (uf : UF.t) (x : dvar) =
     match x with
     | `VGlobal _ ->
-       x
+      x
 
     | `VLocal (xty, x) ->
-       `VLocal (xty, UF.find x uf)
+      `VLocal (xty, UF.find x uf)
 
   (* -------------------------------------------------------------------- *)
   let decompile (michelson : michelson) =
@@ -1392,6 +1392,7 @@ end = struct
 
     let args prefix =
       let mkvar ty i : rstack1 =
+        (* `VGlobal (ty, (match ty.annotation with Some v -> if String.starts ~pattern:"%" v then (String.sub v 1 ((String.length v) - 1)) else v | _ ->Printf.sprintf "%s%d" prefix i)) in *)
         `VGlobal (ty, Printf.sprintf "%s%d" prefix i) in
 
       let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
@@ -1404,6 +1405,9 @@ end = struct
 
     let pst = args "args_" pty in
     let ast = args "sto_"  aty in
+
+    (* Format.eprintf "aty: %a@\n" pp_type_ aty;
+    Format.eprintf "ast: %a@\n" pp_rstack1 ast; *)
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1625,7 +1629,7 @@ end = struct
           | `Bop Badd,                 [ a; b ] -> mk_mterm (Mplus (f a, f b)) tint
           | `Bop Bsub,                 [ a; b ] -> mk_mterm (Mminus (f a, f b)) tint
           | `Bop Bmul,                 [ a; b ] -> mk_mterm (Mmult (f a, f b)) tint
-          | `Bop Bediv,                [ _a; _b ] -> assert false
+          | `Bop Bediv,                [ a; b ] -> mk_mterm (Mdivmod (f a, f b)) (ttuple [tint; tint])
           | `Bop Blsl,                 [ _a; _b ] -> assert false
           | `Bop Blsr,                 [ _a; _b ] -> assert false
           | `Bop Bor,                  [ a; b ] -> mk_mterm (Mor  (f a, f b)) tbool
@@ -1654,6 +1658,13 @@ end = struct
       let seq (c : dcode) : mterm =
         let instrs = List.map f c in
         seq instrs
+      in
+      let extract_or_pattern input : mident =
+        match input with
+        | [DVar (_ty, n)] -> M.mk_mident (dumloc (int_to_var n))
+        | [DPair (DVar (_ty, n), _p2)] -> M.mk_mident (dumloc (int_to_var n)) (* TODO *)
+        | [DPair (_p1, _p2)] -> Format.eprintf "%a@\n" (Printer_tools.pp_list ";" pp_dpattern) input; assert false
+        | _ -> assert false
       in
       begin
         match i with
@@ -1686,18 +1697,16 @@ end = struct
                pp_branch) bs *)
 
         | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
-          let extract_or_pattern input : mident =
-            match input with
-            | [DVar (_ty, n)] -> M.mk_mident (dumloc (int_to_var n))
-            | [DPair (_p1, _p2)] -> assert false
-            | _ -> assert false
-          in
           let li = extract_or_pattern lv in
           let ri = extract_or_pattern rv in
           mk_mterm (Minstrmatchor (g c, li, seq lc, ri, seq rc)) tunit
 
+        | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
+          let si = extract_or_pattern sv in
+          mk_mterm (Minstrmatchoption (g c, si, seq sc, seq nc)) tunit
+
         | DIFailwith e -> failg (for_expr e)
-        | _ -> assert false
+        | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false
       end
     in
     let instrs = List.map for_instr code in
@@ -1712,7 +1721,9 @@ end = struct
     let storage =
       List.mapi (fun n (_id, t) ->
           (* let id = if String.length id > 0 then String.sub id 1 (String.length id - 1) else id in *)
-          let id = Format.asprintf "sto_%d" (n + 1)  in
+          (* Format.eprintf "type: %a@\n" Michelson.pp_type_ t; *)
+          (* let id = match t.annotation with Some v -> if String.starts ~pattern:"%" v then (String.sub v 1 ((String.length v) - 1)) else v | _ -> Format.asprintf "sto_%d" (n + 1) in *)
+          let id = Format.asprintf "sto_%d" (n + 1) in
           M.mk_storage_item (M.mk_mident (dumloc id)) MTvar (for_type t) (data_to_mterm ~t:t (get_default_value t))
         ) storage_list
     in
