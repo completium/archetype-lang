@@ -912,11 +912,11 @@ let remove_enum (model : model) : model =
               | [] -> assert false
               | (c, d)::u -> List.fold_right (fun (g, h) (i, accu) ->
                   let v = mk_mvar g (tunit) in
-                  g, mk_matchor (v, g, h, i, accu)
+                  g, mk_matchor (v, [g], h, [i], accu)
                 ) (List.rev u) (c, d)
             end
             in
-            mk_matchor (ev, a, b, x, y)
+            mk_matchor (ev, [a], b, [x], y)
 
         end
       in
@@ -2497,7 +2497,7 @@ let remove_asset (model : model) : model =
           let dt = mk_mterm (Mdot (vid, fn)) typ in
           let vt = mk_some dt |> fm ctx in
           let nonevalue = mk_mterm Mnone otyp in
-          mk_mterm (Mmatchoption(mt, id, vt, nonevalue)) otyp
+          mk_mterm (Mmatchoption(mt, [id], vt, nonevalue)) otyp
         end
 
       | Mget (an, CKcoll, k) when Utils.is_asset_single_field model (string_to_mident an) && Utils.is_asset_map model (string_to_mident an) -> fm ctx k
@@ -3428,7 +3428,7 @@ let remove_asset (model : model) : model =
 
               let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
 
-              let matchsome : mterm = mk_mterm (Mmatchoption (va0, mk_mident (dumloc ""), mif, neutral)) vains.type_ in
+              let matchsome : mterm = mk_mterm (Mmatchoption (va0, [mk_mident (dumloc "")], mif, neutral)) vains.type_ in
 
               matchsome
               |> mk_letin ia1 (mk_tupleaccess 1 vains)
@@ -3446,7 +3446,7 @@ let remove_asset (model : model) : model =
             let i0 = mk_mident (dumloc "_i0") in
             let v0 : mterm = mk_mvar i0 a.type_ in
 
-            let matchsome : mterm = mk_mterm (Mmatchoption (vz0, mk_mident (dumloc ""), prepend vkid vz1, vz1)) tr in
+            let matchsome : mterm = mk_mterm (Mmatchoption (vz0, [mk_mident (dumloc "")], prepend vkid vz1, vz1)) tr in
 
             matchsome
             |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (tlist atk))
@@ -3836,7 +3836,7 @@ let remove_high_level_model (model : model)  =
       let some_value = mk_mvar id vt in
       let none_value = match oan with | Some an -> faile (mk_tuple [mk_string fail_msg_ASSET_NOT_FOUND; mk_string an]) vt | None -> fail fail_msg_NOT_FOUND in
 
-      mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
+      mk_mterm (Mmatchoption (mapgetopt, [id], some_value, none_value)) vt
 
     | Mfailsome v ->
       let v = f v in
@@ -3844,7 +3844,7 @@ let remove_high_level_model (model : model)  =
       let id = mk_mident (dumloc "_v") in
       let some_value = failg (mk_mvar id vt) in
       let none_value = seq[] in
-      mk_mterm (Mmatchoption (v, id, some_value, none_value)) vt
+      mk_mterm (Mmatchoption (v, [id], some_value, none_value)) vt
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -4304,7 +4304,7 @@ let remove_iterable_big_map (model : model) : model =
             in
             seq [assign_counter; put]
           in
-          mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
+          mk_mterm (Minstrmatchoption (getopt, [tmp_id_loced], some_value, none_value)) tunit
         in
         let update_map : mterm =
           let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, key, mk_tuple [idx_var; value])) tbm in
@@ -4379,7 +4379,7 @@ let remove_iterable_big_map (model : model) : model =
               let subnat = mk_mterm (Msubnat (map_counter, mk_nat 1)) (toption tnat) in
               let idv = mk_mident (dumloc "_v") in
               let s = mk_mvar idv tnat in
-              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail fail_msg_OPTION_IS_NONE)) tnat in
+              let mw = mk_mterm (Mmatchoption(subnat, [idv], s, fail fail_msg_OPTION_IS_NONE)) tnat in
               mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mw)) tunit
             in
             let instr_assign : mterm =
@@ -4391,7 +4391,7 @@ let remove_iterable_big_map (model : model) : model =
             |> (fun x -> mk_mterm (Mletin ([idx_id_loced], LVsimple (mk_tupleaccess 0 tmp_var), Some tnat, x, None)) tunit)
           in
           let none_value : mterm = seq [] in
-          mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
+          mk_mterm (Minstrmatchoption (getopt, [tmp_id_loced], some_value, none_value)) tunit
         in
         matchinstr
         |> (fun x -> mk_mterm ~loc:mt.loc (Mletin ([ibm_id], LVsimple ibm_init, Some ibm_type, x, None)) tunit)
@@ -4520,7 +4520,7 @@ let remove_ternary_operator (model : model) : model =
     let f = aux ctx in
     match mt with
     | { node = Mternarybool (c, a, b) }   -> { mt with node = Mexprif(f c, f a, f b) }
-    | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, mk_mident (dumloc "the"), f a, f b) }
+    | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, [mk_mident (dumloc "the")], f a, f b) }
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -4559,13 +4559,13 @@ let remove_decl_var_opt (model : model) =
           | Some fa -> failg (f fa)
           | None    -> fail fail_msg_OPTION_IS_NONE
         in
-        let mw = mk_mterm (Mmatchoption(f v, idv, s, fa)) ty in
+        let mw = mk_mterm (Mmatchoption(f v, [idv], s, fa)) ty in
         { mt with node = Mdeclvar (ids, Some ty, mw, c) }
       end
     | Massignopt (op, ty, k, v, fa) -> begin
         let idv = mk_mident (dumloc "_v") in
         let s = mk_mvar idv ty in
-        let mw = mk_mterm (Mmatchoption(f v, idv, s, failg (f fa))) ty in
+        let mw = mk_mterm (Mmatchoption(f v, [idv], s, failg (f fa))) ty in
         { mt with node = Massign (op, ty, k, mw) }
       end
     | _ -> map_mterm (aux ctx) mt

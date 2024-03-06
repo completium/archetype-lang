@@ -201,8 +201,8 @@ type 'term mterm_node  =
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * (pattern * 'term) list
-  | Minstrmatchoption of 'term * mident * 'term * 'term
-  | Minstrmatchor     of 'term * mident * 'term * mident * 'term
+  | Minstrmatchoption of 'term * mident list * 'term * 'term
+  | Minstrmatchor     of 'term * mident list * 'term * mident list * 'term
   | Minstrmatchlist   of 'term * mident * mident * 'term * 'term
   | Minstrmatchdetach of 'term detach_kind_gen * mident * 'term * 'term
   | Mfor              of (for_ident * 'term iter_container_kind_gen * 'term)
@@ -260,8 +260,8 @@ type 'term mterm_node  =
   (* control expression *)
   | Mexprif           of 'term * 'term * 'term
   | Mexprmatchwith    of 'term * (pattern * 'term) list
-  | Mmatchoption      of 'term * mident * 'term * 'term
-  | Mmatchor          of 'term * mident * 'term * mident * 'term
+  | Mmatchoption      of 'term * mident list * 'term * 'term
+  | Mmatchor          of 'term * mident list * 'term * mident list * 'term
   | Mmatchlist        of 'term * mident * mident * 'term * 'term
   | Mternarybool      of 'term * 'term * 'term
   | Mternaryoption    of 'term * 'term * 'term
@@ -1284,8 +1284,8 @@ let cmp_mterm_node
     (* control *)
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
-    | Minstrmatchoption (x1, i1, ve1, ne1), Minstrmatchoption (x2, i2, ve2, ne2)               -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
-    | Minstrmatchor (x1, lid1, le1, rid1, re1), Minstrmatchor (x2, lid2, le2, rid2, re2)       -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
+    | Minstrmatchoption (x1, i1, ve1, ne1), Minstrmatchoption (x2, i2, ve2, ne2)               -> cmp x1 x2 && List.for_all2 cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
+    | Minstrmatchor (x1, lid1, le1, rid1, re1), Minstrmatchor (x2, lid2, le2, rid2, re2)       -> cmp x1 x2 && List.for_all2 cmpi lid1 lid2 && cmp le1 le2 && List.for_all2 cmpi rid1 rid2 && cmp re1 re2
     | Minstrmatchlist (x1, hid1, tid1, hte1, ee1), Minstrmatchlist (x2, hid2, tid2, hte2, ee2) -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Minstrmatchdetach (dk1, i1, ve1, ne1), Minstrmatchdetach (dk2, i2, ve2, ne2)             -> cmp_detach_kind dk1 dk2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
     | Mfor (i1, c1, b1), Mfor (i2, c2, b2)                                             -> cmp_for_ident cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2
@@ -1343,8 +1343,8 @@ let cmp_mterm_node
     (* control expression *)
     | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
-    | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
-    | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
+    | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && List.for_all2 cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
+    | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && List.for_all2 cmpi lid1 lid2 && cmp le1 le2 && List.for_all2 cmpi rid1 rid2 && cmp re1 re2
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Mternarybool (c1, a1, b1), Mternarybool (c2, a2, b2)                             -> cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     | Mternaryoption (c1, a1, b1), Mternaryoption (c2, a2, b2)                         -> cmp c1 c2 && cmp a1 a2 && cmp b1 b2
@@ -1754,8 +1754,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
-  | Minstrmatchoption (x, i, ve, ne)       -> Minstrmatchoption (f x, g i, f ve, f ne)
-  | Minstrmatchor (x, lid, le, rid, re)    -> Minstrmatchor     (f x, g lid, f le, g rid, f re)
+  | Minstrmatchoption (x, i, ve, ne)       -> Minstrmatchoption (f x, List.map g i, f ve, f ne)
+  | Minstrmatchor (x, lid, le, rid, re)    -> Minstrmatchor     (f x, List.map g lid, f le, List.map g rid, f re)
   | Minstrmatchlist (x, hid, tid, hte, ee) -> Minstrmatchlist   (f x, g hid, g tid, f hte, f ee)
   | Minstrmatchdetach (dk, i, ve, ne)      -> Minstrmatchdetach (map_detach_kind fi ft f dk, g i, f ve, f ne)
   | Mfor (i, c, b)                 -> Mfor (map_for_ident g i, map_iter_container_kind fi f c, f b)
@@ -1813,8 +1813,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* control expression *)
   | Mexprif (c, t, e)              -> Mexprif        (f c, f t, f e)
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, g i, f ve, f ne)
-  | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, g lid, f le, g rid, f re)
+  | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, List.map g i, f ve, f ne)
+  | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, List.map g lid, f le, List.map g rid, f re)
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
   | Mternarybool (c, a, b)         -> Mternarybool   (f c, f a, f b)
   | Mternaryoption (c, a, b)       -> Mternaryoption (f c, f a, f b)

@@ -711,8 +711,10 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, Some e)         -> T.iif ~loc:mtt.loc (f c) (f t) (f e) T.tunit
     | Mif (c, t, None)           -> T.iif ~loc:mtt.loc (f c) (f t) (T.iskip ()) T.tunit
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
-    | Minstrmatchoption (x, i, ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
-    | Minstrmatchor (x, lid, le, rid, re)    -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
+    | Minstrmatchoption (x, [i], ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
+    | Minstrmatchoption _                      -> assert false (* TODO *)
+    | Minstrmatchor (x, [lid], le, [rid], re)  -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
+    | Minstrmatchor _                          -> assert false (* TODO *)
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
     | Minstrmatchdetach (dk, i, ve, ne) -> begin
         let id, klv =
@@ -856,8 +858,10 @@ let to_ir (model : M.model) : T.ir =
 
     | Mexprif (c, t, e)                      -> T.iif ~loc:mtt.loc (f c) (f t) (f e) (ft mtt.type_)
     | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-    | Mmatchoption (x, i, ve, ne)            -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) (ft mtt.type_)
-    | Mmatchor (x, lid, le, rid, re)         -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
+    | Mmatchoption (x, [i], ve, ne)          -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) (ft mtt.type_)
+    | Mmatchoption _                         -> assert false (* TODO *)
+    | Mmatchor (x, [lid], le, [rid], re)     -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
+    | Mmatchor _                             -> assert false (* TODO *)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) (ft mtt.type_)
     | Mternarybool (_c, _a, _b)              -> emit_error (UnsupportedTerm ("Mternarybool"))
     | Mternaryoption (_c, _a, _b)            -> emit_error (UnsupportedTerm ("Mternaryoption"))

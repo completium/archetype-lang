@@ -1701,11 +1701,11 @@ end = struct
         | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
           let li = extract_or_pattern lv in
           let ri = extract_or_pattern rv in
-          mk_mterm (Minstrmatchor (g c, li, seq lc, ri, seq rc)) tunit
+          mk_mterm (Minstrmatchor (g c, [li], seq lc, [ri], seq rc)) tunit
 
         | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
           let si = extract_or_pattern sv in
-          mk_mterm (Minstrmatchoption (g c, si, seq sc, seq nc)) tunit
+          mk_mterm (Minstrmatchoption (g c, [si], seq sc, seq nc)) tunit
 
         | DIFailwith e -> failg (for_expr e)
         | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false
@@ -1887,14 +1887,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minstrmatchoption (x, i, ve, ne) ->
       A.ematchwith (f x) [
-        ([dumloc (A.Pref (dumloc A.PSome, [snd i]))], f ve);
+        ([dumloc (A.Pref (dumloc A.PSome, List.map snd i))], f ve);
         ([dumloc (A.Pref (dumloc A.PNone, []))], f ne)
       ] MKbasic
 
     | Minstrmatchor (x, xl, bl, xr, br) ->
       A.ematchwith (f x) [
-        ([dumloc (A.Pref (dumloc A.PLeft , [snd xl]))], f bl);
-        ([dumloc (A.Pref (dumloc A.PRight, [snd xr]))], f br)
+        ([dumloc (A.Pref (dumloc A.PLeft , List.map snd xl))], f bl);
+        ([dumloc (A.Pref (dumloc A.PRight, List.map snd xr))], f br)
       ] MKbasic
 
     | Minstrmatchlist (x, hid, tid, hte, ee) ->
@@ -2063,14 +2063,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mmatchoption (x, i, ve, ne) ->
       A.ematchwith (f x) [
-        ([dumloc (A.Pref (dumloc A.PSome, [snd i]))], f ve);
+        ([dumloc (A.Pref (dumloc A.PSome, List.map snd i))], f ve);
         ([dumloc (A.Pref (dumloc A.PNone, []))], f ne)
       ] MKbasic
 
     | Mmatchor (x, lid, le, rid, re) ->
       A.ematchwith (f x) [
-        ([dumloc (A.Pref (dumloc A.PLeft,  [snd lid]))], f le);
-        ([dumloc (A.Pref (dumloc A.PRight, [snd rid]))], f re)
+        ([dumloc (A.Pref (dumloc A.PLeft,  List.map snd lid))], f le);
+        ([dumloc (A.Pref (dumloc A.PRight, List.map snd rid))], f re)
       ] MKbasic
 
     | Mmatchlist (x, hid, tid, hte, ee)      ->

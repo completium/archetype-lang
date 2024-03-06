@@ -282,10 +282,8 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       match pterm.node with
       | A.Pif (c, t, e)                     -> M.Mexprif        (f c, f t, f e)
       | A.Pmatchwith (m, l)                 -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Pmatchoption (x, [id], ve, ne)     -> M.Mmatchoption   (f x, M.mk_mident id, f ve, f ne)
-      | A.Pmatchoption _     -> assert false (* TODO *)
-      | A.Pmatchor (x, [lid], le, [rid], re)  -> M.Mmatchor       (f x, M.mk_mident lid, f le, M.mk_mident rid, f re)
-      | A.Pmatchor _ -> assert false (* TODO *)
+      | A.Pmatchoption (x, ids, ve, ne)     -> M.Mmatchoption   (f x, List.map M.mk_mident ids, f ve, f ne)
+      | A.Pmatchor (x, lids, le, rids, re)  -> M.Mmatchor       (f x, List.map M.mk_mident lids, f le, List.map M.mk_mident rids, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, f hte, f ee)
       | A.Pfold (x, i, e)                   -> M.Mfold          (f x, M.mk_mident i, f e)
       | A.Pmap (x, i, e)                    -> M.Mmap           (f x, M.mk_mident i, f e)
@@ -989,7 +987,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
         let ma = M.mk_mterm (M.Mgetentrypoint (t, M.mk_mident id, arg)) (M.toption (M.tcontract t)) in
         let idv = dumloc "_v" in
         let s = M.mk_mvar (M.mk_mident idv) (M.tcontract t) in
-        M.Mmatchoption(ma, M.mk_mident idv, s, M.failg err)
+        M.Mmatchoption(ma, [M.mk_mident idv], s, M.failg err)
 
       | A.Pcall (None, A.Cconst A.CcallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
         let addr = f addr in
@@ -1156,12 +1154,10 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | A.Ideclvar (ids, v, VDKoption fa, c) -> M.Mdeclvaropt (List.map (fun x -> M.mk_mident (fst x)) ids, Option.map type_to_type (match v.type_ with | Some (A.Toption ty) -> Some ty | _ -> None), f v, Option.map f fa, c) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-      | A.Imatchoption (x, [id], ve, ne)      -> M.Minstrmatchoption   (f x, M.mk_mident id, g ve, g ne)
-      | A.Imatchoption _ -> assert false
-      | A.Imatchor (x, [lid], le, [rid], re)    -> M.Minstrmatchor       (f x, M.mk_mident lid, g le, M.mk_mident rid, g re)
-      | A.Imatchor _ -> assert false
-      | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, g hte, g ee)
-      | A.Imatchdetach (dk, id, ve, ne)     -> M.Minstrmatchdetach   (to_dk dk, M.mk_mident id, g ve, g ne)
+      | A.Imatchoption (x, ids, ve, ne)      -> M.Minstrmatchoption   (f x, List.map M.mk_mident ids, g ve, g ne)
+      | A.Imatchor (x, lids, le, rids, re)   -> M.Minstrmatchor       (f x, List.map M.mk_mident lids, g le, List.map M.mk_mident rids, g re)
+      | A.Imatchlist (x, hid, tid, hte, ee)  -> M.Minstrmatchlist     (f x, M.mk_mident hid, M.mk_mident tid, g hte, g ee)
+      | A.Imatchdetach (dk, id, ve, ne)      -> M.Minstrmatchdetach   (to_dk dk, M.mk_mident id, g ve, g ne)
       | A.Iassign (op, t, lv, e, fa) -> begin
           let to_ak (lv : A.lvalue) =
             match lv with

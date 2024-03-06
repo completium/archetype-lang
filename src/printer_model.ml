@@ -266,26 +266,26 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, l)
 
-    | Minstrmatchoption (x, i, ve, ne) ->
-      let pp fmt (x, i, ve, ne) =
+    | Minstrmatchoption (x, is, ve, ne) ->
+      let pp fmt (x, is, ve, ne) =
         Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]@\nend"
           f x
-          pp_mid i
+          (pp_list "," pp_mid) is
           f ve
           f ne
       in
-      pp fmt (x, i, ve, ne)
+      pp fmt (x, is, ve, ne)
 
-    | Minstrmatchor (x, lid, le, rid, re) ->
-      let pp fmt (x, lid, le, rid, re) =
+    | Minstrmatchor (x, lids, le, rids, re) ->
+      let pp fmt (x, lids, le, rids, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
-          pp_mid lid
+          (pp_list "," pp_mid) lids
           f le
-          pp_mid rid
+          (pp_list "," pp_mid) rids
           f re
       in
-      pp fmt (x, lid, le, rid, re)
+      pp fmt (x, lids, le, rids, re)
 
     | Minstrmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
@@ -517,26 +517,26 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, l)
 
-    | Mmatchoption (x, i, ve, ne) ->
-      let pp fmt (x, i, ve, ne) =
+    | Mmatchoption (x, is, ve, ne) ->
+      let pp fmt (x, is, ve, ne) =
         Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
-          pp_mid i
+          (pp_list "," pp_mid) is
           f ve
           f ne
       in
-      pp fmt (x, i, ve, ne)
+      pp fmt (x, is, ve, ne)
 
-    | Mmatchor (x, lid, le, rid, re) ->
-      let pp fmt (x, lid, le, rid, re) =
+    | Mmatchor (x, lids, le, rids, re) ->
+      let pp fmt (x, lids, le, rids, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
-          pp_mid lid
+          (pp_list "," pp_mid) lids
           f le
-          pp_mid rid
+          (pp_list "," pp_mid) rids
           f re
       in
-      pp fmt (x, lid, le, rid, re)
+      pp fmt (x, lids, le, rids, re)
 
     | Mmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
