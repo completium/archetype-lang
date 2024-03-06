@@ -1,0 +1,12 @@
+archetype multi_ident_match_option
+
+variable str : string = ""
+variable n : nat = 0
+
+entry exec() {
+  const v : option<(string * nat)> = some((("mystr", 2)));
+  match v with
+    | some (a, b) -> (str := a; n := b)
+    | none -> fail("error")
+  end
+}

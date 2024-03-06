@@ -309,6 +309,9 @@ let pp_pattern fmt p =
   | Pref ({ pldesc = PSome }, [x]) ->
     Format.fprintf fmt "| some %a" pp_id x
 
+  | Pref ({ pldesc = PSome }, xs) ->
+    Format.fprintf fmt "| some (%a)" (pp_list ", " pp_id) xs
+
   | Pref ({ pldesc = PNone }, []) ->
     Format.fprintf fmt "| none"
 
@@ -321,8 +324,14 @@ let pp_pattern fmt p =
   | Pref ({ pldesc = PLeft }, [x]) ->
     Format.fprintf fmt "| left %a" pp_id x
 
+  | Pref ({ pldesc = PLeft }, xs) ->
+    Format.fprintf fmt "| left (%a)" (pp_list ", " pp_id) xs
+
   | Pref ({ pldesc = PRight }, [x]) ->
     Format.fprintf fmt "| right %a" pp_id x
+
+  | Pref ({ pldesc = PRight }, xs) ->
+    Format.fprintf fmt "| right (%a)" (pp_list ", " pp_id) xs
 
   | Pref (i, [] ) ->  Format.fprintf fmt "| %a" pp_pname (unloc i)
   | Pref (i, [x]) ->  Format.fprintf fmt "| %a %a" pp_pname (unloc i) pp_id x

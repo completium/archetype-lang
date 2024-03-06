@@ -1,0 +1,12 @@
+archetype multi_ident_match_or
+
+variable str : string = ""
+variable n : nat = 0
+
+entry exec() {
+  const v : or<(string * nat), never> = left<never>((("mystr", 2)));
+  match v with
+    | left (a, b) -> (str := a; n := b)
+    | right x -> fail("error")
+  end
+}
