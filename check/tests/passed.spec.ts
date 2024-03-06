@@ -191,6 +191,7 @@ import * as effect_control_iter_init from '../bindings/passed/effect_control_ite
 import * as effect_control_match_enum from '../bindings/passed/effect_control_match_enum'
 import * as effect_control_match_list from '../bindings/passed/effect_control_match_list'
 import * as effect_control_match_option from '../bindings/passed/effect_control_match_option'
+import * as effect_control_match_option_2 from '../bindings/passed/effect_control_match_option_2'
 import * as effect_control_match_or from '../bindings/passed/effect_control_match_or'
 import * as effect_control_matchwith from '../bindings/passed/effect_control_matchwith'
 import * as effect_control_sequence from '../bindings/passed/effect_control_sequence'
@@ -847,6 +848,8 @@ import * as michelson_lambda from '../bindings/passed/michelson_lambda'
 import * as miles_with_expiration_spec from '../bindings/passed/miles_with_expiration_spec'
 import * as mod_rat from '../bindings/passed/mod_rat'
 import * as multi_e from '../bindings/passed/multi_e'
+import * as multi_ident_match_option from '../bindings/passed/multi_ident_match_option'
+import * as multi_ident_match_option_3 from '../bindings/passed/multi_ident_match_option_3'
 import * as multi_p from '../bindings/passed/multi_p'
 import * as multi_sort from '../bindings/passed/multi_sort'
 import * as multi_update from '../bindings/passed/multi_update'
@@ -4700,6 +4703,20 @@ describe('passed', async () => {
     await effect_control_match_option.effect_control_match_option.exec({ as: alice })
     const res_after = await effect_control_match_option.effect_control_match_option.get_res();
     assert(res_after.equals(new Nat(1)))
+  })
+
+  it('effect_control_match_option_2', async () => {
+    await effect_control_match_option_2.effect_control_match_option_2.deploy({ as: alice })
+
+    const r1_before = await effect_control_match_option_2.effect_control_match_option_2.get_r1();
+    assert(r1_before.equals(new Nat(0)))
+    const r2_before = await effect_control_match_option_2.effect_control_match_option_2.get_r2();
+    assert(r2_before == "")
+    await effect_control_match_option_2.effect_control_match_option_2.exec({ as: alice })
+    const r1_after = await effect_control_match_option_2.effect_control_match_option_2.get_r1();
+    assert(r1_after.equals(new Nat(1)))
+    const r2_after = await effect_control_match_option_2.effect_control_match_option_2.get_r2();
+    assert(r2_after == "mystr")
   })
 
   it('effect_control_match_or', async () => {
@@ -15205,6 +15222,42 @@ describe('passed', async () => {
     await multi_e.multi_e.e6({ as: alice })
     await multi_e.multi_e.e7({ as: alice })
     await multi_e.multi_e.e8({ as: alice })
+  })
+
+  it('multi_ident_match_option', async () => {
+    await multi_ident_match_option.multi_ident_match_option.deploy({ as: alice })
+
+    const str_before = await multi_ident_match_option.multi_ident_match_option.get_str();
+    assert(str_before == "")
+    const n_before = await multi_ident_match_option.multi_ident_match_option.get_n();
+    assert(n_before.equals(new Nat(0)))
+
+    await multi_ident_match_option.multi_ident_match_option.exec({ as: alice })
+
+    const str_after = await multi_ident_match_option.multi_ident_match_option.get_str();
+    assert(str_after == "mystr")
+    const n_after = await multi_ident_match_option.multi_ident_match_option.get_n();
+    assert(n_after.equals(new Nat(2)))
+  })
+
+  it('multi_ident_match_option_3', async () => {
+    await multi_ident_match_option_3.multi_ident_match_option_3.deploy({ as: alice })
+
+    const str_before = await multi_ident_match_option_3.multi_ident_match_option_3.get_str();
+    assert(str_before == "")
+    const n_before = await multi_ident_match_option_3.multi_ident_match_option_3.get_n();
+    assert(n_before.equals(new Nat(0)))
+    const x_before = await multi_ident_match_option_3.multi_ident_match_option_3.get_x();
+    assert(x_before.equals(new Bytes("")))
+
+    await multi_ident_match_option_3.multi_ident_match_option_3.exec({ as: alice })
+
+    const str_after = await multi_ident_match_option_3.multi_ident_match_option_3.get_str();
+    assert(str_after == "mystr")
+    const n_after = await multi_ident_match_option_3.multi_ident_match_option_3.get_n();
+    assert(n_after.equals(new Nat(2)))
+    const x_after = await multi_ident_match_option_3.multi_ident_match_option_3.get_x();
+    assert(x_after.equals(new Bytes("02")))
   })
 
   it('multi_p', async () => {

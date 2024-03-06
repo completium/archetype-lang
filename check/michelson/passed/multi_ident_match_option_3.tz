@@ -1,0 +1,31 @@
+{ storage (pair (string %str) (nat %n) (bytes %x)) ;
+  parameter (unit %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR 3 } ;
+         DROP 1 ;
+         PUSH bytes 0x02 ;
+         PUSH nat 2 ;
+         PAIR ;
+         PUSH string "mystr" ;
+         PAIR ;
+         SOME ;
+         DUP ;
+         IF_NONE
+           { PUSH string "error" ; FAILWITH }
+           { UNPAIR 3 ;
+             DUP ;
+             DIP 1 { DIG 4 ; DROP 1 } ;
+             DUG 4 ;
+             DUP 2 ;
+             DIP 1 { DIG 5 ; DROP 1 } ;
+             DUG 5 ;
+             DUP 3 ;
+             DIP 1 { DIG 6 ; DROP 1 } ;
+             DUG 6 ;
+             DIP 2 { DROP 1 } ;
+             SWAP ;
+             DROP 2 } ;
+         DROP 1 ;
+         PAIR 3 ;
+         NIL operation ;
+         PAIR } }

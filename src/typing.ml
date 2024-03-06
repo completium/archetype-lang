@@ -3210,7 +3210,7 @@ let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
   let find (name : string) (n : int) =
     List.find_map (fun ((ptn, v) : A.pattern * _) ->
         match ptn.A.node with
-        | A.Mconst (x, args) when unloc x = name && n = List.length args ->
+        | A.Mconst (x, args) when unloc x = name && (n = -1 || n = List.length args) ->
           Some (args, v)
         | A.Mwild ->
           Some (List.init n (fun _ -> Location.mkloc dummy "_"), v)
@@ -3231,10 +3231,10 @@ let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
       Some (`List ((x, xs, bcons), bnil))
 
     | `Option _ ->
-      let x, bsome = fst_map (List.as_seq1 %> Option.get) (find "$some" 1) in
+      let xs, bsome = find "$some" (-1) in
       let _, bnone = find "$none" 0 in
 
-      Some (`Option ((x, bsome), bnone))
+      Some (`Option ((xs, bsome), bnone))
 
     | `Or _ ->
       let (xl, bl) = fst_map (List.as_seq1 %> Option.get) (find "$left"  1) in
@@ -4536,8 +4536,8 @@ let rec for_xexpr
             | Some (`Or ((xl, bl), (xr, br))) ->
               A.Pmatchor (me, [xl], bl, [xr], br)
 
-            | Some (`Option ((x, bsome), bnone)) ->
-              A.Pmatchoption (me, [x], bsome, bnone)
+            | Some (`Option ((xs, bsome), bnone)) ->
+              A.Pmatchoption (me, xs, bsome, bnone)
 
             | None -> A.Pmatchwith (me, aout)
 
@@ -4824,6 +4824,12 @@ and for_gen_matchwith
                     | Some bd -> begin
                         let _, cargs =
                           List.find (fun (ct, _) -> unloc ct = pid) ctors in
+
+                        let cargs =
+                          match cargs with
+                          | [A.Ttuple tys] when List.length args = List.length tys -> tys
+                          | _ -> cargs
+                        in
 
                         let ng = List.length args in
                         let ne = List.length cargs in
@@ -5962,8 +5968,8 @@ let rec for_instruction_r
                 | Some (`Or ((xl, bl), (xr, br))) ->
                   A.Imatchor (me, [xl], bl, [xr], br)
 
-                | Some (`Option ((x, bsome), bnone)) ->
-                  A.Imatchoption (me, [x], bsome, bnone)
+                | Some (`Option ((xs, bsome), bnone)) ->
+                  A.Imatchoption (me, xs, bsome, bnone)
 
                 | None -> A.Imatchwith (me, aout)
               end
@@ -5971,8 +5977,8 @@ let rec for_instruction_r
                 let dk, _ = to_dk_type me in
                 match decompile_match_with kd aout with
 
-                | Some (`Option ((x, bsome), bnone)) ->
-                  A.Imatchdetach (dk, x, bsome, bnone)
+                | Some (`Option ((xs, bsome), bnone)) ->
+                  A.Imatchdetach (dk, (List.as_seq1 %> Option.get) xs, bsome, bnone)
 
                 | _ -> (Env.emit_error env (loc i, DetachMatchInvalidPattern); (Iseq []))
               end

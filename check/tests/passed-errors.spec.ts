@@ -757,6 +757,10 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/effect_control_match_option.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('effect_control_match_option_2', async () => {
+    const stat = compile("../tests/passed/effect_control_match_option_2.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('effect_control_match_or', async () => {
     const stat = compile("../tests/passed/effect_control_match_or.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -3379,6 +3383,14 @@ describe('passed-errors', async () => {
   })
   it('multi_e', async () => {
     const stat = compile("../tests/passed/multi_e.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_option', async () => {
+    const stat = compile("../tests/passed/multi_ident_match_option.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_option_3', async () => {
+    const stat = compile("../tests/passed/multi_ident_match_option_3.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
   it('multi_p', async () => {

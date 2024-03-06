@@ -1,0 +1,12 @@
+archetype effect_control_match_option_2
+
+variable r1 : nat = 0
+variable r2 : string = ""
+
+entry exec() {
+  var o : option<nat * string> = some(((1, "mystr")));
+  match o with
+  | some(v) -> (r1 := v[0]; r2 := v[1])
+  | none -> fail("KO")
+  end
+}

@@ -761,6 +761,10 @@ describe('decomp-mic-passed', async () => {
     const stat = compile("michelson/passed/effect_control_match_option.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('effect_control_match_option_2', async () => {
+    const stat = compile("michelson/passed/effect_control_match_option_2.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('effect_control_match_or', async () => {
     const stat = compile("michelson/passed/effect_control_match_or.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
@@ -3575,6 +3579,14 @@ describe('decomp-mic-passed', async () => {
   })
   it('multi_e', async () => {
     const stat = compile("michelson/passed/multi_e.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_option', async () => {
+    const stat = compile("michelson/passed/multi_ident_match_option.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_option_3', async () => {
+    const stat = compile("michelson/passed/multi_ident_match_option_3.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
   it('multi_p', async () => {
