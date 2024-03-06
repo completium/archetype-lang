@@ -545,7 +545,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
   | Iassigntuple (id, i, l, v) -> Format.fprintf fmt "%a[%d/%d] := @[%a@]" pp_id id i l f v
   | Iif (c, t, e, _)           -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
-  | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
+  | Iifnone (v, t, ids, s, _)  -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t (match ids with [id] -> id |_ -> Format.asprintf "(%a)" (pp_list ", " pp_id) ids) f s
   | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r
   | Iifcons (v, _, _, t, e, _) -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
   | Iloop (c, b)               -> pp "loop (%a) do@\n  @[%a@]@\ndone" f c f b

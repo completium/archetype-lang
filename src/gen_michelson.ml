@@ -514,7 +514,7 @@ let to_ir (model : M.model) : T.ir =
         | Some v -> (T.ipair (T.istring M.fail_msg_ENTRY_NOT_FOUND) (T.istring v))
         | None -> T.istring M.fail_msg_ENTRY_NOT_FOUND
       in
-      T.iifnone ~loc (T.iunop (Ucontract (t, a)) d) (T.ifaild fdata) "_var_ifnone" (T.ivar "_var_ifnone") T.tint
+      T.iifnone ~loc (T.iunop (Ucontract (t, a)) d) (T.ifaild fdata) ["_var_ifnone"] (T.ivar "_var_ifnone") T.tint
     in
 
     let get_entrypoint id t d loc =
@@ -711,8 +711,7 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, Some e)         -> T.iif ~loc:mtt.loc (f c) (f t) (f e) T.tunit
     | Mif (c, t, None)           -> T.iif ~loc:mtt.loc (f c) (f t) (T.iskip ()) T.tunit
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
-    | Minstrmatchoption (x, [i], ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) T.tunit
-    | Minstrmatchoption _                      -> assert false (* TODO *)
+    | Minstrmatchoption (x, ids, ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (List.map M.unloc_mident ids) (f ve) T.tunit
     | Minstrmatchor (x, [lid], le, [rid], re)  -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
     | Minstrmatchor _                          -> assert false (* TODO *)
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
@@ -722,7 +721,7 @@ let to_ir (model : M.model) : T.ir =
           | DK_option (ty, id) -> id, (T.KLVoption (ft ty))
           | DK_map (ty, id, k) -> id, (T.KLVmap (ft ty, f k))
         in
-        T.iifnone ~loc:mtt.loc (T.irep id klv) (f ne) (M.unloc_mident i) (f ve) T.tunit
+        T.iifnone ~loc:mtt.loc (T.irep id klv) (f ne) [(M.unloc_mident i)] (f ve) T.tunit
       end
     | Mfor (id, c, b) -> begin
         let ids =
@@ -858,8 +857,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mexprif (c, t, e)                      -> T.iif ~loc:mtt.loc (f c) (f t) (f e) (ft mtt.type_)
     | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-    | Mmatchoption (x, [i], ve, ne)          -> T.iifnone ~loc:mtt.loc (f x) (f ne) (M.unloc_mident i) (f ve) (ft mtt.type_)
-    | Mmatchoption _                         -> assert false (* TODO *)
+    | Mmatchoption (x, ids, ve, ne)          -> T.iifnone ~loc:mtt.loc (f x) (f ne) (List.map M.unloc_mident ids) (f ve) (ft mtt.type_)
     | Mmatchor (x, [lid], le, [rid], re)     -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
     | Mmatchor _                             -> assert false (* TODO *)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) (ft mtt.type_)
@@ -972,7 +970,7 @@ let to_ir (model : M.model) : T.ir =
     | Mplus (l, r)       -> T.iadd ~loc:mtt.loc (f l) (f r)
     | Mminus (l, r)      -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tbuiltin Btez -> T.iifnone ~loc:mtt.loc (T.isub_mutez (f l) (f r)) (T.ifail M.fail_msg_NAT_NEG_ASSIGN) "_var_ifnone" (T.ivar "_var_ifnone") (ft mtt.type_)
+        | M.Tbuiltin Btez -> T.iifnone ~loc:mtt.loc (T.isub_mutez (f l) (f r)) (T.ifail M.fail_msg_NAT_NEG_ASSIGN) ["_var_ifnone"] (T.ivar "_var_ifnone") (ft mtt.type_)
         | _ -> T.isub ~loc:mtt.loc (f l) (f r)
       end
     | Mmult (l, r)       -> T.imul ~loc:mtt.loc (f l) (f r)
@@ -1108,8 +1106,8 @@ let to_ir (model : M.model) : T.ir =
     | Mconcatlist x              -> T.iunop   ~loc:mtt.loc Uconcat (f x)
     | Mslice (x, s, e)           -> T.iterop  ~loc:mtt.loc Tslice (f s) (f e) (f x)
     | Mlength x                  -> T.iunop   ~loc:mtt.loc Usize (f x)
-    | Misnone x                  -> T.iifnone ~loc:mtt.loc (f x) (T.itrue ())  "_var_ifnone" (T.ifalse ()) T.tbool
-    | Missome x                  -> T.iifnone ~loc:mtt.loc (f x) (T.ifalse ()) "_var_ifnone" (T.itrue ()) T.tbool
+    | Misnone x                  -> T.iifnone ~loc:mtt.loc (f x) (T.itrue ())  ["_var_ifnone"] (T.ifalse ()) T.tbool
+    | Missome x                  -> T.iifnone ~loc:mtt.loc (f x) (T.ifalse ()) ["_var_ifnone"] (T.itrue ()) T.tbool
     | Minttonat x                -> T.iunop   ~loc:mtt.loc Uisnat (f x)
     | Mfloor  x                  -> let b = T.Bfloor in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
     | Mceil   x                  -> let b = T.Bceil  in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f x] (is_inline b)
@@ -2056,20 +2054,21 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq [ c; T.cif ?debug ([t], [e]) ], env
     end
 
-  | Iifnone (v, t, id, s, _ty) -> begin
+  | Iifnone (v, t, ids, s, _ty) -> begin
       let v, env0 = fe env v in
       let t, env_none = fe (dec_env env0) t in
-      let e, env_some = fe (add_var_env (dec_env env0) id) s in
+      let e, env_some = fe (List.fold_right (fun id env -> add_var_env env id) ids (dec_env env0)) s in
 
-      let rm = get_remove_code env_some id in
+      let rm, _ = List.fold_left (fun (rm, env) x -> let c = get_remove_code env x in (c @ rm, env)) ([], env_some) ids in
       let nenv =
         match env_none.fail, env_some.fail with
         | true, true  -> {env_none with fail = true}
-        | true, _     -> rm_var_env env_some id
+        | true, _     -> List.fold_left rm_var_env env_some ids
         | _, true     -> env_none
-        | _           -> rm_var_env env_some id
+        | _           -> List.fold_left rm_var_env env_some ids
       in
-      T.cseq [ v; T.cifnone ([t], [e] @ rm) ], nenv
+      let pm = if List.length ids > 1 then [T.cunpair_n (List.length ids)] else [] in
+      T.cseq [ v; T.cifnone ([t], pm @ [e] @ rm) ], nenv
     end
 
   | Iifleft (v, lid, le, rid, re, _ty) -> begin

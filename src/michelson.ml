@@ -431,7 +431,7 @@ and instruction_node =
   | Iassign      of ident * instruction
   | Iassigntuple of ident * int * int * instruction
   | Iif          of instruction * instruction * instruction * type_
-  | Iifnone      of instruction * instruction * ident * instruction * type_
+  | Iifnone      of instruction * instruction * ident list * instruction * type_
   | Iifleft      of instruction * ident * instruction * ident * instruction * type_
   | Iifcons      of instruction * ident * ident * instruction * instruction * type_
   | Iloop        of instruction * instruction
@@ -825,8 +825,8 @@ let isub         ?loc l r  = ibinop ?loc Bsub l r
 let isub_mutez   ?loc l r  = ibinop ?loc Bsubmutez l r
 let imul         ?loc l r  = ibinop ?loc Bmul l r
 let iediv        ?loc l r  = ibinop ?loc Bediv l r
-let idiv         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") "_var_ifnone" (icar ?loc (ivar ?loc "_var_ifnone")) tint
-let imod         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") "_var_ifnone" (icdr ?loc (ivar ?loc "_var_ifnone")) tnat
+let idiv         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") ["_var_ifnone"] (icar ?loc (ivar ?loc "_var_ifnone")) tint
+let imod         ?loc l r  = iifnone ?loc (iediv ?loc l r) (ifail ?loc "DIV_BY_ZERO") ["_var_ifnone"] (icdr ?loc (ivar ?loc "_var_ifnone")) tnat
 let isrecord     ?loc l    = irecord ?loc (Rtuple l)
 let ipair        ?loc x y  = ibinop ?loc Bpair x y
 let icarn        ?loc n x  = iunop ?loc (UcarN n) x

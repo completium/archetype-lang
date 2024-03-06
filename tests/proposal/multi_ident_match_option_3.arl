@@ -1,0 +1,13 @@
+archetype multi_ident_match_option_3
+
+variable str : string = ""
+variable n : nat = 0
+variable x : bytes = 0x
+
+entry exec() {
+  const v : option<(string * nat * bytes)> = some((("mystr", 2, 0x02)));
+  match v with
+    | some (a, b, c) -> (str := a; n := b; x := c)
+    | none -> fail("error")
+  end
+}
