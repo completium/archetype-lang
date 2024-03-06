@@ -4534,10 +4534,10 @@ let rec for_xexpr
               A.Pmatchlist (me, x, xs, bcons, bnil)
 
             | Some (`Or ((xl, bl), (xr, br))) ->
-              A.Pmatchor (me, xl, bl, xr, br)
+              A.Pmatchor (me, [xl], bl, [xr], br)
 
             | Some (`Option ((x, bsome), bnone)) ->
-              A.Pmatchoption (me, x, bsome, bnone)
+              A.Pmatchoption (me, [x], bsome, bnone)
 
             | None -> A.Pmatchwith (me, aout)
 
@@ -5960,10 +5960,10 @@ let rec for_instruction_r
                   A.Imatchlist (me, x, xs, bcons, bnil)
 
                 | Some (`Or ((xl, bl), (xr, br))) ->
-                  A.Imatchor (me, xl, bl, xr, br)
+                  A.Imatchor (me, [xl], bl, [xr], br)
 
                 | Some (`Option ((x, bsome), bnone)) ->
-                  A.Imatchoption (me, x, bsome, bnone)
+                  A.Imatchoption (me, [x], bsome, bnone)
 
                 | None -> A.Imatchwith (me, aout)
               end

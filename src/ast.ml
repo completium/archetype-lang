@@ -349,8 +349,8 @@ type pterm = pterm_node struct_poly
 and pterm_node  =
   | Pif of (pterm * pterm * pterm)
   | Pmatchwith of pterm * (pattern * pterm) list
-  | Pmatchoption of pterm * lident * pterm * pterm
-  | Pmatchor     of pterm * lident * pterm * lident * pterm
+  | Pmatchoption of pterm * lident list * pterm * pterm
+  | Pmatchor     of pterm * lident list * pterm * lident list * pterm
   | Pmatchlist   of pterm * lident * lident * pterm * pterm
   | Pfold        of pterm * lident * pterm
   | Pmap         of pterm * lident * pterm
@@ -437,8 +437,8 @@ and instruction_node =
   | Ideclvar of (lident * type_) list * pterm * var_decl_kind *  bool        (* (id * type_) list * init * var_decl_kind * constant *)
   | Iseq of instruction list                                                 (* lhs ; rhs *)
   | Imatchwith   of pterm * (pattern * instruction) list                     (* match term with ('pattern * instruction) list *)
-  | Imatchoption of pterm * lident * instruction * instruction
-  | Imatchor     of pterm * lident * instruction * lident * instruction
+  | Imatchoption of pterm * lident list * instruction * instruction
+  | Imatchor     of pterm * lident list * instruction * lident list * instruction
   | Imatchlist   of pterm * lident * lident * instruction * instruction
   | Imatchdetach of detach_kind * lident * instruction * instruction
   | Iassign of (assignment_operator * type_ * lvalue * pterm * pterm option) (* $2 assignment_operator $3 [ : $4]*)

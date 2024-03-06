@@ -372,26 +372,26 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
-    | Pmatchoption (x, id, ve, ne) ->
-      let pp fmt (x, id, ve, ne) =
+    | Pmatchoption (x, ids, ve, ne) ->
+      let pp fmt (x, ids, ve, ne) =
         Format.fprintf fmt "match %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
           pp_pterm x
-          pp_id id
+          (pp_list ", " pp_id) ids
           pp_pterm ve
           pp_pterm ne
       in
-      (pp_with_paren pp) fmt (x, id, ve, ne)
+      (pp_with_paren pp) fmt (x, ids, ve, ne)
 
-    | Pmatchor (x, lid, le, rid, re) ->
-      let pp fmt (x, lid, le, rid, re) =
+    | Pmatchor (x, lids, le, rids, re) ->
+      let pp fmt (x, lids, le, rids, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           pp_pterm x
-          pp_id lid
+          (pp_list ", " pp_id) lids
           pp_pterm le
-          pp_id rid
+          (pp_list ", " pp_id) rids
           pp_pterm re
       in
-      (pp_with_paren pp) fmt (x, lid, le, rid, re)
+      (pp_with_paren pp) fmt (x, lids, le, rids, re)
 
     | Pmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
@@ -833,26 +833,26 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
-    | Imatchoption (x, id, ve, ne) ->
-      let pp fmt (x, id, ve, ne) =
+    | Imatchoption (x, ids, ve, ne) ->
+      let pp fmt (x, ids, ve, ne) =
         Format.fprintf fmt "match %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
           pp_pterm x
-          pp_id id
+          (pp_list ", " pp_id) ids
           pp_instruction ve
           pp_instruction ne
       in
-      (pp_with_paren pp) fmt (x, id, ve, ne)
+      (pp_with_paren pp) fmt (x, ids, ve, ne)
 
-    | Imatchor (x, lid, le, rid, re) ->
-      let pp fmt (x, lid, le, rid, re) =
+    | Imatchor (x, lids, le, rids, re) ->
+      let pp fmt (x, lids, le, rids, re) =
         Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           pp_pterm x
-          pp_id lid
+          (pp_list ", " pp_id) lids
           pp_instruction le
-          pp_id rid
+          (pp_list ", " pp_id) rids
           pp_instruction re
       in
-      (pp_with_paren pp) fmt (x, lid, le, rid, re)
+      (pp_with_paren pp) fmt (x, lids, le, rids, re)
 
     | Imatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
