@@ -1409,7 +1409,7 @@ end = struct
     let ast = args "sto_"  aty in
 
     (* Format.eprintf "aty: %a@\n" pp_type_ aty;
-    Format.eprintf "ast: %a@\n" pp_rstack1 ast; *)
+       Format.eprintf "ast: %a@\n" pp_rstack1 ast; *)
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1661,12 +1661,14 @@ end = struct
         let instrs = List.map f c in
         seq instrs
       in
-      let extract_or_pattern input : mident =
-        match input with
-        | [DVar (_ty, n)] -> M.mk_mident (dumloc (int_to_var n))
-        | [DPair (DVar (_ty, n), _p2)] -> M.mk_mident (dumloc (int_to_var n)) (* TODO *)
-        | [DPair (_p1, _p2)] -> Format.eprintf "%a@\n" (Printer_tools.pp_list ";" pp_dpattern) input; assert false
-        | _ -> assert false
+      let extract_or_pattern input : mident list =
+        let rec aux input : mident list =
+          match input with
+          | DVar (_ty, n) -> [M.mk_mident (dumloc (int_to_var n))]
+          | DPair (DVar (_ty, n), p2) -> M.mk_mident (dumloc (int_to_var n))::(aux p2)
+          | DPair (_p1, _p2) -> Format.eprintf "%a@\n" pp_dpattern input; assert false
+        in
+        List.map aux input |> List.flatten
       in
       begin
         match i with
@@ -1699,13 +1701,13 @@ end = struct
                pp_branch) bs *)
 
         | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
-          let li = extract_or_pattern lv in
-          let ri = extract_or_pattern rv in
-          mk_mterm (Minstrmatchor (g c, [li], seq lc, [ri], seq rc)) tunit
+          let lis = extract_or_pattern lv in
+          let ris = extract_or_pattern rv in
+          mk_mterm (Minstrmatchor (g c, lis, seq lc, ris, seq rc)) tunit
 
         | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
-          let si = extract_or_pattern sv in
-          mk_mterm (Minstrmatchoption (g c, [si], seq sc, seq nc)) tunit
+          let sis = extract_or_pattern sv in
+          mk_mterm (Minstrmatchoption (g c, sis, seq sc, seq nc)) tunit
 
         | DIFailwith e -> failg (for_expr e)
         | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false
