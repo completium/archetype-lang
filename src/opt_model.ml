@@ -45,7 +45,7 @@ let remove_operations_nil (model : model) : model =
   in
   map_mterm_model aux model
 
-let optimize (model, env : model * 'a) =
+let optimize (model, env : model * Gen_decompile.env) =
   let model =
     model
     |> build_entries

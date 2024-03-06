@@ -10,9 +10,11 @@ module A = ParseTree
 
 type env = {
   name: string;
+  type_storage: T.type_ option;
+  type_parameter: T.type_ option;
 }
 
-let mk_env ?(name="") _ : env = { name }
+let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None }
 
 let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let name =
@@ -1728,7 +1730,7 @@ end = struct
         ) storage_list
     in
     let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in
-    model, env
+    model, {env with type_storage = Some dprogram.storage; type_parameter = Some dprogram.parameter}
 end
 
 let dir_to_model (dir, env : T.dprogram * env) : M.model * env =
