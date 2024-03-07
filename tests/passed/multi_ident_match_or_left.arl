@@ -1,4 +1,4 @@
-archetype multi_ident_match_or
+archetype multi_ident_match_or_left
 
 variable str : string = ""
 variable n : nat = 0

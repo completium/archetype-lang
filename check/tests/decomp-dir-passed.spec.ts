@@ -3589,6 +3589,14 @@ describe('decomp-dir-passed', async () => {
     const stat = compile("michelson/passed/multi_ident_match_option_3.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('multi_ident_match_or_left', async () => {
+    const stat = compile("michelson/passed/multi_ident_match_or_left.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_or_right', async () => {
+    const stat = compile("michelson/passed/multi_ident_match_or_right.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('multi_p', async () => {
     const stat = compile("michelson/passed/multi_p.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

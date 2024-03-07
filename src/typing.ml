@@ -3237,10 +3237,10 @@ let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
       Some (`Option ((xs, bsome), bnone))
 
     | `Or _ ->
-      let (xl, bl) = fst_map (List.as_seq1 %> Option.get) (find "$left"  1) in
-      let (xr, br) = fst_map (List.as_seq1 %> Option.get) (find "$right" 1) in
+      let (xls, bl) = find "$left"  (-1) in
+      let (xrs, br) = find "$right" (-1) in
 
-      Some (`Or ((xl, bl), (xr, br)))
+      Some (`Or ((xls, bl), (xrs, br)))
 
     | `Enum -> raise E.Bailout
 
@@ -4533,8 +4533,8 @@ let rec for_xexpr
             | Some (`List ((x, xs, bcons), bnil)) ->
               A.Pmatchlist (me, x, xs, bcons, bnil)
 
-            | Some (`Or ((xl, bl), (xr, br))) ->
-              A.Pmatchor (me, [xl], bl, [xr], br)
+            | Some (`Or ((xls, bl), (xrs, br))) ->
+              A.Pmatchor (me, xls, bl, xrs, br)
 
             | Some (`Option ((xs, bsome), bnone)) ->
               A.Pmatchoption (me, xs, bsome, bnone)
@@ -5965,8 +5965,8 @@ let rec for_instruction_r
                 | Some (`List ((x, xs, bcons), bnil)) ->
                   A.Imatchlist (me, x, xs, bcons, bnil)
 
-                | Some (`Or ((xl, bl), (xr, br))) ->
-                  A.Imatchor (me, [xl], bl, [xr], br)
+                | Some (`Or ((xls, bl), (xrs, br))) ->
+                  A.Imatchor (me, xls, bl, xrs, br)
 
                 | Some (`Option ((xs, bsome), bnone)) ->
                   A.Imatchoption (me, xs, bsome, bnone)

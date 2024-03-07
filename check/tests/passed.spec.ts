@@ -850,6 +850,8 @@ import * as mod_rat from '../bindings/passed/mod_rat'
 import * as multi_e from '../bindings/passed/multi_e'
 import * as multi_ident_match_option from '../bindings/passed/multi_ident_match_option'
 import * as multi_ident_match_option_3 from '../bindings/passed/multi_ident_match_option_3'
+import * as multi_ident_match_or_left from '../bindings/passed/multi_ident_match_or_left'
+import * as multi_ident_match_or_right from '../bindings/passed/multi_ident_match_or_right'
 import * as multi_p from '../bindings/passed/multi_p'
 import * as multi_sort from '../bindings/passed/multi_sort'
 import * as multi_update from '../bindings/passed/multi_update'
@@ -15258,6 +15260,38 @@ describe('passed', async () => {
     assert(n_after.equals(new Nat(2)))
     const x_after = await multi_ident_match_option_3.multi_ident_match_option_3.get_x();
     assert(x_after.equals(new Bytes("02")))
+  })
+
+  it('multi_ident_match_or_left', async () => {
+    await multi_ident_match_or_left.multi_ident_match_or_left.deploy({ as: alice })
+
+    const str_before = await multi_ident_match_or_left.multi_ident_match_or_left.get_str();
+    assert(str_before == "")
+    const n_before = await multi_ident_match_or_left.multi_ident_match_or_left.get_n();
+    assert(n_before.equals(new Nat(0)))
+
+    await multi_ident_match_or_left.multi_ident_match_or_left.exec({ as: alice })
+
+    const str_after = await multi_ident_match_or_left.multi_ident_match_or_left.get_str();
+    assert(str_after == "mystr")
+    const n_after = await multi_ident_match_or_left.multi_ident_match_or_left.get_n();
+    assert(n_after.equals(new Nat(2)))
+  })
+
+  it('multi_ident_match_or_right', async () => {
+    await multi_ident_match_or_right.multi_ident_match_or_right.deploy({ as: alice })
+
+    const str_before = await multi_ident_match_or_right.multi_ident_match_or_right.get_str();
+    assert(str_before == "")
+    const n_before = await multi_ident_match_or_right.multi_ident_match_or_right.get_n();
+    assert(n_before.equals(new Nat(0)))
+
+    await multi_ident_match_or_right.multi_ident_match_or_right.exec({ as: alice })
+
+    const str_after = await multi_ident_match_or_right.multi_ident_match_or_right.get_str();
+    assert(str_after == "mystr")
+    const n_after = await multi_ident_match_or_right.multi_ident_match_or_right.get_n();
+    assert(n_after.equals(new Nat(2)))
   })
 
   it('multi_p', async () => {

@@ -712,8 +712,7 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, None)           -> T.iif ~loc:mtt.loc (f c) (f t) (T.iskip ()) T.tunit
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
     | Minstrmatchoption (x, ids, ve, ne)       -> T.iifnone ~loc:mtt.loc (f x) (f ne) (List.map M.unloc_mident ids) (f ve) T.tunit
-    | Minstrmatchor (x, [lid], le, [rid], re)  -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) T.tunit
-    | Minstrmatchor _                          -> assert false (* TODO *)
+    | Minstrmatchor (x, lids, le, rids, re)  -> T.iifleft ~loc:mtt.loc (f x) (List.map M.unloc_mident lids) (f le) (List.map M.unloc_mident rids) (f re) T.tunit
     | Minstrmatchlist (x, hid, tid, hte, ee) -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) T.tunit
     | Minstrmatchdetach (dk, i, ve, ne) -> begin
         let id, klv =
@@ -858,8 +857,7 @@ let to_ir (model : M.model) : T.ir =
     | Mexprif (c, t, e)                      -> T.iif ~loc:mtt.loc (f c) (f t) (f e) (ft mtt.type_)
     | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
     | Mmatchoption (x, ids, ve, ne)          -> T.iifnone ~loc:mtt.loc (f x) (f ne) (List.map M.unloc_mident ids) (f ve) (ft mtt.type_)
-    | Mmatchor (x, [lid], le, [rid], re)     -> T.iifleft ~loc:mtt.loc (f x) (M.unloc_mident lid) (f le) (M.unloc_mident rid) (f re) (ft mtt.type_)
-    | Mmatchor _                             -> assert false (* TODO *)
+    | Mmatchor (x, lids, le, rids, re)     -> T.iifleft ~loc:mtt.loc (f x) (List.map M.unloc_mident lids) (f le) (List.map M.unloc_mident rids) (f re) (ft mtt.type_)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.iifcons ~loc:mtt.loc (f x) (M.unloc_mident hid) (M.unloc_mident tid) (f hte) (f ee) (ft mtt.type_)
     | Mternarybool (_c, _a, _b)              -> emit_error (UnsupportedTerm ("Mternarybool"))
     | Mternaryoption (_c, _a, _b)            -> emit_error (UnsupportedTerm ("Mternaryoption"))
@@ -2071,23 +2069,24 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       T.cseq [ v; T.cifnone ([t], pm @ [e] @ rm) ], nenv
     end
 
-  | Iifleft (v, lid, le, rid, re, _ty) -> begin
+  | Iifleft (v, lids, le, rids, re, _ty) -> begin
       let v, env0 = fe env v in
-      let l, env_left = fe (add_var_env (dec_env env0) lid) le in
-      let r, env_right = fe (add_var_env (dec_env env0) rid) re in
+      let l, env_left = fe (List.fold_right (fun id env -> add_var_env env id) lids (dec_env env0)) le in
+      let r, env_right = fe (List.fold_right (fun id env -> add_var_env env id) rids (dec_env env0)) re in
 
-      let rm_left = get_remove_code env_left lid in
-      let rm_right = get_remove_code env_right rid in
+      let rm_left, _ = List.fold_left (fun (rm, env) x -> let c = get_remove_code env x in (c @ rm, env)) ([], env_left) lids in
+      let rm_right, _ = List.fold_left (fun (rm, env) x -> let c = get_remove_code env x in (c @ rm, env)) ([], env_right) rids in
 
       let nenv =
         match env_left.fail, env_right.fail with
         | true, true  -> {env_left with fail = true}
-        | true, _     -> rm_var_env env_right rid
-        | _, true     -> rm_var_env env_left lid
-        | _           -> rm_var_env env_right rid
+        | true, _     -> List.fold_left rm_var_env env_right rids
+        | _, true     -> List.fold_left rm_var_env env_left lids
+        | _           -> List.fold_left rm_var_env env_right rids
       in
-
-      T.cseq [ v; T.cifleft ([l] @ rm_left, [r] @ rm_right) ], nenv
+      let pm_left = if List.length lids > 1 then [T.cunpair_n (List.length lids)] else [] in
+      let pm_right = if List.length rids > 1 then [T.cunpair_n (List.length rids)] else [] in
+      T.cseq [ v; T.cifleft (pm_left @ [l] @ rm_left, pm_right @ [r] @ rm_right) ], nenv
     end
 
   | Iifcons (x, hd, tl, hte, ne, _ty) -> begin

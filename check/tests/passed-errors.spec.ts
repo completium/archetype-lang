@@ -3393,6 +3393,14 @@ describe('passed-errors', async () => {
     const stat = compile("../tests/passed/multi_ident_match_option_3.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('multi_ident_match_or_left', async () => {
+    const stat = compile("../tests/passed/multi_ident_match_or_left.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('multi_ident_match_or_right', async () => {
+    const stat = compile("../tests/passed/multi_ident_match_or_right.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('multi_p', async () => {
     const stat = compile("../tests/passed/multi_p.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

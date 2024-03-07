@@ -432,7 +432,7 @@ and instruction_node =
   | Iassigntuple of ident * int * int * instruction
   | Iif          of instruction * instruction * instruction * type_
   | Iifnone      of instruction * instruction * ident list * instruction * type_
-  | Iifleft      of instruction * ident * instruction * ident * instruction * type_
+  | Iifleft      of instruction * ident list * instruction * ident list * instruction * type_
   | Iifcons      of instruction * ident * ident * instruction * instruction * type_
   | Iloop        of instruction * instruction
   | Iiter        of ident list * instruction * instruction
