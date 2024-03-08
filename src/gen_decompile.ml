@@ -1451,6 +1451,11 @@ let to_dir (michelson, env : T.michelson * env) =
 
   (T.mk_dprogram tstorage tparameter storage_data name code), env
 
+let remove_prefix_annot str =
+  if String.starts ~pattern:"%" str
+  then (String.sub str 1 ((String.length str) - 1))
+  else str
+
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
   match t.node with
