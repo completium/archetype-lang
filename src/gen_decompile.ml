@@ -16,6 +16,16 @@ type env = {
 
 let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None }
 
+let remove_prefix_annot str =
+  if String.starts ~pattern:"%" str
+  then (String.sub str 1 ((String.length str) - 1))
+  else str
+
+let get_annot_from_type (ty : T.type_) : string option =
+  match ty with
+  | {annotation = Some annot} -> Some (remove_prefix_annot annot)
+  | _ -> None
+
 let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let name =
     match input with
@@ -1392,24 +1402,56 @@ end = struct
     let pty = michelson.parameter in
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
 
-    let args prefix =
-      let mkvar ty i : rstack1 =
+    (* let args prefix =
+       let mkvar ty i : rstack1 =
         (* `VGlobal (ty, (match ty.annotation with Some v -> if String.starts ~pattern:"%" v then (String.sub v 1 ((String.length v) - 1)) else v | _ ->Printf.sprintf "%s%d" prefix i)) in *)
         `VGlobal (ty, Printf.sprintf "%s%d" prefix i) in
 
-      let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
+       let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
         match ty with
         | { node = Tpair (_::ty::_); _} ->
           `Paired (mkvar ty i, create (i + 1) ty)
         | _ ->
           mkvar ty i
-      in create 1 in
+       in create 1 in
 
-    let pst = args "args_" pty in
-    let ast = args "sto_"  aty in
+       let pst = args "args_" pty in
+       let ast = args "sto_"  aty in *)
+
+    let pst = `VGlobal (pty, "args_1") in
+    let ast : rstack1 =
+      let i : int ref = ref 0 in
+      let rec aux (ty : T.type_) =
+        let mkvar ty : rstack1 =
+          let fresh_id _ =
+            i := !i + 1;
+            Printf.sprintf "sto_%d" !i
+          in
+          let str = Option.get_dfl (fresh_id ()) (get_annot_from_type ty) in
+          `VGlobal (ty, str)
+        in
+        match ty.node with
+        | Tpair [t1; t2] -> `Paired (mkvar t1, aux t2)
+        | Tpair (t1::ts) -> `Paired (mkvar t1, aux (tpair ts))
+        | _ -> mkvar ty
+      in
+      aux aty
+    in
+    (* let xty = { node = Tint; annotation = (Some "%nbVotes") } in
+       let tty = { node = Tnat; annotation = (Some "%%storedValue") } in *)
+
+    (* let ast : rstack1 = `Paired
+       ((`VGlobal (({ node = Tint; annotation = (Some "%nbVotes") }, "nbVotes")),
+       `VGlobal (({ node = Tnat; annotation = (Some "%storedValue") }, "storedValue")))) in *)
+
+    (* let ast : rstack1 = `Paired
+        ((`VGlobal (({ node = Tnat; annotation = (Some "%x") }, "x")),
+          `Paired
+            ((`VGlobal (({ node = Tstring; annotation = (Some "%y") }, "y")),
+              `VGlobal (({ node = Tbytes; annotation = (Some "%z") }, "z")))))) in *)
 
     (* Format.eprintf "aty: %a@\n" pp_type_ aty;
-       Format.eprintf "ast: %a@\n" pp_rstack1 ast; *)
+    Format.eprintf "ast: %a@\n" Michelson.pp_rstack1 ast; *)
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1450,16 +1492,6 @@ let to_dir (michelson, env : T.michelson * env) =
   let code = Decomp_dir.decompile michelson in
 
   (T.mk_dprogram tstorage tparameter storage_data name code), env
-
-let remove_prefix_annot str =
-  if String.starts ~pattern:"%" str
-  then (String.sub str 1 ((String.length str) - 1))
-  else str
-
-let get_annot_from_type (ty : T.type_) : string option =
-  match ty with
-  | {annotation = Some annot} -> Some (remove_prefix_annot annot)
-  | _ -> None
 
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
