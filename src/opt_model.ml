@@ -27,40 +27,6 @@ let get_model_entries (parameter : T.type_) : model_entries =
   (* Format.eprintf "%a@\n" pp_model_entries res; *)
   res
 
-(* let build_entries (env : Gen_decompile.env) (model : model) : model =
-  let p : (type_ * mterm) option =
-    match model.functions with
-    | [Entry {args = [(_, pty, _)]; body = code}] -> Some (pty, code)
-    | _ -> None
-  in
-  let rec split (code : mterm) : (mterm * mterm) option =
-    match code.node with
-    | Mseq [a]
-    | Mseq [a; {node = (Massign (ValueAssign, (Tunit, None), (Avar (None, {pldesc = "ops"})), { node = (Mlitlist []); type_ = ((Tlist (Toperation, _)), _) })) }] -> split a
-    | Minstrmatchor (_a, _b, c, _d, e) -> Some (c, e)
-    | _ -> (Format.eprintf "%a" pp_mterm code; None) in
-  let process_arg (t : type_) =
-    match t with
-    | _ -> [mk_mident (dumloc "arg"), t, None]
-  in
-  let rec process (pty, code : type_ * mterm) =
-    match pty with
-    | Tor (o1, o2), None -> begin
-        match split code with
-        | Some (c1, c2) -> process (o1, c1) @ process (o2, c2)
-        | None -> assert false
-      end
-    | _, Some annot -> [Some (mk_mident annot), pty, code]
-    | _, _ -> [Some (mk_mident (dumloc "default")), pty, code]
-  in
-  Option.fold (fun model p ->
-      let l = process p in
-      let ps = List.mapi (fun k (name, pty, code) ->
-          let name = match name with | Some x -> x | None -> mk_mident (dumloc (Format.asprintf "entry_%i" k)) in
-          Entry (mk_function_struct ~args:(process_arg pty) name code)
-        ) l in
-      { model with functions = ps }) model p *)
-
 let build_entries (env : Gen_decompile.env) (model : model) : model =
   let entries = get_model_entries (Option.get env.type_parameter) in
   let mk_seq a b c =
@@ -113,10 +79,27 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           in
           aux code
         in
+        let flat_pair (tys : T.type_ list) =
+          match List.rev tys with
+          | (T.{node = Tpair a})::tl -> List.rev tl @ a
+          | _ -> tys
+        in
+        let get_annot (ty : T.type_) : string option =
+          match ty with
+          | {annotation = Some annot} -> Some (Gen_decompile.remove_prefix_annot annot)
+          | _ -> None
+        in
         let args, code =
           match arg_ids, pty.node with
           | _, T.Tunit -> [], code
           | [id], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+          | ids, T.Tpair tys when List.length ids = List.length (flat_pair tys) -> begin
+              let tys = flat_pair tys in
+              let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
+              let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> annot | _ -> src))) ids tys in
+              let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
+              (a, b)
+            end
           | _, _ -> assert false
         in
         [Entry (mk_function_struct ~args (mk_mident (dumloc name)) code)]
