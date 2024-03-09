@@ -1456,6 +1456,11 @@ let remove_prefix_annot str =
   then (String.sub str 1 ((String.length str) - 1))
   else str
 
+let get_annot_from_type (ty : T.type_) : string option =
+  match ty with
+  | {annotation = Some annot} -> Some (remove_prefix_annot annot)
+  | _ -> None
+
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
   match t.node with
@@ -1727,16 +1732,19 @@ end = struct
 
     let storage_list = get_storage_list dprogram.storage in
 
-    let storage =
-      List.mapi (fun n (_id, t) ->
-          (* let id = if String.length id > 0 then String.sub id 1 (String.length id - 1) else id in *)
-          (* Format.eprintf "type: %a@\n" Michelson.pp_type_ t; *)
-          (* let id = match t.annotation with Some v -> if String.starts ~pattern:"%" v then (String.sub v 1 ((String.length v) - 1)) else v | _ -> Format.asprintf "sto_%d" (n + 1) in *)
-          let id = Format.asprintf "sto_%d" (n + 1) in
-          M.mk_storage_item (M.mk_mident (dumloc id)) MTvar (for_type t) (data_to_mterm ~t:t (get_default_value t))
-        ) storage_list
+    let parameters =
+      match storage_list with
+      | [(_, {node = T.Tunit})] -> []
+      | _ ->
+        List.mapi (fun n (_id, t) ->
+            let id = match get_annot_from_type t with
+              | Some v -> v
+              | None -> Format.asprintf "sto_%d" (n + 1)
+            in
+            M.mk_parameter (M.mk_mident (dumloc id)) (for_type t) (*data_to_mterm ~t:t (get_default_value t)*)
+          ) storage_list
     in
-    let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in
+    let model = M.mk_model (dumloc dprogram.name) ~functions ~parameters in
     model, {env with type_storage = Some dprogram.storage; type_parameter = Some dprogram.parameter}
 end
 

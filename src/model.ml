@@ -846,6 +846,9 @@ let mk_record_field ?(loc = Location.dummy) name type_ : record_field =
 let mk_storage_item ?(const=false) ?(ghost = false) ?namespace ?(no_storage = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
   { id; model_type; typ; const; ghost; default; namespace; no_storage; loc }
 
+let mk_parameter ?default ?value ?(const = false) ?(loc = Location.dummy) name typ : parameter =
+  { name; typ; default; value; const ;loc }
+
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(side_effect = false) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; side_effect; loc }
 

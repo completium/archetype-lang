@@ -84,11 +84,7 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           | (T.{node = Tpair a})::tl -> List.rev tl @ a
           | _ -> tys
         in
-        let get_annot (ty : T.type_) : string option =
-          match ty with
-          | {annotation = Some annot} -> Some (Gen_decompile.remove_prefix_annot annot)
-          | _ -> None
-        in
+        let get_annot = Gen_decompile.get_annot_from_type in
         let args, code =
           match arg_ids, pty.node with
           | _, T.Tunit -> [], code

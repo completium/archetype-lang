@@ -1118,7 +1118,8 @@ let pp_parameter fmt (id, ty, dv, c) =
 
 let pp_parameters fmt = function
   | None -> ()
-  | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " (fun fmt x -> pp_parameter fmt (unloc x))) (unloc xs)
+  | Some {pldesc = [x]} -> Format.fprintf fmt "(%a)" pp_parameter (unloc x)
+  | Some xs -> Format.fprintf fmt "(@\n@[%a@])" (pp_list ",@\n" (fun fmt x -> pp_parameter fmt (unloc x))) (unloc xs)
 
 let pp_metadata fmt (m : metadata) =
   match m with
