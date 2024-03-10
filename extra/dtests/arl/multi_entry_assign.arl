@@ -1,0 +1,13 @@
+archetype multi_entry_assign
+
+variable x : nat = 0
+variable y : string = ""
+variable z : bytes = 0x
+
+entry e0() {}
+
+entry e1(a : nat) { x := a }
+
+entry e2(a : nat, b : string) {x := a; y := b}
+
+entry e3(a : nat, b : string, c : bytes) {x := a; y := b; z := c}

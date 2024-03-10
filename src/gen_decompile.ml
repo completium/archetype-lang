@@ -1451,7 +1451,7 @@ end = struct
               `VGlobal (({ node = Tbytes; annotation = (Some "%z") }, "z")))))) in *)
 
     (* Format.eprintf "aty: %a@\n" pp_type_ aty;
-    Format.eprintf "ast: %a@\n" Michelson.pp_rstack1 ast; *)
+       Format.eprintf "ast: %a@\n" Michelson.pp_rstack1 ast; *)
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1573,6 +1573,8 @@ end = struct
   open Michelson
   open Model
 
+  let todo = failg (mk_mterm (Mstring "TODO") tstring)
+
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
 
   let get_storage_list tstorage =
@@ -1651,7 +1653,7 @@ end = struct
           | `Uop Uint,                    [ a ] -> mk_nat_to_int (f a)
           | `Uop Unot,                    [ a ] -> mnot (f a)
           | `Uop Uabs,                    [ a ] -> mk_mterm (Mabs (f a)) tnat
-          | `Uop Uisnat,                  [ _a ] -> assert false
+          | `Uop Uisnat,                  [ a ] -> mk_mterm (Minttonat (f a)) (toption tnat)
           | `Uop Usome,                   [ a ] -> mk_some (f a)
           | `Uop Usize,                   [ a ] -> mk_mterm (Mlistlength (tunknown, f a)) tnat
           | `Uop Upack,                   [ a ] -> mk_pack (f a)
@@ -1690,7 +1692,7 @@ end = struct
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
           | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (mk_map, tunknown, tunknown, f a, f b, f c)) tunknown
-          | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> assert false
+          | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> todo
           | _ -> assert false
         end
 
@@ -1708,7 +1710,7 @@ end = struct
           match input with
           | DVar (_ty, n) -> [M.mk_mident (dumloc (int_to_var n))]
           | DPair (DVar (_ty, n), p2) -> M.mk_mident (dumloc (int_to_var n))::(aux p2)
-          | DPair (_p1, _p2) -> Format.eprintf "%a@\n" pp_dpattern input; assert false
+          | DPair (_p1, _p2) -> Format.eprintf "%a@\n" pp_dpattern input; [] (* TODO *)
         in
         List.map aux input |> List.flatten
       in
@@ -1721,6 +1723,15 @@ end = struct
 
         | DIIf (c, (b1, b2)) ->
           mk_mterm (Mif (g c, seq b1, Some (seq b2))) tunit
+
+        | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
+          let lis = extract_or_pattern lv in
+          let ris = extract_or_pattern rv in
+          mk_mterm (Minstrmatchor (g c, lis, seq lc, ris, seq rc)) tunit
+
+        | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
+          let sis = extract_or_pattern sv in
+          mk_mterm (Minstrmatchoption (g c, sis, seq sc, seq nc)) tunit
 
         (* | DIMatch (c, bs) ->
            let rec pp_pattern fmt = function
@@ -1742,17 +1753,15 @@ end = struct
                ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
                pp_branch) bs *)
 
-        | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
-          let lis = extract_or_pattern lv in
-          let ris = extract_or_pattern rv in
-          mk_mterm (Minstrmatchor (g c, lis, seq lc, ris, seq rc)) tunit
-
-        | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
-          let sis = extract_or_pattern sv in
-          mk_mterm (Minstrmatchoption (g c, sis, seq sc, seq nc)) tunit
-
+        | DIMatch    (_c, _) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         | DIFailwith e -> failg (for_expr e)
-        | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false
+        | DIWhile    (_code, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
+        | DIIter     (_id, _coll, _body) ->
+        (* Format.eprintf "%a@\n" pp_dinstr i; assert false *)
+        todo
+
+        | DILoop     (_id, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
+        (* | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false *)
       end
     in
     let instrs = List.map for_instr code in
