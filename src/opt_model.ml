@@ -123,6 +123,8 @@ let optimize (model, env : model * Gen_decompile.env) =
     model
     |> build_entries env
     |> remove_operations_nil
+    |> clean_mterm
+    |> apply_syntactic_sugar
     |> flat_sequence
   in
   model, env

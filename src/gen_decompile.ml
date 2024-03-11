@@ -2023,6 +2023,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       end
     | Mfailexpr x        -> A.efailexpr (f x)
     | Mfailsome x        -> A.efailsome (f x)
+    | Mdorequire (c, v)  -> A.edorequire (f c) (f v)
+    | Mdofailif (c, v)   -> A.edofailif (f c) (f v)
     | Mtransfer tk       -> begin
         let tr =
           match tk with

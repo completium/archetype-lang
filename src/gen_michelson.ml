@@ -769,6 +769,8 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mfailexpr e -> T.iunop ~loc:mtt.loc Ufail (f e)
     | Mfailsome _ -> emit_error (UnsupportedTerm ("Mfailsome"))
+    | Mdorequire _ -> emit_error (UnsupportedTerm ("Mdorequire"))
+    | Mdofailif _ -> emit_error (UnsupportedTerm ("Mdofailif"))
     | Mtransfer tr -> begin
         let op =
           match tr with

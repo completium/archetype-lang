@@ -87,6 +87,34 @@ let flat_sequence_mterm (mt : mterm) =
   in
   aux mt
 
+let apply_syntactic_sugar (model : model) : model =
+  let is_nop (mt : mterm) : bool =
+    match mt.node with
+    | Mseq [] -> true
+    | _ -> false
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mif (cond, {node = Mfail (Invalid e)}, None) -> begin
+        mk_mterm (Mdofailif (f cond, f e)) tunit
+      end
+    | Mif (cond, t, Some ({node = Mfail (Invalid e)})) when is_nop t -> begin
+        mk_mterm (Mdorequire (f cond, f e)) tunit
+      end
+    | _ -> map_mterm f mt
+  in
+  map_mterm_model aux model
+
+let clean_mterm (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mseq[v] -> f v
+    | _ -> map_mterm f mt
+  in
+  map_mterm_model aux model
+
 let flat_sequence (model : model) : model =
   let aux (_ctx : ctx_model) (mt : mterm) : mterm =
     flat_sequence_mterm mt

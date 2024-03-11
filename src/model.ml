@@ -214,6 +214,8 @@ type 'term mterm_node  =
   | Mfail             of fail_type
   | Mfailexpr         of 'term
   | Mfailsome         of 'term
+  | Mdorequire        of 'term * 'term
+  | Mdofailif         of 'term * 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of mident * 'term
   | Msandboxexec      of 'term * 'term * 'term
@@ -481,7 +483,7 @@ and transfer_kind = mterm transfer_kind_gen
 and mterm_gen = {
   node: mterm_gen mterm_node;
   type_: type_;
-  loc : Location.t;
+  loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -1300,6 +1302,8 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mfailexpr v1, Mfailexpr v2                                                       -> cmp v1 v2
     | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
+    | Mdorequire (c1, v1), Mdorequire (c2, v2)                                         -> cmp c1 c2 && cmp v1 v2
+    | Mdofailif (c1, v1), Mdofailif (c2, v2)                                           -> cmp c1 c2 && cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     | Msandboxexec (a1, b1, c1), Msandboxexec (a2, b2, c2)                             -> cmp a1 a2 && cmp b1 b2 && cmp c1 c2
@@ -1770,6 +1774,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mfailexpr v                    -> Mfailexpr (f v)
   | Mfailsome v                    -> Mfailsome (f v)
+  | Mdorequire (c, v)              -> Mdorequire (f c, f v)
+  | Mdofailif (c, v)               -> Mdofailif (f c, f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
   | Msandboxexec (a, b, c)         -> Msandboxexec (f a, f b, f c)
@@ -2153,6 +2159,8 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mfailexpr v                           -> f accu v
   | Mfailsome v                           -> f accu v
+  | Mdorequire (c, v)                     -> f (f accu c) v
+  | Mdofailif (c, v)                      -> f (f accu c) v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
   | Msandboxexec (a, b, c)                -> f (f (f accu a) b) c
@@ -2645,6 +2653,16 @@ let fold_map_term
   | Mfailsome v ->
     let ve, va = f accu v in
     g (Mfailsome ve), va
+
+  | Mdorequire (c, v) ->
+    let ce, ca = f accu c in
+    let ve, va = f ca v in
+    g (Mdorequire (ce, ve)), va
+
+  | Mdofailif (c, v) ->
+    let ce, ca = f accu c in
+    let ve, va = f ca v in
+    g (Mdofailif (ce, ve)), va
 
   | Mtransfer tr ->
     let tre, tra = fold_map_transfer_kind f accu tr in

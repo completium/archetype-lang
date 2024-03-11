@@ -370,6 +370,16 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "fail_some (%a)"
         f v
 
+    | Mdorequire (c, v) ->
+      Format.fprintf fmt "do_require (%a, %a)"
+        f c
+        f v
+
+    | Mdofailif (c, v) ->
+      Format.fprintf fmt "do_fail_if (%a, %a)"
+        f c
+        f v
+
     | Mtransfer tr -> pp_transfer_kind f fmt tr
 
     | Memit (e, x) ->
