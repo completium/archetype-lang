@@ -1682,10 +1682,10 @@ end = struct
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mgreedyand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mgreedyor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
-          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (mk_map, tunknown, tunknown, f a, f b, None)) tunknown
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (mk_map, tunknown, tunknown, f b, f a, None)) tunknown
           | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(mk_map, tunknown, tunknown, f a, f b)) tunknown
           | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
-          | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
+          | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f b, f a)) tunknown
           | `Bop Bpair,                [ a; b ] -> mk_tuple [f a; f b]
           | `Bop Bexec,                [ _a; _b ] -> assert false
           | `Bop Bapply,               [ _a; _b ] -> assert false
@@ -2068,7 +2068,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Moperations                       -> f_cst "operations"
     | Mmakeoperation (v, d, a)          -> f_app "make_operation" [f v; f d; f a]
     | Mmakeevent (t, id, a)             -> f_app "make_event" ~ts:[ft t] [(A.estring (M.unloc_mident id)); f a]
-    | Mmakesandboxexecoperation (a, b, c) -> f_app "make_sandbox_exec_operation" [f a; f b; f c]
+    | Mmakesandboxexecoperation (a, b, c) -> f_app "make_sandbox_exec_operation" [f a; f c; f b]
     | Mcreatecontract (cc, d, a) -> begin
         let code, storage =
           match cc with
