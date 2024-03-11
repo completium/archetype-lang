@@ -1692,7 +1692,7 @@ end = struct
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
           | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (mk_map, tunknown, tunknown, f a, f b, f c)) tunknown
-          | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> todo
+          | `Top Ttransfer_tokens,  [ a; b; c ] -> mk_mterm (Mmakeoperation (f b, f a, f c)) toperation
           | _ -> assert false
         end
 
