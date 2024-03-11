@@ -1710,7 +1710,7 @@ end = struct
           match input with
           | DVar (_ty, n) -> [M.mk_mident (dumloc (int_to_var n))]
           | DPair (DVar (_ty, n), p2) -> M.mk_mident (dumloc (int_to_var n))::(aux p2)
-          | DPair (_p1, _p2) -> Format.eprintf "%a@\n" pp_dpattern input; [] (* TODO *)
+          | DPair (_p1, _p2) -> (*Format.eprintf "%a@\n" pp_dpattern input;*) [] (* TODO *)
         in
         List.map aux input |> List.flatten
       in
@@ -2437,7 +2437,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minttodate         x -> f_app "int_to_date" [f x]
     | Mmuteztonat        x -> f_app "mutez_to_nat" [f x]
-
+    | Mdmatchor          _ -> assert false
+    | Mdmatchoption      _ -> assert false
   in
 
   let for_decl (x : M.decl_node) : A.declaration =

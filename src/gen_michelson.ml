@@ -1248,6 +1248,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Minttodate _         -> emit_error (UnsupportedTerm ("Minttodate"))
     | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.icall ~loc:mtt.loc (get_fun_name b) [f v] (is_inline b)
+    | Mdmatchoption _      -> emit_error (UnsupportedTerm ("Mdmatchoption"))
+    | Mdmatchor _          -> emit_error (UnsupportedTerm ("Mdmatchor"))
 
   in
 

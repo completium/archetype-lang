@@ -126,5 +126,6 @@ let optimize (model, env : model * Gen_decompile.env) =
     |> clean_mterm
     |> apply_syntactic_sugar
     |> flat_sequence
+    |> transform_match
   in
   model, env

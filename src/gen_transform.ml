@@ -121,6 +121,20 @@ let flat_sequence (model : model) : model =
   in
   map_mterm_model aux model
 
+let transform_match (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let rec to_ids (dp : dpattern) =
+      match dp with
+      | DPid (id, _ty) -> [mk_mident (dumloc id)]
+      | DPlist l -> List.map to_ids l |> List.flatten
+    in
+    let f = aux ctx in
+    match mt.node with
+    | Mdmatchoption (x, ps, bs, bn) -> let ids = to_ids ps in {mt with node = Mmatchoption (f x, ids, f bs, f bn)}
+    | _ -> map_mterm f mt
+  in
+  map_mterm_model aux model
+
 let replace_do_require_fail_if (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     let f = aux ctx in

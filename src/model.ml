@@ -468,6 +468,8 @@ type 'term mterm_node  =
   (* others *)
   | Minttodate        of 'term
   | Mmuteztonat       of 'term
+  | Mdmatchoption     of 'term * dpattern * 'term * 'term
+  | Mdmatchor         of 'term * dpattern * 'term * dpattern * 'term
 [@@deriving show {with_path = false}]
 
 and assign_kind = mterm assign_kind_gen
@@ -587,6 +589,11 @@ and detach_kind = mterm detach_kind_gen
 and create_contract_type =
   | CCTz  of michelson_struct * mterm      (* tz * init storage *)
   | CCArl of ident * (ident * mterm) list  (* arl ident * arg [ident * value] *)
+[@@deriving show {with_path = false}]
+
+and dpattern =
+  | DPid of ident * type_
+  | DPlist of dpattern list
 [@@deriving show {with_path = false}]
 
 type model_type =
@@ -1192,6 +1199,12 @@ let cmp_for_ident
   | FIdouble (x1, y1), FIdouble (x2, y2) -> cmpi x1 x2 && cmpi y1 y2
   | _ -> false
 
+let rec cmp_dpattern (p1 : dpattern) (p2 : dpattern) : bool =
+  match p1, p2 with
+  | DPid (id1, ty1), DPid(id2, ty2) -> cmp_ident id1 id2 && cmp_type ty1 ty2
+  | DPlist l1, DPlist l2 when List.length l1 = List.length l2 -> List.for_all2 cmp_dpattern l1 l2
+  | _ -> false
+
 let cmp_mterm_node
     (cmp   : 'term -> 'term -> bool)
     (cmpi  : 'id -> 'id -> bool)
@@ -1555,6 +1568,8 @@ let cmp_mterm_node
     (* others *)
     | Minttodate v1, Minttodate v2                                                     -> cmp v1 v2
     | Mmuteztonat v1, Mmuteztonat v2                                                   -> cmp v1 v2
+    | Mdmatchoption (x1, ps1, bs1, bn1), Mdmatchoption (x2, ps2, bs2, bn2)             -> cmp x1 x2 && cmp_dpattern ps1 ps2 && cmp bs1 bs2 && cmp bn1 bn2
+    | Mdmatchor (x1, pl1, bl1, pr1, br1), Mdmatchor (x2, pl2, bl2, pr2, br2)           -> cmp x1 x2 && cmp_dpattern pl1 pl2 && cmp bl1 bl2 && cmp_dpattern pr1 pr2 && cmp br1 br2
     | _ -> false
   with
     _ -> false
@@ -2028,6 +2043,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* others *)
   | Minttodate v                   -> Minttodate (f v)
   | Mmuteztonat v                  -> Mmuteztonat (f v)
+  | Mdmatchoption (x, ps, bs, bn)  -> Mdmatchoption (f x, ps, f bs, f bn)
+  | Mdmatchor (x, pl, bl, pr, br)  -> Mdmatchor (f x, pl, f bl, pr, f br)
 
 let map_mterm
     (f : mterm -> mterm)
@@ -2413,6 +2430,8 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   (* others *)
   | Minttodate v                          -> f accu v
   | Mmuteztonat v                         -> f accu v
+  | Mdmatchoption (x, _, bs, bn)          -> f (f (f accu x) bs) bn
+  | Mdmatchor (x, _, bl, _, br)           -> f (f (f accu x) bl) br
 
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -3812,6 +3831,17 @@ let fold_map_term
     let ve, va = f accu v in
     g (Mmuteztonat ve), va
 
+  | Mdmatchoption (x, ps, bs, bn) ->
+    let xe, xa = f accu x in
+    let bse, bsa = f xa bs in
+    let bne, bna = f bsa bn in
+    g (Mdmatchoption (xe, ps, bse, bne)), bna
+
+  | Mdmatchor (x, pl, bl, pr, br) ->
+    let xe, va = f accu x in
+    let ble, bla = f va bl in
+    let bre, bra = f bla br in
+    g (Mdmatchor (xe, pl, ble, pr, bre)), bra
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : 'a) : 'a =

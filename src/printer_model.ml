@@ -158,6 +158,10 @@ let pp_dk fmt = function
   | DK_option (_, id) -> Format.pp_print_string fmt id
   | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
 
+let rec pp_dpattern fmt = function
+  | DPid (id, _) -> Format.fprintf fmt "%s" id
+  | DPlist l -> Format.fprintf fmt "(%a)" (pp_list ", " pp_dpattern) l
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -1724,6 +1728,27 @@ let pp_mterm fmt (mt : mterm) =
           f v
       in
       pp fmt v
+
+    | Mdmatchoption (x, ps, bs, bn) ->
+      let pp fmt (x, ps, bs, bn) =
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+          f x
+          pp_dpattern ps
+          f bs
+          f bn
+      in
+      pp fmt (x, ps, bs, bn)
+
+    | Mdmatchor (x, pl, bl, pr, br) ->
+      let pp fmt (x, pl, bl, pr, br) =
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+          f x
+          pp_dpattern pl
+          f bl
+          pp_dpattern pr
+          f br
+      in
+      pp fmt (x, pl, bl, pr, br)
 
   in
   f fmt mt
