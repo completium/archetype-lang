@@ -121,6 +121,16 @@ let flat_sequence (model : model) : model =
   in
   map_mterm_model aux model
 
+let replace_do_require_fail_if (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mdofailif  (cond, v) -> {mt with node = (Mif (cond,      failg v, None))}
+    | Mdorequire (cond, v) -> {mt with node = (Mif (mnot cond, failg v, None))}
+    | _ -> map_mterm f mt
+  in
+  map_mterm_model aux model
+
 let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
   match op, get_ntype t with
   | ValueAssign , _ -> v

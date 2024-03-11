@@ -462,6 +462,8 @@ let for_errors (model : M.model) : error_struct list =
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in
   let rec aux (ctx : M.ctx_model) (accu : error_struct list) (mt : M.mterm) : error_struct list =
     match mt.node with
+    | Mdorequire (_, v) -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu)
+    | Mdofailif (_, v) -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu)
     | Mfail (fv) -> begin
         match fv with
         | Invalid v                -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu)

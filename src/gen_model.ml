@@ -153,10 +153,6 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
     M.mk_mterm (Mfail ft) M.tunit
   in
 
-  let term_not x : M.mterm =
-    M.mk_mterm (M.Mnot x) M.tbool
-  in
-
   (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
   (* let is_list (mt : mterm) =
      match mt with
@@ -1173,14 +1169,9 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | None -> M.Massign (to_assignment_operator op, t, to_ak lv, e)
         end
       | A.Irequire (b, t, e) ->
-        let cond : M.mterm =
           if b
-          then term_not (f t)
-          else (f t)
-        in
-        let e : M.mterm = f e in
-        M.Mif (cond, fail (Invalid e), None)
-
+          then M.Mdorequire (f t, f e)
+          else M.Mdofailif  (f t, f e)
       | A.Itransfer tr -> begin
           let tr =
             match tr with

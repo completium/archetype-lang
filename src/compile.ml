@@ -296,6 +296,7 @@ let rec toolchain ?(debug=false) model =
   in
   let f = print_debug debug in
   model
+  |> f "replace_do_require_fail_if" replace_do_require_fail_if
   |> f "process_create_contract" process_create_contract
   |> f "remove_sandbox_exec" remove_sandbox_exec
   |> f "add_builtin_functions" add_builtin_functions
