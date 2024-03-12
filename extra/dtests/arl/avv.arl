@@ -1,0 +1,21 @@
+archetype avv(
+nbVotes : int,
+storedValue : nat)
+
+entry divide (arg : nat) {
+  do_require ((5 < arg), "WrongCondition: params.divisor > 5");
+  match storedValue /% arg with
+  | some (x76, x77) -> (storedValue := x76)
+  | none -> (fail (26i))
+  end
+}
+
+entry double () {
+  storedValue := 2 * storedValue
+}
+
+entry replace (arg : nat) {
+  storedValue := arg;
+  nbVotes := 1i + nbVotes
+}
+

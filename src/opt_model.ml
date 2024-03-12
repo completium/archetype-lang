@@ -42,8 +42,7 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
   let seek_ifleft param code =
     let f code =
       match code.node with
-      | Minstrmatchor ({node = Mvar (id, _) }, lids, le, rids, re)
-      | Mmatchor ({node = Mvar (id, _) }, lids, le, rids, re) when String.equal (unloc_mident id) param -> Some (lids, le, rids, re)
+      | Mdmatchor ({node = Mvar (id, _) }, pl, bl, pr, br) when String.equal (unloc_mident id) param -> Some (pl, bl, pr, br)
       | _ -> None
     in
     match code.node with
@@ -61,13 +60,13 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
       end
     | _ -> f code
   in
-  let rec aux (entries : model_entries) (arg_ids : string list) (code : mterm) : function_node list =
+  let rec aux (entries : model_entries) (arg_pattern : dpattern) (code : mterm) : function_node list =
     match entries with
     | Munion (l, r) -> begin
-        let opt_param = match arg_ids with | [id] -> Some id | _ -> None in
+        let opt_param = match arg_pattern with | DPid id -> Some id | _ -> None in
         let param = Option.get opt_param in
         match seek_ifleft param code with
-        | Some (lids, le, rids, re) -> (aux l (List.map unloc_mident lids) le) @ (aux r (List.map unloc_mident rids) re)
+        | Some (pl, bl, pr, br) -> (aux l pl bl) @ (aux r pr br)
         | None -> []
       end
     | Mentry (name, pty) -> begin
@@ -86,17 +85,18 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
         in
         let get_annot = Gen_decompile.get_annot_from_type in
         let args, code =
-          match arg_ids, pty.node with
+          match arg_pattern, pty.node with
           | _, T.Tunit -> [], code
-          | [id], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
-          | ids, T.Tpair tys when List.length ids = List.length (flat_pair tys) -> begin
+          | DPid id, _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+          | (DPlist [DPlist ids; DPid _] | DPlist (DPid _::_ as ids)), T.Tpair tys when List.length ids = List.length (flat_pair tys) && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
               let tys = flat_pair tys in
+              let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
               let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
               let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> annot | _ -> src))) ids tys in
               let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
               (a, b)
             end
-          | _, _ -> assert false
+          | _, _ -> Format.eprintf "%a@\n" pp_dpattern arg_pattern; assert false
         in
         [Entry (mk_function_struct ~args (mk_mident (dumloc name)) code)]
       end
@@ -107,7 +107,7 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
     | _ -> None
   in
   match def_entry with
-  | Some code -> {model with functions = aux entries ["args_1"] code }
+  | Some code -> {model with functions = aux entries (DPid "args_1") code }
   | None -> model
 
 let remove_operations_nil (model : model) : model =

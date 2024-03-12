@@ -1705,14 +1705,21 @@ end = struct
         let instrs = List.map f c in
         seq instrs
       in
-      let extract_or_pattern input : mident list =
-        let rec aux input : mident list =
-          match input with
-          | DVar (_ty, n) -> [M.mk_mident (dumloc (int_to_var n))]
-          | DPair (DVar (_ty, n), p2) -> M.mk_mident (dumloc (int_to_var n))::(aux p2)
-          | DPair (_p1, _p2) -> (*Format.eprintf "%a@\n" pp_dpattern input;*) [] (* TODO *)
+      let extract_or_pattern (input : T.dpattern list) : M.dpattern =
+        let rec aux = function
+          | DVar (_ty, n) -> M.DPid (int_to_var n)
+          | DPair (p1, p2) -> M.DPlist [aux p1; aux p2]
         in
-        List.map aux input |> List.flatten
+        let rec flat_dpattern = function
+          | M.DPlist [x] -> flat_dpattern x
+          | M.DPlist l -> begin
+              match List.rev l with
+              | (M.DPlist l2)::tl -> flat_dpattern (M.DPlist ((List.rev tl) @ l2))
+              | _ -> M.DPlist (List.map flat_dpattern l)
+            end
+          | (_ as x) -> x
+        in
+        M.DPlist (List.map aux input) |> flat_dpattern
       in
       begin
         match i with
@@ -1727,11 +1734,11 @@ end = struct
         | DIMatch (c, [("left", lv, lc) ; ("right", rv, rc)]) ->
           let lis = extract_or_pattern lv in
           let ris = extract_or_pattern rv in
-          mk_mterm (Minstrmatchor (g c, lis, seq lc, ris, seq rc)) tunit
+          mk_mterm (Mdmatchor (g c, lis, seq lc, ris, seq rc)) tunit
 
         | DIMatch (c, [("none", _nv, nc) ; ("some", sv, sc)]) ->
           let sis = extract_or_pattern sv in
-          mk_mterm (Minstrmatchoption (g c, sis, seq sc, seq nc)) tunit
+          mk_mterm (Mdmatchoption (g c, sis, seq sc, seq nc)) tunit
 
         (* | DIMatch (c, bs) ->
            let rec pp_pattern fmt = function
@@ -1757,8 +1764,8 @@ end = struct
         | DIFailwith e -> failg (for_expr e)
         | DIWhile    (_code, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         | DIIter     (_id, _coll, _body) ->
-        (* Format.eprintf "%a@\n" pp_dinstr i; assert false *)
-        todo
+          (* Format.eprintf "%a@\n" pp_dinstr i; assert false *)
+          todo
 
         | DILoop     (_id, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         (* | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false *)

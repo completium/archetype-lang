@@ -159,7 +159,7 @@ let pp_dk fmt = function
   | DK_map (_, id, k) -> Format.fprintf fmt "%a[%a]" Format.pp_print_string id pp_mterm k
 
 let rec pp_dpattern fmt = function
-  | DPid (id, _) -> Format.fprintf fmt "%s" id
+  | DPid id -> Format.fprintf fmt "%s" id
   | DPlist l -> Format.fprintf fmt "(%a)" (pp_list ", " pp_dpattern) l
 
 let pp_mterm fmt (mt : mterm) =

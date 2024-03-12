@@ -592,7 +592,7 @@ and create_contract_type =
 [@@deriving show {with_path = false}]
 
 and dpattern =
-  | DPid of ident * type_
+  | DPid of ident
   | DPlist of dpattern list
 [@@deriving show {with_path = false}]
 
@@ -1201,7 +1201,7 @@ let cmp_for_ident
 
 let rec cmp_dpattern (p1 : dpattern) (p2 : dpattern) : bool =
   match p1, p2 with
-  | DPid (id1, ty1), DPid(id2, ty2) -> cmp_ident id1 id2 && cmp_type ty1 ty2
+  | DPid id1, DPid id2 -> cmp_ident id1 id2
   | DPlist l1, DPlist l2 when List.length l1 = List.length l2 -> List.for_all2 cmp_dpattern l1 l2
   | _ -> false
 

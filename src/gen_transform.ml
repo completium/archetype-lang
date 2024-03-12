@@ -125,7 +125,7 @@ let transform_match (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     let rec to_ids (dp : dpattern) =
       match dp with
-      | DPid (id, _ty) -> [mk_mident (dumloc id)]
+      | DPid id -> [mk_mident (dumloc id)]
       | DPlist l -> List.map to_ids l |> List.flatten
     in
     let f = aux ctx in
