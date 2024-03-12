@@ -1533,16 +1533,18 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
 let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
   let f = data_to_mterm ?omap_var in
   let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+  let is_address = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Taddress -> true | _ -> false) false in
   match d with
-  | Dint v when is_nat t -> M.mk_bnat v
-  | Dint    v        -> M.mk_bint v
-  | Dstring v        -> M.mk_string v
-  | Dbytes  v        -> M.mk_bytes v
-  | Dunit            -> M.unit
-  | Dtrue            -> M.mtrue
-  | Dfalse           -> M.mfalse
-  | Dpair   l        -> M.mk_pair (List.map f l)
-  | Dleft    d       -> begin
+  | Dint    v when is_nat t     -> M.mk_bnat v
+  | Dint    v                   -> M.mk_bint v
+  | Dstring v when is_address t -> M.mk_address v
+  | Dstring v                   -> M.mk_string v
+  | Dbytes  v                   -> M.mk_bytes v
+  | Dunit                       -> M.unit
+  | Dtrue                       -> M.mtrue
+  | Dfalse                      -> M.mfalse
+  | Dpair   l                   -> M.mk_pair (List.map f l)
+  | Dleft    d                  -> begin
       let tl, tr = (match t with
           | Some { node = Tor (tl, tr) } -> tl, tr
           | _ -> T.tnever, T.tnever)
@@ -1573,8 +1575,6 @@ end = struct
   open Michelson
   open Model
 
-  let todo = failg (mk_mterm (Mstring "TODO") tstring)
-
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
 
   let get_storage_list tstorage =
@@ -1593,15 +1593,6 @@ end = struct
     match r with
     | [] -> ["storage", tstorage]
     | _  -> r
-
-  let rec get_default_value (t : T.type_) =
-    let f = get_default_value in
-    match t.node with
-    | Tnat
-    | Tint         -> T.Dint Big_int.zero_big_int
-    | Tstring      -> T.Dstring ""
-    | Tpair l      -> T.Dpair (List.map f l)
-    | _ -> T.Dint Big_int.zero_big_int(* assert false *)
 
   let int_to_var (n : int) : string = "x" ^ (string_of_int n)
 
@@ -1691,7 +1682,7 @@ end = struct
           | `Bop Bapply,               [ _a; _b ] -> assert false
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
-          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (mk_map, tunknown, tunknown, f a, f b, f c)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapupdate (mk_map, tunknown, tunknown, f c, f a, f b)) tunknown
           | `Top Ttransfer_tokens,  [ a; b; c ] -> mk_mterm (Mmakeoperation (f b, f a, f c)) toperation
           | _ -> assert false
         end
@@ -1763,9 +1754,10 @@ end = struct
         | DIMatch    (_c, _) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         | DIFailwith e -> failg (for_expr e)
         | DIWhile    (_code, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
-        | DIIter     (_id, _coll, _body) ->
-          (* Format.eprintf "%a@\n" pp_dinstr i; assert false *)
-          todo
+        | DIIter     (id, coll, body) ->
+          let fid = match id with | `VLocal (_, n) -> int_to_var n | `VGlobal (_, id) -> id in
+          let b = Model.seq (List.map f body) in
+          mk_mterm (Mfor (FIsimple (mk_mident (dumloc fid)), ICKlist (g coll), b)) tunit
 
         | DILoop     (_id, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         (* | _ -> Format.eprintf "%a@\n" pp_dinstr i; assert false *)
@@ -1789,7 +1781,7 @@ end = struct
               | Some v -> v
               | None -> Format.asprintf "sto_%d" (n + 1)
             in
-            M.mk_parameter (M.mk_mident (dumloc id)) (for_type t) (*data_to_mterm ~t:t (get_default_value t)*)
+            M.mk_parameter (M.mk_mident (dumloc id)) (for_type t)
           ) storage_list
     in
     let model = M.mk_model (dumloc dprogram.name) ~functions ~parameters in
