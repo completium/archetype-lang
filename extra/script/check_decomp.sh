@@ -225,14 +225,14 @@ process_files() {
   for c in $CONTRACTS; do
     k=$((${k} + 1))
     R=0
-    i=./mainnet_contracts/tz/$c.tz
+    i=./mainnet/mainnet_contracts/tz/$c.tz
     printf '%-3i ' $k
     printf '%-90s' $i
     process $i -mici
     process $i -mi
     process $i -dir
-    #process $i -mdl
-    #process $i
+    process $i -mdl
+    process $i
     echo ""
     NB=$((${NB} + 1))
     if [ $R -eq 1 ]; then

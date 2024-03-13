@@ -1045,6 +1045,9 @@ let mk_none t = mk_mterm (Mnone) (toption t)
 let mk_pack v     = mk_mterm (Mpack v) tbytes
 let mk_unpack t v = mk_mterm (Munpack (t, v)) t
 
+let mk_keyhashtocontract v = mk_mterm (Mkeyhashtocontract v) (tcontract tunit)
+let mk_setdelegate v = mk_mterm (Msetdelegate v) toperation
+
 let mk_blake2b  v = mk_mterm (Mblake2b v) tbytes
 let mk_sha256   v = mk_mterm (Msha256  v) tbytes
 let mk_sha512   v = mk_mterm (Msha512  v) tbytes

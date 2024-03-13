@@ -1456,7 +1456,7 @@ end = struct
     let uf, { stack = ost; code = dc; } =
       decompile_s
         UF.initial
-        [`Paired (`VGlobal (tlist toperation, "ops"), ast)] code
+        [`Paired (`VGlobal (tlist toperation, "operations"), ast)] code
     in
 
     let code, uf =
@@ -1533,9 +1533,11 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
 let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
   let f = data_to_mterm ?omap_var in
   let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+  let is_mutez = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tmutez -> true | _ -> false) false in
   let is_address = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Taddress -> true | _ -> false) false in
   match d with
   | Dint    v when is_nat t     -> M.mk_bnat v
+  | Dint    v when is_mutez t   -> M.mk_btez v
   | Dint    v                   -> M.mk_bint v
   | Dstring v when is_address t -> M.mk_address v
   | Dstring v                   -> M.mk_string v
@@ -1654,9 +1656,9 @@ end = struct
           | `Uop Usha512,                 [ a ] -> mk_sha512 (f a)
           | `Uop Uhash_key,               [ a ] -> mk_keytokeyhash (f a)
           | `Uop Ufail,                   [ a ] -> failg (f a)
-          | `Uop Ucontract (_t, _an),     [ _a ] -> assert false
-          | `Uop Usetdelegate,            [ _a ] -> assert false
-          | `Uop Uimplicitaccount,        [ _a ] -> assert false
+          | `Uop Ucontract (t, an),       [ a ] -> let an = (match an with | Some an -> an | None -> "default") in mk_get_entrypoint (ft t) (dumloc an) (f a)
+          | `Uop Usetdelegate,            [ a ] -> mk_setdelegate (f a)
+          | `Uop Uimplicitaccount,        [ a ] -> mk_keyhashtocontract (f a)
           | `Uop Ueq,                     [ _ ] -> assert false
           | `Uop Une,                     [ _ ] -> assert false
           | `Uop Ugt,                     [ _ ] -> assert false
@@ -1683,7 +1685,7 @@ end = struct
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
           | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapupdate (mk_map, tunknown, tunknown, f c, f a, f b)) tunknown
-          | `Top Ttransfer_tokens,  [ a; b; c ] -> mk_mterm (Mmakeoperation (f b, f a, f c)) toperation
+          | `Top Ttransfer_tokens,  [ a; b; c ] -> mk_mterm (Mmakeoperation (f b, f c, f a)) toperation
           | _ -> assert false
         end
 

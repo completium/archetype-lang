@@ -727,14 +727,20 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (cond, body)
 
-  | Eseq (x, y) ->
+  | Eseq _ ->
 
+    let rec flat_seq (v : expr) : expr list = match unloc v with | Eseq (a, b) -> flat_seq a @ flat_seq b | _ -> [v] in
+    let l = flat_seq a in
+    let pp fmt l = (pp_list ";@\n" (pp_expr e_semi_colon PLeft)) fmt l in
+    (maybe_paren outer e_semi_colon pos pp) fmt l
+
+  (* | Eseq (x, y) ->
     let pp fmt (x, y) =
       Format.fprintf fmt "%a;@\n%a"
         (pp_expr e_semi_colon PLeft) x
         (pp_expr e_semi_colon PRight) y
     in
-    (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
+    (maybe_paren outer e_semi_colon pos pp) fmt (x, y) *)
 
   | Eletin (id, t, e, body, other) ->
     let f =
