@@ -83,20 +83,41 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           | (T.{node = Tpair a})::tl -> List.rev tl @ a
           | _ -> tys
         in
+        let rec flat_all_pair (ty : T.type_) =
+          match ty.node with
+          | Tpair ls -> List.map flat_all_pair ls |> List.flatten
+          | _ -> [ty]
+        in
+        let rec flat_dpattern = function
+          | DPid id -> [id]
+          | DPlist dps -> List.map flat_dpattern dps |> List.flatten
+        in
         let get_annot = Gen_decompile.get_annot_from_type in
+        let do_it ids tys =
+          let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
+          let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> annot | _ -> src))) ids tys in
+          let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
+          (a, b)
+        in
         let args, code =
           match arg_pattern, pty.node with
           | _, T.Tunit -> [], code
           | DPid id, _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
-          | (DPlist [DPlist ids; DPid _] | DPlist (DPid _::_ as ids)), T.Tpair tys when List.length ids = List.length (flat_pair tys) && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
+          | DPlist ids, T.Tpair tys when List.length ids = List.length (flat_pair tys) && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
               let tys = flat_pair tys in
               let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
-              let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
-              let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> annot | _ -> src))) ids tys in
-              let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
-              (a, b)
+              do_it ids tys
             end
-          | _, _ -> Format.eprintf "%a@\n" pp_dpattern arg_pattern; assert false
+          | dps, _ when List.length (flat_dpattern dps) = List.length (flat_all_pair pty) -> begin
+              let tys = flat_all_pair pty in
+              let ids = flat_dpattern dps in
+              do_it ids tys
+            end
+          | _, _ ->
+            Format.eprintf "node:%a@\narg_pattern:%a@\n"
+              Printer_michelson.pp_type pty
+              pp_dpattern arg_pattern;
+            assert false
         in
         [Entry (mk_function_struct ~args (mk_mident (dumloc name)) code)]
       end
@@ -110,6 +131,108 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
   | Some code -> {model with functions = aux entries (DPid "args_1") code }
   | None -> model
 
+let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
+  let mk_decl (id, ty : ident * type_) : mterm =
+    let mk_dvar id ty v = mk_declvar (mk_mident (dumloc id)) ty v in
+    match get_ntype ty with
+    | Tasset _                   -> assert false
+    | Tenum _                    -> assert false
+    | Tstate                     -> mk_dvar id ty (mk_int 0)
+    | Tbuiltin Bunit             -> mk_dvar id ty unit
+    | Tbuiltin Bbool             -> mk_dvar id ty (mk_bool false)
+    | Tbuiltin Bint              -> mk_dvar id ty (mk_int 0)
+    | Tbuiltin Brational         -> assert false
+    | Tbuiltin Bdate             -> assert false
+    | Tbuiltin Bduration         -> assert false
+    | Tbuiltin Btimestamp        -> assert false
+    | Tbuiltin Bstring           -> mk_dvar id ty (mk_string "")
+    | Tbuiltin Baddress          -> mk_dvar id ty (mk_address "tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39")
+    | Tbuiltin Btez              -> assert false
+    | Tbuiltin Bsignature        -> assert false
+    | Tbuiltin Bkey              -> assert false
+    | Tbuiltin Bkeyhash          -> assert false
+    | Tbuiltin Bbytes            -> assert false
+    | Tbuiltin Bnat              -> mk_dvar id ty (mk_nat 0)
+    | Tbuiltin Bchainid          -> assert false
+    | Tbuiltin Bbls12_381_fr     -> assert false
+    | Tbuiltin Bbls12_381_g1     -> assert false
+    | Tbuiltin Bbls12_381_g2     -> assert false
+    | Tbuiltin Bnever            -> assert false
+    | Tbuiltin Bchest            -> assert false
+    | Tbuiltin Bchest_key        -> assert false
+    | Tcontainer (_, _)          -> assert false
+    | Tlist t                    -> mk_dvar id ty (mk_litlist t [])
+    | Toption t                  -> mk_dvar id ty (mk_none t)
+    | Ttuple _                   -> assert false
+    | Tset t                     -> mk_dvar id ty (mk_litset t [])
+    | Tmap (kt, vt)              -> mk_dvar id ty (mk_litmap kt vt [])
+    | Tbig_map (kt, vt)          -> mk_dvar id ty (mk_litbig_map kt vt [])
+    | Titerable_big_map (_kt, _vt) -> assert false
+    | Tor _                      -> assert false
+    | Trecord _                  -> assert false
+    | Tevent _                   -> assert false
+    | Tlambda _                  -> assert false
+    | Tunit                      -> mk_dvar id ty unit
+    | Toperation                 -> assert false
+    | Tcontract _                -> assert false
+    | Tticket _                  -> assert false
+    | Tsapling_state _           -> assert false
+    | Tsapling_transaction _     -> assert false
+  in
+  let for_mterm (mt : mterm) : mterm =
+    let add_var (accu : (ident * type_) list) (id, ty : ident * type_) =
+      match List.find_opt (fun x -> String.equal x id) (List.map fst accu) with
+      | Some _ -> accu
+      | None -> (id, ty)::accu
+    in
+    let fetched_vars : (ident * type_) list =
+      let is_var input =
+        let r = Str.regexp "^x[0-9]+" in
+        let res = Str.string_match r input 0 in
+        res
+      in
+      let rec aux (accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
+        match mt.node with
+        | Mvar (id, _) when is_var (unloc_mident id) -> add_var accu (unloc_mident id, mt.type_)
+        | _ -> fold_term aux accu mt
+      in
+      aux [] mt
+    in
+    let removed_ids =
+      let rec for_dpatterm = function
+        | DPid id -> [id]
+        | DPlist dps -> List.map for_dpatterm dps |> List.flatten
+      in
+
+      let for_for_ident = function
+        | FIsimple id -> [unloc_mident id]
+        | FIdouble (i, j) -> List.map unloc_mident [i; j]
+      in
+
+      let rec aux (accu : ident list) (mt : mterm) : ident list =
+        match mt.node with
+        | Mfor (fi, _, b) -> aux accu b @ for_for_ident fi
+        | Mdmatchoption (_, ps, bs, bn) -> aux (aux accu bs) bn @ for_dpatterm ps
+        | Mdmatchor (_, psl, bl, psr, br) -> aux (aux accu bl) br @ for_dpatterm psl @ for_dpatterm psr
+        | _ -> fold_term aux accu mt
+      in
+      aux [] mt
+    in
+    let lid_types : (ident * type_) list = List.filter  (fun (id, _) -> not (List.exists (fun x -> String.equal id x) removed_ids)) fetched_vars in
+    let res = seq ((List.map mk_decl lid_types) @ [mt]) in
+    res
+  in
+  let for_fs (fs : function_struct) : function_struct =
+    {fs with body = for_mterm fs.body}
+  in
+  let for_fn = function
+    | Function (fs, rft) -> Function (for_fs fs, rft)
+    | Getter (fs, ty)    -> Getter (for_fs fs, ty)
+    | View (fs, ty, vv)  -> View (for_fs fs, ty, vv)
+    | Entry fs           -> Entry (for_fs fs)
+  in
+  {model with functions = List.map for_fn model.functions}
+
 let remove_operations_nil (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
@@ -122,6 +245,7 @@ let optimize (model, env : model * Gen_decompile.env) =
   let model =
     model
     |> build_entries env
+    |> add_decls_var env
     |> remove_operations_nil
     |> clean_mterm
     |> apply_syntactic_sugar

@@ -1528,7 +1528,7 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tnever                 -> M.tnever
   | Tchest                 -> M.tchest
   | Tchest_key             -> M.tchest_key
-  | Tvar _                  -> assert false
+  | Tvar _                 -> M.tunit
 
 let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
   let f = data_to_mterm ?omap_var in
@@ -1601,10 +1601,10 @@ end = struct
   let for_code (code : dcode) : mterm =
     let ft = for_type in
 
-    let for_dvar (v : dvar) : ident =
+    let for_dvar (v : dvar) : ident * T.type_ =
       match v with
-      | `VLocal  (_, x ) -> int_to_var x
-      | `VGlobal (_, id) -> id
+      | `VLocal  (ty, x ) -> int_to_var x, ty
+      | `VGlobal (ty, id) -> id, ty
     in
 
     let rec for_expr (e : dexpr) : mterm =
@@ -1612,7 +1612,7 @@ end = struct
       let tunknown = tunit in
       let mk_map = MKMap in
       match e.node with
-      | Dvar v          -> mk_mvar (M.mk_mident (dumloc (for_dvar v))) tunit
+      | Dvar v          -> let id, ty = for_dvar v in mk_mvar (M.mk_mident (dumloc (id))) (ttype_to_mtype ty)
       | Ddata (t, d)    -> data_to_mterm ~t d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
       | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
@@ -1717,7 +1717,7 @@ end = struct
       begin
         match i with
         | DIAssign (x, e) ->
-          let id = for_dvar x in
+          let id, _ = for_dvar x in
           let e = g e in
           mk_mterm (Massign (ValueAssign, tunit, Avar (M.mk_mident (dumloc id)), e)) tunit
 
@@ -1900,9 +1900,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
       | M.CKfield (an, fn, k) -> A.edot (A.esqapp (A.eterm (dumloc an)) (f k)) (id_to_sid fn)
     in
 
+    let as_set (ty : M.type_) = match fst ty with | M.Tset ty -> Some ty | _ -> None in
     let as_list (ty : M.type_) = match fst ty with | M.Tlist ty -> Some ty | _ -> None in
-    (* let as_set (ty : M.type_) = match fst ty with | M.Tset ty -> Some ty | _ -> None in *)
-    (* let as_map (ty : M.type_) : M.type_ * M.type_ = match fst ty with | M.Tmap (k, v) | M.Tbig_map (k, v) -> (k, v) | _ -> assert false in *)
+    let as_map (ty : M.type_) = match fst ty with | M.Tmap (k, v) | M.Tbig_map (k, v) -> Some (k, v) | _ -> None in
 
     let to_ak = function
       | M.Avar id                   -> A.eterm (snd id)
@@ -2173,9 +2173,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         let an = extract_asset_name mt.type_ in let lnames = get_asset_value an in A.erecord (List.map2 (fun x y -> (Some (A.ValueAssign, dumloc x), f y)) lnames l)
       end
     | Massets l       -> A.earray (List.map f l)
-    | Mlitset l       -> A.earray (List.map f l)
+    | Mlitset l       -> let g : A.expr -> A.expr = match as_set mt.type_ with | Some ty -> (fun x -> f_app "make_set" ~ts:[ft ty] [x]) | _ -> (fun x -> x) in g (A.earray (List.map f l))
     | Mlitlist l      -> let g : A.expr -> A.expr = match as_list mt.type_ with | Some ty -> (fun x -> f_app "make_list" ~ts:[ft ty] [x]) | _ -> (fun x -> x) in g (A.earray (List.map f l))
-    | Mlitmap (_b, l) -> A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l)
+    | Mlitmap (_b, l) -> let g : A.expr -> A.expr = match as_map mt.type_ with | Some (kt, vt) -> (fun x -> f_app "make_map" ~ts:[ft kt; ft vt] [x]) | _ -> (fun x -> x) in g (A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l))
     | Mlitrecord l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlitevent  l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlambda (rt, id, at, e) -> A.elambda (Some (ft at)) (snd id) (Some (ft rt)) (f e)
@@ -2304,7 +2304,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmapupdate (_, _, _, c, k, v)               -> f_app "update"   [f c; f k; f v]
     | Mmapget (_, _, _, c, k, _an)                -> A.esqapp (f c) (f k)
     | Mmapgetopt (_, _, _, c, k)                  -> A.esqapp (f c) (f k)
-    | Mmapcontains (_, _, _, c, k)                -> f_app "contains" [f c; f k]
+    | Mmapcontains (_, _, _, c, k)                -> f_app "contains" [f k; f c]
     | Mmaplength (_, _, _, c)                     -> f_app "length"   [f c]
     | Mmapfold (_, _t, _ik, _iv, _ia, _c, _a, _b) -> assert false
 

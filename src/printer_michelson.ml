@@ -909,8 +909,8 @@ and pp_var (fmt : Format.formatter) (v : dvar) =
   | `VGlobal (_, n) ->
     Format.fprintf fmt "%s" n
 
-  | `VLocal (_, x) ->
-    Format.fprintf fmt "#%d" x
+  | `VLocal (ty, x) ->
+    Format.fprintf fmt "(#%d : %a)" x pp_type ty
 
 (* let pp_dview fmt (dv : dview) : unit =
    Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
