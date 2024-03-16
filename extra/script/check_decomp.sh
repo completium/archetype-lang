@@ -220,6 +220,26 @@ process() {
   fi
 }
 
+compile() {
+  ${BIN} -d $1 > /dev/null 2> /dev/null
+  if [ $? -eq 0 ]; then
+    echo -ne "\033[32m OK \033[0m"
+    ${BIN} -d $1 | ${BIN} > /dev/null 2> /dev/null
+    if [ $? -eq 0 ]; then
+      echo -ne "\033[32m OK \033[0m"
+    else
+      echo -ne "\033[31m KO \033[0m"
+      RET=1
+      R=1
+    fi
+  else
+    echo -ne "\033[31m KO \033[0m"
+    echo -ne "\033[31m KO \033[0m"
+    RET=1
+    R=1
+  fi
+}
+
 process_files() {
   k=0
   for c in $CONTRACTS; do
@@ -232,7 +252,7 @@ process_files() {
     process $i -mi
     process $i -dir
     process $i -mdl
-    process $i
+    compile $i
     echo ""
     NB=$((${NB} + 1))
     if [ $R -eq 1 ]; then
@@ -243,7 +263,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                                                               MIC MI  DIR MDL ARL"
+echo "                                                                                               MIC MI  DIR MDL ARL CMP"
 
 process_files ""
 

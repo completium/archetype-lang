@@ -21,7 +21,7 @@ let get_model_entries (parameter : T.type_) : model_entries =
     match ty with
     | {annotation = Some id} -> Mentry (Gen_decompile.remove_prefix_annot id, ty)
     | { node = Tor(lt, rt) } -> Munion (aux lt, aux rt)
-    | _ -> Mentry ("_", ty)
+    | _ -> Mentry ("default", ty)
   in
   let res = aux parameter in
   (* Format.eprintf "%a@\n" pp_model_entries res; *)

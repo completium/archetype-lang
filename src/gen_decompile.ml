@@ -26,6 +26,14 @@ let get_annot_from_type (ty : T.type_) : string option =
   | {annotation = Some annot} -> Some (remove_prefix_annot annot)
   | _ -> None
 
+let is_valid_name input =
+  let is_keyword = Lexer.keywords_ |> List.map fst |> fun x y -> List.mem y x in
+  let is_address (input : string) : bool =
+    let prefix = ["tz1"; "tz2"; "tz3"; "tz4"; "KT1"] in
+    List.exists (fun (p : string) -> let lp = String.length p in lp <= String.length input && String.equal (String.sub input 0 lp) p) prefix
+  in
+  List.for_all (fun f -> not (f input)) [is_keyword; is_address]
+
 let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let name =
     match input with
@@ -36,6 +44,7 @@ let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
       end
     | FIString (path, _) -> path
   in
+  let name = if is_valid_name name then name else "my_contract" in
   let env = mk_env ~name:name () in
 
   let input =

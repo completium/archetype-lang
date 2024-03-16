@@ -1,0 +1,162 @@
+archetype fa1_2(
+ledger : big_map<address, (nat * map<address, nat>)>,
+token_metadata : big_map<nat, (nat * map<string, bytes>)>)
+
+entry getAllowance (owner : address, spender : address, callback : contract<nat>) {
+  var x84 : nat = 0;
+  var x80 : list<operation> = make_list<operation> (([]));
+  x80 := make_list<operation> (([]));
+  for x128 in operations do
+    (x80 := prepend (x80, x128))
+  done;
+  match (ledger[owner]) with
+  | some (x111, x112) -> (match (x112[spender]) with
+  | some x91 -> (x84 := x91)
+  | none -> (x84 := 0)
+  end)
+  | none -> (x84 := 0)
+  end;
+  x80 := prepend (x80, (make_operation (transferred, callback, x84)));
+  for x79 in x80 do
+    (operations := prepend (operations, x79))
+  done
+}
+
+entry getBalance (owner : address, callback : contract<nat>) {
+  var x148 : nat = 0;
+  var x144 : list<operation> = make_list<operation> (([]));
+  x144 := make_list<operation> (([]));
+  for x182 in operations do
+    (x144 := prepend (x144, x182))
+  done;
+  match (ledger[owner]) with
+  | some (x165, x166) -> (x148 := x165)
+  | none -> (x148 := 0)
+  end;
+  x144 := prepend (x144, (make_operation (transferred, callback, x148)));
+  for x143 in x144 do
+    (operations := prepend (operations, x143))
+  done
+}
+
+entry getTotalSupply (callback : contract<nat>) {
+  var x198 : list<operation> = make_list<operation> (([]));
+  x198 := make_list<operation> (([]));
+  for x212 in operations do
+    (x198 := prepend (x198, x212))
+  done;
+  x198 := prepend (x198, (make_operation (transferred, callback, 10000000)));
+  for x197 in x198 do
+    (operations := prepend (operations, x197))
+  done
+}
+
+entry set_token_metadata (tid : nat, tdata : map<string, bytes>) {
+  if not (caller = tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb)
+  then ((fail ("INVALID_CALLER")))  else (()) ;
+  token_metadata := update (token_metadata, tid, (some(((tid, tdata)))))
+}
+
+entry %transfer (%from : address, %to : address, value : nat) {
+  var x309 : map<address, nat> = [];
+  var x311 : nat = 0;
+  var x470 : map<address, nat> = [];
+  var x468 : nat = 0;
+  var x474 : nat = 0;
+  var x778 : nat = 0;
+  var x837 : map<address, nat> = make_map<address, nat> (([]));
+  var x914 : nat = 0;
+  match (ledger[%from]) with
+  | some (x939, x940) -> (x914 := x939)
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  if not (x914 >= value) then ((fail ("NotEnoughBalance")))  else (()) ;
+  if caller <> %from
+  then (match (ledger[%from]) with
+  | some (x858, x859) -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  match (x837[caller]) with
+  | some x831 -> ()
+  | none -> ()
+  end;
+  match int_to_nat ((x778 - value)) with
+  | some x807 -> ()
+  | none -> (fail ((("NotEnoughAllowance", ((value,
+  x778))))))
+  end;
+  match (ledger[%from]) with
+  | some (x750, x751) -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  match (ledger[%from]) with
+  | some (x696, x697) -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND", "ledger"))))
+  end)  else (()) ;
+  match (ledger[%from]) with
+  | some x616 -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  match (ledger[%from]) with
+  | some (x575, x576) -> (x470 := x576)
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  if x474 - value >= 0i then (x468 := abs ((x474 - value)))
+   else ((fail ("NAT_NEG_ASSIGN"))) ;
+  if contains ((update (ledger, %from, (some(((x468, x470)))))), %to)
+  then (match ((update (ledger, %from, (some(((x468,
+  x470))))))[%to]) with
+  | some x394 -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  match ((update (ledger, %from, (some(((x468,
+  x470))))))[%to]) with
+  | some (x352, x353) -> (x309 := x353)
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  ledger := update ((update (ledger, %from, (some(((x468,
+  x470)))))), %to, (some((((x311 + value), x309))))))
+   else (ledger := update ((update (ledger, %from, (some(((x468,
+  x470)))))), %to, (some((((0 + value),
+  (make_map<address, nat> (([])))))))))
+}
+
+entry approve (spender : address, value : nat) {
+  var x991 : map<address, nat> = [];
+  var x1007 : nat = 0;
+  var x1156 : bool = false;
+  var x1132 : nat = 0;
+  match (ledger[caller]) with
+  | some (x1199, x1200) -> (match (x1200[spender]) with
+  | some x1179 -> (x1132 := x1179)
+  | none -> (x1132 := 0)
+  end)
+  | none -> (x1132 := 0)
+  end;
+  if x1132 > 0
+  then ((if value > 0 then (x1156 := true)  else (x1156 := false) ))
+   else (x1156 := false) ;
+  if x1156 then ((fail ((("UnsafeAllowanceChange", x1132)))))  else (()) ;
+  if contains (ledger, caller)
+  then (match (ledger[caller]) with
+  | some (x1069, x1070) -> ()
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  match (ledger[caller]) with
+  | some (x1026, x1027) -> (x991 := x1027)
+  | none -> (fail ((("ASSET_NOT_FOUND",
+  "ledger"))))
+  end;
+  ledger := update (ledger, caller, (some(((x1007, (update (x991, spender, (some(value))))))))))
+   else (ledger := update (ledger, caller, (some(((0,
+  (update ((make_map<address, nat> (([]))), spender, (some(value))))))))))
+}
+

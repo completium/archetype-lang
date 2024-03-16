@@ -1,0 +1,35 @@
+{
+  "name": "fa1_2_decomp",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "tests": "tests"
+  },
+  "scripts": {
+    "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/fa1_2.ts",
+    "test:decomp": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/fa1_2.ts",
+    "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/",
+    "completium_init": "completium-cli init",
+    "mockup_init": "completium-cli mockup init"
+  },
+  "dependencies": {
+    "@completium/archetype-ts-types": "^0.1.10",
+    "@completium/completium-cli": "^1.0.3",
+    "@completium/experiment-ts": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/expect": "^24.3.0",
+    "@types/mocha": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.7.4"
+  },
+  "completium": {
+    "binding_path": "./tests/binding/",
+    "build_path": "./build/",
+    "contracts_path": "./contracts/",
+    "tests_path": "./tests/"
+  }
+}
