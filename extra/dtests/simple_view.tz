@@ -1,0 +1,9 @@
+{ storage unit ;
+  parameter unit ;
+  code { CDR ; NIL operation ; PAIR } ;
+  view "inc"
+       nat
+       nat
+       { CAR ;
+         PUSH nat 1 ;
+         ADD } }

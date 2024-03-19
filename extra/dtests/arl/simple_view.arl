@@ -1,0 +1,5 @@
+archetype simple_view
+
+view inc(x : nat) : nat {
+  return (x + 1)
+}
