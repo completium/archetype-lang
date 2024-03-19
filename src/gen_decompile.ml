@@ -111,7 +111,6 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
     let fa l = match l with | a::_ -> Some a | [] -> None in
 
     let to_type = T.to_type in
-    let to_data = T.to_data in
 
     let to_int = function | T.Oint x -> int_of_string x | o -> Format.eprintf "to_int unknown %a@." T.pp_obj_micheline o; assert false in
     let to_string = function | T.Ostring x -> x | o -> Format.eprintf "to_string unknown %a@." T.pp_obj_micheline o; assert false in
@@ -156,6 +155,16 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
 
     let rec to_code (o : T.obj_micheline) : T.code =
       let f = to_code in
+      let to_data (o : T.obj_micheline) : T.data =
+        match T.to_data_opt o with
+        | Some v -> v
+        | None -> begin
+            try
+              T.Dcode (to_code o)
+            with
+            | _ -> Format.eprintf "data unknown %a@." T.pp_obj_micheline o; assert false
+          end
+      in
       let seq = function | T.Oarray l -> List.map f l | _ -> assert false in
       match o with
       (* Control structures *)

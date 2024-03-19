@@ -721,9 +721,9 @@ type rstack  = rstack1 list
 let rec ty_of_rstack1 (rs : rstack1) =
   match rs with
   | #dvar as dv ->
-     ty_of_dvar dv
+    ty_of_dvar dv
   | `Paired (rs1, rs2) ->
-     tpair [ty_of_rstack1 rs1; ty_of_rstack1 rs2]
+    tpair [ty_of_rstack1 rs1; ty_of_rstack1 rs2]
 
 let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
   { args; stovars }
@@ -1327,10 +1327,10 @@ let normalize_type (ty : type_) : type_ =
 let rec cmp_dvar (v1 : dvar) (v2 : dvar) =
   match v1, v2 with
   | `VLocal (ty1, l1), `VLocal (ty2, l2) ->
-     cmp_type ty1 ty2 && l1 = l2
+    cmp_type ty1 ty2 && l1 = l2
 
   | `VGlobal (ty1, g1), `VGlobal (ty2, g2) ->
-     cmp_type ty1 ty2 && String.equal g1 g2
+    cmp_type ty1 ty2 && String.equal g1 g2
 
   | _ -> false
 
@@ -2105,25 +2105,35 @@ let id_to_const_id id = "const_" ^ id ^ "__"
 
 let const_id_to_id id : string = String.sub id 6 ((String.length id) - 8)
 
-let rec to_data (o : obj_micheline) : data =
-  let f = to_data in
+let rec to_data_opt (o : obj_micheline) : data option =
+  let f = to_data_opt in
+  let fl f (l : 'b list) : 'a list option =
+    l
+    |> List.map f
+    |> (fun x -> List.fold_right (fun x accu -> match accu, x with | Some l, Some v -> Some (v::l) | _ -> None) x (Some []))
+  in
   match o with
-  | Oint x                                    -> Dint (Big_int.big_int_of_string x)
-  | Ostring s                                 -> Dstring s
-  | Obytes  s                                 -> Dbytes s
-  | Oprim ({prim = s;  _ }) when param_const_check s -> Dvar (const_id_to_id s, tunit, false)
-  | Oprim ({prim = "Unit";  _ })              -> Dunit
-  | Oprim ({prim = "True";  _ })              -> Dtrue
-  | Oprim ({prim = "False"; _ })              -> Dfalse
-  | Oprim ({prim = "Pair";  args        })    -> Dpair  (List.map f args)
-  | Oprim ({prim = "Left";  args = a::_ })    -> Dleft  (f a)
-  | Oprim ({prim = "Right"; args = a::_ })    -> Dright (f a)
-  | Oprim ({prim = "Some";  args = a::_ })    -> Dsome  (f a)
-  | Oprim ({prim = "None";  _ })              -> Dnone
-  | Oarray l                                  -> Dlist (List.map f l)
-  | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
-  | Oprim ({prim = "Lambda_rec"; args = _a::_ }) -> Format.eprintf "TODO Lambda_rec"; assert false
-  | Oprim ({prim = "constant"; args = [Ostring s] }) -> Dconstant s
+  | Oint x                                           -> Some (Dint (Big_int.big_int_of_string x))
+  | Ostring s                                        -> Some (Dstring s)
+  | Obytes  s                                        -> Some (Dbytes s)
+  | Oprim ({prim = s;  _ }) when param_const_check s -> Some (Dvar (const_id_to_id s, tunit, false))
+  | Oprim ({prim = "Unit";  _ })                     -> Some (Dunit)
+  | Oprim ({prim = "True";  _ })                     -> Some (Dtrue)
+  | Oprim ({prim = "False"; _ })                     -> Some (Dfalse)
+  | Oprim ({prim = "Pair";  args        })           -> Option.map (fun x -> Dpair x) (fl f args)
+  | Oprim ({prim = "Left";  args = a::_ })           -> Option.map (fun x -> Dleft x) (f a)
+  | Oprim ({prim = "Right"; args = a::_ })           -> Option.map (fun x -> Dright x) (f a)
+  | Oprim ({prim = "Some";  args = a::_ })           -> Option.map (fun x -> Dsome x) (f a)
+  | Oprim ({prim = "None";  _ })                     -> Some (Dnone)
+  | Oarray l                                         -> Option.map (fun x -> Dlist x) (fl f l)
+  | Oprim ({prim = "Elt"; args = a::b::_ })          -> Option.map2 (fun a b -> Delt (a, b)) (f a) (f b)
+  (* | Oprim ({prim = "Lambda_rec"; args = _a::_ })     -> None *)
+  | Oprim ({prim = "constant"; args = [Ostring s] }) -> Some (Dconstant s)
+  | _ -> None
+
+let to_data (o : obj_micheline) : data =
+  match to_data_opt o with
+  | Some v -> v
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
 
 type tz_micheline = Micheline_printer.node
@@ -2172,10 +2182,10 @@ let seek_type_from_annot (annot : string) (ty : type_) : type_ option =
     match ty with
     | {annotation = a} when Option.cmp String.equal (Some annot) a -> Some ty
     | {node = Tor (l, r)} -> begin
-      match aux l with
-      | Some v -> Some v
-      | None -> aux r
-    end
+        match aux l with
+        | Some v -> Some v
+        | None -> aux r
+      end
     | _ -> None
   in
 

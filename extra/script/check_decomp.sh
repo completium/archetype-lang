@@ -250,6 +250,7 @@ process_files() {
     printf '%-90s' $i
     process $i -mici
     process $i -mi
+    process $i -mit
     process $i -dir
     process $i -mdl
     compile $i
@@ -263,7 +264,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                                                               MIC MI  DIR MDL ARL CMP"
+echo "                                                                                               MIC MI  MIT DIR MDL ARL CMP"
 
 process_files ""
 
