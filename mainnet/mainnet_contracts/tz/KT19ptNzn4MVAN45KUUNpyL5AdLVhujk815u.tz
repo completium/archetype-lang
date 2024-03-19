@@ -1,7 +1,1 @@
-{
-  storage nat;
-  parameter nat;
-  code { CDR;
-         NIL operation;
-         PAIR };
-}
+{ parameter nat ; storage nat ; code { CDR ; NIL operation ; PAIR } }

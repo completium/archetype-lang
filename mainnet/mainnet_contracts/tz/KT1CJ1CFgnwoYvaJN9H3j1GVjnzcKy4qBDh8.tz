@@ -1,7 +1,1 @@
-{
-  storage int;
-  parameter unit;
-  code { CDR;
-         NIL operation;
-         PAIR };
-}
+{ parameter unit ; storage int ; code { CDR ; NIL operation ; PAIR } }

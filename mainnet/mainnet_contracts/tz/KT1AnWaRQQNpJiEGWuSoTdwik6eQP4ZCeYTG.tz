@@ -1,13 +1,11 @@
-{
-  storage unit;
-  parameter key_hash;
-  code { CAR;
-         IMPLICIT_ACCOUNT;
-         DIP { UNIT };
-         PUSH mutez 1;
-         UNIT;
-         TRANSFER_TOKENS;
-         DROP;
-         NIL operation;
-         PAIR };
-}
+{ code { CAR ;
+         IMPLICIT_ACCOUNT ;
+         DIP { UNIT } ;
+         PUSH mutez 1 ;
+         UNIT ;
+         TRANSFER_TOKENS ;
+         DROP ;
+         NIL operation ;
+         PAIR } ;
+  parameter key_hash ;
+  storage unit }

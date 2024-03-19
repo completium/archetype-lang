@@ -1,575 +1,531 @@
-{
-  storage (pair key_hash (pair :storage (option %game (pair :game (timestamp %start_time) (map %players nat key_hash))) (bytes %hash)));
-  parameter (or (or (key_hash %set_delegate) (unit %remove_delegate)) (or %default (key_hash %_Liq_entry_main) (unit %_Liq_entry_fund)));
-  code { DUP;
-         CAR;
+{ parameter
+    (or (or (key_hash %set_delegate) (unit %remove_delegate))
+        (or %default :_entries (key_hash %_Liq_entry_main) (unit %_Liq_entry_fund))) ;
+  storage
+    (pair key_hash
+          (pair :storage
+             (option %game (pair :game (timestamp %start_time) (map %players nat key_hash)))
+             (bytes %hash))) ;
+  code { DUP ;
+         CAR ;
          IF_LEFT
-           { PUSH mutez 0;
-             AMOUNT;
-             COMPARE;
-             EQ;
-             IF
-               {  }
-               { UNIT;
-                 FAILWITH };
-             DIP { DUP };
-             SWAP;
-             CDR;
-             CAR;
-             IMPLICIT_ACCOUNT;
-             ADDRESS;
-             SENDER;
-             COMPARE;
-             NEQ;
-             IF
-               { SENDER;
-                 PUSH string "Only the owner can operate.";
-                 PAIR;
-                 FAILWITH }
-               { DIP { CDR; NIL operation };
-                 IF_LEFT
-                   { SOME;
-                     SET_DELEGATE;
-                     CONS;
-                     PAIR }
-                   { DROP;
-                     NONE key_hash;
-                     SET_DELEGATE;
-                     CONS;
-                     PAIR } } }
-           { DIP { CDR; DUP; CDR };
-             PAIR;
-             DUP;
-             DIP { CDR };
-             CAR;
-             LAMBDA
-               (pair bytes (pair nat nat))
-               nat
-               { RENAME;
-                 DUP;
-                 LEFT nat;
-                 LOOP_LEFT { RENAME;
-                             DUP;
-                             CAR;
-                             DIP { DUP };
-                             SWAP;
-                             CDR;
-                             CAR;
-                             DIP { DIP { DUP }; SWAP };
-                             SWAP;
-                             CDR;
-                             CDR;
-                             PUSH nat 31;
-                             DIP { DIP { DUP }; SWAP };
-                             SWAP;
-                             COMPARE;
-                             LT;
-                             IF
-                               { NIL bytes;
-                                 DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                                 SWAP;
-                                 PUSH nat 1;
-                                 DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 SLICE;
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             { DIP { DUP } ; SWAP } ;
+             CDR ;
+             CAR ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { COMPARE ;
+               NEQ ;
+               IF { SENDER ; PUSH string "Only the owner can operate." ; PAIR ; FAILWITH }
+                  { DIP { CDR ; NIL operation } ;
+                    IF_LEFT
+                      { SOME ; SET_DELEGATE ; CONS ; PAIR }
+                      { DROP ; NONE key_hash ; SET_DELEGATE ; CONS ; PAIR } } } }
+           { DIP { CDR ; DUP ; CDR } ;
+             PAIR ;
+             { DUP ;
+               DIP { CDR @storage_slash_1 } ;
+               CAR @parameter_slash_2 ;
+               LAMBDA @f
+                 (pair bytes (pair nat nat))
+                 nat
+                 { RENAME @_b_i_t_slash_3 ;
+                   DUP ;
+                   LEFT nat ;
+                   LOOP_LEFT
+                     { RENAME @_b_i_t_slash_4 ;
+                       DUP ;
+                       CAR @b ;
+                       { DIP { DUP } ; SWAP } ;
+                       { CDR ; CAR @i } ;
+                       { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                       { CDR ; CDR @t } ;
+                       PUSH nat 31 ;
+                       { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } ;
+                       COMPARE ;
+                       LT ;
+                       IF { NIL bytes ;
+                            { DIP { { DIP { { DIP { DUP @b } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 1 ;
+                            { DIP { { DIP { { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            SLICE ;
+                            IF_NONE { UNIT ; FAILWITH } { DUP @r ; DIP { DROP } } ;
+                            CONS ;
+                            PUSH bytes 0x0500 ;
+                            CONS ;
+                            CONCAT @r ;
+                            DUP @r ;
+                            UNPACK nat ;
+                            IF_NONE
+                              { NIL bytes ;
+                                PUSH bytes 0x01 ;
+                                CONS ;
+                                { DIP { DUP @r } ; SWAP } ;
+                                CONS ;
+                                CONCAT ;
+                                UNPACK nat ;
+                                IF_NONE
+                                  { NIL bytes ;
+                                    PUSH bytes 0x02 ;
+                                    CONS ;
+                                    { DIP { DUP @r } ; SWAP } ;
+                                    CONS ;
+                                    CONCAT ;
+                                    UNPACK nat ;
+                                    IF_NONE
+                                      { NIL bytes ;
+                                        PUSH bytes 0x03 ;
+                                        CONS ;
+                                        { DIP { DUP @r } ; SWAP } ;
+                                        CONS ;
+                                        CONCAT ;
+                                        UNPACK nat ;
+                                        IF_NONE
+                                          { { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } }
+                                          { DUP @r ; DIP { DROP } } }
+                                      { DUP @r ; DIP { DROP } } }
+                                  { DUP @r ; DIP { DROP } } }
+                              { DUP @r ; DIP { DROP } } ;
+                            RENAME @r2 ;
+                            { DIP { { DIP { DUP @t } ; SWAP } } ; SWAP } ;
+                            ADD @new_total ;
+                            PUSH nat 1 ;
+                            { DIP { { DIP { { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            ADD @i ;
+                            PAIR ;
+                            { DIP { { DIP { { DIP { { DIP { DUP @b } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PAIR ;
+                            LEFT nat ;
+                            DIP { DROP } }
+                          { NIL bytes ;
+                            { DIP { { DIP { { DIP { DUP @b } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 1 ;
+                            { DIP { { DIP { { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            SLICE ;
+                            IF_NONE { UNIT ; FAILWITH } { DUP @r ; DIP { DROP } } ;
+                            CONS ;
+                            PUSH bytes 0x0500 ;
+                            CONS ;
+                            CONCAT @r ;
+                            DUP @r ;
+                            UNPACK nat ;
+                            IF_NONE
+                              { NIL bytes ;
+                                PUSH bytes 0x01 ;
+                                CONS ;
+                                { DIP { DUP @r } ; SWAP } ;
+                                CONS ;
+                                CONCAT ;
+                                UNPACK nat ;
+                                IF_NONE
+                                  { NIL bytes ;
+                                    PUSH bytes 0x02 ;
+                                    CONS ;
+                                    { DIP { DUP @r } ; SWAP } ;
+                                    CONS ;
+                                    CONCAT ;
+                                    UNPACK nat ;
+                                    IF_NONE
+                                      { NIL bytes ;
+                                        PUSH bytes 0x03 ;
+                                        CONS ;
+                                        { DIP { DUP @r } ; SWAP } ;
+                                        CONS ;
+                                        CONCAT ;
+                                        UNPACK nat ;
+                                        IF_NONE
+                                          { { DIP { { DIP { DUP @i } ; SWAP } } ; SWAP } }
+                                          { DUP @r ; DIP { DROP } } }
+                                      { DUP @r ; DIP { DROP } } }
+                                  { DUP @r ; DIP { DROP } } }
+                              { DUP @r ; DIP { DROP } } ;
+                            RENAME @r2 ;
+                            { DIP { { DIP { DUP @t } ; SWAP } } ; SWAP } ;
+                            ADD ;
+                            DIP { DROP } ;
+                            RIGHT (pair bytes (pair nat nat)) } ;
+                       DIP { DROP } ;
+                       DIP { DROP } ;
+                       DIP { DROP } ;
+                       DIP { DROP } } ;
+                   DIP { DROP } } ;
+               { DIP { DUP @parameter } ; SWAP } ;
+               IF_LEFT
+                 { RENAME @player_slash_25 ;
+                   { DIP { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } } ;
+                     SWAP } ;
+                   PUSH mutez 10000000 ;
+                   AMOUNT ;
+                   COMPARE ;
+                   LT ;
+                   IF { PUSH string "Min amount to play is 10tz" ; FAILWITH } { UNIT } ;
+                   DROP ;
+                   DUP @storage ;
+                   CAR %game ;
+                   IF_NONE
+                     { NOW @start_time ;
+                       { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } ;
+                       IMPLICIT_ACCOUNT ;
+                       PUSH mutez 5000000 ;
+                       UNIT ;
+                       TRANSFER_TOKENS @op ;
+                       { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                       CDR %hash ;
+                       PUSH @m (map nat key_hash) {} ;
+                       { DIP { { DIP { { DIP { { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } } ;
+                                         SWAP } } ;
+                                 SWAP } } ;
+                         SWAP } ;
+                       PUSH nat 1 ;
+                       DIP { SOME } ;
+                       UPDATE @players ;
+                       { DIP { { DIP { { DIP { DUP @start_time } ; SWAP } } ; SWAP } } ;
+                         SWAP } ;
+                       PAIR %start_time %players ;
+                       SOME @new_game ;
+                       PAIR @storage %game %hash ;
+                       CAR %game ;
+                       NIL bytes ;
+                       { DIP { { DIP { { DIP { DUP @start_time } ; SWAP } } ; SWAP } } ;
+                         SWAP } ;
+                       DIP { DIP { DIP { DIP { DROP } } } } ;
+                       PACK @b ;
+                       CONS ;
+                       { DIP { { DIP { { DIP { { DIP { DUP } ; SWAP } } ; SWAP } } ; SWAP } } ;
+                         SWAP } ;
+                       PACK @b2 ;
+                       CONS ;
+                       CONCAT ;
+                       SHA256 @hash ;
+                       SWAP ;
+                       PAIR @storage %game %hash ;
+                       NIL operation ;
+                       { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                       DIP { DIP { DIP { DROP } } } ;
+                       CONS ;
+                       PAIR }
+                     { DUP @g ;
+                       CDR @m %players ;
+                       DUP @m ;
+                       SIZE @size ;
+                       PUSH nat 10 ;
+                       { DIP { DUP @size } ; SWAP } ;
+                       COMPARE ;
+                       LT ;
+                       IF { { DIP { DUP @m } ; SWAP } ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 1 ;
+                            { DIP { { DIP { { DIP { DUP @size } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            ADD ;
+                            DIP { SOME } ;
+                            UPDATE }
+                          { { DIP { DUP @m } ; SWAP } ;
+                            MAP { RENAME @__key___slash_40 ;
+                                  DUP ;
+                                  CAR @_key ;
+                                  PUSH nat 10 ;
+                                  { DIP { DUP } ; SWAP } ;
+                                  COMPARE ;
+                                  LT ;
+                                  IF { { DIP { { DIP { { DIP { DUP @m } ; SWAP } } ; SWAP } } ;
+                                         SWAP } ;
+                                       PUSH nat 1 ;
+                                       { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                                       ADD ;
+                                       GET ;
+                                       IF_NONE { UNIT ; FAILWITH } {} }
+                                     { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } } ;
+                                                                 SWAP } } ;
+                                                         SWAP } } ;
+                                                 SWAP } } ;
+                                         SWAP } } ;
+                                  DIP { DROP ; DROP } } } ;
+                       DIP { DROP } ;
+                       { DIP { { DIP { DUP @g } ; SWAP } } ; SWAP } ;
+                       CAR @start_time %start_time ;
+                       NIL bytes ;
+                       NIL bytes ;
+                       { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } } ;
+                                                 SWAP } } ;
+                                         SWAP } } ;
+                                 SWAP } } ;
+                         SWAP } ;
+                       CDR @sthash %hash ;
+                       CONS ;
+                       { DIP { { DIP { DUP @start_time } ; SWAP } } ; SWAP } ;
+                       PACK @b ;
+                       CONS ;
+                       CONCAT ;
+                       CONS ;
+                       { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } } ;
+                                                 SWAP } } ;
+                                         SWAP } } ;
+                                 SWAP } } ;
+                         SWAP } ;
+                       PACK @b2 ;
+                       CONS ;
+                       CONCAT ;
+                       SHA256 @hash ;
+                       { DIP { { DIP { { DIP { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } } ;
+                                         SWAP } } ;
+                                 SWAP } } ;
+                         SWAP } ;
+                       CDR %hash ;
+                       { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                         SWAP } ;
+                       { DIP { { DIP { { DIP { DUP @start_time } ; SWAP } } ; SWAP } } ;
+                         SWAP } ;
+                       PAIR %start_time %players ;
+                       SOME ;
+                       PAIR @storage %game %hash ;
+                       CAR %game ;
+                       { DIP { DUP @hash } ; SWAP } ;
+                       SWAP ;
+                       PAIR @storage %game %hash ;
+                       PUSH int 86400 ;
+                       { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @g } ; SWAP } } ; SWAP } } ;
+                                                 SWAP } } ;
+                                         SWAP } } ;
+                                 SWAP } } ;
+                         SWAP } ;
+                       CAR %start_time ;
+                       NOW ;
+                       SUB ;
+                       COMPARE ;
+                       GT ;
+                       IF { NIL bytes ;
+                            NIL bytes ;
+                            { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                            CDR %hash ;
+                            CONS ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @g } ; SWAP } } ; SWAP } } ;
+                                                              SWAP } } ;
+                                                      SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            CAR @start_time %start_time ;
+                            PACK @b ;
+                            CONS ;
+                            CONCAT ;
+                            CONS ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @player } ; SWAP } } ; SWAP } } ;
+                                                                      SWAP } } ;
+                                                              SWAP } } ;
+                                                      SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PACK @b2 ;
+                            CONS ;
+                            CONCAT ;
+                            SHA256 @hash ;
+                            { DIP { DUP @storage } ; SWAP } ;
+                            CAR %game ;
+                            { DIP { DUP @hash } ; SWAP } ;
+                            SWAP ;
+                            PAIR @storage %game %hash ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @f } ; SWAP } } ; SWAP } } ;
+                                                                                      SWAP } } ;
+                                                                              SWAP } } ;
+                                                                      SWAP } } ;
+                                                              SWAP } } ;
+                                                      SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 0 ;
+                            PUSH nat 5 ;
+                            PAIR ;
+                            { DIP { { DIP { { DIP { DUP @hash } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            PAIR ;
+                            EXEC @n ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                                                      SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 1000 ;
+                            { DIP { { DIP { DUP @n } ; SWAP } } ; SWAP } ;
+                            EDIV ;
+                            IF_NONE { PUSH nat 0 } { PUSH nat 1 ; SWAP ; CDR @r ; ADD } ;
+                            RENAME @jackpot_i ;
+                            GET ;
+                            IF_NONE { PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV" } {} ;
+                            RENAME @w ;
+                            PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV" ;
+                            { DIP { DUP @w } ; SWAP } ;
+                            COMPARE ;
+                            NEQ ;
+                            IF { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } ;
+                                 CDR %hash ;
+                                 NONE (pair :game (timestamp %start_time) (map %players nat key_hash)) ;
+                                 PAIR @storage %game %hash ;
+                                 NIL operation ;
+                                 PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV" ;
+                                 IMPLICIT_ACCOUNT ;
+                                 PUSH mutez 900 ;
+                                 PUSH mutez 1000000 ;
+                                 BALANCE ;
+                                 EDIV ;
+                                 IF_NONE { UNIT ; FAILWITH } { CAR @n } ;
+                                 MUL @owner_p ;
+                                 UNIT ;
+                                 TRANSFER_TOKENS ;
+                                 CONS ;
+                                 { DIP { { DIP { DUP @w } ; SWAP } } ; SWAP } ;
+                                 IMPLICIT_ACCOUNT ;
+                                 PUSH mutez 900000 ;
+                                 PUSH mutez 1000000 ;
+                                 BALANCE ;
+                                 EDIV ;
+                                 IF_NONE { UNIT ; FAILWITH } { CAR @n } ;
+                                 MUL @win_amount ;
+                                 UNIT ;
+                                 TRANSFER_TOKENS ;
+                                 CONS @ops ;
+                                 PAIR }
+                               { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                                                                   SWAP } } ;
+                                                           SWAP } } ;
+                                                   SWAP } } ;
+                                           SWAP } } ;
+                                   SWAP } ;
+                                 SIZE @pl_size ;
+                                 DUP @pl_size ;
+                                 { DIP { { DIP { { DIP { DUP @n } ; SWAP } } ; SWAP } } ;
+                                   SWAP } ;
+                                 EDIV ;
+                                 IF_NONE { PUSH nat 1 } { PUSH nat 1 ; SWAP ; CDR @r ; ADD } ;
+                                 RENAME @win_n ;
+                                 { DIP { { DIP { { DIP { { DIP { DUP @storage } ; SWAP } } ; SWAP } } ;
+                                           SWAP } } ;
+                                   SWAP } ;
+                                 CDR %hash ;
+                                 NONE (pair :game (timestamp %start_time) (map %players nat key_hash)) ;
+                                 PAIR @storage %game %hash ;
+                                 NIL operation ;
+                                 PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV" ;
+                                 IMPLICIT_ACCOUNT ;
+                                 PUSH mutez 100 ;
+                                 PUSH mutez 1000000 ;
+                                 BALANCE ;
+                                 EDIV ;
+                                 IF_NONE { UNIT ; FAILWITH } { CAR @n } ;
+                                 MUL @owner_p ;
+                                 UNIT ;
+                                 TRANSFER_TOKENS ;
+                                 CONS ;
+                                 { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                                                                                                   SWAP } } ;
+                                                                                           SWAP } } ;
+                                                                                   SWAP } } ;
+                                                                           SWAP } } ;
+                                                                   SWAP } } ;
+                                                           SWAP } } ;
+                                                   SWAP } } ;
+                                           SWAP } } ;
+                                   SWAP } ;
+                                 { DIP { { DIP { { DIP { DUP @win_n } ; SWAP } } ; SWAP } } ;
+                                   SWAP } ;
+                                 GET ;
                                  IF_NONE
-                                   { UNIT;
+                                   { { DIP { { DIP { DUP @win_n } ; SWAP } } ; SWAP } ;
+                                     { DIP { { DIP { { DIP { { DIP { DUP @pl_size } ; SWAP } } ; SWAP } } ;
+                                               SWAP } } ;
+                                       SWAP } ;
+                                     PAIR ;
+                                     { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @n } ; SWAP } } ; SWAP } } ;
+                                                               SWAP } } ;
+                                                       SWAP } } ;
+                                               SWAP } } ;
+                                       SWAP } ;
+                                     PAIR ;
                                      FAILWITH }
-                                   { DUP;
-                                     DIP { DROP } };
-                                 CONS;
-                                 PUSH bytes 0x0500;
-                                 CONS;
-                                 CONCAT;
-                                 DUP;
-                                 UNPACK nat;
-                                 IF_NONE
-                                   { NIL bytes;
-                                     PUSH bytes 0x01;
-                                     CONS;
-                                     DIP { DUP };
-                                     SWAP;
-                                     CONS;
-                                     CONCAT;
-                                     UNPACK nat;
-                                     IF_NONE
-                                       { NIL bytes;
-                                         PUSH bytes 0x02;
-                                         CONS;
-                                         DIP { DUP };
-                                         SWAP;
-                                         CONS;
-                                         CONCAT;
-                                         UNPACK nat;
-                                         IF_NONE
-                                           { NIL bytes;
-                                             PUSH bytes 0x03;
-                                             CONS;
-                                             DIP { DUP };
-                                             SWAP;
-                                             CONS;
-                                             CONCAT;
-                                             UNPACK nat;
-                                             IF_NONE
-                                               { DIP { DIP { DUP }; SWAP };
-                                                 SWAP }
-                                               { DUP;
-                                                 DIP { DROP } } }
-                                           { DUP;
-                                             DIP { DROP } } }
-                                       { DUP;
-                                         DIP { DROP } } }
-                                   { DUP;
-                                     DIP { DROP } };
-                                 RENAME;
-                                 DIP { DIP { DUP }; SWAP };
-                                 SWAP;
-                                 ADD;
-                                 PUSH nat 1;
-                                 DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 ADD;
-                                 PAIR;
-                                 DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 PAIR;
-                                 LEFT nat;
-                                 DIP { DROP } }
-                               { NIL bytes;
-                                 DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                                 SWAP;
-                                 PUSH nat 1;
-                                 DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 SLICE;
-                                 IF_NONE
-                                   { UNIT;
-                                     FAILWITH }
-                                   { DUP;
-                                     DIP { DROP } };
-                                 CONS;
-                                 PUSH bytes 0x0500;
-                                 CONS;
-                                 CONCAT;
-                                 DUP;
-                                 UNPACK nat;
-                                 IF_NONE
-                                   { NIL bytes;
-                                     PUSH bytes 0x01;
-                                     CONS;
-                                     DIP { DUP };
-                                     SWAP;
-                                     CONS;
-                                     CONCAT;
-                                     UNPACK nat;
-                                     IF_NONE
-                                       { NIL bytes;
-                                         PUSH bytes 0x02;
-                                         CONS;
-                                         DIP { DUP };
-                                         SWAP;
-                                         CONS;
-                                         CONCAT;
-                                         UNPACK nat;
-                                         IF_NONE
-                                           { NIL bytes;
-                                             PUSH bytes 0x03;
-                                             CONS;
-                                             DIP { DUP };
-                                             SWAP;
-                                             CONS;
-                                             CONCAT;
-                                             UNPACK nat;
-                                             IF_NONE
-                                               { DIP { DIP { DUP }; SWAP };
-                                                 SWAP }
-                                               { DUP;
-                                                 DIP { DROP } } }
-                                           { DUP;
-                                             DIP { DROP } } }
-                                       { DUP;
-                                         DIP { DROP } } }
-                                   { DUP;
-                                     DIP { DROP } };
-                                 RENAME;
-                                 DIP { DIP { DUP }; SWAP };
-                                 SWAP;
-                                 ADD;
-                                 DIP { DROP };
-                                 RIGHT (pair bytes (pair nat nat)) };
-                             DIP { DROP };
-                             DIP { DROP };
-                             DIP { DROP };
-                             DIP { DROP } };
-                 DIP { DROP } };
-             DIP { DUP };
-             SWAP;
-             IF_LEFT
-               { RENAME;
-                 DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                 SWAP;
-                 PUSH mutez 10000000;
-                 AMOUNT;
-                 COMPARE;
-                 LT;
-                 IF
-                   { PUSH string "Min amount to play is 10tz";
-                     FAILWITH }
-                   { UNIT };
-                 DROP;
-                 DUP;
-                 CAR;
-                 IF_NONE
-                   { NOW;
-                     DIP { DIP { DUP }; SWAP };
-                     SWAP;
-                     IMPLICIT_ACCOUNT;
-                     PUSH mutez 5000000;
-                     UNIT;
-                     TRANSFER_TOKENS;
-                     DIP { DIP { DUP }; SWAP };
-                     SWAP;
-                     CDR;
-                     PUSH (map nat key_hash) {  };
-                     DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     PUSH nat 1;
-                     DIP { SOME };
-                     UPDATE;
-                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                     SWAP;
-                     PAIR;
-                     SOME;
-                     PAIR;
-                     CAR;
-                     NIL bytes;
-                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                     SWAP;
-                     DIP { DIP { DIP { DIP { DROP } } } };
-                     PACK;
-                     CONS;
-                     DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     PACK;
-                     CONS;
-                     CONCAT;
-                     SHA256;
-                     SWAP;
-                     PAIR;
-                     NIL operation;
-                     DIP { DIP { DUP }; SWAP };
-                     SWAP;
-                     DIP { DIP { DIP { DROP } } };
-                     CONS;
-                     PAIR }
-                   { DUP;
-                     CDR;
-                     DUP;
-                     SIZE;
-                     PUSH nat 10;
-                     DIP { DUP };
-                     SWAP;
-                     COMPARE;
-                     LT;
-                     IF
-                       { DIP { DUP };
-                         SWAP;
-                         DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PUSH nat 1;
-                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                         SWAP;
-                         ADD;
-                         DIP { SOME };
-                         UPDATE }
-                       { DIP { DUP };
-                         SWAP;
-                         MAP { RENAME;
-                               DUP;
-                               CAR;
-                               PUSH nat 10;
-                               DIP { DUP };
-                               SWAP;
-                               COMPARE;
-                               LT;
-                               IF
-                                 { DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                                   SWAP;
-                                   PUSH nat 1;
-                                   DIP { DIP { DUP }; SWAP };
-                                   SWAP;
-                                   ADD;
-                                   GET;
-                                   IF_NONE
-                                     { UNIT;
-                                       FAILWITH }
-                                     {  } }
-                                 { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                                   SWAP };
-                               DIP { DROP; DROP } } };
-                     DIP { DROP };
-                     DIP { DIP { DUP }; SWAP };
-                     SWAP;
-                     CAR;
-                     NIL bytes;
-                     NIL bytes;
-                     DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     CDR;
-                     CONS;
-                     DIP { DIP { DUP }; SWAP };
-                     SWAP;
-                     PACK;
-                     CONS;
-                     CONCAT;
-                     CONS;
-                     DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     PACK;
-                     CONS;
-                     CONCAT;
-                     SHA256;
-                     DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     CDR;
-                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                     SWAP;
-                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                     SWAP;
-                     PAIR;
-                     SOME;
-                     PAIR;
-                     CAR;
-                     DIP { DUP };
-                     SWAP;
-                     SWAP;
-                     PAIR;
-                     PUSH int 86400;
-                     DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                     SWAP;
-                     CAR;
-                     NOW;
-                     SUB;
-                     COMPARE;
-                     GT;
-                     IF
-                       { NIL bytes;
-                         NIL bytes;
-                         DIP { DIP { DUP }; SWAP };
-                         SWAP;
-                         CDR;
-                         CONS;
-                         DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         CAR;
-                         PACK;
-                         CONS;
-                         CONCAT;
-                         CONS;
-                         DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PACK;
-                         CONS;
-                         CONCAT;
-                         SHA256;
-                         DIP { DUP };
-                         SWAP;
-                         CAR;
-                         DIP { DUP };
-                         SWAP;
-                         SWAP;
-                         PAIR;
-                         DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PUSH nat 0;
-                         PUSH nat 5;
-                         PAIR;
-                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                         SWAP;
-                         PAIR;
-                         EXEC;
-                         DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PUSH nat 1000;
-                         DIP { DIP { DUP }; SWAP };
-                         SWAP;
-                         EDIV;
-                         IF_NONE
-                           { PUSH nat 0 }
-                           { PUSH nat 1;
-                             SWAP;
-                             CDR;
-                             ADD };
-                         RENAME;
-                         GET;
-                         IF_NONE
-                           { PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV" }
-                           {  };
-                         RENAME;
-                         PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV";
-                         DIP { DUP };
-                         SWAP;
-                         COMPARE;
-                         NEQ;
-                         IF
-                           { DIP { DIP { DUP }; SWAP };
-                             SWAP;
-                             CDR;
-                             NONE (pair :game (timestamp %start_time) (map %players nat key_hash));
-                             PAIR;
-                             NIL operation;
-                             PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV";
-                             IMPLICIT_ACCOUNT;
-                             PUSH mutez 900;
-                             PUSH mutez 1000000;
-                             BALANCE;
-                             EDIV;
-                             IF_NONE
-                               { UNIT;
-                                 FAILWITH }
-                               { CAR };
-                             MUL;
-                             UNIT;
-                             TRANSFER_TOKENS;
-                             CONS;
-                             DIP { DIP { DUP }; SWAP };
-                             SWAP;
-                             IMPLICIT_ACCOUNT;
-                             PUSH mutez 900000;
-                             PUSH mutez 1000000;
-                             BALANCE;
-                             EDIV;
-                             IF_NONE
-                               { UNIT;
-                                 FAILWITH }
-                               { CAR };
-                             MUL;
-                             UNIT;
-                             TRANSFER_TOKENS;
-                             CONS;
-                             PAIR }
-                           { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                             SWAP;
-                             SIZE;
-                             DUP;
-                             DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                             SWAP;
-                             EDIV;
-                             IF_NONE
-                               { PUSH nat 1 }
-                               { PUSH nat 1;
-                                 SWAP;
-                                 CDR;
-                                 ADD };
-                             RENAME;
-                             DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                             SWAP;
-                             CDR;
-                             NONE (pair :game (timestamp %start_time) (map %players nat key_hash));
-                             PAIR;
-                             NIL operation;
-                             PUSH key_hash "tz1RiWcwGxytk3XGntmKpTYyMVMLZva6cBqV";
-                             IMPLICIT_ACCOUNT;
-                             PUSH mutez 100;
-                             PUSH mutez 1000000;
-                             BALANCE;
-                             EDIV;
-                             IF_NONE
-                               { UNIT;
-                                 FAILWITH }
-                               { CAR };
-                             MUL;
-                             UNIT;
-                             TRANSFER_TOKENS;
-                             CONS;
-                             DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                             SWAP;
-                             DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                             SWAP;
-                             GET;
-                             IF_NONE
-                               { DIP { DIP { DUP }; SWAP };
-                                 SWAP;
-                                 DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 PAIR;
-                                 DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                                 SWAP;
-                                 PAIR;
-                                 FAILWITH }
-                               {  };
-                             RENAME;
-                             IMPLICIT_ACCOUNT;
-                             PUSH mutez 100000;
-                             PUSH mutez 1000000;
-                             BALANCE;
-                             EDIV;
-                             IF_NONE
-                               { UNIT;
-                                 FAILWITH }
-                               { CAR };
-                             DIP { DIP { DIP { DIP { DIP { DROP; DROP } } } } };
-                             MUL;
-                             UNIT;
-                             TRANSFER_TOKENS;
-                             CONS;
-                             PAIR };
-                         DIP { DROP; DROP; DROP; DROP } }
-                       { DIP { DIP { DIP { DUP }; SWAP }; SWAP };
-                         SWAP;
-                         DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         SIZE;
-                         DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PUSH nat 0;
-                         PUSH nat 5;
-                         PAIR;
-                         DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
-                         SWAP;
-                         PAIR;
-                         EXEC;
-                         EDIV;
-                         IF_NONE
-                           { UNIT;
-                             FAILWITH }
-                           { PUSH nat 1;
-                             SWAP;
-                             CDR;
-                             ADD };
-                         RENAME;
-                         GET;
-                         IF_NONE
-                           { UNIT;
-                             FAILWITH }
-                           {  };
-                         RENAME;
-                         IMPLICIT_ACCOUNT;
-                         PUSH mutez 5000000;
-                         UNIT;
-                         TRANSFER_TOKENS;
-                         DIP { DUP };
-                         SWAP;
-                         NIL operation;
-                         DIP { DIP { DUP }; SWAP };
-                         SWAP;
-                         DIP { DIP { DIP { DROP } } };
-                         CONS;
-                         PAIR };
-                     DIP { DROP; DROP; DROP; DROP; DROP; DROP } };
-                 DIP { DROP; DROP } }
-               { DROP;
-                 DIP { DIP { DUP }; SWAP };
-                 SWAP;
-                 NIL operation;
-                 PAIR };
-             DIP { DROP; DROP; DROP };
-             SWAP;
-             CAR;
-             SWAP;
-             DUP;
-             CAR;
-             DIP { CDR };
-             DIP { SWAP; PAIR };
-             PAIR } };
-}
+                                   {} ;
+                                 RENAME @w ;
+                                 IMPLICIT_ACCOUNT ;
+                                 PUSH mutez 100000 ;
+                                 PUSH mutez 1000000 ;
+                                 BALANCE ;
+                                 EDIV ;
+                                 IF_NONE { UNIT ; FAILWITH } { CAR @n } ;
+                                 DIP { DIP { DIP { DIP { DIP { DROP ; DROP } } } } } ;
+                                 MUL @win_amount ;
+                                 UNIT ;
+                                 TRANSFER_TOKENS ;
+                                 CONS @ops ;
+                                 PAIR } ;
+                            DIP { DROP ; DROP ; DROP ; DROP } }
+                          { { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                              SWAP } ;
+                            { DIP { { DIP { { DIP { { DIP { DUP @players } ; SWAP } } ; SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            SIZE @pl_size ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { { DIP { DUP @f } ; SWAP } } ; SWAP } } ;
+                                                                                      SWAP } } ;
+                                                                              SWAP } } ;
+                                                                      SWAP } } ;
+                                                              SWAP } } ;
+                                                      SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PUSH nat 0 ;
+                            PUSH nat 5 ;
+                            PAIR ;
+                            { DIP { { DIP { { DIP { { DIP { { DIP { DUP @hash } ; SWAP } } ; SWAP } } ;
+                                              SWAP } } ;
+                                      SWAP } } ;
+                              SWAP } ;
+                            PAIR ;
+                            EXEC @n ;
+                            EDIV ;
+                            IF_NONE { UNIT ; FAILWITH } { PUSH nat 1 ; SWAP ; CDR @r ; ADD } ;
+                            RENAME @win_p ;
+                            GET ;
+                            IF_NONE { UNIT ; FAILWITH } {} ;
+                            RENAME @i ;
+                            IMPLICIT_ACCOUNT ;
+                            PUSH mutez 5000000 ;
+                            UNIT ;
+                            TRANSFER_TOKENS @op ;
+                            { DIP { DUP @storage } ; SWAP } ;
+                            NIL operation ;
+                            { DIP { { DIP { DUP @op } ; SWAP } } ; SWAP } ;
+                            DIP { DIP { DIP { DROP } } } ;
+                            CONS ;
+                            PAIR } ;
+                       DIP { DROP ; DROP ; DROP ; DROP ; DROP ; DROP } } ;
+                   DIP { DROP ; DROP } }
+                 { DROP ;
+                   { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                   NIL operation ;
+                   PAIR } ;
+               DIP { DROP ; DROP ; DROP } } ;
+             SWAP ;
+             CAR ;
+             SWAP ;
+             { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP { SWAP ; PAIR } ;
+             PAIR } } }

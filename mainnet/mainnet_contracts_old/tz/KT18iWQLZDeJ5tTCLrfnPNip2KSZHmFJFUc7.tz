@@ -1,0 +1,7 @@
+{
+  storage string;
+  parameter string;
+  code { CAR;
+         NIL operation;
+         PAIR };
+}

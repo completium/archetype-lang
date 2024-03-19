@@ -1,6 +1,3 @@
-{
-  storage unit;
-  parameter (list (pair (nat %balance) (pair %request (address %owner) (nat %token_id))));
-  code { CAR;
-         FAILWITH };
-}
+{ parameter (list (pair (nat %balance) (pair %request (address %owner) (nat %token_id)))) ;
+  storage unit ;
+  code { CAR ; FAILWITH } }

@@ -1,20 +1,18 @@
-{
-  storage string;
-  parameter key_hash;
-  code { DUP;
-         CDR;
-         SWAP;
-         CAR;
-         IMPLICIT_ACCOUNT;
-         AMOUNT;
-         UNIT;
-         TRANSFER_TOKENS;
-         NIL operation;
-         SWAP;
-         CONS;
-         SWAP;
-         PUSH string "a";
-         CONCAT;
-         SWAP;
-         PAIR };
-}
+{ parameter key_hash ;
+  storage string ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IMPLICIT_ACCOUNT ;
+         AMOUNT ;
+         UNIT ;
+         TRANSFER_TOKENS ;
+         NIL operation ;
+         SWAP ;
+         CONS ;
+         SWAP ;
+         PUSH string "a" ;
+         CONCAT ;
+         SWAP ;
+         PAIR } }

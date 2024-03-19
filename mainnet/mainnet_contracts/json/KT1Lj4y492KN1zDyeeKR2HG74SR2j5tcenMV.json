@@ -1,1 +1,8 @@
-{"code":[{"prim":"parameter","args":[{"prim":"nat"}]},{"prim":"storage","args":[{"prim":"nat"}]},{"prim":"code","args":[[{"prim":"CAR"},{"prim":"NIL","args":[{"prim":"operation"}]},{"prim":"PAIR"}]]}],"storage":{"int":"0"}}
+{ "code":
+    [ { "prim": "parameter", "args": [ { "prim": "nat" } ] },
+      { "prim": "storage", "args": [ { "prim": "nat" } ] },
+      { "prim": "code",
+        "args":
+          [ [ { "prim": "CAR" },
+              { "prim": "NIL", "args": [ { "prim": "operation" } ] },
+              { "prim": "PAIR" } ] ] } ], "storage": { "int": "1196673" } }

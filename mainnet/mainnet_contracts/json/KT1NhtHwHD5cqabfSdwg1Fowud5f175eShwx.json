@@ -1,1 +1,6 @@
-{"code":[{"prim":"parameter","args":[{"prim":"nat"}]},{"prim":"storage","args":[{"prim":"unit"}]},{"prim":"code","args":[[{"prim":"CAR"},{"prim":"FAILWITH"}]]}],"storage":{"prim":"Unit"}}
+{ "code":
+    [ { "prim": "parameter", "args": [ { "prim": "nat" } ] },
+      { "prim": "storage", "args": [ { "prim": "unit" } ] },
+      { "prim": "code",
+        "args": [ [ { "prim": "CAR" }, { "prim": "FAILWITH" } ] ] } ],
+  "storage": { "prim": "Unit" } }

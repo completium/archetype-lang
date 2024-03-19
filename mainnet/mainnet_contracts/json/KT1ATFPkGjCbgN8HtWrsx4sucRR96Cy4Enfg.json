@@ -1,1 +1,73 @@
-{"code":[{"prim":"parameter","args":[{"prim":"or","args":[{"prim":"string","annots":["%removeEntry"]},{"prim":"pair","args":[{"prim":"string","annots":["%key"]},{"prim":"string","annots":["%newCID"]}],"annots":["%setCID"]}]}]},{"prim":"storage","args":[{"prim":"pair","args":[{"prim":"map","args":[{"prim":"string"},{"prim":"string"}],"annots":["%keyToCID"]},{"prim":"address","annots":["%owner"]}]}]},{"prim":"code","args":[[{"prim":"DUP"},{"prim":"CDR"},{"prim":"SWAP"},{"prim":"CAR"},{"prim":"IF_LEFT","args":[[{"prim":"SENDER"},{"prim":"DIG","args":[{"int":"2"}]},{"prim":"DUP"},{"prim":"DUG","args":[{"int":"3"}]},{"prim":"CDR"},{"prim":"COMPARE"},{"prim":"EQ"},{"prim":"IF","args":[[{"prim":"SWAP"},{"prim":"DUP"},{"prim":"CDR"},{"prim":"SWAP"},{"prim":"CAR"},{"prim":"NONE","args":[{"prim":"string"}]},{"prim":"DIG","args":[{"int":"3"}]},{"prim":"UPDATE"},{"prim":"PAIR"}],[{"prim":"DROP"}]]}],[{"prim":"SENDER"},{"prim":"DIG","args":[{"int":"2"}]},{"prim":"DUP"},{"prim":"DUG","args":[{"int":"3"}]},{"prim":"CDR"},{"prim":"COMPARE"},{"prim":"EQ"},{"prim":"IF","args":[[{"prim":"SWAP"},{"prim":"DUP"},{"prim":"CDR"},{"prim":"SWAP"},{"prim":"CAR"},{"prim":"DIG","args":[{"int":"2"}]},{"prim":"DUP"},{"prim":"CAR"},{"prim":"SWAP"},{"prim":"CDR"},{"prim":"SOME"},{"prim":"SWAP"},{"prim":"UPDATE"},{"prim":"PAIR"}],[{"prim":"DROP"}]]}]]},{"prim":"NIL","args":[{"prim":"operation"}]},{"prim":"PAIR"}]]}],"storage":{"prim":"Pair","args":[[{"prim":"Elt","args":[{"string":"gateway"},{"string":"https://ipfs.io/ipfs/"}]},{"prim":"Elt","args":[{"string":"site"},{"string":"QmcVnXTpovYGg2hFB1ZrsP88VLodJmW2eF1MDtx6nccxfR"}]}],{"bytes":"000092794d37add46407b1bf8545d2a2fd2f53c8fd71"}]}}
+{ "code":
+    [ { "prim": "parameter",
+        "args":
+          [ { "prim": "or",
+              "args":
+                [ { "prim": "string", "annots": [ "%removeEntry" ] },
+                  { "prim": "pair",
+                    "args":
+                      [ { "prim": "string", "annots": [ "%key" ] },
+                        { "prim": "string", "annots": [ "%newCID" ] } ],
+                    "annots": [ "%setCID" ] } ] } ] },
+      { "prim": "storage",
+        "args":
+          [ { "prim": "pair",
+              "args":
+                [ { "prim": "map",
+                    "args": [ { "prim": "string" }, { "prim": "string" } ],
+                    "annots": [ "%keyToCID" ] },
+                  { "prim": "address", "annots": [ "%owner" ] } ] } ] },
+      { "prim": "code",
+        "args":
+          [ [ { "prim": "DUP" }, { "prim": "CDR" }, { "prim": "SWAP" },
+              { "prim": "CAR" },
+              { "prim": "IF_LEFT",
+                "args":
+                  [ [ { "prim": "SENDER" },
+                      { "prim": "DIG", "args": [ { "int": "2" } ] },
+                      { "prim": "DUP" },
+                      { "prim": "DUG", "args": [ { "int": "3" } ] },
+                      { "prim": "CDR" }, { "prim": "COMPARE" },
+                      { "prim": "EQ" },
+                      { "prim": "IF",
+                        "args":
+                          [ [ { "prim": "SWAP" }, { "prim": "DUP" },
+                              { "prim": "CDR" }, { "prim": "SWAP" },
+                              { "prim": "CAR" },
+                              { "prim": "NONE",
+                                "args": [ { "prim": "string" } ] },
+                              { "prim": "DIG", "args": [ { "int": "3" } ] },
+                              { "prim": "UPDATE" }, { "prim": "PAIR" } ],
+                            [ { "prim": "DROP" } ] ] } ],
+                    [ { "prim": "SENDER" },
+                      { "prim": "DIG", "args": [ { "int": "2" } ] },
+                      { "prim": "DUP" },
+                      { "prim": "DUG", "args": [ { "int": "3" } ] },
+                      { "prim": "CDR" }, { "prim": "COMPARE" },
+                      { "prim": "EQ" },
+                      { "prim": "IF",
+                        "args":
+                          [ [ { "prim": "SWAP" }, { "prim": "DUP" },
+                              { "prim": "CDR" }, { "prim": "SWAP" },
+                              { "prim": "CAR" },
+                              { "prim": "DIG", "args": [ { "int": "2" } ] },
+                              { "prim": "DUP" }, { "prim": "CAR" },
+                              { "prim": "SWAP" }, { "prim": "CDR" },
+                              { "prim": "SOME" }, { "prim": "SWAP" },
+                              { "prim": "UPDATE" }, { "prim": "PAIR" } ],
+                            [ { "prim": "DROP" } ] ] } ] ] },
+              { "prim": "NIL", "args": [ { "prim": "operation" } ] },
+              { "prim": "PAIR" } ] ] } ],
+  "storage":
+    { "prim": "Pair",
+      "args":
+        [ [ { "prim": "Elt",
+              "args":
+                [ { "string": "gateway" },
+                  { "string": "https://ipfs.io/ipfs/" } ] },
+            { "prim": "Elt",
+              "args":
+                [ { "string": "site" },
+                  { "string":
+                      "QmakYwGKoKgEAh4V7j3nxrJyqw9mwgfcnn3qXWA3URko4S" } ] } ],
+          { "bytes": "000092794d37add46407b1bf8545d2a2fd2f53c8fd71" } ] } }
