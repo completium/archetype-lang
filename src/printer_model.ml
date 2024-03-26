@@ -900,7 +900,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mshiftleft (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "%a << %a"
+        Format.fprintf fmt "%a <<| %a"
           f l
           f r
       in
@@ -908,7 +908,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mshiftright (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "%a >> %a"
+        Format.fprintf fmt "%a |>> %a"
           f l
           f r
       in

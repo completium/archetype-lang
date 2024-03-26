@@ -1687,8 +1687,8 @@ end = struct
           | `Bop Bsub,                 [ a; b ] -> mk_mterm (Mminus (f a, f b)) tint
           | `Bop Bmul,                 [ a; b ] -> mk_mterm (Mmult (f a, f b)) tint
           | `Bop Bediv,                [ a; b ] -> mk_mterm (Mdivmod (f a, f b)) (ttuple [tint; tint])
-          | `Bop Blsl,                 [ _a; _b ] -> assert false
-          | `Bop Blsr,                 [ _a; _b ] -> assert false
+          | `Bop Blsl,                 [ a; b ] -> mk_mterm (Mshiftleft (f a, f b)) tbytes
+          | `Bop Blsr,                 [ a; b ] -> mk_mterm (Mshiftright (f a, f b)) tbytes
           | `Bop Bor,                  [ a; b ] -> mk_mterm (Mor  (f a, f b)) tbool
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mgreedyand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mgreedyor (f a, f b)) tbool
@@ -1773,7 +1773,7 @@ end = struct
 
         | DIMatch    (_c, _) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
         | DIFailwith e -> failg (for_expr e)
-        | DIWhile    (_code, _body) -> Format.eprintf "%a@\n" pp_dinstr i; assert false
+        | DIWhile    (cond, body) ->  mk_mterm (Mwhile (g cond, seq body)) tunit
         | DIIter     (id, coll, body) ->
           let fid = match id with | `VLocal (_, n) -> int_to_var n | `VGlobal (_, id) -> id in
           let b = Model.seq (List.map f body) in
