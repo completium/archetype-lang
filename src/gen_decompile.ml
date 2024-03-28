@@ -999,8 +999,6 @@ end = struct
       let x, s = List.pop s in
       let y, s = List.pop s in
       let instrs, uf = write_var uf (dexpr_of_rstack1 y) x in
-      Format.eprintf "==> %d@." (List.length instrs);
-      List.iter (Format.eprintf "==> %a@." pp_dinstr) instrs;
       (uf, mkdecomp (y :: s) instrs)
 
     | DUP_N n ->
