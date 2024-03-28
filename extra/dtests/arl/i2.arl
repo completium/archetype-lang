@@ -1,0 +1,10 @@
+archetype i2
+
+variable x : nat = 0
+variable m : map<string, nat> = []
+
+entry exec(n : nat) {
+  const t ?= m["mystr"] : "ERROR";
+  const v : nat ?= sub_nat(n, t) : "E2";
+  x := v
+}

@@ -1,0 +1,20 @@
+{ storage (pair (nat %x) (map %m string nat)) ;
+  parameter (nat %exec) ;
+  code { UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         DUP 3 ;
+         PUSH string "mystr" ;
+         GET ;
+         IF_NONE { PUSH string "ERROR" ; FAILWITH } {} ;
+         DUP ;
+         DUP 3 ;
+         SUB ;
+         ISNAT ;
+         IF_NONE { PUSH string "E2" ; FAILWITH } {} ;
+         DUP ;
+         DIP 1 { DIG 3 ; DROP 1 } ;
+         DUG 3 ;
+         DROP 3 ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }
