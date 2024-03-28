@@ -1,0 +1,40 @@
+{ storage (big_map address (pair (nat %tokens) (map %allowance address nat))) ;
+  parameter (pair %transfer (address %from) (pair (address %to) (nat %value))) ;
+  code { UNPAIR ;
+         UNPAIR ;
+         SWAP ;
+         UNPAIR ;
+         SWAP ;
+         DUP 4 ;
+         DUP 4 ;
+         GET ;
+         IF_NONE
+           { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         DUP 5 ;
+         DUP 6 ;
+         DUP 6 ;
+         GET ;
+         IF_NONE
+           { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+           {} ;
+         CDR ;
+         PUSH int 0 ;
+         DUP 5 ;
+         INT ;
+         DUP 5 ;
+         GET 1 ;
+         SUB ;
+         COMPARE ;
+         GE ;
+         IF { DUP 4 ; INT ; DUP 4 ; GET 1 ; SUB ; ABS }
+            { PUSH string "NAT_NEG_ASSIGN" ; FAILWITH } ;
+         PAIR ;
+         SOME ;
+         DUP 6 ;
+         UPDATE ;
+         DIP 1 { DIG 4 ; DROP 1 } ;
+         DUG 4 ;
+         DROP 4 ;
+         NIL operation ;
+         PAIR } }
