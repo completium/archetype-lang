@@ -1,0 +1,6 @@
+archetype basic_entry_assign
+
+variable x : nat = 0
+variable y : nat = 2
+
+entry exec() { x := y }
