@@ -1505,7 +1505,7 @@ end = struct
       let env = Mint.filter (fun _ se -> not (Sdvar.mem x (expr_fv se))) env in
 
       let env =
-        if   (Sdvar.mem x (expr_fv e))
+        if   (Sdvar.mem x (expr_fv e)) && can_propagate e
         then env
         else Mint.add i e env in
 
@@ -1567,6 +1567,28 @@ end = struct
     let env, code =
       List.fold_left_map instr_cttprop env code
     in env, List.flatten code
+
+  and can_propagate (e : dexpr) : bool =
+    match e.node with
+    | Ddata (_, d) -> can_propagate_data d
+    | Dvar _ -> true
+    | _ -> false
+
+  and can_propagate_data (d : data): bool =
+    match d with
+    | Dint _
+    | Dstring _
+    | Dbytes _
+    | Dunit
+    | Dtrue
+    | Dfalse
+    | Dnone
+    | Dconstant _ -> true
+
+    | Dleft d | Dright d ->
+       can_propagate_data d
+
+    | _ -> false
 
   (* -------------------------------------------------------------------- *)
   let rec instr_kill (keep : Sdvar.t) (instr : dinstr) =
