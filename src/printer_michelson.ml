@@ -894,6 +894,7 @@ and pp_expr (fmt : Format.formatter) (e : dexpr) =
   match e.node with
   | Dvar v              -> pp_var fmt v
   | Depair (e1, e2)     -> Format.fprintf fmt "(%a, %a)" pp_expr e1 pp_expr e2
+  | Deproj (_, e, i)    -> Format.fprintf fmt "(%a)[%d]" pp_expr e i
   | Ddata (_, d)        -> pp_data fmt d
   | Dfun (op, args)     -> begin
       match op, args with

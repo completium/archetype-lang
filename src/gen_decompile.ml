@@ -580,6 +580,11 @@ end = struct
         let e2 = expr_propagate uf e2 in
         Depair (e1, e2)
 
+      | Deproj (ty, e, i) ->
+        let ty = ty_propagate uf ty in
+        let e = expr_propagate uf e in
+        Deproj (ty, e, i)
+
       | Ddata (_, _) ->
         e.node
 
@@ -620,6 +625,23 @@ end = struct
       | _ -> map_type aux t
     in aux xty
 
+  let rec pair_head_normalize (ty : type_) =
+    match ty.node with
+    | Tpair [] ->
+       tunit
+
+    | Tpair [ty] ->
+       ty
+
+    | Tpair [_; _] ->
+       ty
+
+    | Tpair (ty :: tys) ->
+       tpair [ty; pair_head_normalize (tpair tys)]
+
+    | _ ->
+       ty
+
   let rec unify (uf : uf) (effect : effect) : uf =
     pump (unify_r uf effect)
 
@@ -641,6 +663,9 @@ end = struct
       unify_expr_r uf e1 e2
 
   and unify_type_r (uf : uf) (ty1 : type_) (ty2 : type_) =
+    let ty1 = pair_head_normalize (ty_propagate uf ty1) in
+    let ty2 = pair_head_normalize (ty_propagate uf ty2) in
+
     match ty1.node, ty2.node with
     | Tvar x, Tvar y when x = y
       -> uf, []
@@ -648,8 +673,7 @@ end = struct
     | Tvar x, Tvar y
       ->
        let uft, effects = UFT.union x y uf.uft in
-       { uf with uft }, effects
-       
+       { uf with uft }, effects       
 
     | Tvar x, _
       ->
@@ -679,8 +703,7 @@ end = struct
     | Tticket   t1, Tticket   t2
       -> unify_type_r uf t1 t2
 
-    | Tpair l1, Tpair l2 when List.length l1 = List.length l2 
-      ->
+    | Tpair l1, Tpair l2 ->
        let aux (uf : uf) ((t1, t2) : type_ * type_) =
          unify_type_r uf t1 t2
        in
@@ -770,6 +793,9 @@ end = struct
     | Depair (e1, e2), Depair (f1, f2) ->
       (uf, [`ExprUnify (e1, f1); `ExprUnify (e2, f2)])
 
+    | Deproj (ty1, e1, i1), Deproj (ty2, e2, i2) when i1 = i2 ->
+      (uf, [`TyUnify (ty1, ty2); `ExprUnify (e1, e2)])
+
     | Ddata (_, d1), Ddata (_, d2) ->
       if not (cmp_data d1 d2) then
         raise UnificationFailure;
@@ -854,28 +880,16 @@ end = struct
       let i2, uf = write_var uf e2 x2 in
       (i1@i2, uf)
 
-    | `Paired (x1, x2), Dvar (`VLocal (_, y)) ->
-       let ty1 = ty_of_rstack1 x1 in
-       let ty2 = ty_of_rstack1 x2 in
-       let y1 = vlocal ty1 in
-       let y2 = vlocal ty2 in
+    | `Paired (x1, x2), _ ->
+       let ty1 = fresh_tvar () in
+       let ty2 = fresh_tvar () in
 
-       let uf =
-         let data =
-           let type_ = tpair [ty1; ty2] in
-           let global = Some (depair (dvar y1) (dvar y2)) in
-           { type_; global} in
-         let ufe, effects = UFE.set y data uf.ufe in
-         pump ({ uf with ufe }, effects)
-       in
+       let i1, uf = write_var uf (deproj ty1 e 0) x1 in
+       let i2, uf = write_var uf (deproj ty2 e 1) x2 in
 
-       let i1, uf = write_var uf (dvar y1) x1 in
-       let i2, uf = write_var uf (dvar y2) x2 in
+       let uf = unify_type uf (tpair [ty1; ty2]) e.type_ in
 
        (i1@i2, uf)
-
-    | _, _ ->
-       raise UnificationFailure
 
   let rec dexpr_of_rstack1 (x : rstack1) : dexpr =
     match x with
@@ -935,9 +949,11 @@ end = struct
     { code; stack; failure; }
 
   let rec decompile_i (uf : uf) (s : rstack) (i : code) : uf * decomp =
+    (*
     Format.eprintf "%s@." (String.make 78 '=');
     Format.eprintf "%a@." Printer_michelson.pp_code i;
     List.iteri (fun i r -> Format.eprintf "%i: %a@." i Michelson.pp_rstack1 r) s;
+    *)
 
     match i.node with
 
@@ -1193,19 +1209,19 @@ end = struct
     | GET_N n -> begin
         let x, s = List.pop s in
 
-        let rec doit b n (a : rstack1) =
+        let rec doit (n : int) (a : rstack1) =
           match n with
-          | 0 when not b ->
-            a
           | 0 ->
+            a
+          | 1 ->
             let x2 = vlocal (fresh_tvar ()) in (* FIXME *)
             `Paired (a, (x2 :> rstack1))
           | _ ->
             let x1 = vlocal (fresh_tvar ()) in (* FIXME *)
-            let a  = doit b (n-1) a in
+            let a  = doit (n-2) a in
             `Paired ((x1 :> rstack1), a) in
 
-        (uf, mkdecomp ((doit (n mod 2 <> 0) (n / 2) x) :: s) [])
+        (uf, mkdecomp ((doit n x) :: s) [])
       end
 
     (* Other *)
@@ -1308,7 +1324,7 @@ end = struct
 
     | FAILWITH ->
       let n    = fst (Option.get (!(i.type_))) in
-      let s    = List.map (fun _ -> (vlocal (fresh_tvar ()) :> rstack1)) n in
+      let s    = List.map (fun ty -> (vlocal ty :> rstack1)) n in
       let x, _ = List.pop s in
       (uf, mkdecomp ~failure:true s [DIFailwith (dexpr_of_rstack1 x)])
 
@@ -1394,6 +1410,9 @@ end = struct
     | Depair (e1, e2) ->
       Sdvar.union (expr_fv e1) (expr_fv e2)
 
+    | Deproj (_, e, (_ : int)) ->
+      expr_fv e
+
     | Ddata _ ->
       Sdvar.empty
 
@@ -1457,6 +1476,10 @@ end = struct
       let e1 = expr_cttprop env e1 in
       let e2 = expr_cttprop env e2 in
       depair e1 e2
+
+    | Deproj (ty, e, i) ->
+      let e = expr_cttprop env e in
+      deproj ty e i
 
     | Ddata _ ->
       e
@@ -1594,6 +1617,7 @@ end = struct
 
       let keep, bs = List.split (List.map for1 bs) in
       let keep = Sdvar.unions keep in
+      let keep = Sdvar.union keep (expr_fv e) in
 
       keep, [DIMatch (e, bs)]
 
@@ -1610,14 +1634,13 @@ end = struct
     let pty = michelson.parameter in
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
 
-    let pst = `VGlobal (pty, "args_1") in
-    let ast : rstack1 =
-      let i : int ref = ref 0 in
+    let create_args (name : string) (ty : type_) =
+      let i = ref 0 in
       let rec aux (ty : T.type_) =
         let mkvar ty : rstack1 =
           let fresh_id _ =
             i := !i + 1;
-            Printf.sprintf "sto_%d" !i
+            Printf.sprintf "%s_%d" name !i
           in
           let str = Option.get_dfl (fresh_id ()) (get_annot_from_type ty) in
           `VGlobal (ty, str)
@@ -1627,8 +1650,12 @@ end = struct
         | Tpair (t1::ts) -> `Paired (mkvar t1, aux (tpair ts))
         | _ -> mkvar ty
       in
-      aux aty
+      aux ty
+
     in
+
+    let pst = create_args "arg" pty in
+    let ast = create_args "sto" aty in
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1641,13 +1668,13 @@ end = struct
       | [`Paired (px, ax)] ->
         let pr1, uf = write_var uf (dexpr_of_rstack1 pst) px in
         let pr2, uf = write_var uf (dexpr_of_rstack1 ast) ax in
-        pr1 @ dc @ pr2, uf
+        pr1 @ pr2 @ dc, uf
       | _ -> Format.eprintf "%a@." pp_rstack ost; assert false in
 
     (*    let _, code = code_kill Sdvar.empty code in*)
     let code = dcode_propagate uf code in
     let _, code = code_cttprop Mint.empty code in
-    let _, code = code_kill Sdvar.empty code in
+    let _, code = code_kill Sdvar.empty code in 
 
     code
 end
@@ -1792,6 +1819,7 @@ end = struct
       | Dvar v          -> let id, ty = for_dvar v in mk_mvar (M.mk_mident (dumloc (id))) (ttype_to_mtype ty)
       | Ddata (t, d)    -> data_to_mterm ~t d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
+      | Deproj (ty, e, i) -> assert false
       | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
       | Dfun (`Uop Ugt, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mgt     (f a, f b)) tbool

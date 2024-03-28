@@ -664,6 +664,7 @@ type dvar = [
 and dexpr_node =
   | Dvar       of dvar
   | Depair     of dexpr * dexpr
+  | Deproj     of type_ * dexpr * int
   | Ddata      of type_ * data
   | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
@@ -680,6 +681,7 @@ let ty_of_dvar (dv : dvar) =
 
 let dvar   dv       = mk_dexpr (ty_of_dvar dv) (Dvar dv)
 let depair a  b     = mk_dexpr (tpair [a.type_; b.type_]) (Depair (a, b))
+let deproj ty e i   = mk_dexpr ty (Deproj (ty, e, i))
 let ddata  ty d     = mk_dexpr ty (Ddata (ty, d))
 let dfun   ty op ld = mk_dexpr ty (Dfun (op, ld))
 
