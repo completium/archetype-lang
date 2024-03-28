@@ -1,0 +1,8 @@
+archetype basic_entry_assign
+
+variable x : nat = 0
+// variable y : string = ""
+// variable z : bytes = 0x
+
+entry e1(a : nat) { x := a }
+entry e2(a : nat) { x := a }
