@@ -1,0 +1,196 @@
+import { BindingSettings, generate_binding, Language, Target } from "@completium/archetype-binder-ts";
+import { RawContractInterface } from "@completium/archetype-binder-ts/build/src/utils";
+
+const fs = require('fs')
+const path = require('path')
+const spawn = require('cross-spawn');
+
+const skip: Array<string> = []
+
+const compile = (args: string[]) => {
+  const bin = '../_build/default/src/compiler.exe'
+  const res = spawn.sync(bin, args, {});
+  return res
+}
+
+// const create_folder = (dir: string) => {
+//   if (!fs.existsSync(dir)) {
+//     fs.mkdirSync(dir);
+//   }
+// }
+
+// const generation_interface_contract = (i: string, p : string): string => {
+//   const arl_path = i + '.arl'
+//   const res = compile(['--sandbox-exec-address', 'KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL', '--show-contract-interface', arl_path])
+//   if (res.status != 0) {
+//     throw new Error(res.stderr.toString())
+//   }
+//   const content = JSON.parse(res.stdout.toString())
+//   const output = JSON.stringify(content, null, 2);
+//   const json_path = p + path.basename(arl_path.replace('.arl', '.json'))
+//   fs.writeFileSync(json_path, output)
+//   return json_path
+// }
+
+const generation_arl_file = (i: string, p: string): string => {
+  const tz_path = i + '.tz'
+  const res = compile(['-d', tz_path])
+  if (res.status != 0) {
+    throw new Error(res.stderr.toString())
+  }
+  const output_path = p + path.basename(tz_path.replace('.tz', '.arl'))
+  fs.writeFileSync(output_path, res.stdout.toString())
+  return output_path
+}
+
+// const write_binding = (json_path: string, p : string, op : string) => {
+//   const json = fs.readFileSync(json_path);
+//   let rci: RawContractInterface = JSON.parse(json);
+//   const settings: BindingSettings = {
+//     language: Language.Archetype,
+//     target: Target.Experiment,
+//     path: p
+//   }
+//   const output = generate_binding(rci, settings);
+//   const out_ts = op + path.basename(json_path.replace('.json', '.ts'));
+//   fs.writeFileSync(out_ts, output)
+// }
+
+// const generate_spec_passed = (input: Array<string>) => {
+//   const extract_it_body = (): Map<string, string> => {
+//     const res = new Map<string, string>();
+//     const input = fs.readFileSync('./tests/passed.spec.ts');
+
+//     const frx = /describe\('passed', async \(\) => {(.|\n)+/g
+//     const fr = frx.exec(input)
+//     if (fr == null) {
+//       throw new Error("error");
+//     }
+//     const aaa: string = fr[0]
+//     const aa = aaa.split('\n  it')
+//     for (let idx = 0; idx < aa.length; ++idx) {
+//       const b = aa[idx]
+//       const ii = b.trim()
+
+//       const y = ii.split('\n');
+//       const z = y[0].split('\'')
+//       const id = z[1]
+
+//       const tmp_content = ii.split('\n');
+//       const content = tmp_content.slice(1, tmp_content.length - (idx == aa.length - 1 ? 3 : 1)).join('\n')
+
+//       res.set(id, '\n' + content + '\n  ')
+//     }
+
+//     return res
+//   }
+
+//   const it_bodies = extract_it_body();
+
+//   let imports: Array<string> = []
+//   let items: Array<string> = []
+//   for (const id of input) {
+//     imports.push(`import * as ${id} from '../bindings/passed/${id}'\n`)
+
+//     const default_body = `
+//     await ${id}.${id}.deploy({ as: alice })
+//     `
+//     const body = it_bodies.get(id) ?? default_body
+//     items.push(`
+//   it('${id}', async () => {${body}${it_bodies.has(id) ? "" : "// TODO\n  "}})
+// `);
+//   }
+
+//   const output = `/* DO NOT EDIT, GENERATED FILE */
+// import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
+// import { Address, Bytes, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+
+// import assert from 'assert'
+// import { BigNumber } from 'bignumber.js'
+
+// ${(imports.map(x => x)).join('')}
+
+// const alice = get_account('alice')
+// const bob = get_account('bob')
+// const carl = get_account('carl')
+
+// /* Verbose mode ------------------------------------------------------------ */
+
+// set_quiet(true);
+
+// /* Endpoint ---------------------------------------------------------------- */
+
+// set_mockup()
+
+// /* Tests-------------------------------------------------------------------- */
+
+// describe('passed', async () => {
+// ${(items.map(x => x)).join('')}
+// })`
+//   fs.writeFileSync('./tests/passed.spec.ts', output)
+// }
+
+// const generate_spec_error = (input: Array<string>, name: string, path: string, code: number, ext: string, args: string) => {
+//   let items: Array<string> = []
+//   for (const id of input) {
+//     items.push(`
+//   it('${id}', async () => {
+//     const stat = compile("${path}/${id}${ext}")
+//     assert(stat.status == ${code}, "Invalid status code, actual: " + stat.status + ", expected: ${code}")
+//   })`);
+//   }
+//   const output = `/* DO NOT EDIT, GENERATED FILE */
+// import assert from 'assert'
+
+// /* Utils ------------------------------------------------------------------- */
+
+// const compile = (p : string) => {
+//   const spawn = require('cross-spawn');
+//   const bin = '../_build/default/src/compiler.exe'
+//   const res = spawn.sync(bin, [${args}p], { });
+//   return res
+// }
+
+// /* Tests ------------------------------------------------------------------- */
+
+// describe('${name}', async () => {${(items.map(x => x)).join('')}
+// })
+//   `
+//   fs.writeFileSync(`./tests/${name}.spec.ts`, output)
+// }
+
+const extract_file_dir = (path: string, ext: string): Array<string> => {
+  const dir = fs.opendirSync(path)
+  let dirent;
+  let filenames: Array<string> = []
+  while ((dirent = dir.readSync()) !== null) {
+    const filename = dirent.name as string;
+    if (filename.endsWith(ext)) {
+      if (!skip.includes(filename)) {
+        const f: string = filename.substring(0, (filename.length - ext.length));
+        filenames.push(f)
+      }
+    }
+  }
+  dir.closeSync()
+  filenames.sort((x, y) => (x > y ? 1 : -1));
+  return filenames
+}
+
+describe('Generate arl', async () => {
+  describe('passed', async () => {
+    const p = './michelson/passed/'
+    const filenames = extract_file_dir(p, '.tz')
+    for (const filename of filenames) {
+      it(filename, () => {
+        const filepath = p + '/' + filename
+        generation_arl_file(filepath, './decomp/contracts/passed/')
+        // write_binding(json_path, '../tests/passed/', './bindings/passed/')
+      });
+    }
+    // it('Generate passed.spec.ts', async () => {
+    //   generate_spec_passed(filenames)
+    // })
+  })
+
+})

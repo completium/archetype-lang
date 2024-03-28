@@ -28,6 +28,7 @@
     "test:decomp:mit:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mit-mainnet.spec.ts",
     "test:decomp:dir:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-dir-mainnet.spec.ts",
     "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts",
+    "generate:decomp": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_decomp.ts",
     "generate:json": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_json.ts"
   },
   "dependencies": {
