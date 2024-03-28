@@ -1,0 +1,12 @@
+{ storage nat ;
+  parameter (or (nat %e1) (bytes %e2)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DUP ; DIP 1 { SWAP ; DROP 1 } ; SWAP ; DROP 1 ; NIL operation ; PAIR }
+           { DUP ;
+             SIZE ;
+             DIP 1 { SWAP ; DROP 1 } ;
+             SWAP ;
+             DROP 1 ;
+             NIL operation ;
+             PAIR } } }
