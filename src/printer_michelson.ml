@@ -869,7 +869,7 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
         pp_dcode body
     in
 
-    Format.fprintf fmt "match (%a) with@\n%a@\nend" pp_expr c
+    Format.fprintf fmt "match (%a : %a) with@\n%a@\nend" pp_expr c pp_type c.type_
       (Format.pp_print_list
          ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
          pp_branch) bs
@@ -906,11 +906,11 @@ and pp_expr (fmt : Format.formatter) (e : dexpr) =
 
 and pp_var (fmt : Format.formatter) (v : dvar) =
   match v with
-  | `VGlobal (_, n) ->
-    Format.fprintf fmt "%s" n
+  | `VGlobal (ty, n) ->
+    Format.fprintf fmt "(%s : %a)" n pp_type ty
 
   | `VLocal (ty, x) ->
-    Format.fprintf fmt "(#%d : %a)" x pp_type ty
+    Format.fprintf fmt "(?%d : %a)" x pp_type ty
 
 (* let pp_dview fmt (dv : dview) : unit =
    Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"

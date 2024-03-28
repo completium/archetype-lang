@@ -466,18 +466,42 @@ end = struct
       (d, `TyUnify (d1.type_, d2.type_) :: effects)
   end
 
-  module UF = Ufind.Make(Item)(Data)
+  module UFE = Ufind.Make(Item)(Data)
 
-  let rec unify (uf : UF.t) (effect : effect) : UF.t =
+  module TData : Ufind.Data
+    with type effects = effect list
+     and type data    = type_ option
+  = struct
+    type data = type_ option
+
+    type effects = effect list
+
+    let noeffects : effects = []
+
+    let fresh () : data =
+      None
+
+    let union (d1 : data) (d2 : data) : data * effects =
+      match d1, d2 with
+      | None, None -> None, []
+      | Some ty, None | None, Some ty -> Some ty, []
+      | Some ty1, Some ty2 -> Some ty2, [`TyUnify (ty1, ty2)]
+  end
+
+  module UFT = Ufind.Make(Item)(TData)
+
+  type uf = { ufe: UFE.t; uft: UFT.t; }
+
+  let rec unify (uf : uf) (effect : effect) : uf =
     pump (unify_r uf effect)
 
-  and pump ((uf, effects) : UF.t * effect list) : UF.t =
+  and pump ((uf, effects) : uf * effect list) : uf =
     unify_all uf effects
 
-  and unify_all (uf : UF.t) (effects : effect list) : UF.t =
+  and unify_all (uf : uf) (effects : effect list) : uf =
     List.fold_left unify uf effects
 
-  and unify_r (uf : UF.t) (effect : effect) : UF.t * effect list =
+  and unify_r (uf : uf) (effect : effect) : uf * effect list =
     match effect with
     | `TyUnify (ty1, ty2) ->
       unify_type_r uf ty1 ty2
@@ -488,47 +512,127 @@ end = struct
     | `ExprUnify (e1, e2) ->
       unify_expr_r uf e1 e2
 
-  and unify_type_r (uf : UF.t) (ty1 : type_) (ty2 : type_) =
+  and unify_type_r (uf : uf) (ty1 : type_) (ty2 : type_) =
     match ty1.node, ty2.node with
-    | _, _ -> uf, []
+    | Tvar x, Tvar y when x = y
+      -> uf, []
+       
+    | Tvar x, Tvar y
+      ->
+       let uft, effects = UFT.union x y uf.uft in
+       { uf with uft }, effects
+       
 
-  and unify_type (uf : UF.t) (ty1 : type_) (ty2 : type_) =
+    | Tvar x, _
+      ->
+       let uft, effects = UFT.set x (Some ty2) uf.uft in
+       { uf with uft }, effects
+
+    | _, Tvar y
+      ->
+       let uft, effects = UFT.set y (Some ty1) uf.uft in
+       { uf with uft }, effects
+
+    | Tbig_map (t1, u1), Tbig_map (t2, u2)
+    | Tmap     (t1, u1), Tbig_map (t2, u2)
+    | Tbig_map (t1, u1), Tmap     (t2, u2)
+    | Tlambda  (t1, u1), Tlambda  (t2, u2)
+    | Tmap     (t1, u1), Tmap     (t2, u2)
+    | Tor      (t1, u1), Tor      (t2, u2)
+      ->
+       let uf, pb1 = unify_type_r uf t1 t2 in
+       let uf, pb2 = unify_type_r uf u1 u2 in
+       uf, pb1 @ pb2
+
+    | Tcontract t1, Tcontract t2
+    | Tlist     t1, Tlist     t2
+    | Toption   t1, Toption   t2
+    | Tset      t1, Tset      t2
+    | Tticket   t1, Tticket   t2
+      -> unify_type_r uf t1 t2
+
+    | Tpair l1, Tpair l2 when List.length l1 = List.length l2 
+      ->
+       let aux (uf : uf) ((t1, t2) : type_ * type_) =
+         unify_type_r uf t1 t2
+       in
+
+       let uf, effects = List.fold_left_map aux uf (List.combine l1 l2) in
+       uf, List.flatten effects
+
+    | Tsapling_state       n1, Tsapling_state n2
+    | Tsapling_transaction n1, Tsapling_transaction n2
+      when n1 = n2 -> uf, []
+
+    | Taddress, Taddress
+    | Tbool        , Tbool          
+    | Tbytes       , Tbytes
+    | Tchain_id    , Tchain_id
+    | Tint         , Tint
+    | Tkey         , Tkey
+    | Tkey_hash    , Tkey_hash
+    | Tmutez       , Tmutez
+    | Tnat         , Tnat
+    | Toperation   , Toperation
+    | Tsignature   , Tsignature
+    | Tstring      , Tstring
+    | Ttimestamp   , Ttimestamp
+    | Tunit        , Tunit
+    | Tbls12_381_fr, Tbls12_381_fr
+    | Tbls12_381_g1, Tbls12_381_g1
+    | Tbls12_381_g2, Tbls12_381_g2
+    | Tnever       , Tnever
+    | Tchest       , Tchest
+    | Tchest_key   , Tchest_key
+      -> uf, []
+
+    | _, _ ->
+       raise UnificationFailure
+
+  and unify_type (uf : uf) (ty1 : type_) (ty2 : type_) =
     pump (unify_type_r uf ty1 ty2)
 
-  and unify_dvar_r (uf : UF.t) (x : dvar) (y : dvar) =
+  and unify_dvar_r (uf : uf) (x : dvar) (y : dvar) =
     match x, y with
     | `VLocal (xty, x), `VLocal (yty, y) ->
-      let x = UF.find x uf in
-      let y = UF.find y uf in
+      let ufe = uf.ufe in
+
+      let x = UFE.find x ufe in
+      let y = UFE.find y ufe in
       let prio =
         if x < 0 then Some `Left  else
         if y < 0 then Some `Right else None in
 
-      let uf, effects = UF.union ?prio x y uf in
-      let uf, effx = UF.set x { global = None; type_ = xty } uf in
-      let uf, effy = UF.set y { global = None; type_ = yty } uf in
-      uf, List.flatten [effects; effx; effy]
+      let ufe, effects = UFE.union ?prio x y ufe in
+      let ufe, effx = UFE.set x { global = None; type_ = xty } ufe in
+      let ufe, effy = UFE.set y { global = None; type_ = yty } ufe in
+
+      let effty = [`TyUnify (xty, yty)] in
+
+      { uf with ufe }, List.flatten [effects; effx; effy; effty]
 
     | `VLocal  (xty, x), `VGlobal (yty, y)
     | `VGlobal (yty, y), `VLocal  (xty, x) ->
 
-      let uf, eff1 =
-        UF.set
+       let ufe = uf.ufe in
+
+      let ufe, eff1 =
+        UFE.set
           x
           { global = Some (dvar (`VGlobal (yty, y)));
             type_  = yty }
-          uf
+          ufe
       in
 
-      let uf, eff2 = UF.set x { global = None; type_ = xty; } uf in
+      let ufe, eff2 = UFE.set x { global = None; type_ = xty; } ufe in
 
-      uf, (eff1 @ eff2)
+      { uf with ufe }, (`TyUnify (xty, yty) :: eff1 @ eff2)
 
     | `VGlobal (xty, x), `VGlobal (yty, y) ->
       if x <> y then raise UnificationFailure;
       uf, [`TyUnify (xty, yty)]
 
-  and unify_expr_r (uf : UF.t) (e1 : dexpr) (e2 : dexpr) =
+  and unify_expr_r (uf : uf) (e1 : dexpr) (e2 : dexpr) =
     let uf = unify_type uf e1.type_ e2.type_ in
 
     match e1.node, e2.node with
@@ -552,25 +656,25 @@ end = struct
       raise UnificationFailure
 
 (*
-  and unify_dinstr_r (uf : UF.t) (i1 : dinstr) (i2 : dinstr) =
+  and unify_dinstr_r (uf : uf) (i1 : dinstr) (i2 : dinstr) =
     match i1, i2 with
     | DIAssign (x1, e1), DIAssign (x2, e2) ->
        uf, [`DvarUnify (x1, x2); `ExprUnify (e1, e2)]
 
     | _, _ -> raise UnificationFailure
 
-  and unify_dinstr (uf : UF.t) (i1 : dinstr) (i2 : dinstr) =
+  and unify_dinstr (uf : uf) (i1 : dinstr) (i2 : dinstr) =
     pump (unify_dinstr_r uf i1 i2)
 *)
 
 (*
-  and unify_dcode (uf : UF.t) (is1 : dcode) (is2 : dcode) =
+  and unify_dcode (uf : uf) (is1 : dcode) (is2 : dcode) =
     if List.length is1 <> List.length is2 then
       raise UnificationFailure;
     List.fold_left2 unify_dinstr uf is1 is2
 *)
 
-  and unify_rstack_r (uf : UF.t) (r1 : rstack) (r2 : rstack) =
+  and unify_rstack_r (uf : uf) (r1 : rstack) (r2 : rstack) =
     match r1, r2 with
     | i1 :: r1, i2 :: r2 ->
       let uf, eff1 = unify_rstack1_r uf i1 i2 in
@@ -583,7 +687,7 @@ end = struct
     | _, _ ->
       raise UnificationFailure
 
-  and unify_rstack1_r (uf : UF.t) (i1 : rstack1) (i2 : rstack1) =
+  and unify_rstack1_r (uf : uf) (i1 : rstack1) (i2 : rstack1) =
     match i1, i2 with
     | `Paired (r1, s1), `Paired (r2, s2) ->
       let uf, eff1 = unify_rstack1_r uf r1 r2 in
@@ -597,11 +701,11 @@ end = struct
       uf, []
   (*       raise UnificationFailure *)
 
-  and unify_stack (uf : UF.t) (r1 : rstack) (r2 : rstack) =
+  and unify_stack (uf : uf) (r1 : rstack) (r2 : rstack) =
     pump (unify_rstack_r uf r1 r2)
 
 
-  let rec write_var (uf : UF.t) (e : dexpr) (x : rstack1) =
+  let rec write_var (uf : uf) (e : dexpr) (x : rstack1) =
     match x, e.node with
     | #dvar as x, Dvar y ->
       [], pump (unify_dvar_r uf x y)
@@ -623,7 +727,7 @@ end = struct
     | #dvar as x -> dvar x
     | `Paired (x, y) -> depair (dexpr_of_rstack1 x) (dexpr_of_rstack1 y)
 
-  let rec merge_rstack (uf : UF.t) (s1 : rstack) (s2 : rstack) =
+  let rec merge_rstack (uf : uf) (s1 : rstack) (s2 : rstack) =
     assert (List.length s1 = List.length s2);
 
     match s1, s2 with
@@ -649,7 +753,7 @@ end = struct
 
     | _, _ -> assert false
 
-  let merge_rstack (uf : UF.t) (s1 : rstack) (s2 : rstack) =
+  let merge_rstack (uf : uf) (s1 : rstack) (s2 : rstack) =
     merge_rstack uf s1 s2
 
   let rec dptn_of_rstack1 (r : rstack1) =
@@ -675,7 +779,7 @@ end = struct
   let mkdecomp ?(failure = false) stack code =
     { code; stack; failure; }
 
-  let rec decompile_i (uf : UF.t) (s : rstack) (i : code) : UF.t * decomp =
+  let rec decompile_i (uf : uf) (s : rstack) (i : code) : uf * decomp =
     (*    Format.eprintf "%s@." (String.make 78 '=');
           Format.eprintf "%a@." Printer_michelson.pp_code i;
           List.iteri (fun i r -> Format.eprintf "%i: %a@." i Michelson.pp_rstack1 r) s; *)
@@ -750,57 +854,56 @@ end = struct
 
     (* Arthmetic operations *)
 
-    | ABS      -> decompile_op uf s (`Uop Uabs     )
-    | ADD      -> decompile_op uf s (`Bop Badd     )
-    | COMPARE  -> decompile_op uf s (`Bop Bcompare )
-    | EDIV     -> decompile_op uf s (`Bop Bediv    )
-    | EQ       -> decompile_op uf s (`Uop Ueq      )
-    | GE       -> decompile_op uf s (`Uop Uge      )
-    | GT       -> decompile_op uf s (`Uop Ugt      )
-    | INT      -> decompile_op uf s (`Uop Uint     )
-    | ISNAT    -> decompile_op uf s (`Uop Uisnat   )
-    | LE       -> decompile_op uf s (`Uop Ule      )
-    | LSL      -> decompile_op uf s (`Bop Blsl     )
-    | LSR      -> decompile_op uf s (`Bop Blsr     )
-    | LT       -> decompile_op uf s (`Uop Ult      )
-    | MUL      -> decompile_op uf s (`Bop Bmul     )
-    | NEG      -> decompile_op uf s (`Uop Uneg     )
-    | NEQ      -> decompile_op uf s (`Uop Une      )
-    | SUB      -> decompile_op uf s (`Bop Bsub     )
+    | ABS      -> decompile_op uf s (`Uop Uabs     ) (Option.get !(i.type_))
+    | ADD      -> decompile_op uf s (`Bop Badd     ) (Option.get !(i.type_))
+    | COMPARE  -> decompile_op uf s (`Bop Bcompare ) (Option.get !(i.type_))
+    | EDIV     -> decompile_op uf s (`Bop Bediv    ) (Option.get !(i.type_))
+    | EQ       -> decompile_op uf s (`Uop Ueq      ) (Option.get !(i.type_))
+    | GE       -> decompile_op uf s (`Uop Uge      ) (Option.get !(i.type_))
+    | GT       -> decompile_op uf s (`Uop Ugt      ) (Option.get !(i.type_))
+    | INT      -> decompile_op uf s (`Uop Uint     ) (Option.get !(i.type_))
+    | ISNAT    -> decompile_op uf s (`Uop Uisnat   ) (Option.get !(i.type_))
+    | LE       -> decompile_op uf s (`Uop Ule      ) (Option.get !(i.type_))
+    | LSL      -> decompile_op uf s (`Bop Blsl     ) (Option.get !(i.type_))
+    | LSR      -> decompile_op uf s (`Bop Blsr     ) (Option.get !(i.type_))
+    | LT       -> decompile_op uf s (`Uop Ult      ) (Option.get !(i.type_))
+    | MUL      -> decompile_op uf s (`Bop Bmul     ) (Option.get !(i.type_))
+    | NEG      -> decompile_op uf s (`Uop Uneg     ) (Option.get !(i.type_))
+    | NEQ      -> decompile_op uf s (`Uop Une      ) (Option.get !(i.type_))
+    | SUB      -> decompile_op uf s (`Bop Bsub     ) (Option.get !(i.type_))
 
 
     (* Boolean operations *)
 
-    | AND     -> decompile_op uf s (`Bop Band )
-    | NOT     -> decompile_op uf s (`Uop Unot )
-    | OR      -> decompile_op uf s (`Bop Bor  )
-    | XOR     -> decompile_op uf s (`Bop Bxor )
-
+    | AND     -> decompile_op uf s (`Bop Band ) (Option.get !(i.type_))
+    | NOT     -> decompile_op uf s (`Uop Unot ) (Option.get !(i.type_))
+    | OR      -> decompile_op uf s (`Bop Bor  ) (Option.get !(i.type_))
+    | XOR     -> decompile_op uf s (`Bop Bxor ) (Option.get !(i.type_))
 
     (* Cryptographic operations *)
 
-    | BLAKE2B          -> decompile_op uf s (`Uop Ublake2b         )
-    | CHECK_SIGNATURE  -> decompile_op uf s (`Top Tcheck_signature )
-    | HASH_KEY         -> decompile_op uf s (`Uop Uhash_key        )
-    | SHA256           -> decompile_op uf s (`Uop Usha256          )
-    | SHA512           -> decompile_op uf s (`Uop Usha512          )
+    | BLAKE2B          -> decompile_op uf s (`Uop Ublake2b         ) (Option.get !(i.type_))
+    | CHECK_SIGNATURE  -> decompile_op uf s (`Top Tcheck_signature ) (Option.get !(i.type_))
+    | HASH_KEY         -> decompile_op uf s (`Uop Uhash_key        ) (Option.get !(i.type_))
+    | SHA256           -> decompile_op uf s (`Uop Usha256          ) (Option.get !(i.type_))
+    | SHA512           -> decompile_op uf s (`Uop Usha512          ) (Option.get !(i.type_))
 
 
     (* Blockchain operations *)
 
-    | ADDRESS            -> decompile_op uf s (`Zop  Zaddress          )
-    | AMOUNT             -> decompile_op uf s (`Zop  Zamount           )
-    | BALANCE            -> decompile_op uf s (`Zop  Zbalance          )
-    | CHAIN_ID           -> decompile_op uf s (`Zop  Zchain_id         )
-    | CONTRACT (t, a)    -> decompile_op uf s (`Uop (Ucontract (t, a)) )
+    | ADDRESS            -> decompile_op uf s (`Zop  Zaddress          ) (Option.get !(i.type_))
+    | AMOUNT             -> decompile_op uf s (`Zop  Zamount           ) (Option.get !(i.type_))
+    | BALANCE            -> decompile_op uf s (`Zop  Zbalance          ) (Option.get !(i.type_))
+    | CHAIN_ID           -> decompile_op uf s (`Zop  Zchain_id         ) (Option.get !(i.type_))
+    | CONTRACT (t, a)    -> decompile_op uf s (`Uop (Ucontract (t, a)) ) (Option.get !(i.type_))
     | CREATE_CONTRACT _  -> assert false
-    | IMPLICIT_ACCOUNT   -> decompile_op uf s (`Uop (Uimplicitaccount) )
-    | NOW                -> decompile_op uf s (`Zop Znow               )
-    | SELF a             -> decompile_op uf s (`Zop (Zself a)          )
-    | SENDER             -> decompile_op uf s (`Zop Zsender            )
-    | SET_DELEGATE       -> decompile_op uf s (`Uop Usetdelegate       )
-    | SOURCE             -> decompile_op uf s (`Zop Zsource            )
-    | TRANSFER_TOKENS    -> decompile_op uf s (`Top Ttransfer_tokens   )
+    | IMPLICIT_ACCOUNT   -> decompile_op uf s (`Uop (Uimplicitaccount) ) (Option.get !(i.type_))
+    | NOW                -> decompile_op uf s (`Zop Znow               ) (Option.get !(i.type_))
+    | SELF a             -> decompile_op uf s (`Zop (Zself a)          ) (Option.get !(i.type_))
+    | SENDER             -> decompile_op uf s (`Zop Zsender            ) (Option.get !(i.type_))
+    | SET_DELEGATE       -> decompile_op uf s (`Uop Usetdelegate       ) (Option.get !(i.type_))
+    | SOURCE             -> decompile_op uf s (`Zop Zsource            ) (Option.get !(i.type_))
+    | TRANSFER_TOKENS    -> decompile_op uf s (`Top Ttransfer_tokens   ) (Option.get !(i.type_))
 
 
     (* Operations on data structures *)
@@ -849,16 +952,16 @@ end = struct
       (uf, d)
 
 
-    | CONCAT               -> decompile_op uf s (`Bop Bconcat               )
-    | EMPTY_BIG_MAP (k, v) -> decompile_op uf s (`Zop (Zemptybigmap (k, v)) )
-    | EMPTY_MAP (k, v)     -> decompile_op uf s (`Zop (Zemptymap (k, v))    )
-    | EMPTY_SET t          -> decompile_op uf s (`Zop (Zemptyset t)         )
-    | LEFT t               -> decompile_op uf s (`Uop (Uleft t)             )
+    | CONCAT               -> decompile_op uf s (`Bop Bconcat               ) (Option.get !(i.type_))
+    | EMPTY_BIG_MAP (k, v) -> decompile_op uf s (`Zop (Zemptybigmap (k, v)) ) (Option.get !(i.type_))
+    | EMPTY_MAP (k, v)     -> decompile_op uf s (`Zop (Zemptymap (k, v))    ) (Option.get !(i.type_))
+    | EMPTY_SET t          -> decompile_op uf s (`Zop (Zemptyset t)         ) (Option.get !(i.type_))
+    | LEFT t               -> decompile_op uf s (`Uop (Uleft t)             ) (Option.get !(i.type_))
     | MAP _cs              -> assert false
-    | MEM                  -> decompile_op uf s (`Bop Bmem                  )
-    | NIL t                -> decompile_op uf s (`Zop (Znil t)              )
-    | NONE t               -> decompile_op uf s (`Zop (Znone t)             )
-    | PACK                 -> decompile_op uf s (`Uop Upack                 )
+    | MEM                  -> decompile_op uf s (`Bop Bmem                  ) (Option.get !(i.type_))
+    | NIL t                -> decompile_op uf s (`Zop (Znil t)              ) (Option.get !(i.type_))
+    | NONE t               -> decompile_op uf s (`Zop (Znone t)             ) (Option.get !(i.type_))
+    | PACK                 -> decompile_op uf s (`Uop Upack                 ) (Option.get !(i.type_))
 
     | PAIR ->  begin
         let x, s = List.pop s in
@@ -902,13 +1005,13 @@ end = struct
       let s, ops = doit s n in
       (uf, mkdecomp s ops)
 
-    | RIGHT t  -> decompile_op uf s (`Uop (Uright t)  )
-    | SIZE     -> decompile_op uf s (`Uop Usize       )
-    | SLICE    -> decompile_op uf s (`Top Tslice      )
-    | SOME     -> decompile_op uf s (`Uop (Usome)     )
-    | UNIT     -> decompile_op uf s (`Zop (Zunit)     )
-    | UNPACK t -> decompile_op uf s (`Uop (Uunpack t) )
-    | UPDATE   -> decompile_op uf s (`Top Tupdate     )
+    | RIGHT t  -> decompile_op uf s (`Uop (Uright t)  ) (Option.get !(i.type_))
+    | SIZE     -> decompile_op uf s (`Uop Usize       ) (Option.get !(i.type_))
+    | SLICE    -> decompile_op uf s (`Top Tslice      ) (Option.get !(i.type_))
+    | SOME     -> decompile_op uf s (`Uop (Usome)     ) (Option.get !(i.type_))
+    | UNIT     -> decompile_op uf s (`Zop (Zunit)     ) (Option.get !(i.type_))
+    | UNPACK t -> decompile_op uf s (`Uop (Uunpack t) ) (Option.get !(i.type_))
+    | UPDATE   -> decompile_op uf s (`Top Tupdate     ) (Option.get !(i.type_))
 
     | UPDATE_N n -> begin
         let x, s = List.pop s in
@@ -972,7 +1075,7 @@ end = struct
       let top, s = doit s n in
       (uf, mkdecomp (top :: s) [])
 
-    | SELF_ADDRESS -> decompile_op uf s (`Zop Zself_address)
+    | SELF_ADDRESS -> decompile_op uf s (`Zop Zself_address) (Option.get !(i.type_))
 
     | ITER cs ->
       let uf, { failure; stack = s; code = bd1 } = decompile_s uf s cs in
@@ -1023,13 +1126,32 @@ end = struct
 *)
 
     | IF_CONS (c1, c2) ->
-      compile_match uf s [("cons", 1), c1; ("nil", 0), c2]
+      let ty = fresh_tvar () in
+
+      compile_match uf s
+        (tlist ty)
+        [ ("cons", [ty; tlist ty]), c1
+        ; ("nil" , []), c2
+        ]
 
     | IF_LEFT (c1, c2) ->
-      compile_match uf s [("left", 1), c1; ("right", 1), c2]
+      let ty1 = fresh_tvar () in
+      let ty2 = fresh_tvar () in
+
+      compile_match uf s
+        (tor ty1 ty2)
+        [ ("left" , [ty1]), c1
+        ; ("right", [ty2]), c2
+        ]
 
     | IF_NONE (c1, c2) ->
-      compile_match uf s [("none", 0), c1; ("some", 1), c2]
+      let ty = fresh_tvar () in
+
+      compile_match uf s
+        (toption ty)
+        [ ("none", []), c1
+        ; ("some", [ty]), c2
+        ]
 
     | FAILWITH ->
       let n    = fst (Option.get (!(i.type_))) in
@@ -1039,10 +1161,19 @@ end = struct
 
     | _ -> (Format.eprintf "%a@\n" pp_code i; assert false)
 
-  and decompile_op (uf : UF.t) (s : rstack) (op : g_operator) =
+  and decompile_op
+    (uf      : uf)
+    (s       : rstack)
+    (op      : g_operator)
+    (tystack : type_ list * type_ list option)
+  =
+    let before, after = tystack in
+    let after = Option.get after in
+
     let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3 in
     let x, s = List.pop s in
-    let args = List.init n (fun _ -> vlocal (fresh_tvar ())) in (* FIXME *)
+    let args = List.map (fun ty -> vlocal ty) (fst (List.split_at n before)) in
+    let uf = unify_type uf (ty_of_rstack1 x) (List.hd after) in
     let c, uf =
       write_var uf
         (dfun (ty_of_rstack1 x) op (List.map (fun v -> dvar v) args)) x (* FIXME *) in
@@ -1052,12 +1183,21 @@ end = struct
         c in
     uf, decomp
 
-  and compile_match (uf : UF.t) (s : rstack) (bs : ((string * int) * code list) list) =
-    let uf, subs = List.fold_left_map (fun uf ((name, n), b) ->
+  and compile_match
+    (uf : uf)
+    (s  : rstack)
+    (ty : type_)
+    (bs : ((string * type_ list) * code list) list)
+  =
+    let x = vlocal ty in
+
+    let uf, subs = List.fold_left_map (fun uf ((name, args), b) ->
         (* FIXME: check for failures *)
+        let n = List.length args in
         let (uf, { stack = sc; code = bc }) = decompile_s uf s b in
         assert (List.length sc >= n);
         let p, sc = List.cut n sc in
+        let uf = List.fold_left2 (fun uf rs ty -> unify_type uf (ty_of_rstack1 rs) ty) uf p args in
         let p, dp = List.split (List.map dptn_of_rstack1 p) in
         (uf, (sc, (name, p, List.flatten dp @ bc)))
       ) uf bs in
@@ -1070,11 +1210,10 @@ end = struct
         (fun uf sc' -> pump (unify_rstack_r uf sc sc'))
         uf (List.tl scs) in
 
-    let x = vlocal (fresh_tvar ()) in
     let d = mkdecomp ((x :> rstack1) :: sc) [DIMatch (dvar x, subs)] in
     (uf, d)
 
-  and decompile_s (uf : UF.t) (s : rstack) (c : code list) : UF.t * decomp =
+  and decompile_s (uf : uf) (s : rstack) (c : code list) : uf * decomp =
     let (failure, uf, stack), code =
       List.fold_left_map (fun (oldfail, uf, stack) code ->
           let uf, { failure; stack; code; } = decompile_i uf stack code in
@@ -1310,10 +1449,10 @@ end = struct
     keep, List.flatten (List.rev code)
 
   (* -------------------------------------------------------------------- *)
-  let rec dcode_propagate (uf : UF.t) (code : dcode) =
+  let rec dcode_propagate (uf : uf) (code : dcode) =
     List.map (icode_propagate uf) code
 
-  and icode_propagate (uf : UF.t) (code : dinstr) =
+  and icode_propagate (uf : uf) (code : dinstr) =
     match code with
     | DIAssign (x, e) ->
       let x = var_propagate uf x in
@@ -1359,17 +1498,17 @@ end = struct
       let d = dcode_propagate uf d in
       DILoop (x, d)
 
-  and dpattern_propagate (uf : UF.t) (dp : dpattern) =
+  and dpattern_propagate (uf : uf) (dp : dpattern) =
     match dp with
     | DVar (ty, x) ->
-      DVar (ty, UF.find x uf)
+      DVar (ty_propagate uf ty, UFE.find x uf.ufe)
 
     | DPair (dp1, dp2) ->
       let dp1 = dpattern_propagate uf dp1 in
       let dp2 = dpattern_propagate uf dp2 in
       DPair (dp1, dp2)
 
-  and expr_propagate (uf : UF.t) (e : dexpr) =
+  and expr_propagate (uf : uf) (e : dexpr) =
     let node =
       match e.node with
       | Dvar x -> begin
@@ -1378,7 +1517,7 @@ end = struct
           try
             match x with
             | `VLocal (_, x) -> begin
-                match UF.data x uf with
+                match UFE.data x uf.ufe with
                 | Some { global = Some e } ->
                   (expr_propagate uf e).node
                 | _ ->
@@ -1404,15 +1543,28 @@ end = struct
         let es = List.map (expr_propagate uf) es in
         Dfun (f, es)
 
-    in { e with node }
+    and type_ = ty_propagate uf e.type_
 
-  and var_propagate (uf : UF.t) (x : dvar) =
+    in { e with node; type_ }
+
+  and var_propagate (uf : uf) (x : dvar) =
     match x with
     | `VGlobal _ ->
       x
 
     | `VLocal (xty, x) ->
-      `VLocal (xty, UF.find x uf)
+      `VLocal (ty_propagate uf xty, UFE.find x uf.ufe)
+
+  and ty_propagate (uf : uf) (xty : type_) =
+    let rec aux (t : type_) =
+      match t.node with
+      | Tvar x -> begin
+         match UFT.data x uf.uft with
+         | Some (Some data) -> ty_propagate uf data
+         | _ -> t
+        end
+      | _ -> map_type aux t
+    in aux xty
 
   (* -------------------------------------------------------------------- *)
   let decompile (michelson : michelson) =
@@ -1473,7 +1625,7 @@ end = struct
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
-        UF.initial
+        { ufe = UFE.initial; uft = UFT.initial; }
         [`Paired (`VGlobal (tlist toperation, "operations"), ast)] code
     in
 
