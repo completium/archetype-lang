@@ -704,14 +704,32 @@ end = struct
   and unify_stack (uf : uf) (r1 : rstack) (r2 : rstack) =
     pump (unify_rstack_r uf r1 r2)
 
+  let norm_var (uf : uf) (x : dvar) : dvar =
+    match x with
+    | `VGlobal _ -> x
+    | `VLocal (_, name) ->
+       match UFE.data name uf.ufe with
+       | Some { global = Some { node = Dvar x } } -> x
+       | _ -> x
 
   let rec write_var (uf : uf) (e : dexpr) (x : rstack1) =
     match x, e.node with
-    | #dvar as x, Dvar y ->
-      [], pump (unify_dvar_r uf x y)
+    | #dvar as x, Dvar y -> begin
+        let x = norm_var uf x in
+        let y = norm_var uf y in
+
+        match x, y with
+        | `VGlobal (xty, xname), `VGlobal (yty, yname) when xname <> yname ->
+           let uf = unify_type uf xty yty in
+           [DIAssign (x, e)], uf
+
+        | #dvar as x, _ ->
+           [], pump (unify_dvar_r uf x y)    
+      end
+
 
     | #dvar as x, _ ->
-      [DIAssign (x, e)], uf
+       [DIAssign (x, e)], uf
 
     | `Paired (x1, x2), Depair (e1, e2) ->
       let a = vlocal (ty_of_rstack1 x1) in
@@ -720,7 +738,7 @@ end = struct
       let i3, uf = write_var uf (dvar a) x1 in
       (i1@i2@i3, uf)
 
-    | _ -> assert false
+    | _ -> raise UnificationFailure
 
   let rec dexpr_of_rstack1 (x : rstack1) : dexpr =
     match x with
@@ -1572,22 +1590,6 @@ end = struct
     let pty = michelson.parameter in
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
 
-    (* let args prefix =
-       let mkvar ty i : rstack1 =
-        (* `VGlobal (ty, (match ty.annotation with Some v -> if String.starts ~pattern:"%" v then (String.sub v 1 ((String.length v) - 1)) else v | _ ->Printf.sprintf "%s%d" prefix i)) in *)
-        `VGlobal (ty, Printf.sprintf "%s%d" prefix i) in
-
-       let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
-        match ty with
-        | { node = Tpair (_::ty::_); _} ->
-          `Paired (mkvar ty i, create (i + 1) ty)
-        | _ ->
-          mkvar ty i
-       in create 1 in
-
-       let pst = args "args_" pty in
-       let ast = args "sto_"  aty in *)
-
     let pst = `VGlobal (pty, "args_1") in
     let ast : rstack1 =
       let i : int ref = ref 0 in
@@ -1607,21 +1609,6 @@ end = struct
       in
       aux aty
     in
-    (* let xty = { node = Tint; annotation = (Some "%nbVotes") } in
-       let tty = { node = Tnat; annotation = (Some "%%storedValue") } in *)
-
-    (* let ast : rstack1 = `Paired
-       ((`VGlobal (({ node = Tint; annotation = (Some "%nbVotes") }, "nbVotes")),
-       `VGlobal (({ node = Tnat; annotation = (Some "%storedValue") }, "storedValue")))) in *)
-
-    (* let ast : rstack1 = `Paired
-        ((`VGlobal (({ node = Tnat; annotation = (Some "%x") }, "x")),
-          `Paired
-            ((`VGlobal (({ node = Tstring; annotation = (Some "%y") }, "y")),
-              `VGlobal (({ node = Tbytes; annotation = (Some "%z") }, "z")))))) in *)
-
-    (* Format.eprintf "aty: %a@\n" pp_type_ aty;
-       Format.eprintf "ast: %a@\n" Michelson.pp_rstack1 ast; *)
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
