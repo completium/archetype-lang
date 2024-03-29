@@ -1,4 +1,4 @@
-import { Address, Bytes, Entrypoint, Option, Nat, pair_to_mich, string_to_mich } from '@completium/archetype-ts-types'
+import { Address, Bytes, Entrypoint, Option, Nat, pair_to_mich, string_to_mich, Unit } from '@completium/archetype-ts-types'
 import { expect_to_fail, get_account, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import assert from 'assert';
@@ -171,7 +171,7 @@ describe('[FA1.2] Getters', () => {
     const res_before = await callback_nat.get_res();
     assert(res_before.equals(Option.None()))
 
-    await fa1_2.getTotalSupply(entrypoint_nat, {as: alice});
+    await fa1_2.getTotalSupply(new Unit(), entrypoint_nat, {as: alice});
 
     const res_after = await callback_nat.get_res();
     assert(res_after.equals(Option.Some<Nat> (total_supply)))

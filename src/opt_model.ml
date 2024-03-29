@@ -132,52 +132,57 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
   | None -> model
 
 let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
-  let mk_decl (id, ty : ident * type_) : mterm =
-    let mk_dvar id ty v = mk_declvar (mk_mident (dumloc id)) ty v in
+  let rec get_init_value (ty : type_) : mterm =
+    let f = get_init_value in
     match get_ntype ty with
     | Tasset _                   -> assert false
     | Tenum _                    -> assert false
-    | Tstate                     -> mk_dvar id ty (mk_int 0)
-    | Tbuiltin Bunit             -> mk_dvar id ty unit
-    | Tbuiltin Bbool             -> mk_dvar id ty (mk_bool false)
-    | Tbuiltin Bint              -> mk_dvar id ty (mk_int 0)
-    | Tbuiltin Brational         -> assert false
-    | Tbuiltin Bdate             -> assert false
-    | Tbuiltin Bduration         -> assert false
-    | Tbuiltin Btimestamp        -> assert false
-    | Tbuiltin Bstring           -> mk_dvar id ty (mk_string "")
-    | Tbuiltin Baddress          -> mk_dvar id ty (mk_address "tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39")
-    | Tbuiltin Btez              -> assert false
-    | Tbuiltin Bsignature        -> assert false
-    | Tbuiltin Bkey              -> assert false
-    | Tbuiltin Bkeyhash          -> assert false
-    | Tbuiltin Bbytes            -> assert false
-    | Tbuiltin Bnat              -> mk_dvar id ty (mk_nat 0)
-    | Tbuiltin Bchainid          -> assert false
-    | Tbuiltin Bbls12_381_fr     -> assert false
-    | Tbuiltin Bbls12_381_g1     -> assert false
-    | Tbuiltin Bbls12_381_g2     -> assert false
-    | Tbuiltin Bnever            -> assert false
-    | Tbuiltin Bchest            -> assert false
-    | Tbuiltin Bchest_key        -> assert false
+    | Tstate                     -> mk_int 0
+    | Tbuiltin Bunit             -> unit
+    | Tbuiltin Bbool             -> mk_bool false
+    | Tbuiltin Bint              -> mk_int 0
+    | Tbuiltin Brational         -> mk_rat 0 1
+    | Tbuiltin Bdate             -> mk_date (Core.mk_date ())
+    | Tbuiltin Bduration         -> mk_duration (Core.mk_duration ())
+    | Tbuiltin Btimestamp        -> mk_int 0
+    | Tbuiltin Bstring           -> mk_string ""
+    | Tbuiltin Baddress          -> mk_address "tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39"
+    | Tbuiltin Btez              -> mk_tez 0
+    | Tbuiltin Bsignature        -> mk_string "signature"
+    | Tbuiltin Bkey              -> mk_string "key"
+    | Tbuiltin Bkeyhash          -> mk_string "key_hash"
+    | Tbuiltin Bbytes            -> mk_bytes ""
+    | Tbuiltin Bnat              -> mk_nat 0
+    | Tbuiltin Bchainid          -> mk_string "chain_id"
+    | Tbuiltin Bbls12_381_fr     -> mk_string "bls12_381_fr"
+    | Tbuiltin Bbls12_381_g1     -> mk_string "bls12_381_g1"
+    | Tbuiltin Bbls12_381_g2     -> mk_string "bls12_381_g2"
+    | Tbuiltin Bnever            -> mk_string "never"
+    | Tbuiltin Bchest            -> mk_string "chest"
+    | Tbuiltin Bchest_key        -> mk_string "chest_key"
     | Tcontainer (_, _)          -> assert false
-    | Tlist t                    -> mk_dvar id ty (mk_litlist t [])
-    | Toption t                  -> mk_dvar id ty (mk_none t)
-    | Ttuple ts                  -> mk_dvar id ty (mk_nat 0) (* TODO *)
-    | Tset t                     -> mk_dvar id ty (mk_litset t [])
-    | Tmap (kt, vt)              -> mk_dvar id ty (mk_litmap kt vt [])
-    | Tbig_map (kt, vt)          -> mk_dvar id ty (mk_litbig_map kt vt [])
+    | Tlist t                    -> mk_litlist t []
+    | Toption t                  -> mk_none t
+    | Ttuple ts                  -> let vs = List.map f ts in mk_tuple vs
+    | Tset t                     -> mk_litset t []
+    | Tmap (kt, vt)              -> mk_litmap kt vt []
+    | Tbig_map (kt, vt)          -> mk_litbig_map kt vt []
     | Titerable_big_map (_kt, _vt) -> assert false
     | Tor _                      -> assert false
     | Trecord _                  -> assert false
     | Tevent _                   -> assert false
     | Tlambda _                  -> assert false
-    | Tunit                      -> mk_dvar id ty unit
+    | Tunit                      -> unit
     | Toperation                 -> assert false
     | Tcontract _                -> assert false
     | Tticket _                  -> assert false
     | Tsapling_state _           -> assert false
     | Tsapling_transaction _     -> assert false
+  in
+  let mk_decl (id, ty : ident * type_) : mterm =
+    let mk_dvar id ty v = mk_declvar (mk_mident (dumloc id)) ty v in
+    let v = get_init_value ty in
+    mk_dvar id ty v
   in
   let for_mterm (mt : mterm) : mterm =
     let add_var (accu : (ident * type_) list) (id, ty : ident * type_) =
@@ -241,9 +246,31 @@ let remove_operations_nil (model : model) : model =
   in
   map_mterm_model aux model
 
+let remove_tupleaccess (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mtupleaccess({node = Mtuple vs}, i) when Big_int.lt_big_int i (Big_int.big_int_of_int (List.length vs)) -> begin
+      let n = Big_int.int_of_big_int i in
+      aux ctx (List.nth vs n)
+    end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let remove_useless_else (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mif(cond, th, Some {node = Mseq []}) -> {mt with node = Mif(f cond, f th, None)}
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 let optimize (model, env : model * Gen_decompile.env) =
   let model =
     model
+    |> remove_tupleaccess
+    |> remove_useless_else
     |> build_entries env
     |> add_decls_var env
     |> remove_operations_nil

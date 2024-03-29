@@ -434,7 +434,7 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt l =
       Format.fprintf fmt "(%a)"
-        (pp_list ",@ " pp_simple_expr) l
+        (pp_list ", " pp_simple_expr) l
     in
     (maybe_paren outer e_comma pos pp) fmt l
 
@@ -643,10 +643,10 @@ let rec pp_expr outer pos fmt a =
   | Eif (cond, then_, else_) ->
 
     let pp fmt (cond, then_, else_) =
-      Format.fprintf fmt "@[if %a@ then (%a)@ %a @]"
+      Format.fprintf fmt "@[if %a@ then (%a)%a@]"
         (pp_expr e_default PNone) cond
         (pp_expr e_default PNone) then_
-        pp_else else_
+        (pp_option (fun fmt x -> Format.fprintf fmt "@ else (%a)" (pp_expr e_else PRight) x)) else_
     in
     (maybe_paren outer e_default pos pp) fmt (cond, then_, else_)
 
@@ -844,11 +844,6 @@ let rec pp_expr outer pos fmt a =
         Micheline_printer.print_expr (Micheline_tools.pt_to_micheline m)
         (pp_list " : " pp_simple_expr) a
     end
-
-and pp_else fmt (e : expr option) =
-  match e with
-  | None -> ()
-  | Some x -> Format.fprintf fmt " else (%a)" (pp_expr e_else PRight) x
 
 and pp_literal fmt lit =
   match lit with

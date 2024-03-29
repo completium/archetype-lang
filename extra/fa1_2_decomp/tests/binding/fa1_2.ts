@@ -13,8 +13,11 @@ const getBalance_arg_to_mich = (owner: att.Address, callback: att.Entrypoint): a
         callback.to_mich()
     ]);
 }
-const getTotalSupply_arg_to_mich = (callback: att.Entrypoint): att.Micheline => {
-    return callback.to_mich();
+const getTotalSupply_arg_to_mich = (x224: att.Unit, callback: att.Entrypoint): att.Micheline => {
+    return att.pair_to_mich([
+        att.unit_to_mich(),
+        callback.to_mich()
+    ]);
 }
 const set_token_metadata_arg_to_mich = (tid: att.Nat, tdata: Array<[
     string,
@@ -112,9 +115,9 @@ export class Fa1_2 {
         }
         throw new Error("Contract not initialised");
     }
-    async getTotalSupply(callback: att.Entrypoint, params: Partial<ex.Parameters>): Promise<att.CallResult> {
+    async getTotalSupply(x224: att.Unit, callback: att.Entrypoint, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "getTotalSupply", getTotalSupply_arg_to_mich(callback), params);
+            return await ex.call(this.address, "getTotalSupply", getTotalSupply_arg_to_mich(x224, callback), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -151,9 +154,9 @@ export class Fa1_2 {
         }
         throw new Error("Contract not initialised");
     }
-    async get_getTotalSupply_param(callback: att.Entrypoint, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_getTotalSupply_param(x224: att.Unit, callback: att.Entrypoint, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "getTotalSupply", getTotalSupply_arg_to_mich(callback), params);
+            return await ex.get_call_param(this.address, "getTotalSupply", getTotalSupply_arg_to_mich(x224, callback), params);
         }
         throw new Error("Contract not initialised");
     }
