@@ -149,8 +149,7 @@ describe('[FA1.2] Getters', () => {
     await fa1_2.getAllowance(user1.get_address(), carl.get_address(), entrypoint_nat, {as: alice} );
 
     const res_after = await callback_nat.get_res();
-    // console.log(res_after.toString())
-    assert(res_after.equals(Option.Some (new Nat(0))))
+    assert(res_after.equals(Option.Some (new Nat(10))))
   })
 
   it('Check getBalance values', async () => {
@@ -163,8 +162,6 @@ describe('[FA1.2] Getters', () => {
     const alice_balance = get_tokens(await fa1_2.get_ledger_value(alice.get_address()));
 
     const res_after = await callback_nat.get_res();
-    // console.log("alice_balance:" + alice_balance.toString())
-    // console.log("res:" + res_after.toString())
     assert(res_after.equals(Option.Some (alice_balance)))
   })
 

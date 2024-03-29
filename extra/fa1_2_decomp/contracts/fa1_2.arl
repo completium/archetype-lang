@@ -39,7 +39,7 @@ entry getBalance (owner : address, callback : contract<nat>) {
   done
 }
 
-entry getTotalSupply (x224 : unit, callback : contract<nat>) {
+entry getTotalSupply (callback : contract<nat>) {
   var x204 : list<operation> = make_list<operation> (([]));
   x204 := make_list<operation> (([]));
   for x217 in operations do
