@@ -190,15 +190,15 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
       | Some _ -> accu
       | None -> (id, ty)::accu
     in
+    let is_fresh_id input =
+      let r = Str.regexp "^x[0-9]+" in
+      let res = Str.string_match r input 0 in
+      res
+    in
     let fetched_vars : (ident * type_) list =
-      let is_var input =
-        let r = Str.regexp "^x[0-9]+" in
-        let res = Str.string_match r input 0 in
-        res
-      in
       let rec aux (accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
         match mt.node with
-        | Mvar (id, _) when is_var (unloc_mident id) -> add_var accu (unloc_mident id, mt.type_)
+        | Mvar (id, _) when is_fresh_id (unloc_mident id) -> add_var accu (unloc_mident id, mt.type_)
         | _ -> fold_term aux accu mt
       in
       aux [] mt
@@ -225,6 +225,15 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     in
     let lid_types : (ident * type_) list = List.filter  (fun (id, _) -> not (List.exists (fun x -> String.equal id x) removed_ids)) fetched_vars in
     let res = seq ((List.map mk_decl lid_types) @ [mt]) in
+    let remove_unknown_assign (mt : mterm) : mterm =
+      let rec aux ctx (mt : mterm) : mterm =
+        match mt.node with
+        | Massign(ValueAssign, _, Avar (_, {pldesc = id}), _) when is_fresh_id id && not (List.exists (fun (x, _) -> String.equal x id) fetched_vars)-> seq []
+        | _ -> map_mterm (aux ctx) mt
+      in
+      aux () mt
+    in
+    let res = remove_unknown_assign res in
     res
   in
   let for_fs (fs : function_struct) : function_struct =
@@ -250,9 +259,9 @@ let remove_tupleaccess (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mtupleaccess({node = Mtuple vs}, i) when Big_int.lt_big_int i (Big_int.big_int_of_int (List.length vs)) -> begin
-      let n = Big_int.int_of_big_int i in
-      aux ctx (List.nth vs n)
-    end
+        let n = Big_int.int_of_big_int i in
+        aux ctx (List.nth vs n)
+      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
