@@ -439,6 +439,10 @@ let pp_mterm fmt (mt : mterm) =
         pp_id id
         (pp_list ", " f) args
 
+    | Mselfcontract (ty, oid) ->
+      Format.fprintf fmt "self_contract%a<%a>"
+        (pp_option (fun fmt x -> Format.fprintf fmt ".%a" pp_id x)) oid
+        pp_type ty
 
     (* operation *)
 

@@ -650,6 +650,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
+    | Pself_contract (ty, oid) ->
+      let pp fmt oid =
+        Format.fprintf fmt "self_contract%a<%a>"
+          (pp_option (fun fmt x -> Format.fprintf fmt ".%a" pp_id x)) oid
+          pp_type ty
+      in
+      (pp_no_paren pp) fmt oid
+
     | Pternary (c, a, b) ->
       let pp fmt (c, a, b) =
         Format.fprintf fmt "%a ? %a : %a"

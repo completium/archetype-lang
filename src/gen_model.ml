@@ -433,6 +433,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
       | A.Pself id -> M.Mself (M.mk_mident id)
+      | A.Pself_contract (ty, oid) -> M.Mselfcontract (type_to_type ty, oid)
 
       | A.Pternary (c, a, b) -> begin
           let c = f c in

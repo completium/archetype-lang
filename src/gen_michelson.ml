@@ -809,6 +809,7 @@ let to_ir (model : M.model) : T.ir =
     | Mimportcallview (_t, _a, _b, _c) -> emit_error (UnsupportedTerm ("Mimportcallview"))
     | Mself id                         -> get_self_entrypoint (M.unloc_mident id) mtt.loc
     | Mselfcallview (_t, _id, _args)   -> emit_error (UnsupportedTerm ("Mselfcallview"))
+    | Mselfcontract (_ty, oid)         -> T.izop ~loc:mtt.loc (Zself (Option.map (fun x -> "%" ^ unloc x) oid))
 
 
     (* operation *)

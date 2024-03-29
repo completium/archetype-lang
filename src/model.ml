@@ -227,6 +227,7 @@ type 'term mterm_node  =
   | Mimportcallview   of type_ * 'term * mident * 'term         (* type * address * string * argument *)
   | Mself             of mident                                 (* entryname *)
   | Mselfcallview     of type_ * lident * 'term list            (* type * string * arguments *)
+  | Mselfcontract     of type_ * lident option                  (* type * entryname option *)
   (* operation *)
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
@@ -1336,6 +1337,7 @@ let cmp_mterm_node
     | Mimportcallview (t1, a1, b1, c1), Mimportcallview (t2, a2, b2, c2)               -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     | Mselfcallview (t1, id1, args1), Mselfcallview (t2, id2, args2)                   -> cmp_type t1 t2 && String.equal (unloc id1) (unloc id2) && List.for_all2 cmp args1 args2
+    | Mselfcontract (ty1, oid1), Mselfcontract (ty2, oid2)                             -> cmp_type ty1 ty2 && Option.cmp (fun v1 v2 -> String.equal (unloc v1) (unloc v2)) oid1 oid2
     (* operation *)
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
@@ -1810,6 +1812,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mimportcallview (t, a, b, c)   -> Mimportcallview (ft t, f a, g b, f c)
   | Mself id                       -> Mself (g id)
   | Mselfcallview (t, id, args)    -> Mselfcallview (ft t, mkloc (loc id) (unloc id), List.map f args)
+  | Mselfcontract (ty, oid)        -> Mselfcontract (ft ty, oid)
   (* operation *)
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
@@ -2197,6 +2200,7 @@ let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   | Mimportcallview (_, a, _, c)          -> f (f accu a) c
   | Mself _                               -> accu
   | Mselfcallview (_, _, args)            -> List.fold_left (fun accu a -> f accu a) accu args
+  | Mselfcontract _                       -> accu
   (* operation *)
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
@@ -2738,6 +2742,9 @@ let fold_map_term
            let p, accu = f accu x in
            pterms @ [p], accu) ([], accu) args in
     g (Mselfcallview (t, id, argse)), argsa
+
+  | Mselfcontract (ty, oid) ->
+    g (Mselfcontract (ty, oid)), accu
 
 
   (* operation *)

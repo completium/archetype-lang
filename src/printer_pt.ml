@@ -735,12 +735,12 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_semi_colon pos pp) fmt l
 
   (* | Eseq (x, y) ->
-    let pp fmt (x, y) =
+     let pp fmt (x, y) =
       Format.fprintf fmt "%a;@\n%a"
         (pp_expr e_semi_colon PLeft) x
         (pp_expr e_semi_colon PRight) y
-    in
-    (maybe_paren outer e_semi_colon pos pp) fmt (x, y) *)
+     in
+     (maybe_paren outer e_semi_colon pos pp) fmt (x, y) *)
 
   | Eletin (id, t, e, body, other) ->
     let f =
@@ -822,6 +822,11 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_colon pos pp) fmt (t, a, b, c)
 
   | Eself x -> Format.fprintf fmt "(self.%a)" pp_id x
+
+  | Eself_contract (ty, oid) ->
+    Format.fprintf fmt "self_contract%a<%a>"
+      (pp_option (fun fmt x -> Format.fprintf fmt ".%a" pp_id x)) oid
+      pp_type ty
 
   | Eany -> Format.fprintf fmt "any"
 
@@ -1194,15 +1199,15 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       pp_fun_args args
       (fun fmt (pr, cod) ->
-      match pr.accept_transfer, pr.sourcedby, pr.calledby, pr.state_is, pr.require, pr.failif, pr.functions, cod with
-      | (true, None), None, None, None, None, None, [], None -> ()
-      | (true, None), None, None, None, None, None, [], Some code -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_expr e_default PNone) code
-      | _ -> Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
-              pp_entry_properties pr
-              (pp_option (fun fmt code ->
-                   Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
-                     (pp_expr e_default PNone) code
-                 )) cod) (props, code)
+         match pr.accept_transfer, pr.sourcedby, pr.calledby, pr.state_is, pr.require, pr.failif, pr.functions, cod with
+         | (true, None), None, None, None, None, None, [], None -> ()
+         | (true, None), None, None, None, None, None, [], Some code -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_expr e_default PNone) code
+         | _ -> Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
+                  pp_entry_properties pr
+                  (pp_option (fun fmt code ->
+                       Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n"
+                         (pp_expr e_default PNone) code
+                     )) cod) (props, code)
 
   | Dgetter ({name; args; ret_t; entry_properties; body}) ->
     Format.fprintf fmt "getter %a%a : %a%a"

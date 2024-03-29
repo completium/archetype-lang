@@ -103,6 +103,7 @@
       "sapling_state"       , SAPLING_STATE       ;
       "sapling_transaction" , SAPLING_TRANSACTION ;
       "self"                , SELF                ;
+      "self_contract"       , SELF_CONTRACT       ;
       "set"                 , SET                 ;
       "some"                , SOME                ;
       "sorted"              , SORTED              ;

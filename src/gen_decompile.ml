@@ -1855,7 +1855,7 @@ end = struct
           | `Zop Zsender,                    [] -> mcaller
           | `Zop Zaddress,                   [] -> assert false
           | `Zop Zchain_id,                  [] -> mselfchainid
-          | `Zop Zself _a,                   [] -> assert false
+          | `Zop Zself a,                    [] -> let ty = ft e.type_ in mk_mterm (Mselfcontract (ty, Option.map (fun x -> dumloc (remove_prefix_annot x)) a)) (tcontract ty)
           | `Zop Zself_address,              [] -> mselfaddress
           | `Zop Znone t,                    [] -> mk_none (ft t)
           | `Zop Zunit,                      [] -> unit
@@ -2287,6 +2287,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mimportcallview (_t, _a, _b, _c) -> assert false
     | Mself id                         -> A.eself (snd id)
     | Mselfcallview (_t, id, args)     -> A.emethod A.MKself id (List.map f args)
+    | Mselfcontract (ty, oid)          -> A.eself_contract (ft ty) (oid)
 
 
     (* operation *)

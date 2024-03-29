@@ -175,6 +175,7 @@ and expr_unloc =
   | Eunpack        of type_t * expr
   | Eemit          of type_t * expr
   | Eself          of lident
+  | Eself_contract of type_t * lident option
   | Eternary       of expr * expr * expr
   | Eany
   | Enothing
@@ -546,6 +547,7 @@ let ecallview         ?(loc=dummy) a b c d        = mkloc loc (Ecallview (a, b, 
 let eunpack           ?(loc=dummy) t e            = mkloc loc (Eunpack (t, e))
 let eemit             ?(loc=dummy) a b            = mkloc loc (Eemit (a, b))
 let eself             ?(loc=dummy) id             = mkloc loc (Eself id)
+let eself_contract    ?(loc=dummy) ty oid         = mkloc loc (Eself_contract (ty, oid))
 let eternary          ?(loc=dummy) a b c          = mkloc loc (Eternary (a, b, c))
 let eany              ?(loc=dummy) _              = mkloc loc (Eany)
 let enothing          ?(loc=dummy) _              = mkloc loc (Enothing)

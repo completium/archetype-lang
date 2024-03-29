@@ -381,6 +381,7 @@ and pterm_node  =
   | Plambda_michelson of type_ * type_ * Michelson.obj_micheline
   | Pcast of type_ * type_ * pterm
   | Pself of lident
+  | Pself_contract of type_ * lident option
   | Pternary of pterm * pterm * pterm
   | Pcreatecontract of pterm * pterm * create_contract_type
   | Ptz_expr of string
@@ -949,6 +950,7 @@ end = struct
     | Plambda_michelson _ -> true
     | Pcast _ -> false
     | Pself _ -> false
+    | Pself_contract _ -> false
     | Pternary _ -> false
     | Pcreatecontract _ -> false
     | Ptz_expr _ -> true

@@ -1,0 +1,13 @@
+archetype test_self_contract_some
+
+variable res : bool = false
+
+entry callback() {
+  res := true
+}
+
+entry exec () {
+  const c : contract<unit> = self_contract.callback<unit>;
+  const op  : operation = make_operation(0tz, c, Unit);
+  operations := prepend(operations, op)
+}

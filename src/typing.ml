@@ -4630,6 +4630,11 @@ let rec for_xexpr
         mk_sp (Some (A.Tcontract rty)) (A.Pself name)
       end
 
+    | Eself_contract (ty, a) -> begin
+        let ty = for_type_exn env ty in
+        mk_sp (Some (A.Tcontract ty)) (A.Pself_contract (ty, a))
+      end
+
     | Eentrypoint (ty, a, b, c) -> begin
         let ty = for_type_exn env ty in
         let a  = for_xexpr env ~ety:A.vtstring a in

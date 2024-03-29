@@ -148,6 +148,7 @@
 %token SAPLING_STATE
 %token SAPLING_TRANSACTION
 %token SELF
+%token SELF_CONTRACT
 %token SEMI_COLON
 %token SET
 %token SLASH
@@ -818,6 +819,12 @@ expr_r:
 
  | x=expr QUESTIONCOLONEQUAL y=expr COLON z=simple_expr
      { Eassignopt (x, y, z) }
+
+ | SELF_CONTRACT DOT id=ident LESS t=type_t GREATER
+     { Eself_contract (t, Some id)}
+
+ | SELF_CONTRACT LESS t=type_t GREATER
+     { Eself_contract (t, None)}
 
  | TRANSFER x=simple_expr
      { Etransfer (TToperation (x)) }

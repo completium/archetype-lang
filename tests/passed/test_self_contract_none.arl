@@ -1,0 +1,13 @@
+archetype test_self_contract_none
+
+variable res : bool = false
+
+entry exec (arg : nat) {
+  if arg = 0
+  then res := true
+  else begin
+    const c : contract<nat> = self_contract<nat>;
+    const op  : operation = make_operation(0tz, c, 0);
+    operations := prepend(operations, op)
+  end
+}
