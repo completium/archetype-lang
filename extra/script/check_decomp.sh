@@ -4,6 +4,7 @@ RET=0
 R=0
 NB=0
 NB_ERR=0
+NB_ERR_DIR=0
 
 BIN='./archetype.exe'
 
@@ -217,6 +218,9 @@ process() {
     echo -ne "\033[31m KO \033[0m"
     RET=1
     R=1
+    if [ $2 = "-dir" ]; then
+      NB_ERR_DIR=$((${NB_ERR_DIR} + 1))
+    fi
   fi
 }
 
