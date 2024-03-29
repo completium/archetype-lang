@@ -1,0 +1,21 @@
+{ storage bool ;
+  parameter (or (unit %callback) (unit %exec)) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         IF_LEFT
+           { DROP 1 ; PUSH bool True ; SWAP ; DROP 1 ; SWAP ; PAIR }
+           { DROP 1 ;
+             SELF %callback ;
+             DUP ;
+             PUSH mutez 0 ;
+             PUSH unit Unit ;
+             TRANSFER_TOKENS ;
+             DUP 4 ;
+             DUP 2 ;
+             CONS ;
+             DIP 1 { DIG 3 ; DROP 1 } ;
+             DUG 3 ;
+             DROP 2 ;
+             SWAP ;
+             PAIR } } }

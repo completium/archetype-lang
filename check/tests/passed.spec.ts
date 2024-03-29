@@ -1188,6 +1188,8 @@ import * as test_removeif_part_0 from '../bindings/passed/test_removeif_part_0'
 import * as test_removeif_part_1 from '../bindings/passed/test_removeif_part_1'
 import * as test_removeif_part_2 from '../bindings/passed/test_removeif_part_2'
 import * as test_result from '../bindings/passed/test_result'
+import * as test_self_contract_none from '../bindings/passed/test_self_contract_none'
+import * as test_self_contract_some from '../bindings/passed/test_self_contract_some'
 import * as test_split_ticket from '../bindings/passed/test_split_ticket'
 import * as test_tez from '../bindings/passed/test_tez'
 import * as test_transfer from '../bindings/passed/test_transfer'
@@ -23505,6 +23507,30 @@ describe('passed', async () => {
 
     const res_after = await test_result.test_result.get_res()
     assert(res_after.equals(new Int(2)))
+  })
+
+  it('test_self_contract_none', async () => {
+    await test_self_contract_none.test_self_contract_none.deploy({ as: alice })
+
+    const res_before = await test_self_contract_none.test_self_contract_none.get_res()
+    assert(!res_before)
+
+    await test_self_contract_none.test_self_contract_none.exec(new Nat(2), { as: alice })
+
+    const res_after = await test_self_contract_none.test_self_contract_none.get_res()
+    assert(res_after)
+  })
+
+  it('test_self_contract_some', async () => {
+    await test_self_contract_some.test_self_contract_some.deploy({ as: alice })
+
+    const res_before = await test_self_contract_some.test_self_contract_some.get_res()
+    assert(!res_before)
+
+    await test_self_contract_some.test_self_contract_some.exec(new Nat(2), { as: alice })
+
+    const res_after = await test_self_contract_some.test_self_contract_some.get_res()
+    assert(res_after)
   })
 
   it('test_split_ticket', async () => {

@@ -5057,6 +5057,14 @@ describe('decomp-mit-passed', async () => {
     const stat = compile("michelson/passed/test_security.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_self_contract_none', async () => {
+    const stat = compile("michelson/passed/test_self_contract_none.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('test_self_contract_some', async () => {
+    const stat = compile("michelson/passed/test_self_contract_some.tz")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_specasset', async () => {
     const stat = compile("michelson/passed/test_specasset.tz")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

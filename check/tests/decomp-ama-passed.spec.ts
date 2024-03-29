@@ -4745,6 +4745,14 @@ describe('decomp-ama-passed', async () => {
     const stat = compile("../tests/passed/test_result.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
+  it('test_self_contract_none', async () => {
+    const stat = compile("../tests/passed/test_self_contract_none.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
+  it('test_self_contract_some', async () => {
+    const stat = compile("../tests/passed/test_self_contract_some.arl")
+    assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
+  })
   it('test_split_ticket', async () => {
     const stat = compile("../tests/passed/test_split_ticket.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
