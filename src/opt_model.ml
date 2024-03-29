@@ -128,7 +128,7 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
     | _ -> None
   in
   match def_entry with
-  | Some code -> {model with functions = aux entries (DPid "args_1") code }
+  | Some code -> {model with functions = aux entries (DPid "arg_1") code }
   | None -> model
 
 let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
@@ -163,7 +163,7 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     | Tcontainer (_, _)          -> assert false
     | Tlist t                    -> mk_dvar id ty (mk_litlist t [])
     | Toption t                  -> mk_dvar id ty (mk_none t)
-    | Ttuple _                   -> assert false
+    | Ttuple ts                  -> mk_dvar id ty (mk_nat 0) (* TODO *)
     | Tset t                     -> mk_dvar id ty (mk_litset t [])
     | Tmap (kt, vt)              -> mk_dvar id ty (mk_litmap kt vt [])
     | Tbig_map (kt, vt)          -> mk_dvar id ty (mk_litbig_map kt vt [])

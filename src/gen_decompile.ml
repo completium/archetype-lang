@@ -669,11 +669,11 @@ end = struct
     match ty1.node, ty2.node with
     | Tvar x, Tvar y when x = y
       -> uf, []
-       
+
     | Tvar x, Tvar y
       ->
        let uft, effects = UFT.union x y uf.uft in
-       { uf with uft }, effects       
+       { uf with uft }, effects
 
     | Tvar x, _
       ->
@@ -716,7 +716,7 @@ end = struct
       when n1 = n2 -> uf, []
 
     | Taddress, Taddress
-    | Tbool        , Tbool          
+    | Tbool        , Tbool
     | Tbytes       , Tbytes
     | Tchain_id    , Tchain_id
     | Tint         , Tint
@@ -1694,7 +1694,7 @@ end = struct
     (*    let _, code = code_kill Sdvar.empty code in*)
     let code = dcode_propagate uf code in
     let _, code = code_cttprop Mint.empty code in
-    let _, code = code_kill Sdvar.empty code in 
+    let _, code = code_kill Sdvar.empty code in
 
     code
 end
@@ -1839,7 +1839,7 @@ end = struct
       | Dvar v          -> let id, ty = for_dvar v in mk_mvar (M.mk_mident (dumloc (id))) (ttype_to_mtype ty)
       | Ddata (t, d)    -> data_to_mterm ~t d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
-      | Deproj (ty, e, i) -> assert false
+      | Deproj (_ty, e, i) -> mk_tupleaccess i (f e)
       | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
       | Dfun (`Uop Ugt, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mgt     (f a, f b)) tbool

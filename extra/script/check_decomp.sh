@@ -276,6 +276,7 @@ echo ""
 if [ ${NB_ERR} -eq 0 ]; then
     echo "passed."
 else
+    echo -e "err dir: ${NB_ERR_DIR} / ${NB}"
     echo -e "errors: ${NB_ERR} / ${NB}"
     RET=1
 fi
