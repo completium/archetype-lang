@@ -1,0 +1,13 @@
+archetype no_fun_lambda_side_effect
+
+variable res : nat = 0
+
+function f(x : string) : nat {
+  res := 2;
+  return length (x)
+}
+
+entry exec () {
+  // const f : lambda<string, nat> = lambda(x -> length(x));
+  res := exec_lambda(f, "mystr")
+}

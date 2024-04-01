@@ -1,0 +1,12 @@
+archetype no_fun_lambda_read_storage
+
+variable res : nat = 0
+
+function f(x : string) : nat {
+  return res
+}
+
+entry exec () {
+  // const f : lambda<string, nat> = lambda(x -> length(x));
+  res := exec_lambda(f, "mystr")
+}

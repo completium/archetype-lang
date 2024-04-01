@@ -1337,7 +1337,9 @@ end = struct
     let before, after = tystack in
     let after = Option.get after in
 
-    let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3 in
+    let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3
+                          | `FExec _ | `FApply _ -> assert false (* TODO: FIXME *)
+    in
     let x, s = List.pop s in
     let args = List.map (fun ty -> vlocal ty) (fst (List.split_at n before)) in
     let uf = unify_type uf (ty_of_rstack1 x) (List.hd after) in

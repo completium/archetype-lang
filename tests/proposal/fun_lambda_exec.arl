@@ -1,0 +1,12 @@
+archetype fun_lambda_exec
+
+variable res : nat =0
+
+function f(x : string) : nat {
+  return length (x)
+}
+
+entry exec () {
+  // const f : lambda<string, nat> = lambda(x -> length(x));
+  res := exec_lambda(f, "mystr")
+}

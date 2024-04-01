@@ -369,7 +369,7 @@ and ter_operator =
   | Tcreate_contract of obj_micheline
 [@@deriving show {with_path = false}]
 
-and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
+and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator | `FExec of ident | `FApply of ident ]
 [@@deriving show {with_path = false}]
 
 and cmp_operator =
@@ -703,13 +703,21 @@ and dpattern =
 and dcode = dinstr list
 [@@deriving show {with_path = false}]
 
+and sig_fun = {
+  id: ident;
+  args: (ident * type_) list;
+  ret: type_;
+  body: dcode;
+}
+
 type dprogram = {
   name: ident;
   storage: type_;
   parameter: type_;
   storage_data: data;
   code: dcode;
-  procs: (string * (string * type_) list * dcode) list;
+  funs: sig_fun list;
+  views: sig_fun list;
 }
 [@@deriving show {with_path = false}]
 
@@ -754,8 +762,8 @@ let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
 let mk_micheline ?(parameters = []) ?(views = []) code storage : micheline =
   { code; storage; parameters; views }
 
-let mk_dprogram ?(procs = []) storage parameter storage_data name code =
-  { name; storage; parameter; storage_data; code; procs }
+let mk_dprogram ?(funs = []) ?(views = []) storage parameter storage_data name code : dprogram =
+  { name; storage; parameter; storage_data; code; funs; views }
 
 (* -------------------------------------------------------------------- *)
 
