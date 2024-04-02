@@ -28,6 +28,8 @@ let get_model_entries (parameter : T.type_) : model_entries =
   res
 
 let build_entries (env : Gen_decompile.env) (model : model) : model =
+  let storage_ids = List.map (fun (x : parameter) -> unloc_mident x.name) model.parameters in
+  let rec gen_arg_id (x : ident) = if List.mem x storage_ids then gen_arg_id (x ^ "_") else x in
   let entries = get_model_entries (Option.get env.type_parameter) in
   let mk_seq a b c =
     let aux (a : mterm) (b : mterm) : mterm =
@@ -94,15 +96,25 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
         in
         let get_annot = Gen_decompile.get_annot_from_type in
         let do_it ids tys =
-          let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
-          let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> annot | _ -> src))) ids tys in
+          let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> gen_arg_id id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
+          let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> gen_arg_id annot | _ -> src))) ids tys in
           let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
           (a, b)
         in
         let args, code =
           match arg_pattern, pty.node with
           | _, T.Tunit -> [], code
-          | DPid id, _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+          | DPid id, _ -> begin
+              match flat_all_pair pty with
+              | [] -> begin
+                  [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+                end
+              | tys -> begin
+                  let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
+                  do_it ids tys
+                end
+            end
+
           | DPlist ids, T.Tpair tys when List.length ids = List.length (flat_pair tys) && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
               let tys = flat_pair tys in
               let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
@@ -278,14 +290,14 @@ let remove_useless_else (model : model) : model =
 let optimize (model, env : model * Gen_decompile.env) =
   let model =
     model
-    |> remove_tupleaccess
-    |> remove_useless_else
     |> build_entries env
     |> add_decls_var env
     |> remove_operations_nil
     |> clean_mterm
     |> apply_syntactic_sugar
-    |> flat_sequence
+    |> remove_tupleaccess
+    |> remove_useless_else
     |> transform_match
+    |> flat_sequence
   in
   model, env

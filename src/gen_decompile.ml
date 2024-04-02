@@ -1664,7 +1664,7 @@ end = struct
             i := !i + 1;
             Printf.sprintf "%s_%d" name !i
           in
-          let str = Option.get_dfl (fresh_id ()) (get_annot_from_type ty) in
+          let str = fresh_id () in
           `VGlobal (ty, str)
         in
         match ty.node with
@@ -2005,11 +2005,11 @@ end = struct
       match storage_list with
       | [(_, {node = T.Tunit})] -> []
       | _ ->
-        List.mapi (fun n (_id, t) ->
-            let id = match get_annot_from_type t with
+        List.mapi (fun n (_id, t) -> let id = Format.asprintf "sto_%d" (n + 1) in
+            (* let id = match get_annot_from_type t with
               | Some v -> v
               | None -> Format.asprintf "sto_%d" (n + 1)
-            in
+            in *)
             M.mk_parameter (M.mk_mident (dumloc id)) (for_type t)
           ) storage_list
     in
