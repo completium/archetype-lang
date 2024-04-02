@@ -1047,6 +1047,9 @@ let mk_litset        ty x = mk_mterm (Mlitset x) (tset ty)
 let mk_litlist       ty x = mk_mterm (Mlitlist x) (tlist ty)
 let mk_litmap     kt vt x = mk_mterm (Mlitmap (MKMap, x)) (tmap kt vt)
 let mk_litbig_map kt vt x = mk_mterm (Mlitmap (MKBigMap, x)) (tbig_map kt vt)
+let mk_lititerable_big_map kt vt x = mk_mterm (Mlitmap (MKIterableBigMap, x)) (titerable_big_map kt vt)
+
+let mk_lambda ity x oty b = mk_mterm (Mlambda (ity, x, oty, b)) (tlambda ity oty)
 
 let mk_pack v     = mk_mterm (Mpack v) tbytes
 let mk_unpack t v = mk_mterm (Munpack (t, v)) t
