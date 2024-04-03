@@ -1,0 +1,16 @@
+archetype my_contract(
+sto_1 : (set<int> * int),
+myParameter2 : int)
+
+entry default (arg : int) {
+  var x80 : int = 0i;
+  var x78 : list<int> = make_list<int> (([]));
+  do_require ((sto_1[1] <= 123i), "WrongCondition: self.data.myParameter1 <= 123");
+  for x74 in update ((sto_1[0]), arg, true) do
+    (x78 := update ((sto_1[0]), arg, true);
+    x80 := sto_1[1] + x74;
+    myParameter2 := myParameter2;
+    sto_1 := ((x78, x80)))
+  done
+}
+

@@ -1,0 +1,53 @@
+archetype my_contract(
+sto_1 : (((list<address> * tez) * address) * tez),
+value : nat)
+
+entry joinGame () {
+  var x118 : tez = 0utz;
+  var x108 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x87 : tez = 0utz;
+  var x85 : list<address> = make_list<address> (([]));
+  x87 := (((sto_1[0])[0])[1]);
+  x108 := ((sto_1[0])[1]);
+  x118 := (sto_1[1]);
+  do_require ((transferred = (sto_1[1])), "WrongCondition: sp.amount == self.data.price");
+  x85 := (((sto_1[0])[0])[0]);
+  value := value;
+  x85 := prepend (x85, caller);
+  sto_1 := (((((((prepend (x85, caller)), x87)), x108)), x118))
+}
+
+entry payoutToWinners (winner : address, winningVoters : list<address>) {
+  var x216 : contract<unit> = self_contract<unit>;
+  var x206 : tez = 0utz;
+  var x233 : nat = 0;
+  var x254 : ((((list<address> * tez) * address) * tez)) = ((((((make_list<address> (([]))), 0utz)), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
+  var x363 : nat = 0;
+  var x398 : nat = 0;
+  var x403 : list<address> = make_list<address> (([]));
+  var x464 : ((address * list<address>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_list<address> (([]))));
+  match get_entrypoint<unit>("default", (x464[0])) with
+  | some x449 -> ()
+  | none -> (fail (Unit))
+  end;
+  match (1 * balance) /% 2 with
+  | some (x430, x431) -> ()
+  | none -> (fail ("split_tokens"))
+  end;
+  for x388 in x403 do
+    (x363 := x398 + 1)
+  done;
+  do_require ((x363 > 0), "WrongCondition: self.data.value > 0");
+  for x284 in x403 do
+    (match get_entrypoint<unit>("default", x284) with
+    | some x279 -> (x216 := x279)
+    | none -> (fail (Unit))
+    end;
+    match (1 * ((x254[0])[0])[1]) /% x233 with
+    | some (x222, x223) -> (x206 := x222)
+    | none -> (fail ("split_tokens"))
+    end;
+    operations := prepend (operations, (make_operation (x206, x216, Unit))))
+  done
+}
+

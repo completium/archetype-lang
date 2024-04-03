@@ -1,0 +1,26 @@
+archetype my_contract(
+nbVotes : int,
+storedValue : nat)
+
+entry divide (arg : nat) {
+  do_require ((5 < arg), "WrongCondition: params.divisor > 5");
+  match storedValue /% arg with
+  | some (x79, x80) -> (storedValue := x79)
+  | none -> (fail (26i))
+  end
+}
+
+entry double () {
+  var x81 : nat = 0;
+  x81 := storedValue;
+  nbVotes := nbVotes;
+  storedValue := 2 * x81
+}
+
+entry replace (arg : nat) {
+  var x86 : int = 0i;
+  x86 := nbVotes;
+  storedValue := arg;
+  nbVotes := 1i + x86
+}
+

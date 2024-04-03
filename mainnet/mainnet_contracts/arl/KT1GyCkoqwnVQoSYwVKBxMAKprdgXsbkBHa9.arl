@@ -1,0 +1,6 @@
+archetype my_contract
+
+entry default () {
+  sto_1 := Unit
+}
+

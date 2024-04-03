@@ -1,0 +1,91 @@
+archetype my_contract(
+onetoken : nat,
+allowance : big_map<(address * address), nat>,
+ledger : big_map<address, nat>,
+metadata : big_map<string, bytes>)
+
+entry getAllowance (x156 : (address * address), x157 : contract<nat>) {
+  var x87 : nat = 0;
+  var x157 : contract<nat> = self_contract<nat>;
+  var x156 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  match (allowance[(((x156[0]), (x156[1])))]) with
+  | some x107 -> (x87 := x107)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x157, x87)))
+}
+
+entry getBalance (owner : address, x221 : contract<nat>) {
+  var x171 : nat = 0;
+  var x221 : contract<nat> = self_contract<nat>;
+  match (ledger[owner]) with
+  | some x190 -> (x171 := x190)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x221, x171)))
+}
+
+entry getTotalSupply (x251 : unit, x252 : contract<nat>) {
+  var x252 : contract<nat> = self_contract<nat>;
+  operations := prepend (operations, (make_operation (0utz, x252, 1000000000000000000)))
+}
+
+entry %transfer (%from : address, %to : address, value : nat) {
+  var x285 : nat = 0;
+  var x275 : nat = 0;
+  var x372 : nat = 0;
+  var x418 : nat = 0;
+  var x544 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x510 : nat = 0;
+  var x583 : nat = 0;
+  match (ledger[%from]) with
+  | some x599 -> (x583 := x599)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  if not (x583 >= value) then ((fail ("NotEnoughBalance")));
+  x544 := %from;
+  if caller <> %from
+  then (match (allowance[((%from, caller))]) with
+  | some x527 -> (x510 := x527)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  if x510 < value then ((fail ((("NotEnoughAllowance", ((value, x510)))))));
+  x544 := %from);
+  match (ledger[x544]) with
+  | some x438 -> (x418 := x438)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  if x418 - value >= 0i then (x285 := value;
+  x372 := abs ((x418 - value))) else ((fail ("AssignNat")));
+  if contains ((update (ledger, x544, (some(x372)))), %to)
+  then (match ((update (ledger, x544, (some(x372))))[%to]) with
+  | some x293 -> (x275 := x293)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  ledger := update ((update (ledger, x544, (some(x372)))), %to, (some((x275 + x285)))))
+  else ((if contains ((update (ledger, x544, (some(x372)))), %to)
+         then ((fail ("KeyAlreadyExists")))
+         else (ledger := update ((update (ledger, x544, (some(x372)))), %to, (some((0 + x285)))))))
+}
+
+entry approve (spender : address, value : nat) {
+  var x693 : nat = 0;
+  var x729 : map<(address * address), nat> = make_map<(address * address), nat> (([]));
+  var x770 : nat = 0;
+  match (ledger[caller]) with
+  | some x785 -> (x770 := x785)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  if not (x770 >= value) then ((fail ("NotEnoughBalance")));
+  x729 := allowance;
+  if contains (allowance, ((caller, spender)))
+  then (x729 := x729;
+  match (x729[((caller, spender))]) with
+  | some x716 -> (x693 := x716)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  if greedy_and ((x693 > 0), (value > 0))
+  then ((fail ((("UnsafeAllowanceChange", x693))))));
+  allowance := update (x729, ((caller, spender)), (some(value)))
+}
+

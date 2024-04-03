@@ -1,0 +1,119 @@
+archetype my_contract(
+accounts : big_map<string, tez>,
+admin : address)
+
+entry add_account (account_name : string, amount : tez) {
+  var x93 : tez = 0utz;
+  var x96 : string = "";
+  var x113 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x121 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  x113 := accounts;
+  x121 := admin;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  accounts := accounts;
+  admin := x121;
+  if contains (x113, account_name) then (())
+  else (accounts := update (accounts, x96, (some(x93))))
+}
+
+entry remove_account (arg : string) {
+  var x169 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x187 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  match (accounts[arg]) with
+  | some x197 -> (x187 := x197)
+  | none -> (fail ("Get-item:36"))
+  end;
+  do_require ((x187 = 0utz), "WrongCondition: self.data.accounts[params.account_name] == sp.tez(0)");
+  if contains (x169, arg)
+  then (accounts := update (accounts, arg, (none<tez>)))
+}
+
+entry tip (%_from : string, %_to : string, amount : tez) {
+  var x508 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x255 : tez = 0utz;
+  var x240 : string = "";
+  var x362 : string = "";
+  var x358 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x357 : string = "";
+  var x364 : tez = 0utz;
+  var x499 : tez = 0utz;
+  var x488 : tez = 0utz;
+  var x486 : string = "";
+  var x479 : string = "";
+  var x570 : tez = 0utz;
+  var x417 : tez = 0utz;
+  var x406 : tez = 0utz;
+  var x404 : string = "";
+  var x397 : string = "";
+  var x568 : string = "";
+  var x578 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x564 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x563 : string = "";
+  var x593 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
+  | some x604 -> (x593 := x604)
+  | none -> (fail ("Get-item:50"))
+  end;
+  do_require ((x593 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from] - params.amount) >= sp.tez(0)");
+  if contains (x564, x563)
+  then (x508 := x578;
+  match (x564[x563]) with
+  | some x429 -> (x417 := x429)
+  | none -> (fail ("Get-item:50"))
+  end;
+  x362 := x397;
+  x357 := x404;
+  x364 := x406;
+  x358 := update (x564, x397, (some((x417 - x570)))))
+  else (x508 := x578;
+  match (x564[x563]) with
+  | some x511 -> (x499 := x511)
+  | none -> (fail ("Get-item:50"))
+  end;
+  x362 := x479;
+  x357 := x486;
+  x364 := x488;
+  x358 := update (x564, x479, (some((x499 - x570)))));
+  do_require ((x364 >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  if contains (x358, x357)
+  then (match (x358[x357]) with
+  | some x267 -> (x255 := x267)
+  | none -> (fail ("Get-item:51"))
+  end;
+  accounts := update (x358, x240, (some((x255 + x364)))))
+  else (admin := x508;
+  accounts := update (x358, x357, (some(x364))))
+}
+
+entry %transfer (%_from : string, amount : tez) {
+  var x755 : tez = 0utz;
+  var x743 : string = "";
+  var x816 : tez = 0utz;
+  var x690 : tez = 0utz;
+  var x678 : string = "";
+  var x812 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x811 : string = "";
+  var x837 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
+  | some x848 -> (x837 := x848)
+  | none -> (fail ("Get-item:44"))
+  end;
+  do_require ((x837 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from] - params.amount) >= sp.tez(0)");
+  if contains (x812, x811)
+  then (match (x812[x811]) with
+  | some x702 -> (x690 := x702)
+  | none -> (fail ("Get-item:44"))
+  end;
+  accounts := update (x812, x678, (some((x690 - x816)))))
+  else (match (x812[x811]) with
+  | some x767 -> (x755 := x767)
+  | none -> (fail ("Get-item:44"))
+  end;
+  accounts := update (x812, x743, (some((x755 - x816)))))
+}
+

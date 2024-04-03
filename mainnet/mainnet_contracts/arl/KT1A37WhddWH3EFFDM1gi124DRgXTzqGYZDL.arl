@@ -1,0 +1,22 @@
+archetype my_contract(
+owner : address,
+price : tez)
+
+entry joinGame () {
+  var x84 : tez = 0utz;
+  x84 := price;
+  owner := owner;
+  price := x84;
+  do_require ((transferred = x84), "WrongCondition: sp.amount == self.data.price")
+}
+
+entry payoutToWinner (arg : address) {
+  var x102 : contract<unit> = self_contract<unit>;
+  do_require ((owner = caller), "WrongCondition: self.data.owner == sp.sender");
+  match get_entrypoint<unit>("default", arg) with
+  | some x112 -> (x102 := x112)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (balance, x102, Unit)))
+}
+

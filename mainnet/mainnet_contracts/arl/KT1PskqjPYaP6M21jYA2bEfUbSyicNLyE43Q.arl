@@ -1,0 +1,26 @@
+archetype my_contract(
+sto_1 : (list<address> * address),
+price : tez)
+
+entry addDeposit () {
+  var x79 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x77 : list<address> = make_list<address> (([]));
+  x79 := (sto_1[1]);
+  do_require ((transferred = price), "WrongCondition: sp.amount == self.data.price");
+  x77 := (sto_1[0]);
+  price := price;
+  x77 := prepend (x77, caller);
+  sto_1 := (((prepend (x77, caller)), x79))
+}
+
+entry withdrawFunds () {
+  var x142 : contract<unit> = self_contract<unit>;
+  var x166 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((x166 = caller), "WrongCondition: self.data.owner == sp.sender");
+  match get_entrypoint<unit>("default", caller) with
+  | some x152 -> (x142 := x152)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (balance, x142, Unit)))
+}
+

@@ -228,6 +228,7 @@ compile() {
   ${BIN} -d $1 > /dev/null 2> /dev/null
   if [ $? -eq 0 ]; then
     echo -ne "\033[32m OK \033[0m"
+    ${BIN} -d $1 > `dirname $1`/../arl/`basename $1 | cut -d'.' -f1`.arl 2> /dev/null
     ${BIN} -d $1 | ${BIN} > /dev/null 2> /dev/null
     if [ $? -eq 0 ]; then
       echo -ne "\033[32m OK \033[0m"

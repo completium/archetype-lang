@@ -1,0 +1,12 @@
+archetype my_contract(
+myParameter1 : int,
+myParameter2 : int)
+
+entry default (arg : int) {
+  var x71 : int = 0i;
+  x71 := myParameter1;
+  do_require ((myParameter1 <= 123i), "WrongCondition: self.data.myParameter1 <= 123");
+  myParameter2 := myParameter2;
+  myParameter1 := arg + x71
+}
+

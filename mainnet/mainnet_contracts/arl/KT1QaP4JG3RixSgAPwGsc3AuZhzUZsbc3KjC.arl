@@ -1,0 +1,7 @@
+archetype my_contract(sto_1 : string)
+
+entry default (arg : key_hash) {
+  operations := prepend (operations, (make_operation (transferred, (key_hash_to_contract (arg)), Unit)));
+  sto_1 := concat ("a", sto_1)
+}
+

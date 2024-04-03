@@ -1,0 +1,14 @@
+archetype my_contract(
+keyToCID : map<string, string>,
+owner : address)
+
+entry removeEntry (arg : string) {
+  (if owner = caller
+   then (keyToCID := update (keyToCID, arg, (none<string>))))
+}
+
+entry setCID (key : string, newCID : string) {
+  (if owner = caller
+   then (keyToCID := update (keyToCID, key, (some(newCID)))))
+}
+

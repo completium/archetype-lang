@@ -1,0 +1,8 @@
+archetype my_contract(sto_1 : address)
+
+entry default (arg : key_hash) {
+  if caller <> sto_1 then ((fail ("Sender must be admin")));
+  operations := prepend (operations, (make_operation (100000utz, (key_hash_to_contract (arg)), Unit)));
+  operations := prepend (operations, (make_operation (100000utz, (key_hash_to_contract (arg)), Unit)))
+}
+

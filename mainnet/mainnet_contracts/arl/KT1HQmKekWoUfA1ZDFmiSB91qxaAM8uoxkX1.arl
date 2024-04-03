@@ -1,0 +1,135 @@
+archetype my_contract(
+admin : address,
+admin_candidate : address,
+evse : map<string, (address * (address * address))>,
+evsemanager : map<address, (string * (nat * set<string>))>,
+owner : map<address, set<string>>,
+whitelist : set<address>,
+metadata : big_map<string, bytes>)
+
+entry add_whitelist (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  if contains (whitelist, arg) then ((fail ("KeyAlreadyExists")))
+  else (whitelist := update (whitelist, arg, true))
+}
+
+entry rm_whitelist (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  whitelist := update (whitelist, arg, false)
+}
+
+entry addupdate_evse (id : string, iaddr : address, imng : address, iurl : string, iport : nat, iowner : address) {
+  var x209 : set<string> = make_set<string> (([]));
+  var x509 : map<string, (address * (address * address))> = make_map<string, (address * (address * address))> (([]));
+  var x285 : string = "";
+  var x947 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x926 : string = "";
+  var x950 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x928 : map<string, (address * (address * address))> = make_map<string, (address * (address * address))> (([]));
+  x947 := iowner;
+  x950 := imng;
+  if not contains (whitelist, caller) then ((fail ("InvalidCondition: r1")));
+  x928 := evse;
+  x926 := id;
+  if contains (evse, id)
+  then (x928 := update (x928, id, (none<(address * (address * address))>));
+  match (evsemanager[imng]) with
+  | some (x896, x897, x898) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evsemanager[imng]) with
+  | some (x825, x826, x827) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  x950 := imng;
+  match (owner[iowner]) with
+  | some x744 -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  x926 := id;
+  x947 := iowner);
+  if contains (evsemanager, x950)
+  then (x509 := update (x928, x926, (some(((iaddr, ((x950, x947)))))));
+  if contains ((update (x928, x926, (some(((iaddr, ((x950, x947)))))))), x926)
+  then (match (evsemanager[x950]) with
+  | some x512 -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evsemanager[x950]) with
+  | some (x462, x463, x464) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  x285 := x926) else ((fail ("KeyNotFound"))))
+  else ((if contains (evsemanager, x950) then ((fail ("KeyAlreadyExists")))
+         else (x509 := update (x928, x926, (some(((iaddr, ((x950, x947)))))));
+         if contains ((update (x928, x926, (some(((iaddr, ((x950, x947)))))))), x926)
+         then (x285 := x926) else ((fail ("KeyNotFound"))))));
+  if contains (owner, x947)
+  then ((if contains (x509, x285)
+         then (match (owner[x947]) with
+         | some x232 -> (x209 := x232)
+         | none -> (fail ("GetNoneValue"))
+         end;
+         owner := update (owner, x947, (some((update (x209, x285, true))))))
+         else ((fail ("KeyNotFound")))))
+  else ((if contains (owner, x947) then ((fail ("KeyAlreadyExists")))
+         else (evse := x509;
+         if contains (x509, x285)
+         then (owner := update (owner, x947, (some((update (([]), x285, true))))))
+         else ((fail ("KeyNotFound"))))))
+}
+
+entry delete_evse (arg : string) {
+  var x1114 : set<string> = make_set<string> (([]));
+  var x1066 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1145 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1296 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1392 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  if not (contains (whitelist, caller) or caller = admin)
+  then ((fail ("InvalidCondition: r2")));
+  match (evse[arg]) with
+  | some (x1413, x1414, x1415) -> (x1392 := x1414)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evsemanager[x1392]) with
+  | some (x1376, x1377, x1378) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evse[arg]) with
+  | some (x1319, x1320, x1321) -> (x1296 := x1320)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evsemanager[x1296]) with
+  | some (x1276, x1277, x1278) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evse[arg]) with
+  | some (x1215, x1216, x1217) -> ()
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evse[arg]) with
+  | some (x1166, x1167, x1168) -> (x1145 := x1168)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (owner[x1145]) with
+  | some x1131 -> (x1114 := x1131)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  match (evse[arg]) with
+  | some (x1089, x1090, x1091) -> (x1066 := x1091)
+  | none -> (fail ("GetNoneValue"))
+  end;
+  owner := update (owner, x1066, (some((update (x1114, arg, false)))));
+  evse := update (evse, arg, (none<(address * (address * address))>))
+}
+
+entry transfer_admin (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  admin_candidate := arg
+}
+
+entry accept_admin () {
+  if not (caller = admin_candidate) then ((fail ("InvalidCaller")));
+  admin_candidate := admin
+}
+

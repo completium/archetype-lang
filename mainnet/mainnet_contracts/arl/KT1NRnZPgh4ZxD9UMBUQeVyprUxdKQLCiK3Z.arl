@@ -1,0 +1,34 @@
+archetype my_contract(
+docs : big_map<string, string>,
+manager : address)
+
+entry addDoc (checksum : string, docId : string) {
+  var x87 : string = "";
+  var x90 : string = "";
+  var x79 : big_map<string, string> = make_map<string, string> (([]));
+  var x96 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = manager), "Unauthorised sender");
+  if contains (docs, docId) then ((fail ("Document already exist")));
+  manager := x96;
+  docs := update (x79, x90, (some(x87)))
+}
+
+entry changeManager (arg : address) {
+  var x128 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x132 : big_map<string, string> = make_map<string, string> (([]));
+  x132 := docs;
+  x128 := manager;
+  manager := arg;
+  docs := x132;
+  do_require ((caller = x128), "Unauthorised sender")
+}
+
+entry updateDoc (checksum : string, docId : string) {
+  var x174 : big_map<string, string> = make_map<string, string> (([]));
+  do_require ((caller = manager), "Unauthorised sender");
+  x174 := docs;
+  do_require ((contains (docs, docId)), "Document does not exist");
+  manager := manager;
+  docs := update (x174, docId, (some(checksum)))
+}
+

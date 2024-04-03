@@ -1,0 +1,39 @@
+archetype my_contract(
+sto_1 : ((tez * address) * tez),
+value : nat)
+
+entry joinGame () {
+  var x83 : tez = 0utz;
+  var x89 : nat = 0;
+  x83 := (sto_1[1]);
+  x89 := value;
+  sto_1 := (((sto_1[0]), (sto_1[1])));
+  value := x89;
+  do_require ((transferred = x83), "WrongCondition: sp.amount == self.data.price")
+}
+
+entry payoutToWinners (arg : list<address>) {
+  var x118 : contract<unit> = self_contract<unit>;
+  var x108 : tez = 0utz;
+  var x135 : nat = 0;
+  var x153 : (((tez * address) * tez)) = (((0utz, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
+  var x235 : nat = 0;
+  var x280 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((x280 = caller), "WrongCondition: self.data.owner == sp.sender");
+  for x256 in arg do
+    (x235 := value + 1)
+  done;
+  do_require ((x235 > 0), "WrongCondition: self.data.value > 0");
+  for x179 in arg do
+    (match get_entrypoint<unit>("default", x179) with
+    | some x174 -> (x118 := x174)
+    | none -> (fail (Unit))
+    end;
+    match (1 * (x153[0])[0]) /% x135 with
+    | some (x124, x125) -> (x108 := x124)
+    | none -> (fail ("split_tokens"))
+    end;
+    operations := prepend (operations, (make_operation (x108, x118, Unit))))
+  done
+}
+

@@ -1,0 +1,7 @@
+archetype my_contract(sto_1 : map<address, nat>)
+
+entry default (arg : nat) {
+  do_require ((2 >= arg), Unit);
+  sto_1 := update (sto_1, caller, (some(arg)))
+}
+

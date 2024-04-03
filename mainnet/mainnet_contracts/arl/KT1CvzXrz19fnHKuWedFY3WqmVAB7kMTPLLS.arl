@@ -1,0 +1,10 @@
+archetype my_contract(
+sto_2 : big_map<address, nat>,
+sto_1 : unit)
+
+entry default (arg : nat) {
+  do_require ((2 >= arg), Unit);
+  sto_2 := update (sto_2, caller, (some(arg)));
+  sto_1 := Unit
+}
+
