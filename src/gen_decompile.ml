@@ -12,10 +12,11 @@ type env = {
   name: string;
   type_storage: T.type_ option;
   type_parameter: T.type_ option;
-  storage_list : (Ident.ident * T.type_) list;
+  storage_list: (Ident.ident * T.type_) list;
+  parameter_list: (Ident.ident * T.type_) list;
 }
 
-let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None; storage_list = [] }
+let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None; storage_list = []; parameter_list = [] }
 
 let remove_prefix_annot str =
   if String.starts ~pattern:"%" str
@@ -1657,7 +1658,7 @@ end = struct
     let pty = michelson.parameter in
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
 
-    let create_args (name : string) (ty : type_) =
+    let create_args with_annot (name : string) (ty : type_) =
       let i = ref 0 in
       let rec aux (ty : T.type_) =
         let mkvar ty : rstack1 =
@@ -1665,7 +1666,7 @@ end = struct
             i := !i + 1;
             Printf.sprintf "%s_%d" name !i
           in
-          let str = fresh_id () in
+          let str = match with_annot, ty.annotation with | true, Some a -> remove_prefix_annot a | _ -> fresh_id () in
           `VGlobal (ty, str)
         in
         match ty.node with
@@ -1677,8 +1678,8 @@ end = struct
 
     in
 
-    let pst = create_args "arg" pty in
-    let ast = create_args "sto" aty in
+    let pst = create_args false "arg" pty in
+    let ast = create_args true "sto" aty in
 
     let uf, { stack = ost; code = dc; } =
       decompile_s
@@ -1705,7 +1706,7 @@ end = struct
       | `Paired (p1, p2) -> f p1 @ f p2
       | _ -> []
       in
-    let env = {env with storage_list = f ast } in
+    let env = {env with storage_list = f ast; parameter_list = f pst  } in
     env, code
 end
 
