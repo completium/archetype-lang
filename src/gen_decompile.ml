@@ -1705,7 +1705,7 @@ end = struct
       | `VGlobal (ty, id) -> [(id, ty)]
       | `Paired (p1, p2) -> f p1 @ f p2
       | _ -> []
-      in
+    in
     let env = {env with storage_list = f ast; parameter_list = f pst  } in
     env, code
 end
@@ -1849,7 +1849,7 @@ end = struct
           | `Zop Zsender,                    [] -> mcaller
           | `Zop Zaddress,                   [] -> assert false
           | `Zop Zchain_id,                  [] -> mselfchainid
-          | `Zop Zself a,                    [] -> let ty = ft e.type_ in mk_mterm (Mselfcontract (ty, Option.map (fun x -> dumloc (remove_prefix_annot x)) a)) (tcontract ty)
+          | `Zop Zself a,                    [] -> let ty = ft e.type_ in let cty = match M.get_ntype ty with | M.Tcontract ty -> ty | _ -> assert false in mk_mterm (Mselfcontract (cty, Option.map (fun x -> dumloc (remove_prefix_annot x)) a)) ty
           | `Zop Zself_address,              [] -> mselfaddress
           | `Zop Znone t,                    [] -> mk_none (ft t)
           | `Zop Zunit,                      [] -> unit
@@ -1903,7 +1903,14 @@ end = struct
           | `Bop Bapply,               [ _a; _b ] -> assert false
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
-          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapupdate (mk_map, tunknown, tunknown, f c, f a, f b)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> begin
+              let mty = ft c.type_ in
+              match c.type_ with
+              | {node = T.Tset ty} -> mk_mterm (Msetupdate (ft ty, f c, f a, f b)) mty
+              | {node = T.Tmap (kt, vt)}
+              | {node = T.Tbig_map (kt, vt)} -> mk_mterm (Mmapupdate (mk_map, ft kt, ft vt, f c, f a, f b)) mty
+              | _ -> mk_mterm (Mmapupdate (mk_map, tunknown, tunknown, f c, f a, f b)) tunknown
+            end
           | `Top Ttransfer_tokens,  [ a; b; c ] -> mk_mterm (Mmakeoperation (f b, f c, f a)) toperation
           | _ -> assert false
         end

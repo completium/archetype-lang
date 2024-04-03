@@ -16,7 +16,7 @@ entry hodl () {
   | some x99 -> (x87 := x99)
   | none -> (fail ("NO_ORACLE_FOUND"))
   end;
-  operations := prepend (operations, (make_operation (0utz, x87, (("XTZ-USD", self_contract.hodl_callback<contract<nat>>))))))
+  operations := prepend (operations, (make_operation (0utz, x87, (("XTZ-USD", self_contract.hodl_callback<nat>))))))
 }
 
 entry hodl_callback (arg : nat) {
@@ -52,7 +52,7 @@ entry withdraw () {
   | some x352 -> (x340 := x352)
   | none -> (fail ("NO_ORACLE_FOUND"))
   end;
-  operations := prepend (operations, (make_operation (0utz, x340, (("XTZ-USD", self_contract.withdraw_callback<contract<nat>>)))))
+  operations := prepend (operations, (make_operation (0utz, x340, (("XTZ-USD", self_contract.withdraw_callback<nat>)))))
 }
 
 entry withdraw_callback (arg : nat) {

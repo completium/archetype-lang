@@ -10,12 +10,12 @@ metadata : big_map<string, bytes>)
 entry add_whitelist (arg : address) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
   if contains (whitelist, arg) then ((fail ("KeyAlreadyExists")))
-  else (whitelist := update (whitelist, arg, true))
+  else (whitelist := update (whitelist, true, arg))
 }
 
 entry rm_whitelist (arg : address) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
-  whitelist := update (whitelist, arg, false)
+  whitelist := update (whitelist, false, arg)
 }
 
 entry addupdate_evse (id : string, iaddr : address, imng : address, iurl : string, iport : nat, iowner : address) {
@@ -70,12 +70,12 @@ entry addupdate_evse (id : string, iaddr : address, imng : address, iurl : strin
          | some x232 -> (x209 := x232)
          | none -> (fail ("GetNoneValue"))
          end;
-         owner := update (owner, x947, (some((update (x209, x285, true))))))
+         owner := update (owner, x947, (some((update (x209, true, x285))))))
          else ((fail ("KeyNotFound")))))
   else ((if contains (owner, x947) then ((fail ("KeyAlreadyExists")))
          else (evse := x509;
          if contains (x509, x285)
-         then (owner := update (owner, x947, (some((update (([]), x285, true))))))
+         then (owner := update (owner, x947, (some((update (([]), true, x285))))))
          else ((fail ("KeyNotFound"))))))
 }
 
@@ -119,7 +119,7 @@ entry delete_evse (arg : string) {
   | some (x1089, x1090, x1091) -> (x1066 := x1091)
   | none -> (fail ("GetNoneValue"))
   end;
-  owner := update (owner, x1066, (some((update (x1114, arg, false)))));
+  owner := update (owner, x1066, (some((update (x1114, false, arg)))));
   evse := update (evse, arg, (none<(address * (address * address))>))
 }
 

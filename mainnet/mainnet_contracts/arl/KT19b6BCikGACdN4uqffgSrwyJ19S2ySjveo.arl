@@ -10,12 +10,12 @@ service : map<nat, nat>)
 
 entry addplug (arg : nat) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
-  plugs := update (plugs, arg, true)
+  plugs := update (plugs, true, arg)
 }
 
 entry rmplug (arg : nat) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
-  plugs := update (plugs, arg, false)
+  plugs := update (plugs, false, arg)
 }
 
 entry addservice (t : nat, p : nat) {
@@ -37,12 +37,12 @@ entry setcurrency (arg : nat) {
 entry adduser (arg : address) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
   if contains (users, arg) then ((fail ("KeyAlreadyExists")))
-  else (users := update (users, arg, true))
+  else (users := update (users, true, arg))
 }
 
 entry rmuser (arg : address) {
   if not (caller = admin) then ((fail ("InvalidCaller")));
-  users := update (users, arg, false)
+  users := update (users, false, arg)
 }
 
 entry transfer_admin (arg : address) {

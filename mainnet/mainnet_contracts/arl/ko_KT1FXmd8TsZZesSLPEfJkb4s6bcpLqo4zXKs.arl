@@ -45,7 +45,7 @@ entry accept (arg : string) {
   x486 := x508)
   | none -> (fail (48i))
   end;
-  match ((update (x501, arg, (some(((((x476, (((update (x463, caller, true)), x468)))), x486))))))[arg]) with
+  match ((update (x501, arg, (some(((((x476, (((update (x463, true, caller)), x468)))), x486))))))[arg]) with
   | some (x406, x407, x408, x409) -> (x392 := x407)
   | none -> (fail (49i))
   end;
@@ -107,7 +107,7 @@ entry createProposal (x1074 : (int * address), f : address, proposalId : string,
   x763 := x784)
   | none -> (fail (39i))
   end;
-  proposals := update ((update (x825, x900, (some((((((x904[0]), ((([]), (x904[1]))))), ((((x902, ([]))), ((false, x898)))))))))), x900, (some(((((x753, (((update (x740, caller, true)), x745)))), x763)))));
+  proposals := update ((update (x825, x900, (some((((((x904[0]), ((([]), (x904[1]))))), ((((x902, ([]))), ((false, x898)))))))))), x900, (some(((((x753, (((update (x740, true, caller)), x745)))), x763)))));
   restriction := (x936[0]);
   signers := (x936[1]);
   sto_1 := ((x689, (1i + x685)))
@@ -146,7 +146,7 @@ entry reject (arg : string) {
   x1381 := x1413)
   | none -> (fail (59i))
   end;
-  match ((update (x1406, arg, (some(((x1391, ((((x1373, (update (x1368, caller, true)))), x1381))))))))[arg]) with
+  match ((update (x1406, arg, (some(((x1391, ((((x1373, (update (x1368, true, caller)))), x1381))))))))[arg]) with
   | some (x1327, x1328, x1329, x1330) -> (x1313 := x1328)
   | none -> (fail (60i))
   end;
@@ -158,7 +158,7 @@ entry reject (arg : string) {
   x1248 := x1270)
   | none -> (fail (61i))
   end;
-  x1263 := update (x1263, arg, (some(((((x1238, (((update (x1225, caller, false)), x1230)))), x1248))))));
+  x1263 := update (x1263, arg, (some(((((x1238, (((update (x1225, false, caller)), x1230)))), x1248))))));
   match (x1263[arg]) with
   | some (x1167, x1168, x1169, x1170) -> (x1149 := x1167;
   x1139 := x1168;
