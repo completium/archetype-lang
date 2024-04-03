@@ -28,9 +28,34 @@ let get_model_entries (parameter : T.type_) : model_entries =
   (* Format.eprintf "%a@\n" pp_model_entries res; *)
   res
 
+let types = [
+  "unit";
+  "bool";
+  "int";
+  "rational";
+  "date";
+  "duration";
+  "timestamp";
+  "string";
+  "address";
+  "tez";
+  "signature";
+  "key";
+  "key_hash";
+  "bytes";
+  "nat";
+  "chain_id";
+  "bls12_381_fr";
+  "bls12_381_g1";
+  "bls12_381_g2";
+  "never";
+  "chest";
+  "chest_key";
+]
+
 let build_entries (env : Gen_decompile.env) (model : model) : model =
   let storage_ids = List.map (fun (x : parameter) -> unloc_mident x.name) model.parameters in
-  let rec gen_arg_id (x : ident) = if List.mem x storage_ids then gen_arg_id (x ^ "_") else x in
+  let rec gen_arg_id (x : ident) = if List.mem x (storage_ids @ types) then gen_arg_id (x ^ "_") else x in
   let entries = get_model_entries (Option.get env.type_parameter) in
   let mk_seq a b c =
     let aux (a : mterm) (b : mterm) : mterm =

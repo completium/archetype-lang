@@ -54,7 +54,7 @@ entry update_oracle (arg : address) {
   sto_1 := ((arg, x321))
 }
 
-entry withdraw (address : address, amount : tez) {
+entry withdraw (address_ : address, amount : tez) {
   var x346 : contract<unit> = self_contract<unit>;
   var x345 : tez = 0utz;
   var x425 : ((address * tez)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0utz);

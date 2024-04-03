@@ -19,7 +19,7 @@ type env = {
 let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None; storage_list = []; parameter_list = [] }
 
 let remove_prefix_annot str =
-  if String.starts ~pattern:"%" str
+  if String.starts ~pattern:"%" str || String.starts ~pattern:":" str
   then (String.sub str 1 ((String.length str) - 1))
   else str
 
@@ -2481,7 +2481,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Msetadd (_t, c, a)                  -> f_app "add"      [f c; f a]
     | Msetremove (_t, c, a)               -> f_app "remove"   [f c; f a]
-    | Msetupdate (_t, c, b, v)            -> f_app "update"   [f c; f b; f v]
+    | Msetupdate (_t, c, v, b)            -> f_app "update"   [f c; f b; f v]
     | Msetcontains (_t, c, a)             -> f_app "contains" [f c; f a]
     | Msetlength (_t, c)                  -> f_app "length"   [f c]
     | Msetfold (_t, _ix, _ia, _c, _a, _b) -> assert false
