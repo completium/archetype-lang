@@ -2389,7 +2389,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Massets l       -> A.earray (List.map f l)
     | Mlitset l       -> let g : A.expr -> A.expr = match as_set mt.type_ with | Some ty -> (fun x -> f_app "make_set" ~ts:[ft ty] [x]) | _ -> (fun x -> x) in g (A.earray (List.map f l))
     | Mlitlist l      -> let g : A.expr -> A.expr = match as_list mt.type_ with | Some ty -> (fun x -> f_app "make_list" ~ts:[ft ty] [x]) | _ -> (fun x -> x) in g (A.earray (List.map f l))
-    | Mlitmap (_b, l) -> let g : A.expr -> A.expr = match as_map mt.type_ with | Some (kt, vt) -> (fun x -> f_app "make_map" ~ts:[ft kt; ft vt] [x]) | _ -> (fun x -> x) in g (A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l))
+    | Mlitmap (b, l)  -> let g : A.expr -> A.expr = match as_map mt.type_ with | Some (kt, vt) -> (fun x -> f_app (match b with | MKMap -> "make_map" | MKBigMap -> "make_big_map" | MKIterableBigMap -> "make_iterable_big_map") ~ts:[ft kt; ft vt] [x]) | _ -> (fun x -> x) in g (A.earray (List.map (fun (x, y) -> A.etuple [f x; f y]) l))
     | Mlitrecord l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlitevent  l    -> A.erecord (List.map (fun (id, x) -> (Some (A.ValueAssign, dumloc id), f x)) l)
     | Mlambda (rt, id, at, e) -> A.elambda (Some (ft at)) (snd id) (Some (ft rt)) (f e)

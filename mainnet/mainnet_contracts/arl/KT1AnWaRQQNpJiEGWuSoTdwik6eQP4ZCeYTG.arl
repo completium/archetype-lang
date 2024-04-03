@@ -1,6 +1,6 @@
 archetype my_contract
 
 entry default (arg : key_hash) {
-  sto_1 := Unit
+  ()
 }
 

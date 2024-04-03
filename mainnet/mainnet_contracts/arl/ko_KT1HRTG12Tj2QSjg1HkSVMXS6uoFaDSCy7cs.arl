@@ -50,7 +50,7 @@ entry update (arg : big_map<string, (date * (date * (nat * (nat * (nat * (nat * 
   var x826 : map<int, nat> = make_map<int, nat> (([]));
   var x860 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
   var x912 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
-  var x965 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x965 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
   var x1038 : int = 0i;
   var x1023 : int = 0i;
   var x1054 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
@@ -78,7 +78,7 @@ entry update (arg : big_map<string, (date * (date * (nat * (nat * (nat * (nat * 
   var x1569 : map<int, nat> = make_map<int, nat> (([]));
   var x1603 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
   var x1655 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
-  var x1708 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1708 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
   var x1781 : int = 0i;
   var x1766 : int = 0i;
   var x1797 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
@@ -126,12 +126,12 @@ entry update (arg : big_map<string, (date * (date * (nat * (nat * (nat * (nat * 
   var x2895 : int = 0i;
   var x2899 : int = 0i;
   var x2929 : ((nat * date)) = (0, 1970-01-01T00:00:00);
-  var x2946 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
-  var x3102 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x2946 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x3102 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
   var x3165 : date = 1970-01-01T00:00:00;
   var x3176 : date = 1970-01-01T00:00:00;
   var x3190 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
-  var x3257 : ((list<string> * big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))>)) = ((make_list<string> (([]))), (make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]))));
+  var x3257 : ((list<string> * big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))>)) = ((make_list<string> (([]))), (make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]))));
   var x3251 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((caller = x3251), Unit);
   for x3228 in (x3257[0]) do

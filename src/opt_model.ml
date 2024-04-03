@@ -269,6 +269,7 @@ let remove_operations_nil (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Massign(ValueAssign, _, Avar (_, {pldesc = "operations"}), { node = (Mlitlist []) }) -> seq []
+    | Massign(ValueAssign, _, _, { node = Munit }) -> seq []
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

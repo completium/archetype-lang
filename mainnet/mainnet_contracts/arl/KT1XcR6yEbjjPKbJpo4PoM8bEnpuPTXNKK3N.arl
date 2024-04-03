@@ -5,7 +5,7 @@ admin : address)
 entry add_account (account_name : string, amount : tez) {
   var x93 : tez = 0utz;
   var x96 : string = "";
-  var x113 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x113 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x121 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   x113 := accounts;
   x121 := admin;
@@ -17,7 +17,7 @@ entry add_account (account_name : string, amount : tez) {
 }
 
 entry remove_account (arg : string) {
-  var x169 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x169 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x187 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
   match (accounts[arg]) with
@@ -34,7 +34,7 @@ entry tip (%_from : string, %_to : string, amount : tez) {
   var x255 : tez = 0utz;
   var x240 : string = "";
   var x362 : string = "";
-  var x358 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x358 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x357 : string = "";
   var x364 : tez = 0utz;
   var x499 : tez = 0utz;
@@ -48,7 +48,7 @@ entry tip (%_from : string, %_to : string, amount : tez) {
   var x397 : string = "";
   var x568 : string = "";
   var x578 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x564 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x564 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x563 : string = "";
   var x593 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
@@ -94,7 +94,7 @@ entry %transfer (%_from : string, amount : tez) {
   var x816 : tez = 0utz;
   var x690 : tez = 0utz;
   var x678 : string = "";
-  var x812 : big_map<string, tez> = make_map<string, tez> (([]));
+  var x812 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x811 : string = "";
   var x837 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");

@@ -6,7 +6,7 @@ entry hodl () {
   var x87 : contract<(string * contract<nat>)> = self_contract<(string * contract<nat>)>;
   var x100 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x117 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x115 : big_map<address, (tez * nat)> = make_map<address, (tez * nat)> (([]));
+  var x115 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
   if transferred = 0utz then ((fail ("EMPTY_AMOUNT")))
   else (match (x115[source]) with
   | some x160 -> (fail ("ACCOUNT_EXISTS"))
@@ -22,7 +22,7 @@ entry hodl () {
 entry hodl_callback (arg : nat) {
   var x216 : unit = Unit;
   var x214 : tez = 0utz;
-  var x194 : big_map<address, (tez * nat)> = make_map<address, (tez * nat)> (([]));
+  var x194 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
   var x190 : unit = Unit;
   var x196 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   match ((sto_1[1])[source]) with
@@ -35,7 +35,7 @@ entry hodl_callback (arg : nat) {
 }
 
 entry update_oracle (arg : address) {
-  var x80 : (((address * big_map<address, (tez * nat)>) * address)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_map<address, (tez * nat)> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x80 : (((address * big_map<address, (tez * nat)>) * address)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (tez * nat)> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
   x80 := ((sto_1, oracle));
   oracle := arg;
   sto_1 := (x80[0]);
@@ -58,7 +58,7 @@ entry withdraw () {
 entry withdraw_callback (arg : nat) {
   var x407 : contract<unit> = self_contract<unit>;
   var x406 : tez = 0utz;
-  var x418 : big_map<address, (tez * nat)> = make_map<address, (tez * nat)> (([]));
+  var x418 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
   var x414 : unit = Unit;
   var x420 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x398 : ((tez * nat)) = (0utz, 0);
