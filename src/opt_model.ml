@@ -162,7 +162,7 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     | Tbuiltin Brational         -> mk_rat 0 1
     | Tbuiltin Bdate             -> mk_date (Core.mk_date ())
     | Tbuiltin Bduration         -> mk_duration (Core.mk_duration ())
-    | Tbuiltin Btimestamp        -> mk_int 0
+    | Tbuiltin Btimestamp        -> mk_date (Core.mk_date ())
     | Tbuiltin Bstring           -> mk_string ""
     | Tbuiltin Baddress          -> mk_address "tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39"
     | Tbuiltin Btez              -> mk_tez 0

@@ -1,0 +1,9 @@
+archetype my_contract(sto_1 : big_map<string, (date * address)>)
+
+entry default (arg : string) {
+  (match (sto_1[arg]) with
+  | some x101 -> (fail ("Record hash already written"))
+  | none -> (sto_1 := update (sto_1, arg, (some(((now, caller))))))
+  end)
+}
+

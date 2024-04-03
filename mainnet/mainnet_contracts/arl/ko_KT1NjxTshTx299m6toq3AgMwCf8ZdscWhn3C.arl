@@ -1,0 +1,115 @@
+archetype my_contract(
+countdown_seconds : int,
+leader : address,
+leadership_start_timestamp : date)
+
+entry default () {
+  var x77 : nat = 0;
+  var x87 : nat = 0;
+  var x113 : nat = 0;
+  var x107 : int = 0i;
+  var x162 : nat = 0;
+  var x132 : nat = 0;
+  var x152 : nat = 0;
+  var x191 : nat = 0;
+  var x243 : nat = 0;
+  var x235 : int = 0i;
+  var x289 : nat = 0;
+  var x261 : nat = 0;
+  var x279 : nat = 0;
+  var x314 : nat = 0;
+  do_require ((transferred = 200000utz), "WrongCondition: sp.amount == sp.mutez(200000)");
+  do_require ((countdown_seconds + leadership_start_timestamp > now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, self.data.countdown_seconds) > sp.now");
+  match balance /% 1utz with
+  | some (x326, x327) -> (x314 := x326)
+  | none -> (fail (25i))
+  end;
+  match x314 /% 100000 with
+  | some (x310, x311) -> (x289 := x310)
+  | none -> (fail (25i))
+  end;
+  match balance /% 1utz with
+  | some (x292, x293) -> (x279 := x292)
+  | none -> (fail (25i))
+  end;
+  match x279 /% 100000 with
+  | some (x272, x273) -> (x261 := x272)
+  | none -> (fail (25i))
+  end;
+  match (10800000 + x261) /% x289 with
+  | some (x252, x253) -> (x243 := x252)
+  | none -> (fail (27i))
+  end;
+  if x235 * 1000i - x243 > 300i * 1000i
+  then (match balance /% 1utz with
+  | some (x204, x205) -> (x191 := x204)
+  | none -> (fail (25i))
+  end;
+  match x191 /% 100000 with
+  | some (x186, x187) -> (x162 := x186)
+  | none -> (fail (25i))
+  end;
+  match balance /% 1utz with
+  | some (x166, x167) -> (x152 := x166)
+  | none -> (fail (25i))
+  end;
+  match x152 /% 100000 with
+  | some (x144, x145) -> (x132 := x144)
+  | none -> (fail (25i))
+  end;
+  match (10800000 + x132) /% x162 with
+  | some (x123, x124) -> (x113 := x123)
+  | none -> (fail (27i))
+  end;
+  match int_to_nat ((x107 * 1000i - x113)) with
+  | some x96 -> (x87 := x96)
+  | none -> (fail (29i))
+  end;
+  match x87 /% 1000 with
+  | some (x85, x86) -> (x77 := x85)
+  | none -> (fail (29i))
+  end;
+  countdown_seconds := x77) else (countdown_seconds := 300i)
+}
+
+entry get_countdown_seconds (arg : contract<int>) {
+  var x381 : int = 0i;
+  var x386 : ((address * date)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 1970-01-01T00:00:00);
+  x381 := countdown_seconds;
+  x386 := ((leader, leadership_start_timestamp));
+  countdown_seconds := countdown_seconds;
+  leader := (x386[0]);
+  leadership_start_timestamp := (x386[1]);
+  operations := prepend (operations, (make_operation (0utz, arg, x381)))
+}
+
+entry get_leader (arg : contract<address>) {
+  var x459 : date = 1970-01-01T00:00:00;
+  var x452 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  countdown_seconds := countdown_seconds;
+  leader := x452;
+  leadership_start_timestamp := x459;
+  operations := prepend (operations, (make_operation (0utz, arg, x452)))
+}
+
+entry get_leadership_start_timestamp (arg : contract<date>) {
+  var x459 : date = 1970-01-01T00:00:00;
+  var x452 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  countdown_seconds := countdown_seconds;
+  leader := x452;
+  leadership_start_timestamp := x459;
+  operations := prepend (operations, (make_operation (0utz, arg, x459)))
+}
+
+entry withdraw () {
+  var x503 : contract<unit> = self_contract<unit>;
+  var x531 : ((address * date)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 1970-01-01T00:00:00);
+  do_require ((caller = (x531[0])), "WrongCondition: self.data.leader == sp.sender");
+  do_require ((countdown_seconds + x531[1] < now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, self.data.countdown_seconds) < sp.now");
+  match get_entrypoint<unit>("default", caller) with
+  | some x512 -> (x503 := x512)
+  | none -> (fail (37i))
+  end;
+  operations := prepend (operations, (make_operation (balance, x503, Unit)))
+}
+

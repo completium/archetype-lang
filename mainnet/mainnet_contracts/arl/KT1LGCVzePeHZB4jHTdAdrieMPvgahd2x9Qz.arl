@@ -1,0 +1,6 @@
+archetype my_contract(sto_1 : list<(string * (tez * (date * address)))>)
+
+entry default (arg : string) {
+  sto_1 := prepend (sto_1, ((arg, ((transferred, ((now, caller)))))))
+}
+

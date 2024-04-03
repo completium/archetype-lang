@@ -2029,7 +2029,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Brational         -> A.trational
     | Tbuiltin Bdate             -> A.tdate
     | Tbuiltin Bduration         -> A.tduration
-    | Tbuiltin Btimestamp        -> assert false
+    | Tbuiltin Btimestamp        -> A.tdate
     | Tbuiltin Bstring           -> A.tstring
     | Tbuiltin Baddress          -> A.taddress
     | Tbuiltin Btez              -> A.ttez
