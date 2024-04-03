@@ -80,10 +80,14 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           in
           aux code
         in
-        let flat_pair (tys : T.type_ list) =
-          match List.rev tys with
-          | (T.{node = Tpair a})::tl -> List.rev tl @ a
-          | _ -> tys
+        let rec flat_pair (ty : T.type_) : T.type_ list =
+          match ty with
+          | {node = Tpair tys} -> begin
+              match List.rev tys with
+              | ({node = Tpair _} as t )::tl -> List.rev tl @ (flat_pair t)
+              | _ -> tys
+            end
+          | _ -> [ty]
         in
         let rec flat_all_pair (ty : T.type_) =
           match ty.node with
@@ -102,30 +106,27 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           (a, b)
         in
         let args, code =
-          match arg_pattern, pty.node with
-          | _, T.Tunit -> [], code
-          | DPid id, _ -> begin
-              match flat_all_pair pty with
-              | [] -> begin
-                  [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
-                end
-              | tys -> begin
-                  let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
-                  do_it ids tys
-                end
+          match arg_pattern, flat_all_pair pty, flat_pair pty with
+          | _, [{node = T.Tunit}], _ -> [], code
+          | DPid id, [pty], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+          | DPid _, tys, _ -> begin
+              let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
+              do_it ids tys
             end
-
-          | DPlist ids, T.Tpair tys when List.length ids = List.length (flat_pair tys) && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
-              let tys = flat_pair tys in
+          | DPlist ids, tys, _ when List.length ids = List.length tys && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
               let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
               do_it ids tys
             end
-          | dps, _ when List.length (flat_dpattern dps) = List.length (flat_all_pair pty) -> begin
+          | DPlist ids, _, tys when List.length ids = List.length tys && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
+              let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
+              do_it ids tys
+            end
+          | dps, _, _ when List.length (flat_dpattern dps) = List.length (flat_all_pair pty) -> begin
               let tys = flat_all_pair pty in
               let ids = flat_dpattern dps in
               do_it ids tys
             end
-          | _, _ ->
+          | _, _, _ ->
             Format.eprintf "node:%a@\narg_pattern:%a@\n"
               Printer_michelson.pp_type pty
               pp_dpattern arg_pattern;

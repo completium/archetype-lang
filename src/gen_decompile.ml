@@ -12,9 +12,10 @@ type env = {
   name: string;
   type_storage: T.type_ option;
   type_parameter: T.type_ option;
+  storage_list : (Ident.ident * T.type_) list;
 }
 
-let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None }
+let mk_env ?(name="") _ : env = { name = name; type_storage = None; type_parameter = None; storage_list = [] }
 
 let remove_prefix_annot str =
   if String.starts ~pattern:"%" str
@@ -368,7 +369,7 @@ let tycheck_michelson ((input, env) : T.michelson * env) : T.michelson * env =
 
 (* -------------------------------------------------------------------- *)
 module Decomp_dir : sig
-  val decompile : T.michelson -> T.dcode
+  val decompile : env -> T.michelson -> env * T.dcode
 end = struct
   open Michelson
 
@@ -607,20 +608,20 @@ end = struct
   and rstack1_propagate (uf : uf) (r : rstack1) =
     match r with
     | #dvar as x ->
-       (var_propagate uf x :> rstack1)
+      (var_propagate uf x :> rstack1)
 
     | `Paired (r1, r2) ->
-       let r1 = rstack1_propagate uf r1 in
-       let r2 = rstack1_propagate uf r2 in
-       `Paired (r1, r2)
+      let r1 = rstack1_propagate uf r1 in
+      let r2 = rstack1_propagate uf r2 in
+      `Paired (r1, r2)
 
   and ty_propagate (uf : uf) (xty : type_) =
     let rec aux (t : type_) =
       match t.node with
       | Tvar x -> begin
-         match UFT.data x uf.uft with
-         | Some (Some data) -> ty_propagate uf data
-         | _ -> t
+          match UFT.data x uf.uft with
+          | Some (Some data) -> ty_propagate uf data
+          | _ -> t
         end
       | _ -> map_type aux t
     in aux xty
@@ -628,19 +629,19 @@ end = struct
   let rec pair_head_normalize (ty : type_) =
     match ty.node with
     | Tpair [] ->
-       tunit
+      tunit
 
     | Tpair [ty] ->
-       ty
+      ty
 
     | Tpair [_; _] ->
-       ty
+      ty
 
     | Tpair (ty :: tys) ->
-       tpair [ty; pair_head_normalize (tpair tys)]
+      tpair [ty; pair_head_normalize (tpair tys)]
 
     | _ ->
-       ty
+      ty
 
   let rec unify (uf : uf) (effect : effect) : uf =
     pump (unify_r uf effect)
@@ -672,18 +673,18 @@ end = struct
 
     | Tvar x, Tvar y
       ->
-       let uft, effects = UFT.union x y uf.uft in
-       { uf with uft }, effects
+      let uft, effects = UFT.union x y uf.uft in
+      { uf with uft }, effects
 
     | Tvar x, _
       ->
-       let uft, effects = UFT.set x (Some ty2) uf.uft in
-       { uf with uft }, effects
+      let uft, effects = UFT.set x (Some ty2) uf.uft in
+      { uf with uft }, effects
 
     | _, Tvar y
       ->
-       let uft, effects = UFT.set y (Some ty1) uf.uft in
-       { uf with uft }, effects
+      let uft, effects = UFT.set y (Some ty1) uf.uft in
+      { uf with uft }, effects
 
     | Tbig_map (t1, u1), Tbig_map (t2, u2)
     | Tmap     (t1, u1), Tbig_map (t2, u2)
@@ -692,9 +693,9 @@ end = struct
     | Tmap     (t1, u1), Tmap     (t2, u2)
     | Tor      (t1, u1), Tor      (t2, u2)
       ->
-       let uf, pb1 = unify_type_r uf t1 t2 in
-       let uf, pb2 = unify_type_r uf u1 u2 in
-       uf, pb1 @ pb2
+      let uf, pb1 = unify_type_r uf t1 t2 in
+      let uf, pb2 = unify_type_r uf u1 u2 in
+      uf, pb1 @ pb2
 
     | Tcontract t1, Tcontract t2
     | Tlist     t1, Tlist     t2
@@ -704,12 +705,12 @@ end = struct
       -> unify_type_r uf t1 t2
 
     | Tpair l1, Tpair l2 ->
-       let aux (uf : uf) ((t1, t2) : type_ * type_) =
-         unify_type_r uf t1 t2
-       in
+      let aux (uf : uf) ((t1, t2) : type_ * type_) =
+        unify_type_r uf t1 t2
+      in
 
-       let uf, effects = List.fold_left_map aux uf (List.combine l1 l2) in
-       uf, List.flatten effects
+      let uf, effects = List.fold_left_map aux uf (List.combine l1 l2) in
+      uf, List.flatten effects
 
     | Tsapling_state       n1, Tsapling_state n2
     | Tsapling_transaction n1, Tsapling_transaction n2
@@ -738,7 +739,7 @@ end = struct
       -> uf, []
 
     | _, _ ->
-       raise UnificationFailure
+      raise UnificationFailure
 
   and unify_type (uf : uf) (ty1 : type_) (ty2 : type_) =
     pump (unify_type_r uf ty1 ty2)
@@ -765,7 +766,7 @@ end = struct
     | `VLocal  (xty, x), `VGlobal (yty, y)
     | `VGlobal (yty, y), `VLocal  (xty, x) ->
 
-       let ufe = uf.ufe in
+      let ufe = uf.ufe in
 
       let ufe, eff1 =
         UFE.set
@@ -862,9 +863,9 @@ end = struct
     match x with
     | `VGlobal _ -> x
     | `VLocal (_, name) ->
-       match UFE.data name uf.ufe with
-       | Some { global = Some { node = Dvar x } } -> x
-       | _ -> x
+      match UFE.data name uf.ufe with
+      | Some { global = Some { node = Dvar x } } -> x
+      | _ -> x
 
   let rec write_var (uf : uf) (e : dexpr) (x : rstack1) =
     let e = expr_propagate uf e in
@@ -873,7 +874,7 @@ end = struct
 
     match x, e.node with
     | #dvar as x, _ ->
-       [DIAssign (x, e)], uf
+      [DIAssign (x, e)], uf
 
     | `Paired (x1, x2), Depair (e1, e2) ->
       let i1, uf = write_var uf e1 x1 in
@@ -881,15 +882,15 @@ end = struct
       (i1@i2, uf)
 
     | `Paired (x1, x2), _ ->
-       let ty1 = fresh_tvar () in
-       let ty2 = fresh_tvar () in
+      let ty1 = fresh_tvar () in
+      let ty2 = fresh_tvar () in
 
-       let i1, uf = write_var uf (deproj ty1 e 0) x1 in
-       let i2, uf = write_var uf (deproj ty2 e 1) x2 in
+      let i1, uf = write_var uf (deproj ty1 e 0) x1 in
+      let i2, uf = write_var uf (deproj ty2 e 1) x2 in
 
-       let uf = unify_type uf (tpair [ty1; ty2]) e.type_ in
+      let uf = unify_type uf (tpair [ty1; ty2]) e.type_ in
 
-       (i1@i2, uf)
+      (i1@i2, uf)
 
   let rec dexpr_of_rstack1 (x : rstack1) : dexpr =
     match x with
@@ -1329,11 +1330,11 @@ end = struct
     | _ -> (Format.eprintf "%a@\n" pp_code i; assert false)
 
   and decompile_op
-    (uf      : uf)
-    (s       : rstack)
-    (op      : g_operator)
-    (tystack : type_ list * type_ list option)
-  =
+      (uf      : uf)
+      (s       : rstack)
+      (op      : g_operator)
+      (tystack : type_ list * type_ list option)
+    =
     let before, after = tystack in
     let after = Option.get after in
 
@@ -1353,11 +1354,11 @@ end = struct
     uf, decomp
 
   and compile_match
-    (uf : uf)
-    (s  : rstack)
-    (ty : type_)
-    (bs : ((string * type_ list) * code list) list)
-  =
+      (uf : uf)
+      (s  : rstack)
+      (ty : type_)
+      (bs : ((string * type_ list) * code list) list)
+    =
     let x = vlocal ty in
 
     let uf, subs = List.fold_left_map (fun uf ((name, args), b) ->
@@ -1588,7 +1589,7 @@ end = struct
     | Dconstant _ -> true
 
     | Dleft d | Dright d ->
-       can_propagate_data d
+      can_propagate_data d
 
     | _ -> false
 
@@ -1651,7 +1652,7 @@ end = struct
     keep, List.flatten (List.rev code)
 
   (* -------------------------------------------------------------------- *)
-  let decompile (michelson : michelson) =
+  let decompile (env : env) (michelson : michelson) : env * dcode =
     let aty = michelson.storage in
     let pty = michelson.parameter in
     let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
@@ -1698,7 +1699,14 @@ end = struct
     let _, code = code_cttprop Mint.empty code in
     let _, code = code_kill Sdvar.empty code in
 
-    code
+    let rec f (rstack : rstack1) : (Ident.ident * T.type_) list =
+      match rstack with
+      | `VGlobal (ty, id) -> [(id, ty)]
+      | `Paired (p1, p2) -> f p1 @ f p2
+      | _ -> []
+      in
+    let env = {env with storage_list = f ast } in
+    env, code
 end
 
 let to_dir (michelson, env : T.michelson * env) =
@@ -1715,7 +1723,7 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> T.Dunit (* FIXME*)
   in
 
-  let code = Decomp_dir.decompile michelson in
+  let env, code = Decomp_dir.decompile env michelson in
 
   (T.mk_dprogram tstorage tparameter storage_data name code), env
 
@@ -1804,23 +1812,6 @@ end = struct
   open Model
 
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
-
-  let get_storage_list tstorage =
-    let rec aux (x : T.type_) =
-      match x.node, x.annotation with
-      | _, Some a  -> [a, x]
-      | T.Tpair [a; b], _ -> begin
-          match aux a, aux b with
-          | [], _
-          | _, [] -> []
-          | x, y  -> x @ y
-        end
-      | _ -> []
-    in
-    let r = aux tstorage in
-    match r with
-    | [] -> ["storage", tstorage]
-    | _  -> r
 
   let int_to_var (n : int) : string = "x" ^ (string_of_int n)
 
@@ -1999,17 +1990,11 @@ end = struct
     let code = for_code dprogram.code in
     let functions = [Entry (mk_function_struct (M.mk_mident (dumloc "default")) code ~args:[M.mk_mident (dumloc "arg"), for_type dprogram.parameter, None])] in
 
-    let storage_list = get_storage_list dprogram.storage in
-
     let parameters =
-      match storage_list with
-      | [(_, {node = T.Tunit})] -> []
-      | _ ->
-        List.mapi (fun n (_id, t) -> let id = Format.asprintf "sto_%d" (n + 1) in
-            (* let id = match get_annot_from_type t with
-              | Some v -> v
-              | None -> Format.asprintf "sto_%d" (n + 1)
-            in *)
+      match env.storage_list with
+      | [_, ({node = T.Tunit})] -> []
+      | storage_list ->
+        List.map (fun (id, t) ->
             M.mk_parameter (M.mk_mident (dumloc id)) (for_type t)
           ) storage_list
     in
