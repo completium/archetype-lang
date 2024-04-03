@@ -3,6 +3,7 @@ open Gen_transform
 open Tools
 open Location
 open Ident
+open Printer_tools
 
 module T = Michelson
 
@@ -109,6 +110,10 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           match arg_pattern, flat_all_pair pty, flat_pair pty with
           | _, [{node = T.Tunit}], _ -> [], code
           | DPid id, [pty], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
+          | DPid "arg_1", tys, _ when List.length tys = List.length (env.parameter_list) -> begin
+            let ids = List.map fst env.parameter_list in
+            do_it ids tys
+          end
           | DPid _, tys, _ -> begin
               let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
               do_it ids tys
