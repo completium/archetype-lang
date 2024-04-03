@@ -111,9 +111,9 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           | _, [{node = T.Tunit}], _ -> [], code
           | DPid id, [pty], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
           | DPid "arg_1", tys, _ when List.length tys = List.length (env.parameter_list) -> begin
-            let ids = List.map fst env.parameter_list in
-            do_it ids tys
-          end
+              let ids = List.map fst env.parameter_list in
+              do_it ids tys
+            end
           | DPid _, tys, _ -> begin
               let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
               do_it ids tys
@@ -276,9 +276,13 @@ let remove_operations_nil (model : model) : model =
 let remove_tupleaccess (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mtupleaccess({node = Mtuple vs}, i) when Big_int.lt_big_int i (Big_int.big_int_of_int (List.length vs)) -> begin
-        let n = Big_int.int_of_big_int i in
-        aux ctx (List.nth vs n)
+    | Mtupleaccess(c, i) -> begin
+        let c = aux ctx c in
+        match c.node with
+        | Mtuple vs when Big_int.lt_big_int i (Big_int.big_int_of_int (List.length vs)) ->
+          let n = Big_int.int_of_big_int i in
+          List.nth vs n
+        | _ -> {mt with node = Mtupleaccess(c, i)}
       end
     | _ -> map_mterm (aux ctx) mt
   in
