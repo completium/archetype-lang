@@ -52,7 +52,8 @@ entry getTotalSupply (x224 : unit, callback : contract<nat>) {
 }
 
 entry set_token_metadata (tid : nat, tdata : map<string, bytes>) {
-  do_fail_if ((not (caller = tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb)), "INVALID_CALLER");
+  if not (caller = tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb)
+  then ((fail ("INVALID_CALLER")));
   token_metadata := update (token_metadata, tid, (some(((tid, tdata)))))
 }
 
@@ -69,7 +70,7 @@ entry %transfer (%from : address, %to : address, value : nat) {
   | some (x785, x786) -> (x765 := x785)
   | none -> (fail ((("ASSET_NOT_FOUND", "ledger"))))
   end;
-  do_fail_if ((not (x765 >= value)), "NotEnoughBalance");
+  if not (x765 >= value) then ((fail ("NotEnoughBalance")));
   if caller <> %from
   then (match (ledger[%from]) with
   | some (x723, x724) -> (x705 := x724)
@@ -128,7 +129,7 @@ entry approve (spender : address, value : nat) {
   end;
   if x941 > 0 then ((if value > 0 then (x958 := true) else (x958 := false)))
   else (x958 := false);
-  do_fail_if (x958, (("UnsafeAllowanceChange", x941)));
+  if x958 then ((fail ((("UnsafeAllowanceChange", x941)))));
   if contains (ledger, caller)
   then (match (ledger[caller]) with
   | some (x891, x892) -> (x842 := x891)
