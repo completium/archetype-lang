@@ -1,0 +1,748 @@
+archetype my_contract(
+sto_3 : (((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int))),
+sto_2 : ((int * address) * (bool * int)),
+sto_1 : (int * string),
+tokenSymbol : string,
+transferStatus : bool)
+
+entry burn (amount : int, fromAddr : address) {
+  var x427 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x415 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x185 : unit = Unit;
+  var x187 : int = 0i;
+  var x210 : int = 0i;
+  var x306 : bool = false;
+  var x305 : int = 0i;
+  var x296 : int = 0i;
+  var x397 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x357 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x336 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x386 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x368 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x451 : int = 0i;
+  do_require ((caller = fromAddr), "WrongCondition: params.fromAddr == sp.sender");
+  do_require ((contains ((((sto_3[0])[0])[1]), fromAddr)), "WrongCondition: self.data.balances.contains(params.fromAddr)");
+  match ((((sto_3[0])[0])[1])[fromAddr]) with
+  | some (x463, x464) -> (x451 := x463)
+  | none -> (fail ("Get-item:23"))
+  end;
+  do_require ((x451 >= amount), "WrongCondition: self.data.balances[params.fromAddr].balance >= params.amount");
+  match (x368[x386]) with
+  | some (x375, x376) -> (x306 := x376)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x336[x357]) with
+  | some (x315, x316) -> (x296 := x315)
+  | none -> (fail ("Get-item:23"))
+  end;
+  sto_3 := ((((((x397, (update (x368, x386, (some((((x296 - x305), x306)))))))), (((x210 - x187), x185)))), x415));
+  sto_2 := (x427[0]);
+  tokenSymbol := (((x427[1])[1])[0]);
+  transferStatus := (((x427[1])[1])[1]);
+  sto_1 := (((((x427[1])[0])[0] - x187), (((x427[1])[0])[1])))
+}
+
+entry claimSale (arg : nat) {
+  var x585 : contract<unit> = self_contract<unit>;
+  var x576 : nat = 0;
+  var x623 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x662 : contract<unit> = self_contract<unit>;
+  var x653 : nat = 0;
+  var x686 : list<operation> = make_list<operation> (([]));
+  do_require ((caller = (((sto_3[0])[0])[0])), "WrongCondition: sp.sender == self.data.administrator");
+  do_require ((balance > 1utz * arg), "WrongCondition: sp.balance > sp.mutez(params.amount)");
+  x686 := make_list<operation> (([]));
+  match get_entrypoint<unit>("default", (((sto_3[1])[0])[1])) with
+  | some x689 -> (x662 := x689)
+  | none -> (fail (Unit))
+  end;
+  match arg /% 100 with
+  | some (x668, x669) -> (x653 := x668)
+  | none -> (fail ("division by zero"))
+  end;
+  x686 := prepend (x686, (make_operation (((x653 * 75) * 1utz), x662, Unit)));
+  match get_entrypoint<unit>("default", x623) with
+  | some x616 -> (x585 := x616)
+  | none -> (fail (Unit))
+  end;
+  match arg /% 100 with
+  | some (x592, x593) -> (x576 := x592)
+  | none -> (fail ("division by zero"))
+  end;
+  operations := prepend (operations, (make_operation (((x576 * 25) * 1utz), x585, Unit)))
+}
+
+entry cvrDrop (addresses : list<address>, amount : int) {
+  var x967 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x785 : unit = Unit;
+  var x787 : int = 0i;
+  var x808 : int = 0i;
+  var x810 : unit = Unit;
+  var x968 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x904 : bool = false;
+  var x903 : int = 0i;
+  var x894 : int = 0i;
+  var x937 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x964 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  do_require ((caller = (((sto_3[0])[0])[0])), "WrongCondition: sp.sender == self.data.administrator");
+  do_require (((amount * length (addresses) + ((sto_2[0])[0] - (sto_2[1])[1])) + ((sto_3[0])[1])[0] <= sto_1[0]), "WrongCondition: (((params.amount * (sp.to_int(sp.len(params.addresses)))) + (self.data.saleLimit - self.data.soldToken)) + self.data.circulatingSupply) <= self.data.supplyLimit");
+  for x1111 in addresses do
+    (x964 := (((sto_3[0])[0])[1]);
+    if contains ((((sto_3[0])[0])[1]), x1111) then (())
+    else (x964 := update (x964, x1111, (some(((0i, false))))));
+    x968 := ((((((((sto_2[0])[0]), ((sto_2[0])[1]))), ((((sto_2[1])[0]), ((sto_2[1])[1]))))), (((((sto_1[0]), (sto_1[1]))), ((tokenSymbol, transferStatus))))));
+    x967 := (sto_3[1]);
+    match (x964[x1111]) with
+    | some (x972, x973) -> (x904 := x973)
+    | none -> (fail ("set_in_top-any"))
+    end;
+    match (x937[x1111]) with
+    | some (x914, x915) -> (x894 := x914)
+    | none -> (fail ("Get-item:126"))
+    end;
+    x810 := (((((sto_3[0])[0])[0]), (update (x964, x1111, (some((((x894 + x903), x904))))))));
+    sto_2 := ((((((sto_2[0])[0]), ((sto_2[0])[1]))), ((((sto_2[1])[0]), ((sto_2[1])[1])))));
+    sto_1 := ((x968[1])[0]);
+    tokenSymbol := (((x968[1])[1])[0]);
+    transferStatus := (((x968[1])[1])[1]);
+    sto_3 := ((((x810, (((x808 + x787), x785)))), x967)))
+  done
+}
+
+entry dispatchRoyalties (addresses : list<address>, amount : nat) {
+  var x1603 : contract<unit> = self_contract<unit>;
+  var x1389 : nat = 0;
+  var x1519 : nat = 0;
+  var x1457 : nat = 0;
+  var x1421 : nat = 0;
+  var x1450 : int = 0i;
+  var x1480 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x1600 : nat = 0;
+  var x1559 : nat = 0;
+  var x1552 : nat = 0;
+  var x1582 : int = 0i;
+  var x1645 : bool = false;
+  var x1731 : nat = 0;
+  var x1681 : nat = 0;
+  var x1652 : nat = 0;
+  var x1674 : int = 0i;
+  var x1698 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x1765 : nat = 0;
+  var x1758 : nat = 0;
+  var x1782 : int = 0i;
+  do_require ((caller = (((sto_3[0])[0])[0])), "WrongCondition: sp.sender == self.data.administrator");
+  for x1820 in addresses do
+    (if contains ((((sto_3[0])[0])[1]), x1820)
+     then (match int_to_nat (10000000000i) with
+     | some x1806 -> (x1765 := x1806)
+     | none -> (fail (Unit))
+     end;
+     match int_to_nat (x1782) with
+     | some x1772 -> (x1758 := x1772)
+     | none -> (fail (Unit))
+     end;
+     match (x1758 * x1765) /% amount with
+     | some (x1745, x1746) -> (x1731 := x1745)
+     | none -> (fail ("division by zero"))
+     end;
+     match int_to_nat (10000000000i) with
+     | some x1723 -> (x1681 := x1723)
+     | none -> (fail (Unit))
+     end;
+     match (x1698[x1820]) with
+     | some (x1687, x1688) -> (x1674 := x1687)
+     | none -> (fail ("Get-item:136"))
+     end;
+     match int_to_nat (x1674) with
+     | some x1665 -> (x1652 := x1665)
+     | none -> (fail (Unit))
+     end;
+     x1645 := x1652 * x1681 > x1731 + 1) else (x1645 := false);
+    if x1645
+    then (match get_entrypoint<unit>("default", x1820) with
+    | some x1632 -> (x1603 := x1632)
+    | none -> (fail (Unit))
+    end;
+    match int_to_nat (10000000000i) with
+    | some x1609 -> (x1559 := x1609)
+    | none -> (fail (Unit))
+    end;
+    match int_to_nat (x1582) with
+    | some x1569 -> (x1552 := x1569)
+    | none -> (fail (Unit))
+    end;
+    match (x1552 * x1559) /% x1600 with
+    | some (x1536, x1537) -> (x1519 := x1536)
+    | none -> (fail ("division by zero"))
+    end;
+    match int_to_nat (10000000000i) with
+    | some x1508 -> (x1457 := x1508)
+    | none -> (fail (Unit))
+    end;
+    match (x1480[x1820]) with
+    | some (x1466, x1467) -> (x1450 := x1466)
+    | none -> (fail ("Get-item:136"))
+    end;
+    match int_to_nat (x1450) with
+    | some x1437 -> (x1421 := x1437)
+    | none -> (fail (Unit))
+    end;
+    match (x1421 * x1457) /% (x1519 + 1) with
+    | some (x1405, x1406) -> (x1389 := x1405)
+    | none -> (fail ("division by zero"))
+    end;
+    operations := prepend (operations, (make_operation ((x1389 * 1utz), x1603, Unit)))))
+  done
+}
+
+entry getAdministrator (arg : address) {
+  var x1895 : contract<address> = self_contract<address>;
+  var x1906 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x1904 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x1902 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x1900 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x1893 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  match get_entrypoint<address>("default", arg) with
+  | some x1935 -> (x1895 := x1935)
+  | none -> (fail (Unit))
+  end;
+  sto_3 := ((((((x1893, x1900)), x1902)), x1904));
+  sto_2 := (x1906[0]);
+  sto_1 := ((x1906[1])[0]);
+  tokenSymbol := (((x1906[1])[1])[0]);
+  transferStatus := (((x1906[1])[1])[1]);
+  operations := prepend (operations, (make_operation (0utz, x1895, x1893)))
+}
+
+entry getBalance (owner : address, target : address) {
+  var x2033 : nat = 0;
+  var x2043 : contract<nat> = self_contract<nat>;
+  var x1948 : nat = 0;
+  var x1977 : contract<nat> = self_contract<nat>;
+  var x1969 : int = 0i;
+  var x1991 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1992 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x2079 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  if contains (x2079, owner)
+  then (match get_entrypoint<nat>("default", target) with
+  | some x2018 -> (x1977 := x2018)
+  | none -> (fail (Unit))
+  end;
+  match (x1992[x1991]) with
+  | some (x1981, x1982) -> (x1969 := x1981)
+  | none -> (fail ("Get-item:154"))
+  end;
+  match int_to_nat (x1969) with
+  | some x1962 -> (x1948 := x1962)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x1977, x1948))))
+  else (match get_entrypoint<nat>("default", target) with
+  | some x2061 -> (x2043 := x2061)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (0i) with
+  | some x2047 -> (x2033 := x2047)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2043, x2033))))
+}
+
+entry getCirculatingSupply (arg : address) {
+  var x2121 : nat = 0;
+  var x2131 : contract<nat> = self_contract<nat>;
+  var x2142 : int = 0i;
+  match get_entrypoint<nat>("default", arg) with
+  | some x2163 -> (x2131 := x2163)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (x2142) with
+  | some x2135 -> (x2121 := x2135)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2131, x2121)))
+}
+
+entry getFactor (arg : address) {
+  var x2179 : nat = 0;
+  var x2189 : contract<nat> = self_contract<nat>;
+  var x2200 : int = 0i;
+  match get_entrypoint<nat>("default", arg) with
+  | some x2221 -> (x2189 := x2221)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (x2200) with
+  | some x2193 -> (x2179 := x2193)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2189, x2179)))
+}
+
+entry getManager (arg : address) {
+  var x2236 : contract<address> = self_contract<address>;
+  var x2245 : (((int * string) * (string * bool))) = (((0i, "")), (("", false)));
+  var x2243 : ((bool * int)) = (false, 0i);
+  var x2234 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x2241 : int = 0i;
+  var x2247 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  match get_entrypoint<address>("default", arg) with
+  | some x2276 -> (x2236 := x2276)
+  | none -> (fail (Unit))
+  end;
+  sto_3 := x2247;
+  sto_2 := ((((x2241, x2234)), x2243));
+  sto_1 := (x2245[0]);
+  tokenSymbol := ((x2245[1])[0]);
+  transferStatus := ((x2245[1])[1]);
+  operations := prepend (operations, (make_operation (0utz, x2236, x2234)))
+}
+
+entry getSaleLimit (arg : address) {
+  var x2300 : nat = 0;
+  var x2310 : contract<nat> = self_contract<nat>;
+  var x2321 : int = 0i;
+  match get_entrypoint<nat>("default", arg) with
+  | some x2342 -> (x2310 := x2342)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (x2321) with
+  | some x2314 -> (x2300 := x2314)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2310, x2300)))
+}
+
+entry getSaleStatus (arg : address) {
+  var x2379 : contract<nat> = self_contract<nat>;
+  var x2357 : contract<nat> = self_contract<nat>;
+  var x2396 : bool = false;
+  if x2396
+  then (match get_entrypoint<nat>("default", arg) with
+  | some x2367 -> (x2357 := x2367)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2357, 1))))
+  else (match get_entrypoint<nat>("default", arg) with
+  | some x2389 -> (x2379 := x2389)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2379, 0))))
+}
+
+entry getSoldToken (arg : address) {
+  var x2421 : nat = 0;
+  var x2431 : contract<nat> = self_contract<nat>;
+  var x2442 : int = 0i;
+  match get_entrypoint<nat>("default", arg) with
+  | some x2463 -> (x2431 := x2463)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (x2442) with
+  | some x2435 -> (x2421 := x2435)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2431, x2421)))
+}
+
+entry getSupplyLimit (arg : address) {
+  var x2476 : nat = 0;
+  var x2486 : contract<nat> = self_contract<nat>;
+  var x2497 : int = 0i;
+  match get_entrypoint<nat>("default", arg) with
+  | some x2518 -> (x2486 := x2518)
+  | none -> (fail (Unit))
+  end;
+  match int_to_nat (x2497) with
+  | some x2490 -> (x2476 := x2490)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2486, x2476)))
+}
+
+entry getTransferStatus (arg : address) {
+  var x2571 : contract<nat> = self_contract<nat>;
+  var x2549 : contract<nat> = self_contract<nat>;
+  var x2588 : bool = false;
+  if x2588
+  then (match get_entrypoint<nat>("default", arg) with
+  | some x2559 -> (x2549 := x2559)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2549, 1))))
+  else (match get_entrypoint<nat>("default", arg) with
+  | some x2581 -> (x2571 := x2581)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x2571, 0))))
+}
+
+entry increaseSaleLimit (arg : int) {
+  var x2859 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x2857 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x2855 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x2861 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x2851 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x2851), "WrongCondition: sp.sender == self.data.administrator");
+  do_require (((arg + (((x2861[0])[0])[0] - ((x2861[0])[1])[1])) + x2857[0] <= ((x2861[1])[0])[0]), "WrongCondition: ((params.amount + (self.data.saleLimit - self.data.soldToken)) + self.data.circulatingSupply) <= self.data.supplyLimit");
+  sto_3 := ((((((x2851, x2855)), (((x2857[0]), (x2857[1]))))), x2859));
+  sto_1 := (((((x2861[1])[0])[0]), (((x2861[1])[0])[1])));
+  tokenSymbol := (((x2861[1])[1])[0]);
+  transferStatus := (((x2861[1])[1])[1]);
+  sto_2 := (((((((x2861[0])[0])[0] + arg), (((x2861[0])[0])[1]))), (((((x2861[0])[1])[0]), (((x2861[0])[1])[1])))))
+}
+
+entry lockAddress (arg : address) {
+  var x2859 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x2857 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x2910 : int = 0i;
+  var x2855 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x2851 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x2851), "WrongCondition: sp.sender == self.data.administrator");
+  do_require ((contains (x2855, arg)), "WrongCondition: self.data.balances.contains(params.address)");
+  match (x2855[arg]) with
+  | some (x2926, x2927) -> (x2910 := x2926)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  sto_3 := ((((((x2851, (update (x2855, arg, (some(((x2910, true)))))))), x2857)), x2859))
+}
+
+entry mint (amount : int, toAddr : address) {
+  var x3111 : unit = Unit;
+  var x3113 : int = 0i;
+  var x3134 : int = 0i;
+  var x3230 : bool = false;
+  var x3229 : int = 0i;
+  var x3220 : int = 0i;
+  var x3281 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x3260 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x3292 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x3645 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x3643 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x3641 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x3647 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x3637 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x3637), "WrongCondition: sp.sender == self.data.administrator");
+  do_require (((amount + (((x3647[0])[0])[0] - ((x3647[0])[1])[1])) + x3643[0] <= ((x3647[1])[0])[0]), "WrongCondition: ((params.amount + (self.data.saleLimit - self.data.soldToken)) + self.data.circulatingSupply) <= self.data.supplyLimit");
+  x3292 := x3641;
+  if contains (x3641, toAddr) then (())
+  else (x3292 := update (x3292, toAddr, (some(((0i, false))))));
+  match (x3292[toAddr]) with
+  | some (x3299, x3300) -> (x3230 := x3300)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x3260[x3281]) with
+  | some (x3239, x3240) -> (x3220 := x3239)
+  | none -> (fail ("Get-item:112"))
+  end;
+  sto_2 := (((((((x3647[0])[0])[0]), (((x3647[0])[0])[1]))), (((((x3647[0])[1])[0]), (((x3647[0])[1])[1])))));
+  sto_1 := (((((x3647[1])[0])[0]), (((x3647[1])[0])[1])));
+  tokenSymbol := (((x3647[1])[1])[0]);
+  transferStatus := (((x3647[1])[1])[1]);
+  sto_3 := ((((((x3637, (update (x3292, toAddr, (some((((x3220 + x3229), x3230)))))))), (((x3134 + x3113), x3111)))), x3645))
+}
+
+entry offchainSale (address_ : address, amount : int) {
+  var x4212 : (((int * string) * (string * bool))) = (((0i, "")), (("", false)));
+  var x4208 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x3783 : unit = Unit;
+  var x3785 : int = 0i;
+  var x3808 : int = 0i;
+  var x3904 : bool = false;
+  var x3903 : int = 0i;
+  var x3894 : int = 0i;
+  var x3955 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x3934 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x3966 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x4214 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x4164 : int = 0i;
+  var x4210 : ((bool * int)) = (false, 0i);
+  var x4239 : bool = false;
+  var x4335 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x4325 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x4325), "WrongCondition: sp.sender == self.data.saleManager");
+  if contains ((((x4335[0])[0])[1]), address_)
+  then (match ((((x4335[0])[0])[1])[address_]) with
+  | some (x4247, x4248) -> (x4239 := x4248)
+  | none -> (fail ("Get-item:94"))
+  end;
+  if x4239
+  then ((fail ("WrongCondition: ~ self.data.balances[params.address].lock"))));
+  do_require ((x4210[1] + amount <= x4164), "WrongCondition: (self.data.soldToken + params.amount) <= self.data.saleLimit");
+  x3966 := (((x4214[0])[0])[1]);
+  if contains ((((x4214[0])[0])[1]), address_) then (())
+  else (x3966 := update (x3966, address_, (some(((0i, false))))));
+  match (x3966[address_]) with
+  | some (x3973, x3974) -> (x3904 := x3974)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x3934[x3955]) with
+  | some (x3913, x3914) -> (x3894 := x3913)
+  | none -> (fail ("Get-item:94"))
+  end;
+  sto_3 := (((((((((x4214[0])[0])[0]), (update (x3966, address_, (some((((x3894 + x3903), x3904)))))))), (((x3808 + x3785), x3783)))), (x4214[1])));
+  sto_1 := (x4212[0]);
+  tokenSymbol := ((x4212[1])[0]);
+  transferStatus := ((x4212[1])[1]);
+  sto_2 := ((((x4164, x4208)), (((x4210[0]), (x4210[1] + x3785)))))
+}
+
+entry pauseSale () {
+  var x3647 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x3645 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x3643 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x3641 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x3637 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x3637), "WrongCondition: sp.sender == self.data.administrator");
+  sto_3 := ((((((x3637, x3641)), x3643)), x3645));
+  sto_1 := ((x3647[1])[0]);
+  tokenSymbol := (((x3647[1])[1])[0]);
+  transferStatus := (((x3647[1])[1])[1]);
+  sto_2 := ((((x3647[0])[0]), ((false, (((x3647[0])[1])[1])))))
+}
+
+entry pauseTransfer () {
+  var x3645 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x3643 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x3641 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x3637 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x3647 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  tokenSymbol := (((x3647[1])[1])[0]);
+  do_require ((caller = x3637), "WrongCondition: sp.sender == self.data.administrator");
+  sto_3 := ((((((x3637, x3641)), x3643)), x3645));
+  sto_2 := (x3647[0]);
+  sto_1 := ((x3647[1])[0]);
+  transferStatus := false
+}
+
+entry resumeSale () {
+  var x4666 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x4664 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x4662 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x4660 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x4656 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x4656), "WrongCondition: sp.sender == self.data.administrator");
+  sto_3 := ((((((x4656, x4660)), x4662)), x4664));
+  sto_1 := ((x4666[1])[0]);
+  tokenSymbol := (((x4666[1])[1])[0]);
+  transferStatus := (((x4666[1])[1])[1]);
+  sto_2 := ((((x4666[0])[0]), ((true, (((x4666[0])[1])[1])))))
+}
+
+entry resumeTransfer () {
+  var x4664 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x4662 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x4660 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x4656 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x4666 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  tokenSymbol := (((x4666[1])[1])[0]);
+  do_require ((caller = x4656), "WrongCondition: sp.sender == self.data.administrator");
+  sto_3 := ((((((x4656, x4660)), x4662)), x4664));
+  sto_2 := (x4666[0]);
+  sto_1 := ((x4666[1])[0]);
+  transferStatus := true
+}
+
+entry sale () {
+  var x4960 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x4952 : nat = 0;
+  var x4931 : int = 0i;
+  var x5141 : bool = false;
+  var x5140 : int = 0i;
+  var x5133 : nat = 0;
+  var x5072 : int = 0i;
+  var x4816 : nat = 0;
+  var x4795 : int = 0i;
+  var x4824 : bool = false;
+  var x4860 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x5113 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x5186 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x5379 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x5414 : int = 0i;
+  var x5448 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x5406 : nat = 0;
+  var x5368 : int = 0i;
+  var x5475 : bool = false;
+  var x5551 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x5543 : bool = false;
+  do_require (x5543, "WrongCondition: self.data.saleStatus");
+  if contains ((((x5551[0])[0])[1]), caller)
+  then (match ((((x5551[0])[0])[1])[caller]) with
+  | some (x5483, x5484) -> (x5475 := x5484)
+  | none -> (fail ("Get-item:-1"))
+  end;
+  if x5475
+  then ((fail ("WrongCondition: ~ self.data.balances[sp.sender].lock"))));
+  match transferred /% 1utz with
+  | some (x5417, x5418) -> (x5406 := x5417)
+  | none -> (fail (Unit))
+  end;
+  do_require ((x5368 + x5406 * ((x5448[1])[1])[1] <= x5414), "WrongCondition: (self.data.soldToken + ((sp.to_int(sp.fst(sp.ediv(sp.amount, sp.mutez(1)).open_some()))) * self.data.ratio)) <= self.data.saleLimit");
+  x5186 := (((x5379[0])[0])[1]);
+  if contains ((((x5379[0])[0])[1]), caller) then (())
+  else (x5186 := update (x5186, caller, (some(((0i, false))))));
+  match (x5186[caller]) with
+  | some (x5193, x5194) -> (x5141 := x5194)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match transferred /% 1utz with
+  | some (x5150, x5151) -> (x5133 := x5150)
+  | none -> (fail (Unit))
+  end;
+  match (x5113[caller]) with
+  | some (x5091, x5092) -> (x5072 := x5091)
+  | none -> (fail ("Get-item:-1"))
+  end;
+  match transferred /% 1utz with
+  | some (x4966, x4967) -> (x4952 := x4966)
+  | none -> (fail (Unit))
+  end;
+  match transferred /% 1utz with
+  | some (x4830, x4831) -> (x4816 := x4830)
+  | none -> (fail (Unit))
+  end;
+  sto_2 := ((x4860, ((x4824, (x4795 + x4816 * ((x5379[1])[1])[1])))))
+}
+
+entry setAdministrator (arg : address) {
+  var x5781 : unit = Unit;
+  var x5783 : unit = Unit;
+  var x4666 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x5608 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x5613 : unit = Unit;
+  var x5785 : (((unit * big_map<address, (int * bool)>) * unit)) = (((Unit, (make_big_map<address, (int * bool)> (([]))))), Unit);
+  var x5777 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x5777), "WrongCondition: sp.sender == self.data.owner");
+  x5608 := ((x5785[0])[1]);
+  x5613 := (x5785[1]);
+  if contains (((x5785[0])[1]), arg) then (())
+  else (x5613 := x5613;
+  x5608 := update (x5608, arg, (some(((0i, false))))));
+  sto_2 := (x4666[0]);
+  sto_1 := ((x4666[1])[0]);
+  tokenSymbol := (((x4666[1])[1])[0]);
+  transferStatus := (((x4666[1])[1])[1]);
+  sto_3 := ((((((arg, x5608)), x5613)), ((x5783, ((x5777, x5781))))))
+}
+
+entry setManager (arg : address) {
+  var x5827 : ((bool * int)) = (false, 0i);
+  var x5820 : int = 0i;
+  var x5837 : (((int * string) * (string * bool))) = (((0i, "")), (("", false)));
+  var x5857 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x5915 : unit = Unit;
+  var x5905 : unit = Unit;
+  var x5891 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x5897 : unit = Unit;
+  var x5927 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x4666 : ((((int * address) * (bool * int)) * ((int * string) * (string * bool)))) = (((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((false, 0i)))), ((((0i, "")), (("", false)))));
+  var x6012 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x6010 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6008 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x6004 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x6004), "WrongCondition: sp.sender == self.data.administrator");
+  x5857 := ((((((x6004, x6008)), x6010)), x6012));
+  x5820 := (((x4666[0])[0])[0]);
+  x5827 := ((x4666[0])[1]);
+  x5837 := (x4666[1]);
+  if contains (x6008, arg) then (())
+  else (x5820 := (((x5927[0])[0])[0]);
+  x5827 := ((x5927[0])[1]);
+  x5837 := (x5927[1]);
+  x5857 := ((((((x5897, (update (x5891, arg, (some(((0i, false)))))))), x5905)), x5915)));
+  sto_3 := x5857;
+  sto_1 := (x5837[0]);
+  tokenSymbol := ((x5837[1])[0]);
+  transferStatus := ((x5837[1])[1]);
+  sto_2 := ((((x5820, arg)), x5827))
+}
+
+entry %transfer (amount : int, fromAddr : address, toAddr : address) {
+  var x6690 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x6688 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6079 : bool = false;
+  var x6078 : int = 0i;
+  var x6069 : int = 0i;
+  var x6686 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x6135 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6111 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x6168 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x6254 : bool = false;
+  var x6253 : int = 0i;
+  var x6244 : int = 0i;
+  var x6310 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6286 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x6325 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x6553 : bool = false;
+  var x6556 : int = 0i;
+  var x6622 : bool = false;
+  var x6623 : bool = false;
+  var x6670 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x6715 : bool = false;
+  var x6734 : bool = false;
+  var x6742 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
+  var x6777 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x6775 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6773 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x6769 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  x6686 := x6769;
+  x6670 := x6773;
+  x6688 := x6775;
+  x6690 := x6777;
+  if caller = x6769 then (x6715 := true)
+  else (x6686 := (((x6742[0])[0])[0]);
+  x6670 := (((x6742[0])[0])[1]);
+  x6688 := ((x6742[0])[1]);
+  x6690 := (x6742[1]);
+  if x6734 then (x6715 := caller = fromAddr) else (x6715 := false));
+  do_require (x6715, "WrongCondition: (sp.sender == self.data.administrator) | (self.data.transferStatus & (params.fromAddr == sp.sender))");
+  if contains (x6670, fromAddr)
+  then (match (x6670[fromAddr]) with
+  | some (x6632, x6633) -> (x6623 := x6633)
+  | none -> (fail ("Get-item:10"))
+  end;
+  x6622 := not x6623) else (x6622 := false);
+  if x6622
+  then (match (x6670[fromAddr]) with
+  | some (x6568, x6569) -> (x6556 := x6568)
+  | none -> (fail ("Get-item:10"))
+  end;
+  x6553 := x6556 >= amount) else (x6553 := false);
+  do_require (x6553, "WrongCondition: ((self.data.balances.contains(params.fromAddr)) & (~ self.data.balances[params.fromAddr].lock)) & (self.data.balances[params.fromAddr].balance >= params.amount)");
+  do_require ((0i < amount), "WrongCondition: params.amount > 0");
+  x6325 := x6670;
+  if contains (x6670, toAddr) then (())
+  else (x6325 := update (x6325, toAddr, (some(((0i, false))))));
+  match (x6325[fromAddr]) with
+  | some (x6332, x6333) -> (x6254 := x6333)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x6286[(x6310[0])]) with
+  | some (x6263, x6264) -> (x6244 := x6263)
+  | none -> (fail ("Get-item:10"))
+  end;
+  match ((update (x6325, fromAddr, (some((((x6244 - x6253), x6254))))))[x6168]) with
+  | some (x6157, x6158) -> (x6079 := x6158)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x6111[(x6135[1])]) with
+  | some (x6088, x6089) -> (x6069 := x6088)
+  | none -> (fail ("Get-item:13"))
+  end;
+  sto_3 := ((((((x6686, (update ((update (x6325, fromAddr, (some((((x6244 - x6253), x6254)))))), x6168, (some((((x6069 + x6078), x6079)))))))), x6688)), x6690))
+}
+
+entry unlockAddress (arg : address) {
+  var x6777 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
+  var x6775 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x6827 : int = 0i;
+  var x6773 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
+  var x6769 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x6769), "WrongCondition: sp.sender == self.data.administrator");
+  do_require ((contains (x6773, arg)), "WrongCondition: self.data.balances.contains(params.address)");
+  match (x6773[arg]) with
+  | some (x6843, x6844) -> (x6827 := x6843)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  sto_3 := ((((((x6769, (update (x6773, arg, (some(((x6827, false)))))))), x6775)), x6777))
+}
+

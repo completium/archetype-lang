@@ -1,0 +1,120 @@
+archetype my_contract(
+coldOwnerKey : key,
+ownerKey : address,
+userToWallet : big_map<key_hash, (tez * nat)>)
+
+entry changeOwner (newOwnerKey : address, signedMessage : signature) {
+  var x97 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x104 : ((address * big_map<key_hash, (tez * nat)>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<key_hash, (tez * nat)> (([]))));
+  var x349 : list<operation> = make_list<operation> (([]));
+  for x72 in x349 do
+    (operations := prepend (operations, x72))
+  done;
+  x97 := coldOwnerKey;
+  x104 := ((ownerKey, userToWallet));
+  do_require ((caller = ownerKey), "WrongCondition: sp.sender == self.data.ownerKey");
+  ownerKey := newOwnerKey;
+  userToWallet := (x104[1]);
+  do_require ((check_signature (x97, signedMessage, (pack (newOwnerKey)))), "WrongCondition: sp.check_signature(self.data.coldOwnerKey, params.signedMessage, sp.pack(params.newOwnerKey))");
+  coldOwnerKey := x97;
+  x349 := make_list<operation> (([]))
+}
+
+entry feedUserAccount (arg : key_hash) {
+  var x174 : nat = 0;
+  var x164 : tez = 0utz;
+  var x192 : map<key_hash, (tez * unit)> = make_map<key_hash, (tez * unit)> (([]));
+  var x206 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
+  var x349 : list<operation> = make_list<operation> (([]));
+  for x72 in x349 do
+    (operations := prepend (operations, x72))
+  done;
+  x206 := userToWallet;
+  if contains (userToWallet, arg) then (())
+  else (x206 := update (x206, arg, (some(((0i, 0i))))));
+  match (x206[arg]) with
+  | some (x210, x211) -> (x174 := x211)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x192[arg]) with
+  | some (x179, x180) -> (x164 := x179)
+  | none -> (fail ("Get-item:39"))
+  end;
+  userToWallet := update (x206, arg, (some((((x164 + transferred), x174)))));
+  x349 := make_list<operation> (([]))
+}
+
+entry sendFunds (x976 : (tez * tez), receiver : address, signedMessage : signature, userPublicKey : key) {
+  var x303 : contract<unit> = self_contract<unit>;
+  var x302 : tez = 0utz;
+  var x320 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x335 : contract<unit> = self_contract<unit>;
+  var x334 : tez = 0utz;
+  var x430 : signature = "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW";
+  var x432 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x434 : ((tez * tez)) = (0utz, 0utz);
+  var x427 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x424 : map<key_hash, (unit * nat)> = make_map<key_hash, (unit * nat)> (([]));
+  var x467 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x523 : nat = 0;
+  var x566 : tez = 0utz;
+  var x588 : tez = 0utz;
+  var x513 : tez = 0utz;
+  var x590 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));
+  var x546 : map<key_hash, (tez * unit)> = make_map<key_hash, (tez * unit)> (([]));
+  var x678 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));
+  var x605 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
+  var x676 : tez = 0utz;
+  var x671 : tez = 0utz;
+  var x840 : tez = 0utz;
+  var x711 : tez = 0utz;
+  var x730 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x858 : nat = 0;
+  var x836 : tez = 0utz;
+  var x842 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));
+  var x349 : list<operation> = make_list<operation> (([]));
+  for x72 in x349 do
+    (operations := prepend (operations, x72))
+  done;
+  do_require ((caller = ownerKey), "WrongCondition: sp.sender == self.data.ownerKey");
+  do_require ((contains (userToWallet, (key_to_key_hash (userPublicKey)))), "WrongCondition: self.data.userToWallet.contains(sp.hash_key(params.userPublicKey))");
+  match (userToWallet[(key_to_key_hash (userPublicKey))]) with
+  | some (x869, x870) -> (x858 := x870)
+  | none -> (fail ("Get-item:56"))
+  end;
+  do_require ((check_signature (((x842[1])[1]), ((x842[1])[0]), (pack (((x836, ((x858, receiver)))))))), "WrongCondition: sp.check_signature(params.userPublicKey, params.signedMessage, sp.pack(sp.record(a = params.amount, c = self.data.userToWallet[sp.hash_key(params.userPublicKey)].nonce, r = params.receiver)))");
+  match (x730[(key_to_key_hash (((x842[1])[1])))]) with
+  | some (x723, x724) -> (x711 := x723)
+  | none -> (fail ("Get-item:56"))
+  end;
+  do_require ((x711 >= x836 + x840), "WrongCondition: self.data.userToWallet[sp.hash_key(params.userPublicKey)].balance >= (params.amount + params.feeAmount)");
+  do_require ((balance - (x671 + x676) >= 0utz), "WrongCondition: (sp.balance - (params.amount + params.feeAmount)) >= sp.tez(0)");
+  match (x605[(key_to_key_hash (((x678[1])[1])))]) with
+  | some (x610, x611) -> (x523 := x611)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x546[(key_to_key_hash (((x590[1])[1])))]) with
+  | some (x529, x530) -> (x513 := x529)
+  | none -> (fail ("Get-item:56"))
+  end;
+  match ((update (x605, (key_to_key_hash (((x678[1])[1]))), (some((((x513 - (x588 + x566)), x523))))))[(key_to_key_hash (x467))]) with
+  | some (x454, x455) -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x424[(key_to_key_hash (x427))]) with
+  | some (x405, x406) -> ()
+  | none -> (fail ("Get-item:56"))
+  end;
+  x349 := make_list<operation> (([]));
+  match get_entrypoint<unit>("default", x432) with
+  | some x352 -> (x335 := x352)
+  | none -> (fail (Unit))
+  end;
+  x349 := prepend (x349, (make_operation (x334, x335, Unit)));
+  match get_entrypoint<unit>("default", x320) with
+  | some x317 -> (x303 := x317)
+  | none -> (fail (Unit))
+  end;
+  x349 := prepend (x349, (make_operation (x302, x303, Unit)))
+}
+

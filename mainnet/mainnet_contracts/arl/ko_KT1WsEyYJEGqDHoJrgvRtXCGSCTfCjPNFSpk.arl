@@ -1,0 +1,107 @@
+archetype my_contract(
+sto_1 : (key * address),
+userToWallet : big_map<key_hash, (tez * nat)>)
+
+entry changeOwner (x195 : (string * address), signedMessage : signature) {
+  var x80 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  do_require (("" <> (x195[0])), "WrongCondition: params.newOwnerKey != ''");
+  do_require ((caller = (sto_1[1])), "WrongCondition: sp.sender == self.data.ownerKey");
+  x80 := (sto_1[0]);
+  do_require ((check_signature ((sto_1[0]), signedMessage, (pack ((x195[0]))))), "WrongCondition: sp.check_signature(self.data.coldOwnerKey, params.signedMessage, sp.pack(params.newOwnerKey))");
+  userToWallet := userToWallet;
+  sto_1 := ((x80, (x195[1])))
+}
+
+entry feedUserAccount (arg : key_hash) {
+  var x223 : nat = 0;
+  var x213 : tez = 0utz;
+  var x246 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x260 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
+  x260 := userToWallet;
+  if contains (userToWallet, arg) then (())
+  else (x260 := update (x260, arg, (some(((0i, 0i))))));
+  match (x260[arg]) with
+  | some (x264, x265) -> (x223 := x265)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x246[arg]) with
+  | some (x229, x230) -> (x213 := x229)
+  | none -> (fail ("Get-item:37"))
+  end;
+  userToWallet := update (x260, arg, (some((((x213 + transferred), x223)))))
+}
+
+entry sendFunds (x1084 : ((((tez * tez) * string) * address) * signature), userPublicKey : key) {
+  var x340 : contract<unit> = self_contract<unit>;
+  var x339 : tez = 0utz;
+  var x370 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x386 : contract<unit> = self_contract<unit>;
+  var x385 : tez = 0utz;
+  var x409 : list<operation> = make_list<operation> (([]));
+  var x494 : (((((tez * tez) * string) * address) * signature)) = (((((((0utz, 0utz)), "")), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW");
+  var x491 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x488 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x523 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x564 : nat = 0;
+  var x601 : tez = 0utz;
+  var x627 : tez = 0utz;
+  var x554 : tez = 0utz;
+  var x635 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x587 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x728 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x668 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
+  var x720 : tez = 0utz;
+  var x715 : tez = 0utz;
+  var x934 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x932 : string = "";
+  var x930 : tez = 0utz;
+  var x783 : tez = 0utz;
+  var x802 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x928 : nat = 0;
+  var x926 : tez = 0utz;
+  var x936 : signature = "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW";
+  var x938 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
+  var x1084 : (((((tez * tez) * string) * address) * signature)) = (((((((0utz, 0utz)), "")), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW");
+  do_require (("" <> (((x1084[0])[0])[1])), "WrongCondition: params.receiver != ''");
+  do_require ((caller = (sto_1[1])), "WrongCondition: sp.sender == self.data.ownerKey");
+  do_require ((contains (userToWallet, (key_to_key_hash (userPublicKey)))), "WrongCondition: self.data.userToWallet.contains(sp.hash_key(params.userPublicKey))");
+  match (userToWallet[(key_to_key_hash (userPublicKey))]) with
+  | some (x964, x965) -> (x928 := x965)
+  | none -> (fail ("Get-item:54"))
+  end;
+  do_require ((check_signature (x938, x936, (pack (((((x926, x928)), (((x1084[0])[0])[1]))))))), "WrongCondition: sp.check_signature(params.userPublicKey, params.signedMessage, sp.pack(sp.record(a = params.amount, c = self.data.userToWallet[sp.hash_key(params.userPublicKey)].nonce, r = params.receiver)))");
+  match (x802[(key_to_key_hash (x938))]) with
+  | some (x795, x796) -> (x783 := x795)
+  | none -> (fail ("Get-item:54"))
+  end;
+  do_require ((x783 >= x926 + x930), "WrongCondition: self.data.userToWallet[sp.hash_key(params.userPublicKey)].balance >= (params.amount + params.feeAmount)");
+  do_require ((balance - (x715 + x720) >= 0utz), "WrongCondition: (sp.balance - (params.amount + params.feeAmount)) >= sp.tez(0)");
+  match (x668[(key_to_key_hash (x728))]) with
+  | some (x672, x673) -> (x564 := x673)
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x587[(key_to_key_hash (x635))]) with
+  | some (x570, x571) -> (x554 := x570)
+  | none -> (fail ("Get-item:54"))
+  end;
+  match ((update (x668, (key_to_key_hash (x728)), (some((((x554 - (x627 + x601)), x564))))))[(key_to_key_hash (x523))]) with
+  | some (x511, x512) -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x488[(key_to_key_hash (x491))]) with
+  | some (x469, x470) -> ()
+  | none -> (fail ("Get-item:54"))
+  end;
+  x409 := make_list<operation> (([]));
+  match get_entrypoint<unit>("default", ((x494[0])[1])) with
+  | some x412 -> (x386 := x412)
+  | none -> (fail (Unit))
+  end;
+  x409 := prepend (x409, (make_operation (x385, x386, Unit)));
+  match get_entrypoint<unit>("default", x370) with
+  | some x367 -> (x340 := x367)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (x339, x340, Unit)))
+}
+

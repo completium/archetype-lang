@@ -1765,11 +1765,26 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tchest_key             -> M.tchest_key
   | Tvar _                 -> M.tunit
 
-let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
+let rec data_to_mterm ?omap_var ?t ?(ft : (T.type_ -> M.type_) option) (d : T.data) : M.mterm =
   let f = data_to_mterm ?omap_var in
   let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
   let is_mutez = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tmutez -> true | _ -> false) false in
   let is_address = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Taddress -> true | _ -> false) false in
+  let is_gen f x = x |> f |> Option.is_some in
+  let as_set (ty : T.type_ option) = match ty with | Some ({node = T.Tset ty}) -> Some ty | _ -> None in
+  let is_set  (ty : T.type_ option) = ty |> is_gen as_set in
+  let as_list (ty : T.type_ option) = match ty with | Some ({node = T.Tlist ty}) -> Some ty | _ -> None in
+  let is_list  (ty : T.type_ option) = ty |> is_gen as_list in
+  let as_map (ty : T.type_ option) = match ty with | Some ({node = T.Tmap (kt, vt)}) -> Some (kt, vt) | _ -> None in
+  let is_map  (ty : T.type_ option) = ty |> is_gen as_map in
+  let as_big_map (ty : T.type_ option) = match ty with | Some ({node = T.Tbig_map (kt, vt)}) -> Some (kt, vt) | _ -> None in
+  let is_big_map  (ty : T.type_ option) = ty |> is_gen as_big_map in
+  let as_option (ty : T.type_ option) = match ty with | Some ({node = T.Toption ty}) -> Some ty | _ -> None in
+  let is_option  (ty : T.type_ option) = ty |> is_gen as_option in
+  (* let as_or (ty : T.type_ option) = match ty with | Some ({node = T.Tor (kt, vt)}) -> Some (kt, vt) | _ -> None in
+  let is_or  (ty : T.type_ option) = ty |> is_gen as_or in *)
+  let do_elt (d : T.data) : M.mterm * M.mterm = match d with | Delt (a, b) -> (f a, f b) | _ -> assert false in
+  let ft ty = match ft with Some ft -> ft ty | None -> M.tnever in
   match d with
   | Dint    v when is_nat t     -> M.mk_bnat v
   | Dint    v when is_mutez t   -> M.mk_btez v
@@ -1795,9 +1810,14 @@ let rec data_to_mterm ?omap_var ?t (d : T.data) : M.mterm =
       in
       M.mk_right (ttype_to_mtype tl) (f ~t:tr d)
     end
-  | Dsome   _d       -> assert false
-  | Dnone            -> assert false
-  | Dlist  _l        -> assert false
+  | Dsome d  -> M.mk_some (f d)
+  | Dnone  when is_option t   -> M.mk_none (ft (Option.get (as_option t)))
+  | Dnone                     -> assert false
+  | Dlist l when is_set t     -> M.mk_litset  (ft (Option.get (as_set t))) (List.map f l)
+  | Dlist l when is_list t    -> M.mk_litlist (ft (Option.get (as_list t))) (List.map f l)
+  | Dlist l when is_map t     -> let kt, vt = t |> as_map     |> Option.get  in M.mk_litmap (ft kt) (ft vt) (List.map do_elt l)
+  | Dlist l when is_big_map t -> let kt, vt = t |> as_big_map |> Option.get  in M.mk_litbig_map (ft kt) (ft vt) (List.map do_elt l)
+  | Dlist _          -> assert false
   | Delt _           -> assert false
   | Dvar (id, _, _)  -> (match omap_var with Some map_var -> map_var id | None -> assert false)
   | DIrCode _        -> assert false
@@ -1831,7 +1851,7 @@ end = struct
       let mk_map = MKMap in
       match e.node with
       | Dvar v          -> let id, ty = for_dvar v in mk_mvar (M.mk_mident (dumloc (id))) (ttype_to_mtype ty)
-      | Ddata (t, d)    -> data_to_mterm ~t d
+      | Ddata (t, d)    -> data_to_mterm ~t ~ft:ttype_to_mtype d
       | Depair (e1, e2) -> mk_pair [for_expr e1; for_expr e2]
       | Deproj (_ty, e, i) -> mk_tupleaccess i (f e)
       | Dfun (`Uop Ueq, [{node = Dfun (`Bop Bcompare, [a; b])}]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
