@@ -61,7 +61,6 @@ entry sendFunds (x1084 : ((((tez * tez) * string) * address) * signature), userP
   var x926 : tez = 0utz;
   var x936 : signature = "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW";
   var x938 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
-  var x1084 : (((((tez * tez) * string) * address) * signature)) = (((((((0utz, 0utz)), "")), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW");
   do_require (("" <> (((x1084[0])[0])[1])), "WrongCondition: params.receiver != ''");
   do_require ((caller = (sto_1[1])), "WrongCondition: sp.sender == self.data.ownerKey");
   do_require ((contains (userToWallet, (key_to_key_hash (userPublicKey)))), "WrongCondition: self.data.userToWallet.contains(sp.hash_key(params.userPublicKey))");

@@ -95,7 +95,6 @@ entry createProposal (x1074 : (int * address), f : address, proposalId : string,
   var x904 : ((unit * unit)) = (Unit, Unit);
   var x900 : string = "";
   var x825 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
-  var x1074 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
   do_require ((contains (signers, caller)), "01");
   do_require ((restriction > sto_1[1]), "04");
   do_require ((0i < x1074[0]), "06");

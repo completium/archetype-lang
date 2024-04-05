@@ -227,7 +227,8 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     let v = get_init_value ty in
     mk_dvar id ty v
   in
-  let for_mterm (mt : mterm) : mterm =
+  let for_body fs : mterm =
+    let mt = fs.body in
     let add_var (accu : (ident * type_) list) (id, ty : ident * type_) =
       match List.find_opt (fun x -> String.equal x id) (List.map fst accu) with
       | Some _ -> accu
@@ -264,7 +265,7 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
         | Mdmatchor (_, psl, bl, psr, br) -> aux (aux accu bl) br @ for_dpatterm psl @ for_dpatterm psr
         | _ -> fold_term aux accu mt
       in
-      aux [] mt
+      aux [] mt @ List.map (fun x -> unloc_mident (proj3_1 x)) fs.args
     in
     let lid_types : (ident * type_) list = List.filter  (fun (id, _) -> not (List.exists (fun x -> String.equal id x) removed_ids)) fetched_vars in
     let res = seq ((List.map mk_decl lid_types) @ [mt]) in
@@ -280,7 +281,7 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     res
   in
   let for_fs (fs : function_struct) : function_struct =
-    {fs with body = for_mterm fs.body}
+    {fs with body = for_body fs}
   in
   let for_fn = function
     | Function (fs, rft) -> Function (for_fs fs, rft)

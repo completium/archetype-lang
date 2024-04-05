@@ -6,9 +6,7 @@ oracleContract : address)
 entry get (x203 : string, x204 : contract<(string * (date * nat))>) {
   var x98 : nat = 0;
   var x88 : date = 1970-01-01T00:00:00;
-  var x204 : contract<(string * (date * nat))> = self_contract<(string * (date * nat))>;
   var x118 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
-  var x203 : string = "";
   do_require ((contains ((sto_1[1]), x203)), Unit);
   match ((sto_1[1])[x203]) with
   | some (x141, x142, x143) -> (x98 := x141)

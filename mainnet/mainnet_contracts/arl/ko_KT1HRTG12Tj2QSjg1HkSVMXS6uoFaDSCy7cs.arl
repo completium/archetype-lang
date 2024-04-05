@@ -5,8 +5,6 @@ oracleContract : address)
 
 entry get (x154 : string, x155 : contract<nat>) {
   var x77 : nat = 0;
-  var x155 : contract<nat> = self_contract<nat>;
-  var x154 : string = "";
   do_require ((contains ((sto_1[1]), x154)), Unit);
   match ((sto_1[1])[x154]) with
   | some (x94, x95, x96) -> (x77 := x94)

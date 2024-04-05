@@ -6,8 +6,6 @@ metadata : big_map<string, bytes>)
 
 entry getAllowance (x156 : (address * address), x157 : contract<nat>) {
   var x87 : nat = 0;
-  var x157 : contract<nat> = self_contract<nat>;
-  var x156 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
   match (allowance[(((x156[0]), (x156[1])))]) with
   | some x107 -> (x87 := x107)
   | none -> (fail ("GetNoneValue"))
@@ -17,7 +15,6 @@ entry getAllowance (x156 : (address * address), x157 : contract<nat>) {
 
 entry getBalance (owner : address, x221 : contract<nat>) {
   var x171 : nat = 0;
-  var x221 : contract<nat> = self_contract<nat>;
   match (ledger[owner]) with
   | some x190 -> (x171 := x190)
   | none -> (fail ("GetNoneValue"))
@@ -26,7 +23,6 @@ entry getBalance (owner : address, x221 : contract<nat>) {
 }
 
 entry getTotalSupply (x251 : unit, x252 : contract<nat>) {
-  var x252 : contract<nat> = self_contract<nat>;
   operations := prepend (operations, (make_operation (0utz, x252, 1000000000000000000)))
 }
 
