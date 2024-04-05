@@ -1,0 +1,62 @@
+archetype my_contract(
+sto_1 : (list<key> * nat),
+txRecords : map<string, ((((tez * bytes) * set<key_hash>) * address) * string)>)
+
+entry default () {
+  var x551 : (((list<key> * nat) * map<string, ((((tez * bytes) * set<key_hash>) * address) * string)>)) = ((((make_list<key> (([]))), 0)), (make_map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> (([]))));
+  x551 := ((sto_1, txRecords));
+  sto_1 := sto_1;
+  txRecords := (x551[1])
+}
+
+entry withdraw (x548 : ((tez * list<signature>) * address), txId : string) {
+  var x83 : contract<unit> = self_contract<unit>;
+  var x82 : tez = 0utz;
+  var x276 : (((tez * list<signature>) * address)) = (((0utz, (make_list<signature> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x144 : nat = 0;
+  var x133 : set<key_hash> = make_set<key_hash> (([]));
+  var x270 : string = "";
+  var x233 : string = "";
+  var x223 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x207 : set<key_hash> = make_set<key_hash> (([]));
+  var x215 : ((tez * bytes)) = (0utz, 0x);
+  var x248 : map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> = make_map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> (([]));
+  var x519 : ((list<key> * nat)) = ((make_list<key> (([]))), 0);
+  var x509 : (((tez * list<signature>) * address)) = (((0utz, (make_list<signature> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x410 : string = "";
+  var x387 : map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> = make_map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> (([]));
+  var x551 : (((list<key> * nat) * map<string, ((((tez * bytes) * set<key_hash>) * address) * string)>)) = ((((make_list<key> (([]))), 0)), (make_map<string, ((((tez * bytes) * set<key_hash>) * address) * string)> (([]))));
+  x551 := ((sto_1, txRecords));
+  sto_1 := sto_1;
+  txRecords := (x551[1]);
+  if contains (txRecords, txId)
+  then ((fail ("WrongCondition: ~ (self.data.txRecords.contains(params.txId))")));
+  x248 := update (x387, x410, (some(((((((((((x509[0])[0]), (concat ((concat ((pack (x410)), (pack ((x509[1]))))), (pack (((x509[0])[0]))))))), (make_set<key_hash> (([]))))), (x509[1]))), x410)))));
+  for x297 in (x519[0]) do
+    (for x298 in ((x509[0])[1]) do
+      (x276 := ((((((x509[0])[0]), ((x509[0])[1]))), (x509[1])));
+      x270 := x410;
+      if check_signature (x297, x298, (concat ((concat ((pack (x410)), (pack ((x509[1]))))), (pack (((x509[0])[0]))))))
+      then (match (x248[x410]) with
+      | some (x254, x255, x256, x257) -> (x215 := x254;
+      x207 := x255;
+      x223 := x256;
+      x233 := x257)
+      | none -> (fail ("set_in_top-any"))
+      end;
+      x248 := update (x248, x410, (some(((((((x215, (update (x207, true, (key_to_key_hash (x297)))))), x223)), x233)))))))
+    done)
+  done;
+  match (x248[x270]) with
+  | some (x147, x148, x149, x150) -> (x133 := x148)
+  | none -> (fail ("Get-item:21"))
+  end;
+  if length (x133) >= x144
+  then (match get_entrypoint<unit>("default", (x276[1])) with
+  | some x103 -> (x83 := x103)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (x82, x83, Unit))))
+  else ((fail ("WrongCondition: False")))
+}
+

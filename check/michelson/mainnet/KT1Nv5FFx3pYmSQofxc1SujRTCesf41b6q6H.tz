@@ -1,0 +1,132 @@
+{ storage
+    (pair (pair (key_hash %journaliere)
+                (pair (pair (mutez %fonds_restant) (int %duree_de_blocage))
+                      (pair %file (list (pair timestamp mutez)) (list (pair timestamp mutez)))))
+          (pair (key_hash %maitresse) (pair %sel nat nat))) ;
+  parameter
+    (or (unit %default)
+        (or (pair %appel_clef_maitresse
+               (pair (key %clef_publique) signature)
+               (or (pair (pair (key_hash %journaliere)
+                               (pair (pair (mutez %fonds_restant) (int %duree_de_blocage))
+                                     (pair %file (list (pair timestamp mutez)) (list (pair timestamp mutez)))))
+                         (key_hash %nouvelle_clef_maitresse))
+                   (pair (lambda unit (list operation)) (key_hash %nouvelle_clef_publique))))
+            (pair %transfer
+               (pair (list %beneficiaires (pair (mutez %montant) (contract %beneficiaire unit)))
+                     (key_hash %novelle_clef_journaliere))
+               (pair (key %clef_publique) signature)))) ;
+  code { { { DUP ; CAR ; DIP { CDR } } ;
+           DIP { { DUP ; CAR ; DIP { CDR } } } } ;
+         { IF_LEFT
+             { DROP ; NIL operation }
+             { IF_LEFT
+                 { DIP { SWAP } ;
+                   SWAP ;
+                   { { DUP ; CAR ; DIP { CDR } } } ;
+                   DIP { SWAP ;
+                         { { DUP ; CAR ; DIP { CDR } } } ;
+                         DIP { DUP ;
+                               PACK ;
+                               DIP { DIP { { { DUP ; CAR ; DIP { CDR } } } ;
+                                           DUP ;
+                                           DIP { PUSH nat 2 ; ADD ; PAIR } ;
+                                           PACK ;
+                                           CHAIN_ID ;
+                                           SELF ;
+                                           PAIR ;
+                                           PACK ;
+                                           CONCAT } ;
+                                     SWAP } ;
+                               CONCAT ;
+                               DUP } ;
+                         { { DUP ; CAR ; DIP { CDR } } } ;
+                         DUP ;
+                         HASH_KEY } ;
+                   { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+                   CHECK_SIGNATURE ;
+                   IF { DROP } { FAILWITH } ;
+                   IF_LEFT
+                     { { { DUP ; CAR ; DIP { CDR } } } ;
+                       DIP { PAIR ; SWAP ; DROP } ;
+                       NIL operation }
+                     { { { DUP ; CAR ; DIP { CDR } } } ;
+                       DIP { PAIR ; SWAP } ;
+                       UNIT ;
+                       EXEC } }
+                 { DIP { { { DUP ; CAR ; DIP { CDR } } ;
+                           DIP { { DUP ; CAR ; DIP { CDR } } } } } ;
+                   { { DUP ; CAR ; DIP { CDR } } } ;
+                   DUP ;
+                   PACK ;
+                   DIP { { { DUP ; CAR ; DIP { CDR } } } ; DIP { SWAP } } ;
+                   SWAP ;
+                   DIP { DIP { DIP { SWAP } ;
+                               SWAP ;
+                               DIP { { { DUP ; CAR ; DIP { CDR } } } ; DUP ; HASH_KEY } ;
+                               { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+                               DIG 5 ;
+                               { { DUP ; CAR ; DIP { CDR } } } ;
+                               DIP { { { DUP ; CAR ; DIP { CDR } } } ;
+                                     DIP { DUP ; PUSH nat 2 ; ADD } ;
+                                     PAIR } ;
+                               PAIR ;
+                               DUG 6 ;
+                               PACK ;
+                               CHAIN_ID ;
+                               SELF ;
+                               PAIR ;
+                               PACK ;
+                               CONCAT } ;
+                         CONCAT ;
+                         SWAP ;
+                         DIP { SWAP ; DIP { DUP } } ;
+                         CHECK_SIGNATURE ;
+                         IF { DROP } { FAILWITH } ;
+                         DIP { { { DUP ; CAR ; DIP { CDR } } } ;
+                               SWAP ;
+                               DIP { SWAP ;
+                                     { { DUP ; CAR ; DIP { CDR } } } ;
+                                     PUSH bool True ;
+                                     LOOP { IF_CONS
+                                              { DUP ;
+                                                CAR ;
+                                                NOW ;
+                                                { COMPARE ;
+                                                  GE ;
+                                                  IF { CDR ; SWAP ; DIP { SWAP ; DIP { ADD } } ; PUSH bool True }
+                                                     { CONS ; PUSH bool False } } }
+                                              { IF_CONS
+                                                  { NIL (pair timestamp mutez) ;
+                                                    SWAP ;
+                                                    CONS ;
+                                                    SWAP ;
+                                                    ITER { CONS } ;
+                                                    NIL (pair timestamp mutez) ;
+                                                    SWAP ;
+                                                    PUSH bool True }
+                                                  { NIL (pair timestamp mutez) ; DUP ; PUSH bool False } } } ;
+                                     DIP { SWAP } ;
+                                     SWAP } } ;
+                         PUSH mutez 0 ;
+                         NIL operation } ;
+                   ITER { { { DUP ; CAR ; DIP { CDR } } } ;
+                          DUP ;
+                          DIP { UNIT ; TRANSFER_TOKENS ; CONS } ;
+                          SWAP ;
+                          DIP { SWAP ; ADD } } ;
+                   DIP { SWAP ;
+                         DIP { SWAP ;
+                               DUP ;
+                               NOW ;
+                               ADD ;
+                               SWAP ;
+                               DIP { DIP { SWAP } ;
+                                     SWAP ;
+                                     DIP { SWAP ; DUP ; DIP { SWAP ; PAIR ; SWAP ; DIP { CONS } ; PAIR } } ;
+                                     SUB } ;
+                               SWAP ;
+                               PAIR ;
+                               PAIR } ;
+                         PAIR } } } } ;
+         { DIP { PAIR } ; PAIR } } }

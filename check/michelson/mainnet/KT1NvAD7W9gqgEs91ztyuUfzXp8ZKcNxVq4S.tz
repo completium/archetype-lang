@@ -1,0 +1,9 @@
+{ parameter unit ;
+  storage
+    (pair (unit %dummy_field)
+          (big_map %token_metadata
+             nat
+             (pair (nat %token_id)
+                   (pair (string %symbol)
+                         (pair (string %name) (pair (nat %decimals) (map %extras string string))))))) ;
+  code { CDR ; NIL operation ; PAIR } }

@@ -1,0 +1,373 @@
+archetype my_contract(
+sto_1 : (list<string> * big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))>),
+numDataPoints : int,
+oracleContract : address)
+
+entry get (x203 : string, x204 : contract<(string * (date * nat))>) {
+  var x98 : nat = 0;
+  var x88 : date = 1970-01-01T00:00:00;
+  var x118 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  do_require ((contains ((sto_1[1]), x203)), Unit);
+  match ((sto_1[1])[x203]) with
+  | some (x141, x142, x143) -> (x98 := x141)
+  | none -> (fail (Unit))
+  end;
+  match (x118[x203]) with
+  | some (x104, x105, x106) -> (x88 := x105)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x204, ((x203, ((x88, x98)))))))
+}
+
+entry update (arg : big_map<string, (date * (date * (nat * (nat * (nat * (nat * nat))))))>) {
+  var x351 : ((((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat)))) = (((((0i, 0i)), (((make_map<int, nat> (([]))), 0)))), ((((0i, 0i)), (((make_map<int, nat> (([]))), 0)))));
+  var x313 : date = 1970-01-01T00:00:00;
+  var x224 : nat = 0;
+  var x1887 : list<string> = make_list<string> (([]));
+  var x268 : nat = 0;
+  var x253 : nat = 0;
+  var x294 : map<string, (unit * ((unit * (unit * nat)) * unit))> = make_map<string, (unit * ((unit * (unit * nat)) * unit))> (([]));
+  var x337 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1926 : string = "";
+  var x444 : ((map<int, nat> * nat)) = ((make_map<int, nat> (([]))), 0);
+  var x436 : int = 0i;
+  var x432 : int = 0i;
+  var x454 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x466 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x624 : nat = 0;
+  var x555 : int = 0i;
+  var x573 : map<int, nat> = make_map<int, nat> (([]));
+  var x632 : ((int * int)) = (0i, 0i);
+  var x642 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x654 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x1042 : list<string> = make_list<string> (([]));
+  var x615 : map<string, (unit * (unit * ((int * unit) * unit)))> = make_map<string, (unit * (unit * ((int * unit) * unit)))> (([]));
+  var x742 : nat = 0;
+  var x931 : map<int, nat> = make_map<int, nat> (([]));
+  var x975 : ((int * int)) = (0i, 0i);
+  var x985 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x997 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x793 : nat = 0;
+  var x778 : nat = 0;
+  var x824 : map<string, (unit * (unit * (unit * (unit * nat))))> = make_map<string, (unit * (unit * (unit * (unit * nat))))> (([]));
+  var x860 : int = 0i;
+  var x875 : map<int, nat> = make_map<int, nat> (([]));
+  var x909 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x961 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1014 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1087 : int = 0i;
+  var x1072 : int = 0i;
+  var x1103 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1197 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x1187 : ((map<int, nat> * nat)) = ((make_map<int, nat> (([]))), 0);
+  var x1179 : int = 0i;
+  var x1175 : int = 0i;
+  var x1209 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x1385 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x1367 : nat = 0;
+  var x1298 : int = 0i;
+  var x1316 : map<int, nat> = make_map<int, nat> (([]));
+  var x1375 : ((int * int)) = (0i, 0i);
+  var x1397 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x1358 : map<string, (unit * (((int * unit) * unit) * unit))> = make_map<string, (unit * (((int * unit) * unit) * unit))> (([]));
+  var x1728 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x1485 : nat = 0;
+  var x1674 : map<int, nat> = make_map<int, nat> (([]));
+  var x1718 : ((int * int)) = (0i, 0i);
+  var x1740 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x1536 : nat = 0;
+  var x1521 : nat = 0;
+  var x1567 : map<string, (unit * ((unit * (unit * nat)) * unit))> = make_map<string, (unit * ((unit * (unit * nat)) * unit))> (([]));
+  var x1603 : int = 0i;
+  var x1618 : map<int, nat> = make_map<int, nat> (([]));
+  var x1652 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1704 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1757 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1830 : int = 0i;
+  var x1815 : int = 0i;
+  var x1846 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1882 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x1968 : int = 0i;
+  var x1923 : int = 0i;
+  var x1908 : int = 0i;
+  var x1945 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x2107 : nat = 0;
+  var x2038 : int = 0i;
+  var x2057 : map<int, nat> = make_map<int, nat> (([]));
+  var x2115 : ((int * int)) = (0i, 0i);
+  var x2125 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2137 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x3123 : list<string> = make_list<string> (([]));
+  var x2098 : map<string, (unit * (unit * ((unit * int) * unit)))> = make_map<string, (unit * (unit * ((unit * int) * unit)))> (([]));
+  var x2230 : nat = 0;
+  var x2235 : map<int, nat> = make_map<int, nat> (([]));
+  var x2243 : ((int * int)) = (0i, 0i);
+  var x2253 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2265 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x2370 : ((map<int, nat> * nat)) = ((make_map<int, nat> (([]))), 0);
+  var x2358 : int = 0i;
+  var x2362 : int = 0i;
+  var x2380 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2392 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x2634 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2616 : nat = 0;
+  var x2491 : nat = 0;
+  var x2499 : int = 0i;
+  var x2566 : map<int, nat> = make_map<int, nat> (([]));
+  var x2624 : ((int * int)) = (0i, 0i);
+  var x2646 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x2607 : map<string, (unit * (((unit * int) * unit) * unit))> = make_map<string, (unit * (((unit * int) * unit) * unit))> (([]));
+  var x2836 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2755 : nat = 0;
+  var x2747 : nat = 0;
+  var x2818 : map<int, nat> = make_map<int, nat> (([]));
+  var x2826 : ((int * int)) = (0i, 0i);
+  var x2848 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x2966 : (((int * int) * (map<int, nat> * nat))) = (((0i, 0i)), (((make_map<int, nat> (([]))), 0)));
+  var x2956 : ((map<int, nat> * nat)) = ((make_map<int, nat> (([]))), 0);
+  var x2944 : int = 0i;
+  var x2948 : int = 0i;
+  var x2978 : ((nat * date)) = (0, 1970-01-01T00:00:00);
+  var x3070 : ((((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat)))) = (((((0i, 0i)), (((make_map<int, nat> (([]))), 0)))), ((((0i, 0i)), (((make_map<int, nat> (([]))), 0)))));
+  var x3064 : nat = 0;
+  var x3083 : big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x3141 : ((date * (nat * (nat * (nat * (nat * nat)))))) = (1970-01-01T00:00:00, ((0, ((0, ((0, ((0, 0)))))))));
+  var x3287 : date = 1970-01-01T00:00:00;
+  var x3298 : date = 1970-01-01T00:00:00;
+  var x3314 : map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> = make_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]));
+  var x3341 : map<string, (date * (date * (nat * (nat * (nat * (nat * nat))))))> = make_map<string, (date * (date * (nat * (nat * (nat * (nat * nat))))))> (([]));
+  var x3381 : ((list<string> * big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))>)) = ((make_list<string> (([]))), (make_big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))> (([]))));
+  var x3375 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x3375), Unit);
+  for x3352 in (x3381[0]) do
+    (x3341 := arg;
+    if contains (arg, x3352)
+    then (match (x3341[x3352]) with
+    | some (x3333, x3334) -> (x3298 := x3333)
+    | none -> (fail (Unit))
+    end;
+    match (x3314[x3352]) with
+    | some (x3302, x3303, x3304) -> (x3287 := x3303)
+    | none -> (fail (Unit))
+    end;
+    if x3298 > x3287
+    then (match (x3341[x3352]) with
+    | some (x3262, x3263) -> (x3141 := x3263)
+    | none -> (fail (Unit))
+    end;
+    if 0 < ((((x3141[1])[1])[1])[1])[1]
+    then (match (x3083[x3352]) with
+    | some (x3093, x3094, x3095) -> (x3064 := x3093;
+    x3070 := x3095)
+    | none -> (fail (Unit))
+    end;
+    match ((update (x3083, x3352, (some(((((x3064, x3298)), x3070))))))[x3352]) with
+    | some (x3004, x3005, x3006, x3007, x3008) -> (x2978 := x3004;
+    x2948 := x3005;
+    x2944 := x3006;
+    x2956 := x3007;
+    x2966 := x3008)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966))))))))[x3352]) with
+    | some (x2874, x2875, x2876, x2877, x2878) -> (x2848 := x2874;
+    x2826 := x2875;
+    x2818 := x2876;
+    x2755 := x2877;
+    x2836 := x2878)
+    | none -> (fail (Unit))
+    end;
+    match ((((x3141[1])[1])[0] + (((x3141[1])[1])[1])[0]) + ((((x3141[1])[1])[1])[1])[0]) /% 3 with
+    | some (x2772, x2773) -> (x2747 := x2772)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966)))))))), x3352, (some(((x2848, ((((x2826, ((x2818, (x2747 * ((((x3141[1])[1])[1])[1])[1] + x2755))))), x2836))))))))[x3352]) with
+    | some (x2673, x2674, x2675, x2676, x2677) -> (x2646 := x2673;
+    x2624 := x2674;
+    x2566 := x2675;
+    x2616 := x2676;
+    x2634 := x2677)
+    | none -> (fail (Unit))
+    end;
+    match (x2607[x3352]) with
+    | some (x2581, x2582, x2583, x2584, x2585) -> (x2499 := x2583)
+    | none -> (fail (Unit))
+    end;
+    match ((((x3141[1])[1])[0] + (((x3141[1])[1])[1])[0]) + ((((x3141[1])[1])[1])[1])[0]) /% 3 with
+    | some (x2514, x2515) -> (x2491 := x2514)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966)))))))), x3352, (some(((x2848, ((((x2826, ((x2818, (x2747 * ((((x3141[1])[1])[1])[1])[1] + x2755))))), x2836)))))))), x3352, (some(((x2646, ((((x2624, (((update (x2566, x2499, (some((x2491 * ((((x3141[1])[1])[1])[1])[1]))))), x2616)))), x2634))))))))[x3352]) with
+    | some (x2415, x2416, x2417, x2418, x2419) -> (x2392 := x2415;
+    x2380 := x2416;
+    x2362 := x2417;
+    x2358 := x2418;
+    x2370 := x2419)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966)))))))), x3352, (some(((x2848, ((((x2826, ((x2818, (x2747 * ((((x3141[1])[1])[1])[1])[1] + x2755))))), x2836)))))))), x3352, (some(((x2646, ((((x2624, (((update (x2566, x2499, (some((x2491 * ((((x3141[1])[1])[1])[1])[1]))))), x2616)))), x2634)))))))), x3352, (some(((x2392, ((x2380, ((((x2362, (1i + x2358))), x2370))))))))))[x3352]) with
+    | some (x2288, x2289, x2290, x2291, x2292) -> (x2265 := x2288;
+    x2253 := x2289;
+    x2243 := x2290;
+    x2235 := x2291;
+    x2230 := x2292)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update ((update ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966)))))))), x3352, (some(((x2848, ((((x2826, ((x2818, (x2747 * ((((x3141[1])[1])[1])[1])[1] + x2755))))), x2836)))))))), x3352, (some(((x2646, ((((x2624, (((update (x2566, x2499, (some((x2491 * ((((x3141[1])[1])[1])[1])[1]))))), x2616)))), x2634)))))))), x3352, (some(((x2392, ((x2380, ((((x2362, (1i + x2358))), x2370)))))))))), x3352, (some(((x2265, ((x2253, ((x2243, ((x2235, (((((x3141[1])[1])[1])[1])[1] + x2230)))))))))))))[x3352]) with
+    | some (x2161, x2162, x2163, x2164, x2165) -> (x2137 := x2161;
+    x2125 := x2162;
+    x2115 := x2163;
+    x2057 := x2164;
+    x2107 := x2165)
+    | none -> (fail (Unit))
+    end;
+    match (x2098[x3352]) with
+    | some (x2069, x2070, x2071, x2072, x2073) -> (x2038 := x2072)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update ((update ((update ((update ((update (x3083, x3352, (some(((((x3064, x3298)), x3070)))))), x3352, (some(((x2978, ((((((x2948, (1i + x2944))), x2956)), x2966)))))))), x3352, (some(((x2848, ((((x2826, ((x2818, (x2747 * ((((x3141[1])[1])[1])[1])[1] + x2755))))), x2836)))))))), x3352, (some(((x2646, ((((x2624, (((update (x2566, x2499, (some((x2491 * ((((x3141[1])[1])[1])[1])[1]))))), x2616)))), x2634)))))))), x3352, (some(((x2392, ((x2380, ((((x2362, (1i + x2358))), x2370)))))))))), x3352, (some(((x2265, ((x2253, ((x2243, ((x2235, (((((x3141[1])[1])[1])[1])[1] + x2230))))))))))))), x3352, (some(((x2137, ((x2125, ((x2115, (((update (x2057, x2038, (some((((((x3141[1])[1])[1])[1])[1]))))), x2107))))))))))))[x3352]) with
+    | some (x1972, x1973, x1974, x1975, x1976) -> (x1923 := x1973)
+    | none -> (fail (Unit))
+    end;
+    x1926 := x3352;
+    match (x1945[x3352]) with
+    | some (x1929, x1930, x1931, x1932, x1933) -> (x1908 := x1931)
+    | none -> (fail (Unit))
+    end;
+    if (x1908 - x1923) + 1i > x1968
+    then (match (x1882[x3352]) with
+    | some (x1871, x1872, x1873, x1874, x1875) -> (x1830 := x1873)
+    | none -> (fail (Unit))
+    end;
+    match (x1846[x3352]) with
+    | some (x1834, x1835, x1836, x1837, x1838) -> (x1815 := x1835)
+    | none -> (fail (Unit))
+    end;
+    do_require ((x1815 < x1830), Unit);
+    match (x1757[x3352]) with
+    | some (x1763, x1764, x1765, x1766, x1767) -> (x1740 := x1763;
+    x1718 := x1764;
+    x1674 := x1765;
+    x1728 := x1767)
+    | none -> (fail (Unit))
+    end;
+    match (x1704[x3352]) with
+    | some (x1685, x1686, x1687, x1688, x1689) -> ()
+    | none -> (fail (Unit))
+    end;
+    match (x1652[x3352]) with
+    | some (x1630, x1631, x1632, x1633, x1634) -> (x1603 := x1631)
+    | none -> (fail (Unit))
+    end;
+    match (x1618[x1603]) with
+    | some x1589 -> (x1536 := x1589)
+    | none -> (fail (Unit))
+    end;
+    match (x1567[x3352]) with
+    | some (x1547, x1548, x1549, x1550, x1551) -> (x1521 := x1550)
+    | none -> (fail (Unit))
+    end;
+    match int_to_nat ((x1521 - x1536)) with
+    | some x1499 -> (x1485 := x1499)
+    | none -> (fail (Unit))
+    end;
+    match ((update (x1757, x3352, (some(((x1740, ((((x1718, ((x1674, x1485)))), x1728))))))))[x3352]) with
+    | some (x1420, x1421, x1422, x1423, x1424) -> (x1397 := x1420;
+    x1375 := x1421;
+    x1316 := x1422;
+    x1367 := x1423;
+    x1385 := x1424)
+    | none -> (fail (Unit))
+    end;
+    match (x1358[x3352]) with
+    | some (x1327, x1328, x1329, x1330, x1331) -> (x1298 := x1328)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update (x1757, x3352, (some(((x1740, ((((x1718, ((x1674, x1485)))), x1728)))))))), x3352, (some(((x1397, ((((x1375, (((update (x1316, x1298, (none<nat>))), x1367)))), x1385))))))))[x3352]) with
+    | some (x1231, x1232, x1233, x1234, x1235) -> (x1209 := x1231;
+    x1175 := x1232;
+    x1179 := x1233;
+    x1187 := x1234;
+    x1197 := x1235)
+    | none -> (fail (Unit))
+    end;
+    match ((update ((update ((update (x1757, x3352, (some(((x1740, ((((x1718, ((x1674, x1485)))), x1728)))))))), x3352, (some(((x1397, ((((x1375, (((update (x1316, x1298, (none<nat>))), x1367)))), x1385)))))))), x3352, (some(((x1209, (((((((1i + x1175), x1179)), x1187)), x1197))))))))[x3352]) with
+    | some (x1128, x1129, x1130, x1131, x1132) -> (x1087 := x1131)
+    | none -> (fail (Unit))
+    end;
+    match (x1103[x3352]) with
+    | some (x1091, x1092, x1093, x1094, x1095) -> (x1072 := x1093)
+    | none -> (fail (Unit))
+    end;
+    do_require ((x1072 < x1087), Unit);
+    match (x1014[x3352]) with
+    | some (x1020, x1021, x1022, x1023, x1024) -> (x997 := x1020;
+    x985 := x1021;
+    x975 := x1022;
+    x931 := x1023)
+    | none -> (fail (Unit))
+    end;
+    match (x961[x3352]) with
+    | some (x942, x943, x944, x945, x946) -> ()
+    | none -> (fail (Unit))
+    end;
+    match (x909[x3352]) with
+    | some (x887, x888, x889, x890, x891) -> (x860 := x889)
+    | none -> (fail (Unit))
+    end;
+    match (x875[x860]) with
+    | some x846 -> (x793 := x846)
+    | none -> (fail (Unit))
+    end;
+    match (x824[x3352]) with
+    | some (x804, x805, x806, x807, x808) -> (x778 := x808)
+    | none -> (fail (Unit))
+    end;
+    match int_to_nat ((x778 - x793)) with
+    | some x756 -> (x742 := x756)
+    | none -> (fail (Unit))
+    end;
+    match ((update (x1014, x3352, (some(((x997, ((x985, ((x975, ((x931, x742))))))))))))[x3352]) with
+    | some (x677, x678, x679, x680, x681) -> (x654 := x677;
+    x642 := x678;
+    x632 := x679;
+    x573 := x680;
+    x624 := x681)
+    | none -> (fail (Unit))
+    end;
+    match (x615[x3352]) with
+    | some (x584, x585, x586, x587, x588) -> (x555 := x586)
+    | none -> (fail (Unit))
+    end;
+    x1887 := x1042;
+    x1926 := x3352;
+    match ((update ((update (x1014, x3352, (some(((x997, ((x985, ((x975, ((x931, x742)))))))))))), x3352, (some(((x654, ((x642, ((x632, (((update (x573, x555, (none<nat>))), x624))))))))))))[x3352]) with
+    | some (x488, x489, x490, x491, x492) -> (x466 := x488;
+    x454 := x489;
+    x432 := x490;
+    x436 := x491;
+    x444 := x492)
+    | none -> (fail (Unit))
+    end;
+    x1882 := update ((update ((update (x1014, x3352, (some(((x997, ((x985, ((x975, ((x931, x742)))))))))))), x3352, (some(((x654, ((x642, ((x632, (((update (x573, x555, (none<nat>))), x624)))))))))))), x3352, (some(((x466, ((x454, (((((1i + x432), x436)), x444))))))))));
+    match (x1882[x1926]) with
+    | some (x369, x370, x371) -> (x313 := x370;
+    x351 := x371)
+    | none -> (fail (Unit))
+    end;
+    match (x337[x1926]) with
+    | some (x321, x322, x323, x324, x325) -> (x268 := x325)
+    | none -> (fail (Unit))
+    end;
+    match (x294[x1926]) with
+    | some (x276, x277, x278, x279, x280) -> (x253 := x279)
+    | none -> (fail (Unit))
+    end;
+    match x253 /% x268 with
+    | some (x239, x240) -> (x224 := x239)
+    | none -> (fail (Unit))
+    end;
+    sto_1 := ((x1887, (update (x1882, x1926, (some(((((x224, x313)), x351))))))))))))
+  done
+}
+

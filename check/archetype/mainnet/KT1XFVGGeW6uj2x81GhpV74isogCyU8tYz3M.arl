@@ -1,0 +1,162 @@
+archetype my_contract(
+accounts : map<string, tez>,
+admin : address)
+
+entry add_account (account_name : string, amount : tez) {
+  var x96 : tez = 0utz;
+  var x99 : string = "";
+  var x116 : map<string, tez> = make_map<string, tez> (([]));
+  var x124 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  x116 := accounts;
+  x124 := admin;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  accounts := accounts;
+  admin := x124;
+  if contains (x116, account_name) then (())
+  else (accounts := update (accounts, x99, (some(x96))))
+}
+
+entry deposit (arg : string) {
+  var x159 : tez = 0utz;
+  var x186 : map<string, tez> = make_map<string, tez> (([]));
+  var x200 : map<string, tez> = make_map<string, tez> (([]));
+  do_require (("" <> arg), "WrongCondition: params.account_name != ''");
+  do_require ((transferred >= 0utz), "WrongCondition: sp.amount >= sp.tez(0)");
+  x200 := accounts;
+  if contains (accounts, arg) then (())
+  else (x200 := update (x200, arg, (some(0i))));
+  match (x200[arg]) with
+  | some x204 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x186[arg]) with
+  | some x172 -> (x159 := x172)
+  | none -> (fail ("Get-item:35"))
+  end;
+  accounts := update (x200, arg, (some((x159 + transferred))))
+}
+
+entry remove_account (arg : string) {
+  var x320 : map<string, tez> = make_map<string, tez> (([]));
+  var x338 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  match (accounts[arg]) with
+  | some x348 -> (x338 := x348)
+  | none -> (fail ("Get-item:55"))
+  end;
+  do_require ((x338 = 0utz), "WrongCondition: self.data.accounts[params.account_name].balance == sp.tez(0)");
+  if contains (x320, arg)
+  then (accounts := update (accounts, arg, (none<tez>)))
+}
+
+entry tip (%_from : string, %_to : string, amount : tez) {
+  var x495 : tez = 0utz;
+  var x404 : tez = 0utz;
+  var x397 : tez = 0utz;
+  var x439 : ((string * string)) = ("", "");
+  var x424 : map<string, tez> = make_map<string, tez> (([]));
+  var x553 : map<string, tez> = make_map<string, tez> (([]));
+  var x552 : string = "";
+  var x559 : tez = 0utz;
+  var x709 : tez = 0utz;
+  var x702 : tez = 0utz;
+  var x743 : ((string * string)) = ("", "");
+  var x728 : map<string, tez> = make_map<string, tez> (([]));
+  var x609 : tez = 0utz;
+  var x602 : tez = 0utz;
+  var x644 : ((string * string)) = ("", "");
+  var x629 : map<string, tez> = make_map<string, tez> (([]));
+  var x801 : map<string, tez> = make_map<string, tez> (([]));
+  var x800 : string = "";
+  var x832 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
+  | some x843 -> (x832 := x843)
+  | none -> (fail ("Get-item:80"))
+  end;
+  do_require ((x832 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
+  if contains (x801, x800)
+  then (match (x801[x800]) with
+  | some x663 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x629[(x644[0])]) with
+  | some x615 -> (x602 := x615)
+  | none -> (fail ("Get-item:80"))
+  end;
+  x553 := update (x801, x800, (some((x602 - x609)))))
+  else (match (x801[x800]) with
+  | some x762 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x728[(x743[0])]) with
+  | some x715 -> (x702 := x715)
+  | none -> (fail ("Get-item:80"))
+  end;
+  x553 := update (x801, x800, (some((x702 - x709)))));
+  do_require ((x559 >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  if contains (x553, x552)
+  then (match (x553[x552]) with
+  | some x458 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  match (x424[(x439[1])]) with
+  | some x410 -> (x397 := x410)
+  | none -> (fail ("Get-item:81"))
+  end;
+  accounts := update (x553, x552, (some((x397 + x404)))))
+  else (match (x553[x552]) with
+  | some x511 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  accounts := update (x553, x552, (some(x495))))
+}
+
+entry %transfer (%_from : string, %_to : address, amount : tez) {
+  var x921 : contract<unit> = self_contract<unit>;
+  var x920 : tez = 0utz;
+  var x1082 : (((string * address) * tez)) = ((("", tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
+  var x1099 : map<string, tez> = make_map<string, tez> (([]));
+  var x1078 : tez = 0utz;
+  var x1114 : ((string * address)) = ("", tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x994 : map<string, tez> = make_map<string, tez> (([]));
+  var x972 : tez = 0utz;
+  var x1009 : ((string * address)) = ("", tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x1172 : map<string, tez> = make_map<string, tez> (([]));
+  var x1171 : string = "";
+  var x1203 : tez = 0utz;
+  do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
+  do_require ((transferred >= 0utz), "WrongCondition: sp.amount >= sp.tez(0)");
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
+  | some x1214 -> (x1203 := x1214)
+  | none -> (fail ("Get-item:69"))
+  end;
+  do_require ((x1203 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
+  if contains (x1172, x1171)
+  then (match (x1172[x1171]) with
+  | some x1028 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  x1082 := (((((x1009[0]), (x1009[1]))), x972));
+  match (x994[(x1009[0])]) with
+  | some x978 -> ()
+  | none -> (fail ("Get-item:69"))
+  end)
+  else (match (x1172[x1171]) with
+  | some x1133 -> ()
+  | none -> (fail ("set_in_top-any"))
+  end;
+  x1082 := (((((x1114[0]), (x1114[1]))), x1078));
+  match (x1099[(x1114[0])]) with
+  | some x1084 -> ()
+  | none -> (fail ("Get-item:69"))
+  end);
+  match get_entrypoint<unit>("default", ((x1082[0])[1])) with
+  | some x935 -> (x921 := x935)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (x920, x921, Unit)))
+}
+

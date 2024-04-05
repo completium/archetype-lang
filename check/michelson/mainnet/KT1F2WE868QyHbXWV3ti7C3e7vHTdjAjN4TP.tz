@@ -1,0 +1,48 @@
+{ parameter (pair address nat) ;
+  storage (pair (big_map address nat) nat) ;
+  code { PUSH mutez 0 ;
+         AMOUNT ;
+         { { COMPARE ; NEQ } ;
+           IF { PUSH string "Please don't send any XTZ" ; FAILWITH } {} } ;
+         { DUP ; CAR ; DIP { CDR } } ;
+         DIP { { DUP ; CAR ; DIP { CDR } } } ;
+         SWAP ;
+         DUP ;
+         SENDER ;
+         GET ;
+         IF_NONE
+           { PUSH string "Sender address not found." ; FAILWITH }
+           { DUP ;
+             DIP 3 { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP 4 { DUP } ;
+             DIG 4 ;
+             { { COMPARE ; GT } ;
+               IF { PUSH string "Not enough balance." ; FAILWITH }
+                  { DIP 3 { DUP } ; DIG 3 ; SWAP ; SUB ; ABS ; SOME ; SENDER ; UPDATE } } } ;
+         DUG 3 ;
+         DUG 3 ;
+         DUP ;
+         PUSH nat 50 ;
+         SWAP ;
+         EDIV ;
+         IF_NONE
+           { PUSH string "Error while burning." ; FAILWITH }
+           { CAR ;
+             DUP ;
+             DIG 3 ;
+             SUB ;
+             ABS ;
+             DIP { SWAP ; SUB ; ABS } ;
+             SWAP ;
+             DUG 3 ;
+             DUG 3 } ;
+         DUP ;
+         DIP 2 { DUP } ;
+         DIG 2 ;
+         GET ;
+         { IF_NONE { DUG 2 } { DIG 3 ; ADD ; DIG 2 } } ;
+         DIP { SOME } ;
+         UPDATE ;
+         PAIR ;
+         NIL operation ;
+         PAIR } }

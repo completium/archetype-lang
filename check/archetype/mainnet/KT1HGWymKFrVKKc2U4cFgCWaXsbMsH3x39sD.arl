@@ -1,0 +1,6 @@
+archetype my_contract(sto_1 : address)
+
+entry default (arg : address) {
+  sto_1 := arg
+}
+

@@ -1,0 +1,49 @@
+archetype my_contract(
+guildContract : address,
+owner : address)
+
+entry default () {
+  var x82 : contract<unit> = self_contract<unit>;
+  if caller <> guildContract
+  then (match get_entrypoint<unit>("default", caller) with
+  | some x91 -> (x82 := x91)
+  | none -> (fail (29i))
+  end;
+  operations := prepend (operations, (make_operation (transferred, x82, Unit))))
+}
+
+entry reRoll () {
+  var x117 : contract<tez> = self_contract<tez>;
+  do_require ((transferred = 0utz), 403i);
+  do_require ((source = owner), 401i);
+  match get_entrypoint<tez>("%reRoll", guildContract) with
+  | some x126 -> (x117 := x126)
+  | none -> (fail (46i))
+  end;
+  operations := prepend (operations, (make_operation (transferred, x117, balance)))
+}
+
+entry updateDelegator (arg : key_hash) {
+  var x193 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x189 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  guildContract := x189;
+  owner := x193;
+  do_require ((caller = x189), 401i);
+  operations := prepend (operations, (set_delegate ((some(arg)))))
+}
+
+entry withdraw (arg : tez) {
+  var x205 : contract<tez> = self_contract<tez>;
+  var x189 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x193 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((transferred = 0utz), 403i);
+  do_require ((0utz < arg), 422i);
+  do_require ((x193 = source), 401i);
+  do_require ((arg <= balance), 403i);
+  match get_entrypoint<tez>("%withdraw", x189) with
+  | some x216 -> (x205 := x216)
+  | none -> (fail (38i))
+  end;
+  operations := prepend (operations, (make_operation (arg, x205, arg)))
+}
+

@@ -1,0 +1,300 @@
+{ parameter
+    (or (or (or (list %addMembers
+                   (pair (address %0)
+                         (pair %1
+                            (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                            (bool %restricted))))
+                (pair %checkMember
+                   (pair (address %0)
+                         (map %1
+                            nat
+                            (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                  (pair (map %rating_restrictions nat nat) (timestamp %vesting)))))
+                   (bool %2)))
+            (or (pair %getMember
+                   (address %0)
+                   (lambda %1
+                      (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                            (bool %restricted))
+                      (list operation)))
+                (list %removeMembers address)))
+        (pair %setMemberCountry (address %0) (nat %1))) ;
+  storage
+    (pair (map %members
+             address
+             (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                   (bool %restricted)))
+          (address %owner)) ;
+  code { DUP ;
+         LAMBDA
+           address
+           unit
+           { DUP ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             IF { UNIT }
+                { PUSH string "Only the owner of the contract modify KYC members" ; FAILWITH } ;
+             DIP { DROP } } ;
+         SWAP ;
+         DUP ;
+         CDR ;
+         DIP { DUP } ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { DUP ;
+             IF_LEFT
+               { DUP ;
+                 IF_LEFT
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DUP ;
+                     CDR ;
+                     DIP { DIP 6 { DUP } ; DIG 6 } ;
+                     EXEC ;
+                     DIP 2 { DUP } ;
+                     DIG 2 ;
+                     DIP { DIP { DUP } ; SWAP ; CAR } ;
+                     ITER { SWAP ;
+                            PAIR ;
+                            DUP ;
+                            DUP ;
+                            CDR ;
+                            DUP ;
+                            CAR ;
+                            DIP { DUP ; CDR ; SOME ; DIP { DIP { DUP } ; SWAP ; CAR } } ;
+                            UPDATE ;
+                            DIP { DROP 3 } } ;
+                     DUP ;
+                     DIP { DIP 2 { DUP } ; DIG 2 ; CDR } ;
+                     PAIR ;
+                     NIL operation ;
+                     PAIR ;
+                     DIP { DROP 4 } }
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DUP ;
+                           LAMBDA
+                             (pair (pair (pair (address %0)
+                                               (map %1
+                                                  nat
+                                                  (pair (pair (nat %country_invest_limit) (nat %min_rating))
+                                                        (pair (map %rating_restrictions nat nat) (timestamp %vesting)))))
+                                         (bool %2))
+                                   (pair (map %members
+                                            address
+                                            (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                                  (bool %restricted)))
+                                         (address %owner)))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (map %members
+                                         address
+                                         (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                               (bool %restricted)))
+                                      (address %owner)))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               CAR ;
+                               CAR ;
+                               DIP 2 { DUP } ;
+                               DIG 2 ;
+                               CAR ;
+                               CDR ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 ; CAR } ;
+                               GET ;
+                               IF_NONE
+                                 { PUSH string "This is a test error." ; FAILWITH }
+                                 { DROP ; PUSH unit Unit } ;
+                               DIP 2 { DUP } ;
+                               DIG 2 ;
+                               DIP { DIP 3 { DUP } ; DIG 3 ; CAR } ;
+                               GET ;
+                               IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                               DUP ;
+                               CDR ;
+                               NOT ;
+                               IF { PUSH unit Unit }
+                                  { PUSH string "This investor is KYC restricted." ; FAILWITH } ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               DIP { DIP 3 { DUP } ; DIG 3 } ;
+                               GET ;
+                               IF_NONE
+                                 { PUSH string "Country restriction failed." ; FAILWITH }
+                                 { DROP ; PUSH unit Unit } ;
+                               DIP 2 { DUP } ;
+                               DIG 2 ;
+                               CAR ;
+                               CAR ;
+                               CAR ;
+                               DIP { DIP 4 { DUP } ; DIG 4 } ;
+                               GET ;
+                               IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                               DUP ;
+                               CAR ;
+                               CDR ;
+                               DIP { DIP 3 { DUP } ; DIG 3 ; CAR ; CDR ; CAR } ;
+                               COMPARE ;
+                               LE ;
+                               IF { PUSH unit Unit }
+                                  { PUSH string "Country restriction failed." ; FAILWITH } ;
+                               DIP { DROP 4 } ;
+                               DIP 4 { DUP } ;
+                               DIG 4 ;
+                               NIL operation ;
+                               PAIR ;
+                               DIP { DROP 6 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } } ;
+                 DIP { DROP } }
+               { DUP ;
+                 IF_LEFT
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DIP { DUP ;
+                           DUP ;
+                           LAMBDA
+                             (pair (pair (address %0)
+                                         (lambda %1
+                                            (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                                  (bool %restricted))
+                                            (list operation)))
+                                   (pair (map %members
+                                            address
+                                            (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                                  (bool %restricted)))
+                                         (address %owner)))
+                             (pair (list %0 operation)
+                                   (pair %1
+                                      (map %members
+                                         address
+                                         (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                               (bool %restricted)))
+                                      (address %owner)))
+                             { DUP ;
+                               CAR ;
+                               SWAP ;
+                               CDR ;
+                               DIP { DUP } ;
+                               SWAP ;
+                               CAR ;
+                               DIP { DUP ; CAR } ;
+                               GET ;
+                               IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 ; CDR } ;
+                               EXEC ;
+                               DUP ;
+                               DIP { DIP 2 { DUP } ; DIG 2 } ;
+                               PAIR ;
+                               DIP { DROP 4 } } ;
+                           SWAP ;
+                           APPLY ;
+                           DIP { DROP } } ;
+                     EXEC ;
+                     DIP { DROP } }
+                   { DIP 3 { DUP } ;
+                     DIG 3 ;
+                     DUP ;
+                     CDR ;
+                     DIP { DIP 6 { DUP } ; DIG 6 } ;
+                     EXEC ;
+                     DIP 2 { DUP } ;
+                     DIG 2 ;
+                     DIP { DIP { DUP } ; SWAP ; CAR } ;
+                     ITER { SWAP ;
+                            PAIR ;
+                            DUP ;
+                            DUP ;
+                            CDR ;
+                            DIP { DUP ;
+                                  CAR ;
+                                  NONE (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                             (bool %restricted)) } ;
+                            UPDATE ;
+                            DIP { DROP 2 } } ;
+                     DUP ;
+                     DIP { DIP 2 { DUP } ; DIG 2 ; CDR } ;
+                     PAIR ;
+                     NIL operation ;
+                     PAIR ;
+                     DIP { DROP 4 } } ;
+                 DIP { DROP } } ;
+             DIP { DROP } }
+           { DIP { DUP } ;
+             SWAP ;
+             DIP { DUP ;
+                   DIP { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+                   DUP ;
+                   DIP { PAIR } ;
+                   SWAP ;
+                   LAMBDA
+                     (pair (pair (pair (address %0) (nat %1)) (lambda address unit))
+                           (pair (map %members
+                                    address
+                                    (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                          (bool %restricted)))
+                                 (address %owner)))
+                     (pair (list %0 operation)
+                           (pair %1
+                              (map %members
+                                 address
+                                 (pair (pair (pair (nat %country) (timestamp %expires)) (pair (nat %rating) (nat %region)))
+                                       (bool %restricted)))
+                              (address %owner)))
+                     { DUP ;
+                       CAR ;
+                       SWAP ;
+                       CDR ;
+                       DIP { DUP ; CDR ; SWAP ; CAR } ;
+                       DUP ;
+                       CDR ;
+                       DIP { DIP 2 { DUP } ; DIG 2 } ;
+                       EXEC ;
+                       DIP 2 { DUP } ;
+                       DIG 2 ;
+                       CAR ;
+                       DUP ;
+                       DIP { DIP 2 { DUP } ; DIG 2 ; CAR } ;
+                       GET ;
+                       IF_NONE { PUSH string "MAP FIND" ; FAILWITH } {} ;
+                       DIP { DUP } ;
+                       SWAP ;
+                       DIP { DIP 4 { DUP } ;
+                             DIG 4 ;
+                             CDR ;
+                             DIP { DUP ; CAR ; CAR ; CDR } ;
+                             PAIR ;
+                             DIP { DUP ; CAR ; CDR ; CAR ; DIP { DUP ; CAR ; CDR ; CDR } ; PAIR } ;
+                             PAIR ;
+                             DIP { DUP ; CDR } ;
+                             PAIR ;
+                             SOME ;
+                             DIP { DIP 3 { DUP } ; DIG 3 ; CAR } } ;
+                       UPDATE ;
+                       DIP { DIP 3 { DUP } ; DIG 3 ; CDR } ;
+                       PAIR ;
+                       NIL operation ;
+                       PAIR ;
+                       DIP { DROP 6 } } ;
+                   SWAP ;
+                   APPLY ;
+                   DIP { DROP } } ;
+             EXEC ;
+             DIP { DROP } } ;
+         DIP { DROP 4 } } }

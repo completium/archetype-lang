@@ -1,0 +1,71 @@
+archetype my_contract(
+sto_2 : ((tez * address) * (tez * string)),
+sto_1 : (address * address),
+time_lock : date,
+token_id : nat)
+
+entry contribute () {
+  var x117 : nat = 0;
+  var x82 : contract<(address * (nat * nat))> = self_contract<(address * (nat * nat))>;
+  var x93 : nat = 0;
+  var x95 : date = 1970-01-01T00:00:00;
+  var x97 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x99 : (((tez * address) * (tez * string))) = (((0utz, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((0utz, "")));
+  var x122 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((transferred > 1000000utz), "WrongCondition: sp.amount > sp.tez(1)");
+  do_require ((caller <> ((sto_2[0])[1])), "WrongCondition: sp.sender != self.data.admin");
+  match transferred /% 1utz with
+  | some (x140, x141) -> (x117 := x140)
+  | none -> (fail (37i))
+  end;
+  match get_entrypoint<(address * (nat * nat))>("%mint_hicetnuncDAO", x122) with
+  | some x119 -> (x82 := x119)
+  | none -> (fail (38i))
+  end;
+  sto_2 := x99;
+  sto_1 := x97;
+  time_lock := x95;
+  token_id := x93;
+  operations := prepend (operations, (make_operation (0utz, x82, ((caller, ((x117, x93)))))))
+}
+
+entry oracle_delegation (arg : option<key_hash>) {
+  var x253 : ((date * nat)) = (1970-01-01T00:00:00, 0);
+  var x251 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x247 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x255 : (((tez * address) * (tez * string))) = (((0utz, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((0utz, "")));
+  sto_2 := x255;
+  sto_1 := ((x247, x251));
+  time_lock := (x253[0]);
+  token_id := (x253[1]);
+  do_require ((caller = x247), "WrongCondition: sp.sender == self.data.oracle");
+  operations := prepend (operations, (set_delegate (arg)))
+}
+
+entry update_oracle (arg : address) {
+  var x321 : unit = Unit;
+  var x323 : ((date * nat)) = (1970-01-01T00:00:00, 0);
+  var x325 : (((tez * address) * (tez * string))) = (((0utz, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((0utz, "")));
+  var x317 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x317), "WrongCondition: sp.sender == self.data.oracle");
+  sto_2 := x325;
+  time_lock := (x323[0]);
+  token_id := (x323[1]);
+  sto_1 := ((arg, x321))
+}
+
+entry withdraw (address_ : address, amount : tez) {
+  var x346 : contract<unit> = self_contract<unit>;
+  var x345 : tez = 0utz;
+  var x425 : ((address * tez)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0utz);
+  var x408 : (((address * address) * (date * nat))) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((1970-01-01T00:00:00, 0)));
+  var x400 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x400), "WrongCondition: sp.sender == self.data.admin");
+  do_require ((now > (x408[1])[0]), "WrongCondition: sp.now > self.data.time_lock");
+  match get_entrypoint<unit>("default", (x425[0])) with
+  | some x358 -> (x346 := x358)
+  | none -> (fail (65i))
+  end;
+  operations := prepend (operations, (make_operation (x345, x346, Unit)))
+}
+

@@ -1,0 +1,11 @@
+archetype my_contract(sto_1 : map<address, (string * (nat * (nat * (string * (string * (tez * date))))))>)
+
+entry bakerPoolInfo (name : string, revShare : nat, bakerFee : nat, site : string, location : string, minAmount : tez, updated : date) {
+  (if transferred <> 10000utz
+   then ((fail ("An update or registration costs 0.01tz in order to prevent spam")))
+   else ((if revShare > 100 then ((fail ("Can't share more than 100%")))
+          else ((if bakerFee > 10000
+                 then ((fail ("Can't take more than 100% as fee")))
+                 else (sto_1 := update (sto_1, caller, (some(((name, ((revShare, ((bakerFee, ((site, ((location, ((minAmount, now)))))))))))))))))))))
+}
+

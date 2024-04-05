@@ -1,0 +1,4 @@
+archetype my_contract(
+sto_2 : set<key_hash>,
+sto_1 : address)
+

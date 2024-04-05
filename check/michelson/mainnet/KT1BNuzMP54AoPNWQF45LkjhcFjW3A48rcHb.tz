@@ -1,0 +1,19 @@
+{ parameter (or (key_hash %add_certified) (address %change_manager)) ;
+  storage (pair (set key_hash) address) ;
+  code { DUP ;
+         { CDR ; CDR @caller } ;
+         SENDER ;
+         { COMPARE ;
+           EQ ;
+           IF { DUP ;
+                CAR ;
+                IF_LEFT
+                  { DIP { DUP ; { CDR ; CAR } ; PUSH bool True } ;
+                    UPDATE ;
+                    DIP { { CDR ; CDR } } ;
+                    PAIR ;
+                    NIL operation ;
+                    PAIR }
+                  { SWAP ; { CDR ; CAR } ; PAIR ; NIL operation ; PAIR } }
+              { PUSH @error string "You are not authorized to call this contract." ;
+                FAILWITH } } } }

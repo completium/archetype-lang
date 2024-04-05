@@ -1,0 +1,12 @@
+archetype my_contract
+
+entry default (arg : string) {
+  var x74 : contract<unit> = self_contract<unit>;
+  if 0utz = transferred then (())
+  else (match get_entrypoint<unit>("default", source) with
+  | some x83 -> (x74 := x83)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (transferred, x74, Unit))))
+}
+

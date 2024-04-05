@@ -1,0 +1,19 @@
+{ parameter unit ;
+  storage (map address mutez) ;
+  code { CDR ;
+         AMOUNT ;
+         PUSH mutez 2 ;
+         { COMPARE ; GE ; IF {} { { UNIT ; FAILWITH } } } ;
+         AMOUNT ;
+         SOME ;
+         SENDER ;
+         UPDATE ;
+         NIL operation ;
+         SENDER ;
+         CONTRACT unit ;
+         IF_NONE { { UNIT ; FAILWITH } } {} ;
+         AMOUNT ;
+         UNIT ;
+         TRANSFER_TOKENS ;
+         CONS ;
+         PAIR } }

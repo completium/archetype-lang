@@ -1,0 +1,20 @@
+archetype my_contract(
+admin : list<address>,
+hash : string)
+
+entry default (admin_ : option<list<address>>, oldhash : string, newhash : string) {
+  var x81 : bool = false;
+  var x108 : string = "";
+  x108 := hash;
+  hash := newhash;
+  do_require ((oldhash = x108), Unit);
+  for x90 in admin do
+    (x81 := x90 = caller or false)
+  done;
+  do_require (x81, Unit);
+  match admin_ with
+  | some x74 -> (admin := x74)
+  | none -> ()
+  end
+}
+

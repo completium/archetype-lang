@@ -1,0 +1,157 @@
+{ parameter
+    (or (unit %default)
+        (pair %mainParameter
+           (pair nat
+                 (or (pair (or (or (or (or (pair string bytes)
+                                           (pair (pair (nat :currentVersion) (nat :newVersion))
+                                                 (pair (lambda :migrationScript (big_map bytes bytes) (big_map bytes bytes))
+                                                       (pair (option :newCode
+                                                                (lambda
+                                                                   (pair (pair string bytes) (big_map bytes bytes))
+                                                                   (pair (list operation) (big_map bytes bytes))))
+                                                             (option :newPermCode
+                                                                (lambda (pair unit (big_map bytes bytes)) (pair (list operation) (big_map bytes bytes))))))))
+                                       (or (pair (nat :current) (nat :new))
+                                           (lambda :migrationscript (big_map bytes bytes) (big_map bytes bytes))))
+                                   (or (or (lambda :contractcode
+                                              (pair (pair string bytes) (big_map bytes bytes))
+                                              (pair (list operation) (big_map bytes bytes)))
+                                           unit)
+                                       (or (pair (address :from) (pair (address :to) (nat :value)))
+                                           (pair (address :spender) (nat :value)))))
+                               (or (or (or (pair (address :to) (nat :value)) (nat :value))
+                                       (or (address :operator) (address :operator)))
+                                   (or (or (address :redeem) unit) (or unit (or (address :newOwner) unit)))))
+                           address)
+                     (pair nat (list key))))
+           (list (option signature)))) ;
+  storage (pair nat (pair nat (list key))) ;
+  code { CAST (pair (or unit
+                        (pair (pair nat
+                                    (or (pair (or (or (or (or (pair string bytes)
+                                                              (pair (pair nat nat)
+                                                                    (pair (lambda (big_map bytes bytes) (big_map bytes bytes))
+                                                                          (pair (option
+                                                                                   (lambda
+                                                                                      (pair (pair string bytes) (big_map bytes bytes))
+                                                                                      (pair (list operation) (big_map bytes bytes))))
+                                                                                (option
+                                                                                   (lambda (pair unit (big_map bytes bytes)) (pair (list operation) (big_map bytes bytes))))))))
+                                                          (or (pair nat nat) (lambda (big_map bytes bytes) (big_map bytes bytes))))
+                                                      (or (or (lambda
+                                                                 (pair (pair string bytes) (big_map bytes bytes))
+                                                                 (pair (list operation) (big_map bytes bytes)))
+                                                              unit)
+                                                          (or (pair address (pair address nat)) (pair address nat))))
+                                                  (or (or (or (pair address nat) nat) (or address address))
+                                                      (or (or address unit) (or unit (or address unit)))))
+                                              address)
+                                        (pair nat (list key))))
+                              (list (option signature))))
+                    (pair nat (pair nat (list key)))) ;
+         DUP ;
+         CAR ;
+         DIP { CDR } ;
+         IF_LEFT
+           { DROP ; NIL operation ; PAIR }
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             COMPARE ;
+             EQ ;
+             IF {} { UNIT ; FAILWITH } ;
+             SWAP ;
+             DUP ;
+             DIP { SWAP } ;
+             DIP { DUP ;
+                   CAR ;
+                   DIP { CDR } ;
+                   DUP ;
+                   SELF ;
+                   ADDRESS ;
+                   PAIR ;
+                   PACK ;
+                   DIP { DUP ; CAR ; DIP { CDR } ; DIP { SWAP } } ;
+                   SWAP } ;
+             DUP ;
+             CAR ;
+             DIP { CDR } ;
+             DIP { SWAP } ;
+             COMPARE ;
+             EQ ;
+             IF {} { UNIT ; FAILWITH } ;
+             DIP { SWAP } ;
+             DUP ;
+             CAR ;
+             DIP { CDR } ;
+             DIP { PUSH nat 0 ;
+                   SWAP ;
+                   ITER { DIP { SWAP } ;
+                          SWAP ;
+                          IF_CONS
+                            { IF_NONE
+                                { SWAP ; DROP }
+                                { SWAP ;
+                                  DIP { SWAP ;
+                                        DIP { DIP { DIP { DUP } ; SWAP } } ;
+                                        DIP 2 { DUP } ;
+                                        DIG 2 ;
+                                        DIP { CHECK_SIGNATURE } ;
+                                        SWAP ;
+                                        IF { DROP } { UNIT ; FAILWITH } ;
+                                        PUSH nat 1 ;
+                                        ADD } } }
+                            { UNIT ; FAILWITH } ;
+                          SWAP } } ;
+             COMPARE ;
+             LE ;
+             IF {} { UNIT ; FAILWITH } ;
+             IF_CONS { UNIT ; FAILWITH } {} ;
+             DROP ;
+             DIP { DUP ; CAR ; DIP { CDR } ; PUSH nat 1 ; ADD ; PAIR } ;
+             IF_LEFT
+               { SWAP ;
+                 DIP { DUP ;
+                       CAR ;
+                       DIP { CDR } ;
+                       DIP { DIP { NIL operation } ; PUSH mutez 0 } ;
+                       DIP { DIP { CONTRACT %safeEntrypoints
+                                     (or (or (or (or (pair string bytes)
+                                                     (pair (pair nat nat)
+                                                           (pair (lambda (big_map bytes bytes) (big_map bytes bytes))
+                                                                 (pair (option
+                                                                          (lambda
+                                                                             (pair (pair string bytes) (big_map bytes bytes))
+                                                                             (pair (list operation) (big_map bytes bytes))))
+                                                                       (option
+                                                                          (lambda (pair unit (big_map bytes bytes)) (pair (list operation) (big_map bytes bytes))))))))
+                                                 (or (pair nat nat) (lambda (big_map bytes bytes) (big_map bytes bytes))))
+                                             (or (or (lambda
+                                                        (pair (pair string bytes) (big_map bytes bytes))
+                                                        (pair (list operation) (big_map bytes bytes)))
+                                                     unit)
+                                                 (or (pair address (pair address nat)) (pair address nat))))
+                                         (or (or (or (pair address nat) nat) (or address address))
+                                             (or (or address unit) (or unit (or address unit))))) ;
+                                   IF_NONE { UNIT ; FAILWITH } {} } } ;
+                       TRANSFER_TOKENS ;
+                       CONS } ;
+                 SWAP }
+               { DUP ;
+                 DUP ;
+                 CAR ;
+                 PUSH nat 0 ;
+                 COMPARE ;
+                 EQ ;
+                 IF { UNIT ; FAILWITH } {} ;
+                 DUP ;
+                 CAR ;
+                 DIP { CDR } ;
+                 DIP { SIZE } ;
+                 COMPARE ;
+                 GT ;
+                 IF { UNIT ; FAILWITH } {} ;
+                 DIP { CAR } ;
+                 SWAP ;
+                 PAIR ;
+                 NIL operation } ;
+             PAIR } } }

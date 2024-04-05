@@ -1,0 +1,42 @@
+{ parameter (or (lambda %do unit (list operation)) (string %default)) ;
+  storage (pair key_hash (map string timestamp)) ;
+  code { DUP ;
+         CAR ;
+         IF_LEFT
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             { DIP { DUP } ; SWAP } ;
+             CDR ;
+             CAR ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { COMPARE ;
+               NEQ ;
+               IF { SENDER ; PUSH string "Only the owner can operate." ; PAIR ; FAILWITH }
+                  { UNIT ; EXEC ; DIP { CDR } ; PAIR } } }
+           { DIP { CDR ; DUP ; CDR } ;
+             PAIR ;
+             { DUP ;
+               DIP { CDR } ;
+               CAR ;
+               PUSH string "" ;
+               { DIP { DUP @parameter } ; SWAP } ;
+               COMPARE ;
+               EQ ;
+               IF { PUSH string "Your post should not be empty." ; FAILWITH }
+                  { { DIP { DUP @storage } ; SWAP } ;
+                    NOW ;
+                    { DIP { { DIP { DUP @parameter } ; SWAP } } ; SWAP } ;
+                    DIP { SOME } ;
+                    UPDATE @storage ;
+                    NIL operation ;
+                    PAIR } ;
+               DIP { DROP ; DROP } } ;
+             SWAP ;
+             CAR ;
+             SWAP ;
+             { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP { SWAP ; PAIR } ;
+             PAIR } } }

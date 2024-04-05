@@ -1,0 +1,14 @@
+archetype my_contract(sto_1 : map<address, tez>)
+
+entry default () {
+  var x74 : contract<unit> = self_contract<unit>;
+  do_require ((2utz >= transferred), Unit);
+  sto_1 := update (sto_1, caller, (some(transferred)));
+  if 0utz = transferred then (())
+  else (match get_entrypoint<unit>("default", caller) with
+  | some x83 -> (x74 := x83)
+  | none -> (fail (Unit))
+  end;
+  operations := prepend (operations, (make_operation (transferred, x74, Unit))))
+}
+

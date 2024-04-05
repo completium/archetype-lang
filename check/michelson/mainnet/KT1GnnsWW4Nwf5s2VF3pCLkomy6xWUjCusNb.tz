@@ -1,0 +1,39 @@
+{ parameter
+    (or (unit %default)
+        (pair %flush nat (contract (pair (address :from) (pair (address :to) (nat :value)))))) ;
+  storage unit ;
+  code { CAST (pair (or unit (pair nat (contract (pair address (pair address nat))))) unit) ;
+         CAR ;
+         IF_LEFT
+           { DROP ; NONE (pair nat (contract (pair address (pair address nat)))) }
+           { SOME } ;
+         DIP { PUSH address "KT1MfKiUy47cB7PXBmhxL2c72MiPqmMXSCUi" } ;
+         IF_NONE
+           { NIL operation }
+           { DIP { DUP } ;
+             DUP ;
+             CAR ;
+             DIP { CDR } ;
+             DIG 2 ;
+             PAIR ;
+             SELF ;
+             ADDRESS ;
+             PAIR ;
+             DIP { PUSH mutez 0 } ;
+             TRANSFER_TOKENS ;
+             DIP { NIL operation } ;
+             CONS } ;
+         BALANCE ;
+         PUSH mutez 0 ;
+         COMPARE ;
+         EQ ;
+         IF { DIP { DROP } }
+            { DIP { CONTRACT unit ;
+                    IF_NONE { PUSH string "not a wallet" ; FAILWITH } {} ;
+                    BALANCE ;
+                    UNIT ;
+                    TRANSFER_TOKENS } ;
+              SWAP ;
+              CONS } ;
+         DIP { UNIT } ;
+         PAIR } }

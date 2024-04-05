@@ -1,0 +1,57 @@
+archetype my_contract(
+admin : address,
+admin_candidate : address,
+gps : string,
+currency : nat,
+plugs : set<nat>,
+state : nat,
+users : set<address>,
+service : map<nat, nat>)
+
+entry addplug (arg : nat) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  plugs := update (plugs, true, arg)
+}
+
+entry rmplug (arg : nat) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  plugs := update (plugs, false, arg)
+}
+
+entry addservice (t : nat, p : nat) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  if contains (service, t) then ((fail ("KeyAlreadyExists")))
+  else (service := update (service, t, (some(p))))
+}
+
+entry rmservice (arg : nat) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  service := update (service, arg, (none<nat>))
+}
+
+entry setcurrency (arg : nat) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  currency := arg
+}
+
+entry adduser (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  if contains (users, arg) then ((fail ("KeyAlreadyExists")))
+  else (users := update (users, true, arg))
+}
+
+entry rmuser (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  users := update (users, false, arg)
+}
+
+entry transfer_admin (arg : address) {
+  if not (caller = admin) then ((fail ("InvalidCaller")));
+  admin_candidate := arg
+}
+
+entry accept_admin () {
+  if not (caller = admin_candidate) then ((fail ("InvalidCaller")));
+  admin_candidate := admin
+}
+

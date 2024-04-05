@@ -1,0 +1,36 @@
+{ parameter string ;
+  storage (big_map string (pair timestamp address)) ;
+  code { DUP ;
+         CAR ;
+         DIG 1 ;
+         DUP ;
+         DUG 2 ;
+         CDR ;
+         DUP ;
+         DIG 2 ;
+         DUP ;
+         DUG 3 ;
+         GET ;
+         IF_NONE
+           { NOW ;
+             DIG 1 ;
+             DUP ;
+             DUG 2 ;
+             SENDER ;
+             DIG 2 ;
+             DUP ;
+             DUG 3 ;
+             PAIR ;
+             DIG 4 ;
+             DUP ;
+             DUG 5 ;
+             SWAP ;
+             SOME ;
+             SWAP ;
+             UPDATE ;
+             DUP ;
+             NIL operation ;
+             PAIR ;
+             DIP { DROP 2 } }
+           { PUSH string "Record hash already written" ; FAILWITH } ;
+         DIP { DROP 3 } } }

@@ -1,0 +1,38 @@
+archetype my_contract(
+sto_1 : (address * address),
+price : tez)
+
+entry buy (arg : nat) {
+  (if transferred <> price * arg then ((fail ("WRONGAMOUNT")))
+   else ((match get_entrypoint<(address * nat)>("default", (sto_1[0])) with
+   | some x127 -> (operations := prepend (operations, (make_operation (0utz, x127, ((source, arg))))))
+   | none -> (fail ("WRONGCONTRACT"))
+   end)))
+}
+
+entry updateContract (arg : address) {
+  var x219 : (((address * address) * tez)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
+  if source = ((x219[0])[1])
+  then (price := (x219[1]);
+  sto_1 := ((arg, ((x219[0])[1])))) else ((fail ("FORBIDDENACTION")))
+}
+
+entry updatePrice (arg : tez) {
+  var x290 : (((address * address) * tez)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
+  price := arg;
+  if source = ((x290[0])[1]) then (sto_1 := (x290[0]))
+  else ((fail ("FORBIDDENACTION")))
+}
+
+entry withdraw () {
+  var x352 : contract<unit> = self_contract<unit>;
+  var x395 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  if source = x395
+  then (match get_entrypoint<unit>("default", x395) with
+  | some x369 -> (x352 := x369)
+  | none -> (fail ("WRONGCONTRACT"))
+  end;
+  operations := prepend (operations, (make_operation (balance, x352, Unit))))
+  else ((fail ("FORBIDDENACTION")))
+}
+

@@ -1,0 +1,172 @@
+archetype my_contract(
+sto_1 : (nat * int),
+proposals : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))>,
+restriction : int,
+signers : set<address>)
+
+entry accept (arg : string) {
+  var x78 : int = 0i;
+  var x83 : unit = Unit;
+  var x183 : ((int * set<address>)) = (0i, (make_set<address> (([]))));
+  var x131 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x135 : ((address * set<address>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))));
+  var x145 : ((int * (set<address> * address))) = (0i, (((make_set<address> (([]))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x160 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x243 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x287 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x324 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x345 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x537 : ((nat * int)) = (0, 0i);
+  var x392 : set<address> = make_set<address> (([]));
+  var x486 : (((address * set<address>) * (bool * address))) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))))), ((false, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x468 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x463 : set<address> = make_set<address> (([]));
+  var x476 : int = 0i;
+  var x501 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x553 : set<address> = make_set<address> (([]));
+  var x577 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x593 : bool = false;
+  do_require ((contains (signers, caller)), "01");
+  do_require ((contains (proposals, arg)), "03");
+  match (proposals[arg]) with
+  | some (x605, x606, x607, x608) -> (x593 := x607)
+  | none -> (fail (25i))
+  end;
+  if x593 then ((fail ("05")));
+  match (x577[arg]) with
+  | some (x567, x568, x569, x570) -> (x553 := x568)
+  | none -> (fail (47i))
+  end;
+  if contains (x553, caller) then ((fail ("07")));
+  match (x501[arg]) with
+  | some (x505, x506, x507, x508) -> (x476 := x505;
+  x463 := x506;
+  x468 := x507;
+  x486 := x508)
+  | none -> (fail (48i))
+  end;
+  match ((update (x501, arg, (some(((((x476, (((update (x463, true, caller)), x468)))), x486))))))[arg]) with
+  | some (x406, x407, x408, x409) -> (x392 := x407)
+  | none -> (fail (49i))
+  end;
+  if length (x392) = (x537[0])
+  then (match (proposals[arg]) with
+  | some (x359, x360, x361, x362) -> (x345 := x361)
+  | none -> (fail (71i))
+  end;
+  match get_entrypoint<(int * (address * address))>("%transfer", x345) with
+  | some x341 -> ()
+  | none -> (fail (71i))
+  end;
+  match (x324[arg]) with
+  | some (x312, x313, x314, x315) -> ()
+  | none -> (fail (70i))
+  end;
+  match (x287[arg]) with
+  | some (x273, x274, x275, x276) -> ()
+  | none -> (fail (70i))
+  end;
+  match (x243[arg]) with
+  | some (x228, x229, x230) -> ()
+  | none -> (fail (70i))
+  end;
+  match (x160[arg]) with
+  | some (x164, x165, x166, x167) -> (x145 := x164;
+  x135 := x165;
+  x131 := x167)
+  | none -> (fail (51i))
+  end;
+  proposals := update (x160, arg, (some(((x145, ((x135, ((true, x131)))))))));
+  restriction := (x183[0]);
+  signers := (x183[1]);
+  sto_1 := ((x83, (x78 - 1i))))
+}
+
+entry createProposal (x1074 : (int * address), f : address, proposalId : string, t : address) {
+  var x685 : int = 0i;
+  var x689 : unit = Unit;
+  var x936 : ((int * set<address>)) = (0i, (make_set<address> (([]))));
+  var x763 : (((address * set<address>) * (bool * address))) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))))), ((false, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x745 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x740 : set<address> = make_set<address> (([]));
+  var x753 : int = 0i;
+  var x898 : unit = Unit;
+  var x902 : unit = Unit;
+  var x904 : ((unit * unit)) = (Unit, Unit);
+  var x900 : string = "";
+  var x825 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  do_require ((contains (signers, caller)), "01");
+  do_require ((restriction > sto_1[1]), "04");
+  do_require ((0i < x1074[0]), "06");
+  if contains (proposals, proposalId) then ((fail ("02")));
+  match ((update (x825, x900, (some((((((x904[0]), ((([]), (x904[1]))))), ((((x902, ([]))), ((false, x898))))))))))[x900]) with
+  | some (x781, x782, x783, x784) -> (x753 := x781;
+  x740 := x782;
+  x745 := x783;
+  x763 := x784)
+  | none -> (fail (39i))
+  end;
+  proposals := update ((update (x825, x900, (some((((((x904[0]), ((([]), (x904[1]))))), ((((x902, ([]))), ((false, x898)))))))))), x900, (some(((((x753, (((update (x740, true, caller)), x745)))), x763)))));
+  restriction := (x936[0]);
+  signers := (x936[1]);
+  sto_1 := ((x689, (1i + x685)))
+}
+
+entry reject (arg : string) {
+  var x1082 : int = 0i;
+  var x1087 : unit = Unit;
+  var x1291 : ((int * set<address>)) = (0i, (make_set<address> (([]))));
+  var x1135 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1139 : ((address * set<address>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))));
+  var x1149 : ((int * (set<address> * address))) = (0i, (((make_set<address> (([]))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x1248 : (((address * set<address>) * (bool * address))) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))))), ((false, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x1230 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1225 : set<address> = make_set<address> (([]));
+  var x1238 : int = 0i;
+  var x1263 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x1313 : set<address> = make_set<address> (([]));
+  var x1381 : ((bool * address)) = (false, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  var x1368 : set<address> = make_set<address> (([]));
+  var x1373 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1391 : ((int * (set<address> * address))) = (0i, (((make_set<address> (([]))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
+  var x1406 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x1456 : bool = false;
+  do_require ((contains (signers, caller)), "01");
+  do_require ((contains (proposals, arg)), "03");
+  match (proposals[arg]) with
+  | some (x1468, x1469, x1470, x1471) -> (x1456 := x1470)
+  | none -> (fail (25i))
+  end;
+  if x1456 then ((fail ("05")));
+  match (x1406[arg]) with
+  | some (x1410, x1411, x1412, x1413) -> (x1391 := x1410;
+  x1373 := x1411;
+  x1368 := x1412;
+  x1381 := x1413)
+  | none -> (fail (59i))
+  end;
+  match ((update (x1406, arg, (some(((x1391, ((((x1373, (update (x1368, true, caller)))), x1381))))))))[arg]) with
+  | some (x1327, x1328, x1329, x1330) -> (x1313 := x1328)
+  | none -> (fail (60i))
+  end;
+  if contains (x1313, caller)
+  then (match (x1263[arg]) with
+  | some (x1267, x1268, x1269, x1270) -> (x1238 := x1267;
+  x1225 := x1268;
+  x1230 := x1269;
+  x1248 := x1270)
+  | none -> (fail (61i))
+  end;
+  x1263 := update (x1263, arg, (some(((((x1238, (((update (x1225, false, caller)), x1230)))), x1248))))));
+  match (x1263[arg]) with
+  | some (x1167, x1168, x1169, x1170) -> (x1149 := x1167;
+  x1139 := x1168;
+  x1135 := x1170)
+  | none -> (fail (62i))
+  end;
+  proposals := update (x1263, arg, (some(((x1149, ((x1139, ((true, x1135)))))))));
+  restriction := (x1291[0]);
+  signers := (x1291[1]);
+  sto_1 := ((x1087, (x1082 - 1i)))
+}
+

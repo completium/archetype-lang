@@ -1,0 +1,58 @@
+{ storage (pair (pair (list %listOfDonors address) (address %owner)) (mutez %price)) ;
+  parameter (or (unit %addDeposit) (unit %withdrawFunds)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { { SWAP ;
+               DUP ;
+               DUG 2 ;
+               CDR ;
+               AMOUNT ;
+               COMPARE ;
+               EQ ;
+               IF { {} }
+                  { { PUSH string "WrongCondition: sp.amount == self.data.price" ; FAILWITH } } ;
+               SWAP ;
+               DUP ;
+               DUG 2 ;
+               DUP ;
+               CDR ;
+               SWAP ;
+               CAR ;
+               CDR ;
+               DIG 3 ;
+               DUP ;
+               DUG 4 ;
+               CAR ;
+               CAR ;
+               SENDER ;
+               CONS ;
+               PAIR ;
+               PAIR ;
+               DUG 2 ;
+               DROP ;
+               DROP ;
+               NIL operation } }
+           { { SENDER ;
+               DIG 2 ;
+               DUP ;
+               DUG 3 ;
+               CAR ;
+               CDR ;
+               COMPARE ;
+               EQ ;
+               IF { {} }
+                  { { PUSH string "WrongCondition: self.data.owner == sp.sender" ; FAILWITH } } ;
+               NIL operation ;
+               SENDER ;
+               CONTRACT unit ;
+               IF_NONE { { PUSH unit Unit ; FAILWITH } } { {} } ;
+               BALANCE ;
+               PUSH unit Unit ;
+               TRANSFER_TOKENS ;
+               CONS ;
+               SWAP ;
+               DROP } } ;
+         PAIR } }

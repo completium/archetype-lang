@@ -1,0 +1,35 @@
+{ parameter string ;
+  storage string ;
+  code { {} ;
+         { { PUSH address "tz1e97MwyC8EJCikM6KCZorHbECn3MQbmoPg" ;
+             { { { { DIP { DUP } ; SWAP } } ; CAR } ;
+               { { { { DIP { { DIP { DUP } ; SWAP } } ; SWAP } } ; CDR } ;
+                 { { { { { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                         { {} ; SOURCE } } ;
+                       { COMPARE ; NEQ } } ;
+                     IF { { { PUSH string "You do not have permission to update the storage" ;
+                              { { { DIP { { DIP { { DIP { DUP } ; SWAP } } ; SWAP } } ; SWAP } ;
+                                  { {} ; SOURCE } } ;
+                                { COMPARE ; NEQ } } } ;
+                            IF { { FAILWITH } } { { DROP ; PUSH unit Unit } } } }
+                        { PUSH unit Unit } } ;
+                   { { {} ;
+                       { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                       {} ;
+                       { DIP { { DIP { DUP } ; SWAP } } ; SWAP } ;
+                       {} ;
+                       SWAP ;
+                       {} ;
+                       DIP { DROP } ;
+                       {} ;
+                       { SWAP ; DIP { DIP { DROP } } } ;
+                       {} } ;
+                     { { { DIP { DUP } ; SWAP } ; NIL operation } ; PAIR } } } ;
+                 {} ;
+                 DIP { { DIP { { DIP { DIP { DIP { DIP { {} } } } } ; DROP } } ;
+                         DROP } } } ;
+               {} ;
+               DIP { { DIP { DIP { DIP { {} } } } ; DROP } } } ;
+             {} ;
+             DIP { { DIP { DIP { {} } } ; DROP } } } ;
+           DIP { { DIP { {} } ; DROP } } } } }

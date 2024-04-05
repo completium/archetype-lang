@@ -1,0 +1,26 @@
+archetype my_contract(
+manager : address,
+merkle_hash : string,
+spare : address)
+
+entry change_manager (arg : address) {
+  var x88 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x91 : string = "";
+  x91 := merkle_hash;
+  x88 := spare;
+  manager := arg;
+  merkle_hash := x91;
+  spare := x88;
+  do_require ((pack (caller) = pack (x88)), "Unauthorized account. Only spare can peform this action.")
+}
+
+entry set_merkle_hash (arg : string) {
+  var x93 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x130 : ((unit * address)) = (Unit, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  x93 := manager;
+  merkle_hash := arg;
+  spare := (x130[1]);
+  do_require ((pack (caller) = pack (x93)), "Unauthorized account. Only manager can peform this action.");
+  manager := x93
+}
+

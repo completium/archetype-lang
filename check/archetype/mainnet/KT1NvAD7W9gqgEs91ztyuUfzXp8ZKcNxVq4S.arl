@@ -1,0 +1,8 @@
+archetype my_contract(
+dummy_field : unit,
+token_metadata : big_map<nat, (nat * (string * (string * (nat * map<string, string>))))>)
+
+entry default () {
+  ()
+}
+

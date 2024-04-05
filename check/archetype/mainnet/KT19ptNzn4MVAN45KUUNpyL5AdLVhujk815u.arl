@@ -1,0 +1,6 @@
+archetype my_contract(sto_1 : nat)
+
+entry default (arg : nat) {
+  ()
+}
+

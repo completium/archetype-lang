@@ -1,0 +1,81 @@
+archetype my_contract(
+sto_1 : (address * big_map<address, (tez * nat)>),
+oracle : address)
+
+entry hodl () {
+  var x87 : contract<(string * contract<nat>)> = self_contract<(string * contract<nat>)>;
+  var x100 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x117 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x115 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
+  if transferred = 0utz then ((fail ("EMPTY_AMOUNT")))
+  else (match (x115[source]) with
+  | some x160 -> (fail ("ACCOUNT_EXISTS"))
+  | none -> (x100 := x117)
+  end;
+  match get_entrypoint<(string * contract<nat>)>("%get", x100) with
+  | some x99 -> (x87 := x99)
+  | none -> (fail ("NO_ORACLE_FOUND"))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x87, (("XTZ-USD", self_contract.hodl_callback<nat>))))))
+}
+
+entry hodl_callback (arg : nat) {
+  var x221 : unit = Unit;
+  var x219 : tez = 0utz;
+  var x199 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
+  var x195 : unit = Unit;
+  var x201 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  if caller <> oracle then ((fail ("UNKNOWN_SENDER")))
+  else (match ((sto_1[1])[source]) with
+  | some (x261, x262) -> (x219 := x261;
+  do_require ((x262 = 0), "UNINITIALIZED_ACCOUNT"))
+  | none -> (fail ("NO_ACCOUNT"))
+  end;
+  oracle := x201;
+  sto_1 := ((x195, (update (x199, source, (some(((x219, x221)))))))))
+}
+
+entry update_oracle (arg : address) {
+  var x80 : (((address * big_map<address, (tez * nat)>) * address)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (tez * nat)> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  x80 := ((sto_1, oracle));
+  oracle := arg;
+  sto_1 := (x80[0]);
+  do_require ((source = (sto_1[0])), "UNAUTHORIZED_ACTION")
+}
+
+entry withdraw () {
+  var x363 : contract<(string * contract<nat>)> = self_contract<(string * contract<nat>)>;
+  match ((sto_1[1])[source]) with
+  | some x391 -> ()
+  | none -> (fail ("NO_ACCOUNT"))
+  end;
+  match get_entrypoint<(string * contract<nat>)>("%get", oracle) with
+  | some x375 -> (x363 := x375)
+  | none -> (fail ("NO_ORACLE_FOUND"))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x363, (("XTZ-USD", self_contract.withdraw_callback<nat>)))))
+}
+
+entry withdraw_callback (arg : nat) {
+  var x435 : contract<unit> = self_contract<unit>;
+  var x434 : tez = 0utz;
+  var x446 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
+  var x442 : unit = Unit;
+  var x448 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x426 : ((tez * nat)) = (0utz, 0);
+  var x490 : nat = 0;
+  if caller <> oracle then ((fail ("UNKNOWN_SENDER")))
+  else (match ((sto_1[1])[source]) with
+  | some x508 -> (x426 := x508)
+  | none -> (fail ("NO_ACCOUNT"))
+  end;
+  if x490 < x426[1] then ((fail ("NO_WITHDRAWAL_ALLOWED")))
+  else (match get_entrypoint<unit>("default", source) with
+  | some x480 -> (x435 := x480)
+  | none -> (fail ("NO_ADDRESS_FOUND"))
+  end;
+  oracle := x448;
+  sto_1 := ((x442, (update (x446, source, (none<(tez * nat)>)))));
+  operations := prepend (operations, (make_operation (x434, x435, Unit)))))
+}
+

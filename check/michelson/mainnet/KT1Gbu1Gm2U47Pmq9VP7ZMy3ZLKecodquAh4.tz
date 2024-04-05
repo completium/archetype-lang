@@ -1,0 +1,23 @@
+{ parameter
+    (pair (option %admin (list address)) (pair (string %oldhash) (string %newhash))) ;
+  storage (pair (list %admin address) (string %hash)) ;
+  code { { { DUP ; CAR ; DIP { CDR } } ;
+           { DUP ; CAR @newadmin ; DIP { CDR } } ;
+           DIP { { DUP ; CAR @oldhash ; DIP { CDR @newhash } } } ;
+           DIP { DIP { DIP { { DUP ; CAR @storedadmin ; DIP { CDR @storedhash } } } } } } ;
+         SWAP ;
+         { DIP { DIP { DIP { SWAP } } } } ;
+         { DIP { DIP { SWAP } } } ;
+         DIP { SWAP } ;
+         { DIP { DIP { DIP { SWAP } } } } ;
+         { DIP { DIP { SWAP ; DUP ; DIP { SWAP } } } } ;
+         { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+         SENDER ;
+         SWAP ;
+         { DIP { DIP { PUSH @admin bool False } } } ;
+         ITER { DIP { DUP } ; { COMPARE ; EQ } ; SWAP ; DIP { OR @admin } } ;
+         DROP ;
+         { IF {} { { UNIT ; FAILWITH } } } ;
+         IF_NONE {} { DIP { DROP } } ;
+         NIL operation ;
+         { DIP { PAIR %admin %hash } ; PAIR %op } } }

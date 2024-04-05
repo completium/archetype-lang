@@ -1,0 +1,83 @@
+{ parameter (or (lambda %do unit (list operation)) (key_hash %default)) ;
+  storage
+    (pair key_hash
+          (pair :storage
+             (timestamp %auction_end)
+             (pair (mutez %highest_bid) (key_hash %bidder)))) ;
+  code { DUP ;
+         CAR ;
+         IF_LEFT
+           { PUSH mutez 0 ;
+             AMOUNT ;
+             { { COMPARE ; EQ } ; IF {} { { UNIT ; FAILWITH } } } ;
+             { DIP { DUP } ; SWAP } ;
+             CDR ;
+             CAR ;
+             IMPLICIT_ACCOUNT ;
+             ADDRESS ;
+             SENDER ;
+             { COMPARE ;
+               NEQ ;
+               IF { SENDER ; PUSH string "Only the owner can operate." ; PAIR ; FAILWITH }
+                  { UNIT ; EXEC ; DIP { CDR } ; PAIR } } }
+           { DIP { CDR ; DUP ; CDR } ;
+             PAIR ;
+             { DUP ;
+               DIP { CDR @storage_slash_1 } ;
+               CAR @parameter_slash_2 ;
+               { DIP { DUP @storage } ; SWAP } ;
+               CAR %auction_end ;
+               NOW ;
+               COMPARE ;
+               GT ;
+               IF { PUSH string "Auction has already ended" ; FAILWITH } { UNIT } ;
+               DROP ;
+               AMOUNT @new_bid ;
+               { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ;
+               { CDR ; CAR %highest_bid } ;
+               { DIP { DUP @new_bid } ; SWAP } ;
+               COMPARE ;
+               LE ;
+               IF { PUSH string "Insufficient bid" ; FAILWITH } { UNIT } ;
+               DROP ;
+               { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ;
+               { CDR ; CDR @previous_bidder %bidder } ;
+               IMPLICIT_ACCOUNT @refund_to ;
+               { DIP { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ; SWAP } ;
+               { CDR ; CAR @previous_bid %highest_bid } ;
+               UNIT ;
+               TRANSFER_TOKENS @op ;
+               { DIP { DIP { DIP { DUP @storage } ; SWAP } ; SWAP } ; SWAP } ;
+               DUP ;
+               CAR %auction_end ;
+               SWAP ;
+               CDR ;
+               CDR %bidder ;
+               { DIP { DIP { DIP { DUP @new_bid } ; SWAP } ; SWAP } ; SWAP } ;
+               { DIP { DIP { DIP { DIP { DROP } } } } } ;
+               { DIP { DIP { DIP { DIP { DIP { DROP } } } } } } ;
+               PAIR %highest_bid %bidder ;
+               SWAP ;
+               PAIR @storage %auction_end ;
+               DUP ;
+               CAR %auction_end ;
+               SWAP ;
+               CDR ;
+               CAR %highest_bid ;
+               { DIP { DIP { DIP { DUP } ; SWAP } ; SWAP } ; SWAP } ;
+               { DIP { DIP { DIP { DIP { DROP } } } } } ;
+               SWAP ;
+               PAIR %highest_bid %bidder ;
+               SWAP ;
+               PAIR @storage %auction_end ;
+               NIL operation ;
+               { DIP { DIP { DUP } ; SWAP } ; SWAP } ;
+               { DIP { DIP { DIP { DROP } } } } ;
+               CONS ;
+               PAIR } ;
+             SWAP ;
+             CAR ;
+             SWAP ;
+             { { DUP ; CAR ; DIP { CDR } } } ;
+             DIP { SWAP ; PAIR } ;
+             PAIR } } }

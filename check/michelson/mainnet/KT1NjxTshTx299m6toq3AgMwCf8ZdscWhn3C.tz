@@ -1,0 +1,190 @@
+{ storage
+    (pair (int %countdown_seconds)
+          (pair (address %leader) (timestamp %leadership_start_timestamp))) ;
+  parameter
+    (or (or (unit %default) (contract %get_countdown_seconds int))
+        (or (contract %get_leader address)
+            (or (contract %get_leadership_start_timestamp timestamp) (unit %withdraw)))) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { IF_LEFT
+               { DROP ;
+                 PUSH mutez 200000 ;
+                 AMOUNT ;
+                 COMPARE ;
+                 EQ ;
+                 IF {}
+                    { PUSH string "WrongCondition: sp.amount == sp.mutez(200000)" ; FAILWITH } ;
+                 NOW ;
+                 SWAP ;
+                 DUP ;
+                 CDR ;
+                 CDR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 3 ;
+                 CAR ;
+                 ADD ;
+                 COMPARE ;
+                 GT ;
+                 IF {}
+                    { PUSH string
+                           "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, self.data.countdown_seconds) > sp.now" ;
+                      FAILWITH } ;
+                 DUP ;
+                 CAR ;
+                 SWAP ;
+                 CDR ;
+                 CDR ;
+                 SENDER ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 DUP ;
+                 CAR ;
+                 SWAP ;
+                 CDR ;
+                 CAR ;
+                 NOW ;
+                 SWAP ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR ;
+                 PUSH int 1000 ;
+                 PUSH int 300 ;
+                 MUL ;
+                 PUSH nat 100000 ;
+                 PUSH mutez 1 ;
+                 BALANCE ;
+                 EDIV ;
+                 IF_NONE { PUSH int 25 ; FAILWITH } {} ;
+                 CAR ;
+                 EDIV ;
+                 IF_NONE { PUSH int 25 ; FAILWITH } { CAR } ;
+                 PUSH nat 100000 ;
+                 PUSH mutez 1 ;
+                 BALANCE ;
+                 EDIV ;
+                 IF_NONE { PUSH int 25 ; FAILWITH } {} ;
+                 CAR ;
+                 EDIV ;
+                 IF_NONE { PUSH int 25 ; FAILWITH } { CAR } ;
+                 PUSH nat 10800000 ;
+                 ADD ;
+                 EDIV ;
+                 IF_NONE { PUSH int 27 ; FAILWITH } { CAR } ;
+                 INT ;
+                 PUSH int 1000 ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 CAR ;
+                 MUL ;
+                 SUB ;
+                 COMPARE ;
+                 GT ;
+                 IF { DUP ;
+                      CDR ;
+                      PUSH nat 1000 ;
+                      PUSH nat 100000 ;
+                      PUSH mutez 1 ;
+                      BALANCE ;
+                      EDIV ;
+                      IF_NONE { PUSH int 25 ; FAILWITH } {} ;
+                      CAR ;
+                      EDIV ;
+                      IF_NONE { PUSH int 25 ; FAILWITH } { CAR } ;
+                      PUSH nat 100000 ;
+                      PUSH mutez 1 ;
+                      BALANCE ;
+                      EDIV ;
+                      IF_NONE { PUSH int 25 ; FAILWITH } {} ;
+                      CAR ;
+                      EDIV ;
+                      IF_NONE { PUSH int 25 ; FAILWITH } { CAR } ;
+                      PUSH nat 10800000 ;
+                      ADD ;
+                      EDIV ;
+                      IF_NONE { PUSH int 27 ; FAILWITH } { CAR } ;
+                      INT ;
+                      PUSH int 1000 ;
+                      DIG 4 ;
+                      CAR ;
+                      MUL ;
+                      SUB ;
+                      ISNAT ;
+                      IF_NONE { PUSH int 29 ; FAILWITH } {} ;
+                      EDIV ;
+                      IF_NONE { PUSH int 29 ; FAILWITH } { CAR } ;
+                      INT ;
+                      PAIR }
+                    { CDR ; PUSH int 300 ; PAIR } ;
+                 NIL operation }
+               { NIL operation ;
+                 SWAP ;
+                 PUSH mutez 0 ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 CAR ;
+                 TRANSFER_TOKENS ;
+                 CONS } }
+           { IF_LEFT
+               { NIL operation ;
+                 SWAP ;
+                 PUSH mutez 0 ;
+                 DIG 3 ;
+                 DUP ;
+                 DUG 4 ;
+                 CDR ;
+                 CAR ;
+                 TRANSFER_TOKENS ;
+                 CONS }
+               { IF_LEFT
+                   { NIL operation ;
+                     SWAP ;
+                     PUSH mutez 0 ;
+                     DIG 3 ;
+                     DUP ;
+                     DUG 4 ;
+                     CDR ;
+                     CDR ;
+                     TRANSFER_TOKENS ;
+                     CONS }
+                   { DROP ;
+                     DUP ;
+                     CDR ;
+                     CAR ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     IF {}
+                        { PUSH string "WrongCondition: self.data.leader == sp.sender" ; FAILWITH } ;
+                     NOW ;
+                     SWAP ;
+                     DUP ;
+                     CDR ;
+                     CDR ;
+                     SWAP ;
+                     DUP ;
+                     DUG 3 ;
+                     CAR ;
+                     ADD ;
+                     COMPARE ;
+                     LT ;
+                     IF {}
+                        { PUSH string
+                               "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, self.data.countdown_seconds) < sp.now" ;
+                          FAILWITH } ;
+                     NIL operation ;
+                     SENDER ;
+                     CONTRACT unit ;
+                     IF_NONE { PUSH int 37 ; FAILWITH } {} ;
+                     BALANCE ;
+                     UNIT ;
+                     TRANSFER_TOKENS ;
+                     CONS } } } ;
+         PAIR } }

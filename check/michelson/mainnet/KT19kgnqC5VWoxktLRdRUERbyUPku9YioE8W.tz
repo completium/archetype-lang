@@ -1,0 +1,51 @@
+{ parameter
+    (or (pair :get_value
+           (unit %unit)
+           (contract %callback_contract (pair timestamp (pair nat (pair nat nat)))))
+        (or (pair %update_value
+               (timestamp %value_timestamp)
+               (pair (nat %value_xtzusd) (pair (nat %value_usdchf) (nat %value_xtzchf))))
+            (address %updateAdmin))) ;
+  storage (pair (pair timestamp (pair nat (pair nat nat))) address) ;
+  code { CAST (pair (or (pair unit (contract (pair timestamp (pair nat (pair nat nat)))))
+                        (or (pair timestamp (pair nat (pair nat nat))) address))
+                    (pair (pair timestamp (pair nat (pair nat nat))) address)) ;
+         DUP ;
+         CAR ;
+         DIP { CDR } ;
+         IF_LEFT
+           { DUP ;
+             CAR ;
+             DIP { CDR } ;
+             DIP { DIP { DUP } ; SWAP } ;
+             PAIR ;
+             CDR ;
+             CAR ;
+             DIP { AMOUNT } ;
+             TRANSFER_TOKENS ;
+             NIL operation ;
+             SWAP ;
+             CONS ;
+             PAIR }
+           { IF_LEFT
+               { DIP { DUP ; CAR ; DIP { CDR } } ;
+                 DIP { DROP ;
+                       DUP ;
+                       DIP { SENDER ;
+                             COMPARE ;
+                             EQ ;
+                             IF {} { PUSH string "only admin may update" ; FAILWITH } } } ;
+                 PAIR ;
+                 NIL operation ;
+                 PAIR }
+               { DIP { DUP ;
+                       CAR ;
+                       DIP { CDR } ;
+                       DIP { SENDER ;
+                             COMPARE ;
+                             EQ ;
+                             IF {} { PUSH string "only admin may update" ; FAILWITH } } } ;
+                 SWAP ;
+                 PAIR ;
+                 NIL operation ;
+                 PAIR } } } }

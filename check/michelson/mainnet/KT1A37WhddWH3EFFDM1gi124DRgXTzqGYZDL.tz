@@ -1,0 +1,39 @@
+{ storage (pair (address %owner) (mutez %price)) ;
+  parameter (or (unit %joinGame) (address %payoutToWinner)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         IF_LEFT
+           { { SWAP ;
+               DUP ;
+               DUG 2 ;
+               CDR ;
+               AMOUNT ;
+               COMPARE ;
+               EQ ;
+               IF { {} }
+                  { { PUSH string "WrongCondition: sp.amount == self.data.price" ; FAILWITH } } ;
+               DROP ;
+               NIL operation } }
+           { { SENDER ;
+               DIG 2 ;
+               DUP ;
+               DUG 3 ;
+               CAR ;
+               COMPARE ;
+               EQ ;
+               IF { {} }
+                  { { PUSH string "WrongCondition: self.data.owner == sp.sender" ; FAILWITH } } ;
+               DUP ;
+               NIL operation ;
+               SWAP ;
+               CONTRACT unit ;
+               IF_NONE { { PUSH unit Unit ; FAILWITH } } { {} } ;
+               BALANCE ;
+               PUSH unit Unit ;
+               TRANSFER_TOKENS ;
+               CONS ;
+               SWAP ;
+               DROP } } ;
+         PAIR } }

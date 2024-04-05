@@ -1,0 +1,3 @@
+{ parameter (list (pair (nat %balance) (pair %request (address %owner) (nat %token_id)))) ;
+  storage unit ;
+  code { CAR ; FAILWITH } }

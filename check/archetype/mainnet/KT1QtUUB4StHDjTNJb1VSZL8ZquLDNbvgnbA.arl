@@ -1,0 +1,303 @@
+archetype my_contract(
+sto_2 : (address * (big_map<address, (map<address, nat> * nat)> * int)),
+sto_1 : (string * bool),
+symbol : string,
+totalSupply : nat)
+
+entry approve (spender : address, value : nat) {
+  var x151 : int = 0i;
+  var x116 : nat = 0;
+  var x110 : nat = 0;
+  var x99 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x101 : map<address, nat> = make_map<address, nat> (([]));
+  var x159 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x127 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x185 : bool = false;
+  var x216 : nat = 0;
+  var x202 : nat = 0;
+  var x211 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x212 : map<address, nat> = make_map<address, nat> (([]));
+  var x233 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  if (sto_1[1]) then ((fail ("WrongCondition: ~ self.data.paused")));
+  match (x233[caller]) with
+  | some (x227, x228) -> (x212 := x227)
+  | none -> (fail (29i))
+  end;
+  match (x212[x211]) with
+  | some x208 -> (x202 := x208)
+  | none -> (x202 := 0)
+  end;
+  if x202 = 0 then (x185 := true) else (x185 := 0 = x216);
+  do_require (x185, "WrongCondition: (self.data.ledger[sp.sender].approvals.get(params.spender, default_value = 0) == 0) | (params.value == 0)");
+  match (x127[caller]) with
+  | some (x132, x133) -> (x101 := x132;
+  x116 := x133)
+  | none -> (fail (31i))
+  end;
+  sto_2 := ((x159, (((update (x127, caller, (some((((update (x101, x99, (some(x110)))), x116)))))), x151))))
+}
+
+entry burn (address_ : address, value : nat) {
+  var x273 : nat = 0;
+  var x285 : nat = 0;
+  var x376 : nat = 0;
+  var x367 : nat = 0;
+  var x414 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x400 : map<address, (unit * nat)> = make_map<address, (unit * nat)> (([]));
+  var x440 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x425 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x490 : nat = 0;
+  var x543 : ((map<address, (map<address, nat> * nat)> * int)) = ((make_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x539 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x539), "WrongCondition: sp.sender == self.data.administrator");
+  match ((x543[0])[address_]) with
+  | some (x502, x503) -> (x490 := x503)
+  | none -> (fail (58i))
+  end;
+  do_require ((x490 >= value), "WrongCondition: self.data.ledger[params.address].balance >= params.value");
+  match (x425[x440]) with
+  | some (x431, x432) -> ()
+  | none -> (fail (59i))
+  end;
+  match (x400[x414]) with
+  | some (x384, x385) -> (x367 := x385)
+  | none -> (fail (59i))
+  end;
+  match int_to_nat ((x367 - x376)) with
+  | some x354 -> ()
+  | none -> (fail (59i))
+  end;
+  match int_to_nat ((x285 - x273)) with
+  | some x269 -> (totalSupply := x269)
+  | none -> (fail (60i))
+  end
+}
+
+entry getAdministrator (arg : address) {
+  var x570 : contract<address> = self_contract<address>;
+  var x577 : (((string * bool) * (string * nat))) = ((("", false)), (("", 0)));
+  var x575 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x568 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  match get_entrypoint<address>("default", arg) with
+  | some x597 -> (x570 := x597)
+  | none -> (fail (81i))
+  end;
+  sto_2 := ((x568, x575));
+  sto_1 := (x577[0]);
+  symbol := ((x577[1])[0]);
+  totalSupply := ((x577[1])[1]);
+  operations := prepend (operations, (make_operation (0utz, x570, x568)))
+}
+
+entry getAllowance (owner : address, spender : address, target : address) {
+  var x608 : nat = 0;
+  var x642 : contract<nat> = self_contract<nat>;
+  var x628 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x629 : map<address, nat> = make_map<address, nat> (([]));
+  var x655 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x656 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  var x693 : (((address * address) * address)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  match get_entrypoint<nat>("default", (x693[1])) with
+  | some x682 -> (x642 := x682)
+  | none -> (fail (73i))
+  end;
+  match (x656[x655]) with
+  | some (x646, x647) -> (x629 := x646)
+  | none -> (fail (73i))
+  end;
+  match (x629[x628]) with
+  | some x621 -> (x608 := x621)
+  | none -> (fail (73i))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x642, x608)))
+}
+
+entry getBalance (arg : address, target : address) {
+  var x698 : nat = 0;
+  var x710 : contract<nat> = self_contract<nat>;
+  var x721 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x722 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  var x754 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  match get_entrypoint<nat>("default", (x754[1])) with
+  | some x743 -> (x710 := x743)
+  | none -> (fail (69i))
+  end;
+  match (x722[x721]) with
+  | some (x713, x714) -> (x698 := x714)
+  | none -> (fail (69i))
+  end;
+  operations := prepend (operations, (make_operation (0utz, x710, x698)))
+}
+
+entry getTotalSupply (arg : address) {
+  var x773 : contract<nat> = self_contract<nat>;
+  var x771 : nat = 0;
+  var x778 : string = "";
+  var x780 : ((string * bool)) = ("", false);
+  var x782 : ((address * (big_map<address, (map<address, nat> * nat)> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i)));
+  match get_entrypoint<nat>("default", arg) with
+  | some x801 -> (x773 := x801)
+  | none -> (fail (77i))
+  end;
+  sto_2 := x782;
+  sto_1 := x780;
+  symbol := x778;
+  totalSupply := x771;
+  operations := prepend (operations, (make_operation (0utz, x773, x771)))
+}
+
+entry mint (address_ : address, value : nat) {
+  var x806 : nat = 0;
+  var x812 : string = "";
+  var x820 : ((string * bool)) = ("", false);
+  var x862 : nat = 0;
+  var x861 : nat = 0;
+  var x872 : map<address, nat> = make_map<address, nat> (([]));
+  var x883 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x1034 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x1030 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x1030), "WrongCondition: sp.sender == self.data.administrator");
+  x883 := (x1034[0]);
+  if contains ((x1034[0]), address_) then (())
+  else (x883 := update (x883, address_, (some((((make_list<unit> (([]))), 0i))))));
+  match (x883[address_]) with
+  | some (x888, x889) -> (x872 := x888;
+  x862 := x889)
+  | none -> (fail (50i))
+  end;
+  sto_2 := ((x1030, (((update (x883, address_, (some(((x872, (x861 + x862))))))), (x1034[1])))));
+  sto_1 := x820;
+  symbol := x812;
+  totalSupply := x861 + x806
+}
+
+entry setAdministrator (arg : address) {
+  var x1092 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x1094 : (((string * bool) * (string * nat))) = ((("", false)), (("", 0)));
+  var x1088 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x1088), "WrongCondition: sp.sender == self.data.administrator");
+  sto_1 := (x1094[0]);
+  symbol := ((x1094[1])[0]);
+  totalSupply := ((x1094[1])[1]);
+  sto_2 := ((arg, x1092))
+}
+
+entry setPause (arg : bool) {
+  var x1094 : (((string * bool) * (string * nat))) = ((("", false)), (("", 0)));
+  var x1092 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x1088 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  do_require ((caller = x1088), "WrongCondition: sp.sender == self.data.administrator");
+  sto_2 := ((x1088, x1092));
+  symbol := ((x1094[1])[0]);
+  totalSupply := ((x1094[1])[1]);
+  sto_1 := ((((x1094[0])[0]), arg))
+}
+
+entry %transfer (%from : address, %to : address, value : nat) {
+  var x1347 : int = 0i;
+  var x1310 : nat = 0;
+  var x1196 : nat = 0;
+  var x1267 : map<address, nat> = make_map<address, nat> (([]));
+  var x1265 : nat = 0;
+  var x1226 : nat = 0;
+  var x1257 : map<address, nat> = make_map<address, nat> (([]));
+  var x1302 : unit = Unit;
+  var x1288 : map<unit, (map<address, nat> * unit)> = make_map<unit, (map<address, nat> * unit)> (([]));
+  var x1321 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x1382 : bool = false;
+  var x1656 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1648 : int = 0i;
+  var x1439 : nat = 0;
+  var x1438 : nat = 0;
+  var x1453 : map<address, nat> = make_map<address, nat> (([]));
+  var x1445 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1481 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1535 : nat = 0;
+  var x1571 : map<address, nat> = make_map<address, nat> (([]));
+  var x1570 : nat = 0;
+  var x1561 : nat = 0;
+  var x1609 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1593 : map<address, (unit * nat)> = make_map<address, (unit * nat)> (([]));
+  var x1637 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1622 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x1710 : ((address * nat)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0);
+  var x1687 : nat = 0;
+  var x1706 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x1742 : nat = 0;
+  var x1735 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1793 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
+  var x1828 : bool = false;
+  var x1872 : ((address * nat)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0);
+  var x1831 : nat = 0;
+  var x1847 : map<address, nat> = make_map<address, nat> (([]));
+  var x1922 : bool = false;
+  var x1928 : ((address * (big_map<address, (map<address, nat> * nat)> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i)));
+  var x1088 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
+  var x1092 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  x1793 := (x1092[0]);
+  if caller = x1088 then (x1828 := true)
+  else (x1793 := ((x1928[1])[0]);
+  if x1922 then (x1828 := false)
+  else ((if caller = %from then (x1828 := true)
+         else (match (((x1928[1])[0])[%from]) with
+         | some (x1858, x1859) -> (x1847 := x1858)
+         | none -> (fail (13i))
+         end;
+         match (x1847[caller]) with
+         | some x1841 -> (x1831 := x1841)
+         | none -> (fail (13i))
+         end;
+         x1828 := x1831 >= x1872[1]))));
+  do_require (x1828, "WrongCondition: (sp.sender == self.data.administrator) | ((~ self.data.paused) & ((params.from_ == sp.sender) | (self.data.ledger[params.from_].approvals[sp.sender] >= params.value)))");
+  x1706 := x1793;
+  x1710 := ((%to, value));
+  if contains (x1793, %to) then (())
+  else (x1710 := ((x1735, x1742));
+  x1706 := update (x1706, x1735, (some((((make_list<unit> (([]))), 0i))))));
+  match (x1706[%from]) with
+  | some (x1699, x1700) -> (x1687 := x1700)
+  | none -> (fail (18i))
+  end;
+  do_require ((x1687 >= x1710[1]), "WrongCondition: self.data.ledger[params.from_].balance >= params.value");
+  match (x1622[x1637]) with
+  | some (x1628, x1629) -> (x1571 := x1628)
+  | none -> (fail (19i))
+  end;
+  match (x1593[x1609]) with
+  | some (x1578, x1579) -> (x1561 := x1579)
+  | none -> (fail (19i))
+  end;
+  match int_to_nat ((x1561 - x1570)) with
+  | some x1546 -> (x1535 := x1546)
+  | none -> (fail (19i))
+  end;
+  match ((update (x1622, x1637, (some(((x1571, x1535))))))[x1481]) with
+  | some (x1469, x1470) -> (x1453 := x1469;
+  x1439 := x1470)
+  | none -> (fail (20i))
+  end;
+  if caller <> x1445
+  then (x1321 := update ((update (x1622, x1637, (some(((x1571, x1535)))))), x1481, (some(((x1453, (x1438 + x1439))))));
+  x1347 := x1648;
+  x1382 := x1656 <> caller) else (x1382 := false);
+  if x1382
+  then (match (x1321[x1445]) with
+  | some (x1327, x1328) -> (x1267 := x1327;
+  x1310 := x1328)
+  | none -> (fail (23i))
+  end;
+  match (x1288[x1302]) with
+  | some (x1274, x1275) -> (x1257 := x1274)
+  | none -> (fail (23i))
+  end;
+  match (x1257[caller]) with
+  | some x1242 -> (x1226 := x1242)
+  | none -> (fail (23i))
+  end;
+  match int_to_nat ((x1226 - x1265)) with
+  | some x1209 -> (x1196 := x1209)
+  | none -> (fail (23i))
+  end;
+  sto_2 := ((x1656, (((update (x1321, x1445, (some((((update (x1267, caller, (some(x1196)))), x1310)))))), x1347)))))
+}
+

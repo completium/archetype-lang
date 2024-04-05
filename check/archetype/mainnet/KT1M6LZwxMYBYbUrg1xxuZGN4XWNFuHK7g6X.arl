@@ -1,0 +1,6 @@
+archetype my_contract
+
+entry default (arg : key_hash) {
+  operations := prepend (operations, (make_operation (1000utz, (key_hash_to_contract (arg)), Unit)))
+}
+

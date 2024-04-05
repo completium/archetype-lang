@@ -1817,7 +1817,7 @@ let rec data_to_mterm ?omap_var ?t ?(ft : (T.type_ -> M.type_) option) (d : T.da
   | Dlist l when is_list t    -> M.mk_litlist (ft (Option.get (as_list t))) (List.map f l)
   | Dlist l when is_map t     -> let kt, vt = t |> as_map     |> Option.get  in M.mk_litmap (ft kt) (ft vt) (List.map do_elt l)
   | Dlist l when is_big_map t -> let kt, vt = t |> as_big_map |> Option.get  in M.mk_litbig_map (ft kt) (ft vt) (List.map do_elt l)
-  | Dlist _          -> assert false
+  | Dlist l          -> M.mk_litlist M.tunit (List.map f l)
   | Delt _           -> assert false
   | Dvar (id, _, _)  -> (match omap_var with Some map_var -> map_var id | None -> assert false)
   | DIrCode _        -> assert false
