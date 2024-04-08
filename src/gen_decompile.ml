@@ -1782,7 +1782,7 @@ let rec data_to_mterm ?omap_var ?t ?(ft : (T.type_ -> M.type_) option) (d : T.da
   let as_option (ty : T.type_ option) = match ty with | Some ({node = T.Toption ty}) -> Some ty | _ -> None in
   let is_option  (ty : T.type_ option) = ty |> is_gen as_option in
   (* let as_or (ty : T.type_ option) = match ty with | Some ({node = T.Tor (kt, vt)}) -> Some (kt, vt) | _ -> None in
-  let is_or  (ty : T.type_ option) = ty |> is_gen as_or in *)
+     let is_or  (ty : T.type_ option) = ty |> is_gen as_or in *)
   let do_elt (d : T.data) : M.mterm * M.mterm = match d with | Delt (a, b) -> (f a, f b) | _ -> assert false in
   let ft ty = match ft with Some ft -> ft ty | None -> M.tnever in
   match d with
@@ -1835,6 +1835,8 @@ end = struct
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
 
   let int_to_var (n : int) : string = "x" ^ (string_of_int n)
+
+  let to_duration x = mk_mterm (Mmult (x, (mk_duration (Core.mk_duration ~seconds:Big_int.unit_big_int ())))) tduration
 
   let for_code (code : dcode) : mterm =
     let ft = for_type in
@@ -1904,7 +1906,22 @@ end = struct
           | `Uop Uge,                     [ _ ] -> assert false
           | `Uop Ult,                     [ _ ] -> assert false
           | `Uop Ule,                     [ _ ] -> assert false
-          | `Bop Badd,                 [ a; b ] -> mk_mterm (Mplus (f a, f b)) tint
+          | `Bop Badd,                 [ a; b ] -> begin
+              let a = f a in
+              let b = f b in
+              match get_ntype a.type_, get_ntype b.type_ with
+              | M.Tbuiltin Bnat, M.Tbuiltin Bnat  -> mk_mterm (Mplus (a, b)) tnat
+              | M.Tbuiltin Bint, M.Tbuiltin Bnat  -> mk_mterm (Mplus (a, b)) tint
+              | M.Tbuiltin Bnat, M.Tbuiltin Bint  -> mk_mterm (Mplus (a, b)) tint
+              | M.Tbuiltin Bint, M.Tbuiltin Bint  -> mk_mterm (Mplus (a, b)) tint
+              | M.Tbuiltin Btez, M.Tbuiltin Btez  -> mk_mterm (Mplus (a, b)) ttez
+              | M.Tbuiltin Bbls12_381_fr, M.Tbuiltin Bbls12_381_fr  -> mk_mterm (Mplus (a, b)) tbls12_381_fr
+              | M.Tbuiltin Bbls12_381_g1, M.Tbuiltin Bbls12_381_g1  -> mk_mterm (Mplus (a, b)) tbls12_381_g1
+              | M.Tbuiltin Bbls12_381_g2, M.Tbuiltin Bbls12_381_g2  -> mk_mterm (Mplus (a, b)) tbls12_381_g2
+              | M.Tbuiltin (Bnat | Bint), M.Tbuiltin (Bdate | Btimestamp) -> mk_mterm (Mplus (to_duration a, b)) tdate
+              | M.Tbuiltin (Bdate | Btimestamp), M.Tbuiltin (Bnat | Bint) -> mk_mterm (Mplus (a, to_duration b)) tdate
+              | _ -> mk_mterm (Mplus (a, b)) tint
+            end
           | `Bop Bsub,                 [ a; b ] -> mk_mterm (Mminus (f a, f b)) tint
           | `Bop Bmul,                 [ a; b ] -> mk_mterm (Mmult (f a, f b)) tint
           | `Bop Bediv,                [ a; b ] -> mk_mterm (Mdivmod (f a, f b)) (ttuple [tint; tint])

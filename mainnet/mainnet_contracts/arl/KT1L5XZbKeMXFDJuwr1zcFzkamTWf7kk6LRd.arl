@@ -22,7 +22,7 @@ entry default () {
   | some (x353, x354) -> (x343 := x353)
   | none -> (fail (20i))
   end;
-  do_require ((x343 + leadership_start_timestamp > now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, sp.to_int(self.data.countdown_milliseconds // 1000)) > sp.now");
+  do_require ((x343 * 1s + leadership_start_timestamp > now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, sp.to_int(self.data.countdown_milliseconds // 1000)) > sp.now");
   match balance /% 1utz with
   | some (x286, x287) -> (x274 := x286)
   | none -> (fail (24i))
@@ -108,7 +108,7 @@ entry withdraw () {
   | some (x512, x513) -> (x502 := x512)
   | none -> (fail (35i))
   end;
-  do_require ((x502 + x524[1] < now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, sp.to_int(self.data.countdown_milliseconds // 1000)) < sp.now");
+  do_require ((x502 * 1s + x524[1] < now), "WrongCondition: sp.add_seconds(self.data.leadership_start_timestamp, sp.to_int(self.data.countdown_milliseconds // 1000)) < sp.now");
   match get_entrypoint<unit>("default", caller) with
   | some x484 -> (x475 := x484)
   | none -> (fail (36i))

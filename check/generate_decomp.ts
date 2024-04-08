@@ -32,15 +32,13 @@ const compile = (args: string[]) => {
 //   return json_path
 // }
 
-const generation_arl_file = (i: string, p: string): string => {
-  const tz_path = i + '.tz'
+const generation_arl_file = (tz_path: string, arl_path: string): string => {
   const res = compile(['-d', tz_path])
   if (res.status != 0) {
     throw new Error(res.stderr.toString())
   }
-  const output_path = p + path.basename(tz_path.replace('.tz', '.arl'))
-  fs.writeFileSync(output_path, res.stdout.toString())
-  return output_path
+  fs.writeFileSync(arl_path, res.stdout.toString())
+  return arl_path
 }
 
 // const write_binding = (json_path: string, p : string, op : string) => {
@@ -383,17 +381,17 @@ describe('Generate arl', async () => {
 
   describe('mainnet', async () => {
     const p = './michelson/mainnet'
-    const filenames = extract_file_dir(p, '.tz')
-    for (const filename of filenames) {
-      it(filename, () => {
-        const filepath = p + '/' + filename
-        generation_arl_file(filepath, './archetype/mainnet/')
+    for (const contract of mainnet_contracts) {
+      it(contract, () => {
+        const tz_path = './michelson/mainnet/' + contract + '.tz'
+        const arl_path = './archetype/mainnet/' + contract + '.arl'
+        generation_arl_file(tz_path, arl_path)
         // write_binding(json_path, '../tests/passed/', './bindings/passed/')
       });
     }
-    // it('Generate passed.spec.ts', async () => {
-    //   generate_spec_passed(filenames)
-    // })
+    it('Generate passed.spec.ts', async () => {
+      generate_spec_passed(filenames)
+    })
   })
 
   // describe('passed', async () => {
