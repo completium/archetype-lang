@@ -20,13 +20,7 @@
     "test:proposal-type-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/proposal-type-errors.spec.ts",
     "test:proposal-model-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/proposal-model-errors.spec.ts",
     "test:contracts": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/contracts/*.spec.ts",
-    "test:decomp:mic:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mic-passed.spec.ts",
-    "test:decomp:mit:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mit-passed.spec.ts",
-    "test:decomp:dir:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-dir-passed.spec.ts",
-    "test:decomp:ama:passed": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-ama-passed.spec.ts",
-    "test:decomp:mic:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mic-mainnet.spec.ts",
-    "test:decomp:mit:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mit-mainnet.spec.ts",
-    "test:decomp:dir:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-dir-mainnet.spec.ts",
+    "test:decomp:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mainnet.spec.ts",
     "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts",
     "generate:decomp": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_decomp.ts",
     "generate:json": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_json.ts"
@@ -35,6 +29,7 @@
     "@completium/archetype-binder-ts": "0.1.15",
     "@completium/archetype-ts-types": "0.1.12",
     "@completium/event-listener": "^0.0.5",
+    "@completium/completium-cli": "1.0.18",
     "@completium/experiment-ts": "1.0.1",
     "bignumber.js": "^9.1.1",
     "cross-spawn": "^7.0.3",
@@ -42,7 +37,6 @@
     "typescript": "^4.9.4"
   },
   "devDependencies": {
-    "@completium/completium-cli": "1.0.9",
     "@types/expect": "^24.3.0",
     "@types/mocha": "^10.0.0",
     "@types/node": "latest",
