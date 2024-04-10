@@ -23527,7 +23527,7 @@ describe('passed', async () => {
     const res_before = await test_self_contract_some.test_self_contract_some.get_res()
     assert(!res_before)
 
-    await test_self_contract_some.test_self_contract_some.exec(new Nat(2), { as: alice })
+    await test_self_contract_some.test_self_contract_some.exec({ as: alice })
 
     const res_after = await test_self_contract_some.test_self_contract_some.get_res()
     assert(res_after)
