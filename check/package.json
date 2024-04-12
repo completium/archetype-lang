@@ -29,7 +29,7 @@
     "@completium/archetype-binder-ts": "0.1.15",
     "@completium/archetype-ts-types": "0.1.12",
     "@completium/event-listener": "^0.0.5",
-    "@completium/completium-cli": "1.0.18",
+    "@completium/completium-cli": "1.0.19",
     "@completium/experiment-ts": "1.0.1",
     "bignumber.js": "^9.1.1",
     "cross-spawn": "^7.0.3",
