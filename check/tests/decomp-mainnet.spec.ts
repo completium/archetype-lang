@@ -363,33 +363,39 @@ describe('decomp_mainnet', async () => {
     await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', parameter: '"tz1cZyyLMwho1DkvRHVTkkZBdSBwEFHRQz9A"', entrypoint: "payoutToWinner", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr"  })
   })
 
-  // it('KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg', async () => {
-  //   const ref = "./michelson/mainnet/KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg.tz"
-  //   const act = "./archetype/mainnet/KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg', async () => {
+    const ref = "./michelson/mainnet/KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg.tz"
+    const act = "./archetype/mainnet/KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"' })
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"', source: "tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m" })
+  })
 
-  // it('KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo', async () => {
-  //   const ref = "./michelson/mainnet/KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo.tz"
-  //   const act = "./archetype/mainnet/KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo', async () => {
+    const ref = "./michelson/mainnet/KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo.tz"
+    const act = "./archetype/mainnet/KT1PAQLpgjcA4k2wxS9V7oMgLLKcmck9USfo.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"' })
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"', source: "tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m" })
+  })
 
-  // it('KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA', async () => {
-  //   const ref = "./michelson/mainnet/KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA.tz"
-  //   const act = "./archetype/mainnet/KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA', async () => {
+    const ref = "./michelson/mainnet/KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA.tz"
+    const act = "./archetype/mainnet/KT1EQX67Ct1xygDBdhQ3aLvS6DbMj9B1PZkA.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"' })
+    await check_transaction(ref, act, { storage: '"tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m"', parameter: '"tz1aBaHxNpyc9Zg9NEnG4zkwUqsr9wXywXst"', source: "tz1NeNiDt9gPkM1CWxN2N9xWSLKir6GMgo2m" })
+  })
 
-  // it('KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6', async () => {
-  //   const ref = "./michelson/mainnet/KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6.tz"
-  //   const act = "./archetype/mainnet/KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6', async () => {
+    const ref = "./michelson/mainnet/KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6.tz"
+    const act = "./archetype/mainnet/KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: 'Pair "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" "" "tz1UprVhwoHVrKodvFKcBBvqvsMiNB8HUyGC"', entrypoint: 'set_merkle_hash', parameter: '"dcab8bd85dbb6a6a107b6d0a0d6ede01d22dc7ae9a8f083db4523dc71b3061af"' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" "" "tz1UprVhwoHVrKodvFKcBBvqvsMiNB8HUyGC"', entrypoint: 'set_merkle_hash', parameter: '"dcab8bd85dbb6a6a107b6d0a0d6ede01d22dc7ae9a8f083db4523dc71b3061af"', source: "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" })
+    await check_transaction(ref, act, { storage: 'Pair "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" "" "tz1UprVhwoHVrKodvFKcBBvqvsMiNB8HUyGC"', entrypoint: 'set_merkle_hash', parameter: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" "" "tz1UprVhwoHVrKodvFKcBBvqvsMiNB8HUyGC"', entrypoint: 'set_merkle_hash', parameter: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', source: "tz1N9D1BLfhWFxKu3g5Y47arcJHQGJauCxqb" })
+  })
 
   // it('KT1MHfvmULc6mAGJLit9NbjxtQWFACKqJXQL', async () => {
   //   const ref = "./michelson/mainnet/KT1MHfvmULc6mAGJLit9NbjxtQWFACKqJXQL.tz"
