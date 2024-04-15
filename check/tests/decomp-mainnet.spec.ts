@@ -221,47 +221,56 @@ describe('decomp_mainnet', async () => {
     await check_transaction(ref, act, { storage: 'Unit', parameter: '"tz1aGaUhwbYDrwwBZobdgBEbCSG3HTPjH2ZJ"' })
   })
 
-  // it('KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC', async () => {
-  //   const ref = "./michelson/mainnet/KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC.tz"
-  //   const act = "./archetype/mainnet/KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC', async () => {
+    const ref = "./michelson/mainnet/KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC.tz"
+    const act = "./archetype/mainnet/KT1QaP4JG3RixSgAPwGsc3AuZhzUZsbc3KjC.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: '"a"', parameter: '"tz1LeLhbquBeV5kszgPzovMkfu35tKWvApZD"', amount: "1tz" })
+  })
 
-  // it('KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ', async () => {
-  //   const ref = "./michelson/mainnet/KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ.tz"
-  //   const act = "./archetype/mainnet/KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ', async () => {
+    const ref = "./michelson/mainnet/KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ.tz"
+    const act = "./archetype/mainnet/KT1BRudFZEXLYANgmZTka1xCDN5nWTMWY7SZ.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, {})
+    await check_transaction(ref, act, { amount: "5000utz" })
+    await check_transaction(ref, act, { amount: "5000utz", source: "tz1cLDXASgh48ntYmLqM3cqPEXmUtpJVVPma" })
+  })
 
   // it('KT1QjUt6TyeV4EMYdouBMyvUiK4JjQJyY1EK', async () => {
   //   const ref = "./michelson/mainnet/KT1QjUt6TyeV4EMYdouBMyvUiK4JjQJyY1EK.tz"
   //   const act = "./archetype/mainnet/KT1QjUt6TyeV4EMYdouBMyvUiK4JjQJyY1EK.arl"
   //   await check_prelude(ref, act)
-  //   assert(false) // TODO
+  //   await check_transaction(ref, act, { parameter: '"NI3Dance_Retrospective-2019-Part-A_20200110.flac:a7c2344b0664b2b051fe25c155ca479a0fe92f4fd06d73f4dbbdc6ae3381ee19"', source: "tz1SebmhV9P6pKfx7otPpdECdqY2JPZYB5gM" })
+  //   await check_transaction(ref, act, { parameter: '"NI3Dance_Retrospective-2019-Part-B_20200316.flac:e7b8da78676ed24a022a849655498cc6dbf2762a88dea0dc7421a9eef9d6e9d6"', source: "tz1SebmhV9P6pKfx7otPpdECdqY2JPZYB5gM" })
   // })
 
-  // it('KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS', async () => {
-  //   const ref = "./michelson/mainnet/KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS.tz"
-  //   const act = "./archetype/mainnet/KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS', async () => {
+    const ref = "./michelson/mainnet/KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS.tz"
+    const act = "./archetype/mainnet/KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: "Pair {} Unit", parameter: "0", source: "tz1hwFnF6rfe9BV7TKvYwBFMFSVd7VbAWnwJ" })
+    await check_transaction(ref, act, { storage: 'Pair {Elt "tz1hwFnF6rfe9BV7TKvYwBFMFSVd7VbAWnwJ" 0 } Unit', parameter: "0", source: "KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS" })
+  })
 
-  // it('KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S', async () => {
-  //   const ref = "./michelson/mainnet/KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S.tz"
-  //   const act = "./archetype/mainnet/KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S', async () => {
+    const ref = "./michelson/mainnet/KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S.tz"
+    const act = "./archetype/mainnet/KT1NvAD7W9gqgEs91ztyuUfzXp8ZKcNxVq4S.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: 'Pair Unit {Elt 0 (Pair 0 "USDC" "USDC" 8 {})}' })
+  })
 
-  // it('KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX', async () => {
-  //   const ref = "./michelson/mainnet/KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX.tz"
-  //   const act = "./archetype/mainnet/KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX', async () => {
+    const ref = "./michelson/mainnet/KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX.tz"
+    const act = "./archetype/mainnet/KT1TzZ4CwKiukbASXEe7RiCFonpud47ek5rX.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: 'Pair 0 0', parameter: "0" })
+    await check_transaction(ref, act, { storage: 'Pair 122 0', parameter: "2" })
+    await check_transaction(ref, act, { storage: 'Pair 124 0', parameter: "1" })
+    await check_transaction(ref, act, { storage: 'Pair 0 124', parameter: "0" })
+    await check_transaction(ref, act, { storage: 'Pair 122 124', parameter: "2" })
+    await check_transaction(ref, act, { storage: 'Pair 124 124', parameter: "1" })
+  })
 
   // it('KT1Lmy1YpMSFH6APuxcZAekSNTYWdtti9s7J', async () => {
   //   const ref = "./michelson/mainnet/KT1Lmy1YpMSFH6APuxcZAekSNTYWdtti9s7J.tz"
@@ -284,12 +293,14 @@ describe('decomp_mainnet', async () => {
   //   assert(false) // TODO
   // })
 
-  // it('KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ', async () => {
-  //   const ref = "./michelson/mainnet/KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ.tz"
-  //   const act = "./archetype/mainnet/KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ', async () => {
+    const ref = "./michelson/mainnet/KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ.tz"
+    const act = "./archetype/mainnet/KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: "{}", parameter: '"fake_string"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: '{Elt "fake_string" (Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb")}', parameter: '"fake_string"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: '{Elt "fake_string" (Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb")}', parameter: '"fake_string_2"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" }) // c
+  })
 
   // it('KT1BNuzMP54AoPNWQF45LkjhcFjW3A48rcHb', async () => {
   //   const ref = "./michelson/mainnet/KT1BNuzMP54AoPNWQF45LkjhcFjW3A48rcHb.tz"
@@ -900,6 +911,7 @@ describe('decomp_mainnet', async () => {
     await check_prelude(ref, act)
     await check_transaction(ref, act, { storage: 'Pair {} "tz1WJp69XTpsFRwZTXVmGSswEFHf2NPhtWL4"', entrypoint: "add_account", parameter: 'Pair "vsnation" 1000' })
     await check_transaction(ref, act, { storage: 'Pair {} "tz1WJp69XTpsFRwZTXVmGSswEFHf2NPhtWL4"', entrypoint: "add_account", parameter: 'Pair "vsnation" 1000', source: "tz1WJp69XTpsFRwZTXVmGSswEFHf2NPhtWL4" })
+    // TODO: continue ...
   })
 
   // it('KT1AJfwziXDgJcAmT5t2iRb422NmjYn1FCa3', async () => {
