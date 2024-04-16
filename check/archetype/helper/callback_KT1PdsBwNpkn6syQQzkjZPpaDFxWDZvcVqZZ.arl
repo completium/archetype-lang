@@ -1,0 +1,11 @@
+archetype callback_KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ
+
+record arg_param {
+  p_owner : address;
+  p_token_id : nat ;
+  p_balance : nat ;
+} as (((%owner, %token_id), %balance))
+
+entry callback(arg : list<arg_param>) {
+  fail("OK")
+}

@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import assert from 'assert'
-import { interp } from '@completium/completium-cli'
+import { interp, deploy, setQuiet } from '@completium/completium-cli'
 
 /* Tools ------------------------------------------------------------------- */
 
@@ -55,6 +55,8 @@ async function check_ref_todo(ref: string, act: string, conf: ConfInput) {
 
   console.log(res_ref)
 }
+
+setQuiet(true)
 
 /* Tests ------------------------------------------------------------------- */
 
@@ -331,12 +333,17 @@ describe('decomp_mainnet', async () => {
     await check_ref_todo(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'change_manager', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
   })
 
-  // it('KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ', async () => {
-  //   const ref = "./michelson/mainnet/KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.tz"
-  //   const act = "./archetype/mainnet/KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ', async () => {
+    const ref = "./michelson/mainnet/KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.tz"
+    const act = "./archetype/mainnet/KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.arl"
+    await check_prelude(ref, act)
+    const [conf, _] = await deploy("./archetype/helper/callback_KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.arl");
+    const addr = conf.address;
+    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {} "${addr}"` })
+    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0} "${addr}"` })
+    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0; Pair "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" 1} "${addr}"` })
+    await check_ref_todo(ref, act, { entrypoint: 'transfer' })
+  })
 
   it('KT1LGCVzePeHZB4jHTdAdrieMPvgahd2x9Qz', async () => {
     const ref = "./michelson/mainnet/KT1LGCVzePeHZB4jHTdAdrieMPvgahd2x9Qz.tz"
