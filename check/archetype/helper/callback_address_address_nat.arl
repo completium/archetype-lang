@@ -1,0 +1,5 @@
+archetype callback_address_address_nat
+
+entry callback(%from : address, %to : address, %amount : nat) {
+  fail("OK")
+}
