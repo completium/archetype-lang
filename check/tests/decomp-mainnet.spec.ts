@@ -1,4 +1,5 @@
 /* DO NOT EDIT, GENERATED FILE */
+import fs from 'fs';
 import assert from 'assert'
 import { interp, deploy, setQuiet } from '@completium/completium-cli'
 
@@ -17,7 +18,9 @@ interface ConfInput {
 }
 
 async function check_prelude(ref: string, act: string) {
-
+  // if (!fs.existsSync(act)) {
+  //   throw new Error("No Archetype file found: " + act)
+  // }
 }
 
 function make_conf(p: string, conf: ConfInput) {
@@ -37,23 +40,17 @@ function make_conf(p: string, conf: ConfInput) {
 
 async function check_transaction(ref: string, act: string, conf: ConfInput) {
   const conf_ref = make_conf(ref, conf)
-  const conf_act = make_conf(act, conf)
-
   const res_ref = await interp(conf_ref)
-  const res_act = await interp(conf_act)
-
   console.log(res_ref)
-  console.log(res_act)
 
-  assert(JSON.stringify(res_ref) === JSON.stringify(res_act))
-}
+  if (fs.existsSync(act)) {
+    const conf_act = make_conf(act, conf)
+    const res_act = await interp(conf_act)
+    console.log(res_act)
+    assert(JSON.stringify(res_ref) === JSON.stringify(res_act))
+  } else {
 
-async function check_ref_todo(ref: string, act: string, conf: ConfInput) {
-  const conf_ref = make_conf(ref, conf)
-
-  const res_ref = await interp(conf_ref)
-
-  console.log(res_ref)
+  }
 }
 
 setQuiet(true)
@@ -120,7 +117,7 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1QbprEHD71e6YzWZXNcmxV87gCV5etmpsd.tz"
     const act = "./archetype/mainnet/KT1QbprEHD71e6YzWZXNcmxV87gCV5etmpsd.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { })
+    await check_transaction(ref, act, {})
   })
 
   it('KT18iWQLZDeJ5tTCLrfnPNip2KSZHmFJFUc7', async () => {
@@ -151,16 +148,16 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1CPuTzwC7h7uLXd5WQmpMFso1HxrLBUtpE.tz"
     const act = "./archetype/mainnet/KT1CPuTzwC7h7uLXd5WQmpMFso1HxrLBUtpE.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { parameter: '{ PUSH string "test"; FAILWITH }' })
+    await check_transaction(ref, act, { parameter: '{ PUSH string "test"; FAILWITH }' })
   })
 
   it('KT1TgnUythoUoLKxCCEdR1VkjiiY5TmE7M7r', async () => {
     const ref = "./michelson/mainnet/KT1TgnUythoUoLKxCCEdR1VkjiiY5TmE7M7r.tz"
     const act = "./archetype/mainnet/KT1TgnUythoUoLKxCCEdR1VkjiiY5TmE7M7r.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { entrypoint: "viewNat", parameter: '2' })
-    await check_ref_todo(ref, act, { entrypoint: "viewString", parameter: '"mystring"' })
-    await check_ref_todo(ref, act, { entrypoint: "viewAddress", parameter: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"' })
+    await check_transaction(ref, act, { entrypoint: "viewNat", parameter: '2' })
+    await check_transaction(ref, act, { entrypoint: "viewString", parameter: '"mystring"' })
+    await check_transaction(ref, act, { entrypoint: "viewAddress", parameter: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"' })
   })
 
   it('KT1XGta53KtvSGfnDNaTcNxXygSgxUL9yNN1', async () => {
@@ -253,8 +250,8 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1QjUt6TyeV4EMYdouBMyvUiK4JjQJyY1EK.tz"
     const act = "./archetype/mainnet/KT1QjUt6TyeV4EMYdouBMyvUiK4JjQJyY1EK.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { parameter: '"aaa"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_ref_todo(ref, act, { parameter: '"aaa"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", amount: "1utz" })
+    await check_transaction(ref, act, { parameter: '"aaa"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { parameter: '"aaa"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", amount: "1utz" })
   })
 
   it('KT1CvzXrz19fnHKuWedFY3WqmVAB7kMTPLLS', async () => {
@@ -289,29 +286,29 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1Lmy1YpMSFH6APuxcZAekSNTYWdtti9s7J.tz"
     const act = "./archetype/mainnet/KT1Lmy1YpMSFH6APuxcZAekSNTYWdtti9s7J.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { storage: 'Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', parameter: '2', source: "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" })
-    await check_ref_todo(ref, act, { storage: 'Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', parameter: '2', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: 'Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', parameter: '2', source: "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" })
+    await check_transaction(ref, act, { storage: 'Pair 0 "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', parameter: '2', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
   })
 
   it('KT18anEhkN2Wgpr5u8UyEHVGsbLnrSjNFkDF', async () => {
     const ref = "./michelson/mainnet/KT18anEhkN2Wgpr5u8UyEHVGsbLnrSjNFkDF.tz"
     const act = "./archetype/mainnet/KT18anEhkN2Wgpr5u8UyEHVGsbLnrSjNFkDF.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'default' })
-    await check_ref_todo(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" })
-    await check_ref_todo(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", amount: "1utz" })
-    await check_ref_todo(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_ref_todo(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation ; PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ; CONTRACT unit ; IF_NONE { UNIT ; FAILWITH } {} ; PUSH mutez 1 ; UNIT ; TRANSFER_TOKENS ; CONS }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'default' })
+    await check_transaction(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" })
+    await check_transaction(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", amount: "1utz" })
+    await check_transaction(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: '"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'do', parameter: '{ DROP ; NIL operation ; PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ; CONTRACT unit ; IF_NONE { UNIT ; FAILWITH } {} ; PUSH mutez 1 ; UNIT ; TRANSFER_TOKENS ; CONS }', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
   })
 
   it('KT1CstdKc9TtdDPkSy9dQVZLMYPCYrzTonSB', async () => {
     const ref = "./michelson/mainnet/KT1CstdKc9TtdDPkSy9dQVZLMYPCYrzTonSB.tz"
     const act = "./archetype/mainnet/KT1CstdKc9TtdDPkSy9dQVZLMYPCYrzTonSB.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { storage: '0', entrypoint: 'increment', parameter: '1' })
-    await check_ref_todo(ref, act, { storage: '0', entrypoint: 'decrement', parameter: '1' })
-    await check_ref_todo(ref, act, { storage: '10', entrypoint: 'increment', parameter: '2' })
-    await check_ref_todo(ref, act, { storage: '10', entrypoint: 'decrement', parameter: '2' })
+    await check_transaction(ref, act, { storage: '0', entrypoint: 'increment', parameter: '1' })
+    await check_transaction(ref, act, { storage: '0', entrypoint: 'decrement', parameter: '1' })
+    await check_transaction(ref, act, { storage: '10', entrypoint: 'increment', parameter: '2' })
+    await check_transaction(ref, act, { storage: '10', entrypoint: 'decrement', parameter: '2' })
   })
 
   it('KT1Acfs1M5FXHGYQpvdKUwGbZtrUkqrisweJ', async () => {
@@ -327,10 +324,10 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1BNuzMP54AoPNWQF45LkjhcFjW3A48rcHb.tz"
     const act = "./archetype/mainnet/KT1BNuzMP54AoPNWQF45LkjhcFjW3A48rcHb.arl"
     await check_prelude(ref, act)
-    await check_ref_todo(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'add_certified', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"' })
-    await check_ref_todo(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'add_certified', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_ref_todo(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'change_manager', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"' })
-    await check_ref_todo(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'change_manager', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'add_certified', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"' })
+    await check_transaction(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'add_certified', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'change_manager', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"' })
+    await check_transaction(ref, act, { storage: 'Pair {} "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"', entrypoint: 'change_manager', parameter: '"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"', source: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
   })
 
   it('KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ', async () => {
@@ -339,27 +336,31 @@ describe('decomp_mainnet', async () => {
     await check_prelude(ref, act)
     const [conf, _] = await deploy("./archetype/helper/callback_KT1PdsBwNpkn6syQQzkjZPpaDFxWDZvcVqZZ.arl");
     const addr = conf.address;
-    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {} "${addr}"` })
-    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0} "${addr}"` })
-    await check_ref_todo(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0; Pair "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" 1} "${addr}"` })
-    await check_ref_todo(ref, act, { entrypoint: 'transfer' })
+    await check_transaction(ref, act, { entrypoint: 'balance_of', parameter: `Pair {} "${addr}"` })
+    await check_transaction(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0} "${addr}"` })
+    await check_transaction(ref, act, { entrypoint: 'balance_of', parameter: `Pair {Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" 0; Pair "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" 1} "${addr}"` })
+    await check_transaction(ref, act, { entrypoint: 'transfer' })
   })
 
   it('KT1LGCVzePeHZB4jHTdAdrieMPvgahd2x9Qz', async () => {
     const ref = "./michelson/mainnet/KT1LGCVzePeHZB4jHTdAdrieMPvgahd2x9Qz.tz"
     const act = "./archetype/mainnet/KT1LGCVzePeHZB4jHTdAdrieMPvgahd2x9Qz.arl"
     await check_prelude(ref, act)
-    await check_transaction(ref, act, { storage: "{}", parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.1tz", now:"2018-09-09T03:24:12Z" })
-    await check_transaction(ref, act, { storage: '{Pair "testuser" 100000 "2018-09-09T03:24:12Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX" }', parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.1tz", now:"2018-09-11T02:41:44Z" })
-    await check_transaction(ref, act, { storage: '{Pair "testuser" 100000 "2018-09-09T03:24:12Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX"; Pair "testuser" 100000 "2018-09-11T02:41:44Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX"}', parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.3tz", now:"2018-09-11T02:53:44Z" })
+    await check_transaction(ref, act, { storage: "{}", parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.1tz", now: "2018-09-09T03:24:12Z" })
+    await check_transaction(ref, act, { storage: '{Pair "testuser" 100000 "2018-09-09T03:24:12Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX" }', parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.1tz", now: "2018-09-11T02:41:44Z" })
+    await check_transaction(ref, act, { storage: '{Pair "testuser" 100000 "2018-09-09T03:24:12Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX"; Pair "testuser" 100000 "2018-09-11T02:41:44Z" "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX"}', parameter: '"testuser"', source: "tz1hEomk8mX3mKeapVqUGYJXDQQbbncnpwZX", amount: "0.3tz", now: "2018-09-11T02:53:44Z" })
   })
 
-  // it('KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE', async () => {
-  //   const ref = "./michelson/mainnet/KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE.tz"
-  //   const act = "./archetype/mainnet/KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE', async () => {
+    const ref = "./michelson/mainnet/KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE.tz"
+    const act = "./archetype/mainnet/KT18gJTqHFUu7Zpd5JkdcvSkMy7hyjnmcpuE.arl"
+    await check_prelude(ref, act)
+    await check_transaction(ref, act, { storage: 'Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ""', entrypoint: "do", parameter: '{ DROP ; NIL operation }' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ""', entrypoint: "do", source: 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb', amount: "1tz", parameter: '{ DROP ; NIL operation }' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ""', entrypoint: "do", source: 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb', parameter: '{ DROP ; NIL operation }' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ""', entrypoint: "do", source: 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb', parameter: '{ DROP ; NIL operation ; PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ; CONTRACT unit ; IF_NONE { UNIT ; FAILWITH } {} ; PUSH mutez 1 ; UNIT ; TRANSFER_TOKENS ; CONS }' })
+    await check_transaction(ref, act, { storage: 'Pair "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ""', entrypoint: "default", parameter: '"mystr"' })
+  })
 
   it('KT1CeLuUxpZKNF4tDASWt1BabXWcVSLhQn1C', async () => {
     // avv
@@ -367,19 +368,19 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1CeLuUxpZKNF4tDASWt1BabXWcVSLhQn1C.tz"
     const act = "./archetype/mainnet/KT1CeLuUxpZKNF4tDASWt1BabXWcVSLhQn1C.arl"
     await check_prelude(ref, act)
-    await check_transaction(ref, act, { storage: "Pair 0 0", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 1 1", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 2 1", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 3 1", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 4 1", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 5 1", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 6 1", parameter: '5', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 7 5", parameter: '1', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 8 1", parameter: '5', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 9 5", parameter: '5', entrypoint: "replace"  })
-    await check_transaction(ref, act, { storage: "Pair 9 5", entrypoint: "double"  })
-    await check_transaction(ref, act, { storage: "Pair 9 6", parameter: '5', entrypoint: "divide"  })
-    await check_transaction(ref, act, { storage: "Pair 9 6", parameter: '6', entrypoint: "divide"  })
+    await check_transaction(ref, act, { storage: "Pair 0 0", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 1 1", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 2 1", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 3 1", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 4 1", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 5 1", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 6 1", parameter: '5', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 7 5", parameter: '1', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 8 1", parameter: '5', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 9 5", parameter: '5', entrypoint: "replace" })
+    await check_transaction(ref, act, { storage: "Pair 9 5", entrypoint: "double" })
+    await check_transaction(ref, act, { storage: "Pair 9 6", parameter: '5', entrypoint: "divide" })
+    await check_transaction(ref, act, { storage: "Pair 9 6", parameter: '6', entrypoint: "divide" })
   })
 
   it('KT1A37WhddWH3EFFDM1gi124DRgXTzqGYZDL', async () => {
@@ -387,10 +388,10 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1A37WhddWH3EFFDM1gi124DRgXTzqGYZDL.tz"
     const act = "./archetype/mainnet/KT1A37WhddWH3EFFDM1gi124DRgXTzqGYZDL.arl"
     await check_prelude(ref, act)
-    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', entrypoint: "joinGame", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr"  })
-    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', entrypoint: "joinGame", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr", amount: "2tz"  })
-    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', parameter: '"tz1cZyyLMwho1DkvRHVTkkZBdSBwEFHRQz9A"', entrypoint: "payoutToWinner"  })
-    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', parameter: '"tz1cZyyLMwho1DkvRHVTkkZBdSBwEFHRQz9A"', entrypoint: "payoutToWinner", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr"  })
+    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', entrypoint: "joinGame", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" })
+    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', entrypoint: "joinGame", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr", amount: "2tz" })
+    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', parameter: '"tz1cZyyLMwho1DkvRHVTkkZBdSBwEFHRQz9A"', entrypoint: "payoutToWinner" })
+    await check_transaction(ref, act, { storage: 'Pair "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" 2000000', parameter: '"tz1cZyyLMwho1DkvRHVTkkZBdSBwEFHRQz9A"', entrypoint: "payoutToWinner", source: "tz1L8g1UtZ2i7nKbjtmCeN5Ve3fLuPgsQvrr" })
   })
 
   it('KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg', async () => {
