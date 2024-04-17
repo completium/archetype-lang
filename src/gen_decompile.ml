@@ -2701,6 +2701,24 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   in
 
   let for_decl (x : M.decl_node) : A.declaration =
+    let mk_rd (drecord : M.record) =
+      let for_field (x : M.record_field) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, None)) in
+      let a : A.lident = snd drecord.name in
+      let b : A.field list = List.map for_field drecord.fields in
+      let c : A.expr option =
+        match drecord.pos with
+        | Pnode [] -> None
+        | _ -> begin
+            let rec aux p =
+              match p with
+              | M.Pnode l -> A.etuple (List.map aux l)
+              | M.Ptuple ids -> A.etuple (List.map (fun id -> A.eterm (dumloc id)) ids)
+            in
+            Some (aux drecord.pos)
+          end in
+      let rd : A.record_decl = (a, b, c) in
+      rd
+    in
     match x with
     | Dvar {name; type_; kind; default; _} -> begin
         let k = match kind with | VKconstant -> A.VKconstant | VKvariable -> A.VKvariable in
@@ -2736,19 +2754,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         A.mk_asset (a, b, c, d, e)
       end
     | Drecord drecord -> begin
-        let for_field (x : M.record_field) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, None)) in
-        let a : A.lident = snd drecord.name in
-        let b : A.field list = List.map for_field drecord.fields in
-        let c : A.expr option = None in
-        let rd : A.record_decl = (a, b, c) in
+        let rd : A.record_decl = mk_rd drecord in
         A.mk_record rd
       end
     | Devent  drecord ->  begin
-        let for_field (x : M.record_field) : A.field = dumloc (A.Ffield (snd x.name, for_type x.type_, None)) in
-        let a : A.lident = snd drecord.name in
-        let b : A.field list = List.map for_field drecord.fields in
-        let c : A.expr option = None in
-        let rd : A.record_decl = (a, b, c) in
+        let rd : A.record_decl = mk_rd drecord in
         A.mk_event rd
       end
   in

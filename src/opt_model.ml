@@ -88,20 +88,20 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
       end
     | _ -> f code
   in
-  let rec aux (entries : model_entries) (arg_pattern : dpattern) (code : mterm) : function_node list =
+  let rec aux (entries : model_entries) (arg_pattern : dpattern) (code : mterm) : function_node list * decl_node list =
     match entries with
     | Munion (l, r) -> begin
         let opt_param = match arg_pattern with | DPid id -> Some id | _ -> None in
         let param = Option.get opt_param in
         match seek_ifleft param code with
-        | Some (pl, bl, pr, br) -> (aux l pl bl) @ (aux r pr br)
-        | None -> []
+        | Some (pl, bl, pr, br) -> let a1, a2 = (aux l pl bl) in let b1, b2 = (aux r pr br) in  (a1 @ b1, a2 @ b2)
+        | None -> [], []
       end
     | Mentry (name, pty) -> begin
         let replace_var src dst code =
           let rec aux mt =
             match mt.node with
-            | Mvar (id, vk) when String.equal (unloc_mident id) src-> {mt with node = Mvar (mk_mident (dumloc dst), vk)}
+            | Mvar (id, _vk) when String.equal (unloc_mident id) src-> {mt with node = dst}
             | _ -> map_mterm aux mt
           in
           aux code
@@ -125,44 +125,94 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
           | DPlist dps -> List.map flat_dpattern dps |> List.flatten
         in
         let get_annot = Gen_decompile.get_annot_from_type in
-        let do_it ids tys =
-          let a = List.map2 (fun id ty -> (mk_mident (dumloc (match get_annot ty with Some id -> gen_arg_id id | None -> id)), Gen_decompile.ttype_to_mtype ty, None)) ids tys in
-          let c = List.map2 (fun src ty -> (src, (match get_annot ty with | Some annot -> gen_arg_id annot | _ -> src))) ids tys in
-          let b = List.fold_left (fun code (src, dst) -> replace_var src dst code) code c in
-          (a, b)
+        let args, code, recs =
+          let flat_arg_pattern = flat_dpattern arg_pattern in
+          let flat_pty = flat_pair pty in
+          (* Format.eprintf "name: %s@\n" name;
+             Format.eprintf "aaa: [%a]@\n" (pp_list "; " pp_ident) flat_arg_pattern;
+             Format.eprintf "bbb: [%a]@\n" (pp_list "; " T.pp_type_) flat_pty;
+             Format.eprintf "@\n"; *)
+          match flat_arg_pattern, flat_pty with
+          | _, [{node = T.Tunit}] -> [], code, []
+          | [id], [oty] when (match get_annot oty with | Some x -> String.equal name x | None -> true) -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id (Mvar (mk_mident (dumloc "arg"), Vparam)) code, []
+          | ids, tys when List.length ids == List.length tys -> begin
+              let rec aux (args, code) (ids, tys) =
+                match ids, tys with
+                (* | [id], _::_::_ -> begin
+                   let d = (mk_mident (dumloc id), Gen_decompile.ttype_to_mtype (T.tpair tys), None) in
+                   (args @ [d], code)
+                   end *)
+                | id::tl_ids, ty::tys -> begin
+                    let arg = match get_annot ty with | Some annot -> gen_arg_id annot | None -> id in
+                    let code = replace_var id (Mvar (mk_mident (dumloc arg), Vparam)) code in
+                    let d = (mk_mident (dumloc arg), Gen_decompile.ttype_to_mtype ty, None) in
+                    aux (args @ [d], code) (tl_ids, tys)
+                  end
+                | _, _ -> (args, code)
+              in
+
+              let a, b = aux ([], code) (ids, tys) in
+              a, b, []
+            end
+          | [id], _  -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id (Mvar (mk_mident (dumloc "arg"), Vparam)) code, []
+          | ids, _ -> begin
+
+              (* let decl = make_record record_name pty in *)
+              (* let ids_node = List.map (fun x -> (x, Mdot (mk_mterm (Mvar (mk_mident (dumloc "arg"), Vparam)) (trecord (mk_mident (dumloc record_name))), mk_mident (dumloc x)))) ids in *)
+
+              let record_name = "param_" ^ name in
+
+              let get_field_name x (pty : T.type_) =
+                match Gen_decompile.get_annot_from_type pty with
+                | Some x -> x
+                | None -> x
+              in
+
+              let l = flat_all_pair pty in
+              let ids_node, fields, pos =
+                match flat_all_pair pty with
+                | fptys when List.length fptys == List.length l -> begin
+                    let pos =
+                      let rec aux (ty : T.type_) =
+                        match ty.node with
+                        | T.Tpair tys -> Pnode (List.map aux tys)
+                        | _ -> Ptuple [match get_annot ty with Some x -> x | None -> "_"]
+                      in
+                      aux pty
+                    in
+                    let a, b = List.map2 (
+                        fun xa pty ->
+                          let fn : ident = get_field_name xa pty in
+                          let a = (xa, Mdot (mk_mterm (Mvar (mk_mident (dumloc "arg"), Vparam)) (trecord (mk_mident (dumloc record_name))), mk_mident (dumloc xa))) in
+                          let r : record_field = mk_record_field (mk_mident (dumloc fn)) (Gen_decompile.ttype_to_mtype pty) in
+                          (a, r)) ids fptys |> List.split in
+                    a, b, pos
+                  end
+                | _ -> begin
+                    let ids_node = List.map (fun x -> (x, Mdot (mk_mterm (Mvar (mk_mident (dumloc "arg"), Vparam)) (trecord (mk_mident (dumloc record_name))), mk_mident (dumloc x)))) ids in
+                    let fields = List.map (fun x -> mk_record_field (mk_mident (dumloc x)) tnat) ids in
+                    ids_node, fields, (Pnode [])
+                  end
+              in
+
+              (* let rec aux (ids : ident list) (pty : T.type_) =
+                 match ids, flat_pair pty with
+                 | _, ptys when List.length ids == List.length ptys -> begin
+                    let ids_node = List.map2 (fun x _ -> (x, Mdot (mk_mterm (Mvar (mk_mident (dumloc "arg"), Vparam)) (trecord (mk_mident (dumloc record_name))), mk_mident (dumloc x)))) ids ptys in
+                    let fields = List.map2 (fun x pty -> mk_record_field (mk_mident (dumloc x)) (Gen_decompile.ttype_to_mtype pty)) ids ptys in
+                    ids_node, fields
+                  end
+                 | _, _ -> assert false
+                 in
+                 aux ids pty
+                 in
+              *)
+              let decl = mk_record ~fields ~pos (mk_mident (dumloc record_name)) in
+              let code = List.fold_left (fun code (id, node) -> replace_var id node code) code ids_node in
+              [(mk_mident (dumloc "arg"), trecord (mk_mident (dumloc record_name)), None)], code, [Drecord decl]
+            end
         in
-        let args, code =
-          match arg_pattern, flat_all_pair pty, flat_pair pty with
-          | _, [{node = T.Tunit}], _ -> [], code
-          | DPid id, [pty], _ -> [(mk_mident (dumloc "arg"), Gen_decompile.ttype_to_mtype pty, None)], replace_var id "arg" code
-          | DPid "arg_1", tys, _ when List.length tys = List.length (env.parameter_list) -> begin
-              let ids = List.map fst env.parameter_list in
-              do_it ids tys
-            end
-          | DPid _, tys, _ -> begin
-              let ids = List.mapi (fun i (ty : T.type_) -> match ty.annotation with | Some v -> Gen_decompile.remove_prefix_annot v | None -> ("arg_" ^ string_of_int i)) tys in
-              do_it ids tys
-            end
-          | DPlist ids, tys, _ when List.length ids = List.length tys && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
-              let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
-              do_it ids tys
-            end
-          | DPlist ids, _, tys when List.length ids = List.length tys && List.for_all (function | DPid _ -> true | _ -> false) ids -> begin
-              let ids = List.map (function | DPid id -> id | _ -> assert false) ids in
-              do_it ids tys
-            end
-          | dps, _, _ when List.length (flat_dpattern dps) = List.length (flat_all_pair pty) -> begin
-              let tys = flat_all_pair pty in
-              let ids = flat_dpattern dps in
-              do_it ids tys
-            end
-          | _, _, _ ->
-            Format.eprintf "node:%a@\narg_pattern:%a@\n"
-              Printer_michelson.pp_type pty
-              pp_dpattern arg_pattern;
-            assert false
-        in
-        [Entry (mk_function_struct ~args (mk_mident (dumloc name)) code)]
+        [Entry (mk_function_struct ~args (mk_mident (dumloc name)) code)], recs
       end
   in
   let def_entry : mterm option =
@@ -171,7 +221,7 @@ let build_entries (env : Gen_decompile.env) (model : model) : model =
     | _ -> None
   in
   match def_entry with
-  | Some code -> {model with functions = aux entries (DPid "arg_1") code }
+  | Some code -> let fs, ds = aux entries (DPid "arg_1") code in {model with decls = model.decls @ ds; functions = fs }
   | None -> model
 
 let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
