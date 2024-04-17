@@ -1,7 +1,7 @@
 /* DO NOT EDIT, GENERATED FILE */
 import fs from 'fs';
 import assert from 'assert'
-import { interp, deploy, setQuiet } from '@completium/completium-cli'
+import { interp, deploy, setQuiet, exprMichelineToJson, jsonMichelineToExpr } from '@completium/completium-cli'
 
 /* Tools ------------------------------------------------------------------- */
 
@@ -17,9 +17,96 @@ interface ConfInput {
   level?: string,
 }
 
+const compile = (p: string) => {
+  const spawn = require('cross-spawn');
+  const bin = '../_build/default/src/compiler.exe'
+  const res = spawn.sync(bin, [p], {});
+  return res
+}
+
+function normalize(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(element => normalize(element));
+  } else if (typeof obj === 'object' && obj.args !== undefined && Array.isArray(obj.args)) {
+    const args = obj.args.map((x: any) => normalize(x))
+    if (obj.prim === "pair" && typeof args.at(-1) === 'object' && args.at(-1).prim === "pair") {
+      const l = args.at(-1).args ?? [];
+      args.pop()
+      for (const i of l) {
+        args.push(i)
+      }
+    }
+    return { ...obj, args: args }
+  }
+  return obj;
+}
+
+function removeAnnotation(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(element => removeAnnotation(element));
+  } else if (typeof obj === 'object' && obj !== null) {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (key !== "annots") {
+        newObj[key] = removeAnnotation(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
+interface contract {
+  parameter: any;
+  storage: any;
+}
+
+function get_contract(input: Buffer): contract {
+  const get_prim = (a: Array<any>, prim: string): any => {
+    const matchingObject = a.find(obj => obj.prim === prim);
+    return matchingObject ? matchingObject.args : null;
+  };
+
+  const j = exprMichelineToJson(input.toString());
+
+  return {
+    parameter: normalize(get_prim(j, "parameter")),
+    storage: normalize(removeAnnotation(get_prim(j, "storage")))
+  }
+}
+
 async function check_prelude(ref: string, act: string) {
   if (!fs.existsSync(act)) {
     throw new Error("No Archetype file found: " + act)
+  }
+  const res_compile = compile(act);
+  if (res_compile.status != 0) {
+    throw new Error("Archetype file does not compile: " + act)
+  }
+  const str = res_compile.output.toString().trim();
+  const content_act_tz = str.substring(1, str.length - 1);
+  console.log(content_act_tz);
+  const contract_act = get_contract(content_act_tz)
+
+  const content_ref_tz = fs.readFileSync(ref);
+  const contract_ref = get_contract(content_ref_tz)
+
+  const mich_ref_parameter = jsonMichelineToExpr(contract_ref.parameter)
+  const mich_act_parameter = jsonMichelineToExpr(contract_act.parameter)
+
+  const mich_ref_storage = jsonMichelineToExpr(contract_ref.storage)
+  const mich_act_storage = jsonMichelineToExpr(contract_act.storage)
+
+  // if (mich_ref_parameter !== mich_act_parameter) {
+  //   console.error(mich_ref_parameter)
+  //   console.error(mich_act_parameter)
+  //   assert(false, "Parameter does not match")
+  // }
+
+  if (mich_ref_storage !== mich_act_storage) {
+    console.error(mich_ref_storage)
+    console.error(mich_act_storage)
+    assert(false, "Storage does not match")
   }
 }
 
