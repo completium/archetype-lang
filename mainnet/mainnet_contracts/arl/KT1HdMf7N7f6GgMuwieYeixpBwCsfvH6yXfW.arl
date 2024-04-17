@@ -18,7 +18,7 @@ entry joinGame () {
   sto_1 := (((((((prepend (x85, caller)), x87)), x108)), x118))
 }
 
-entry payoutToWinners (arg : (address * list<address>)) {
+entry payoutToWinners (winner : address, winningVoters : list<address>) {
   var x216 : contract<unit> = self_contract<unit>;
   var x206 : tez = 0utz;
   var x233 : nat = 0;
@@ -26,9 +26,10 @@ entry payoutToWinners (arg : (address * list<address>)) {
   var x363 : nat = 0;
   var x398 : nat = 0;
   var x403 : list<address> = make_list<address> (([]));
+  var x486 : ((address * list<address>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_list<address> (([]))));
   var x472 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((x472 = caller), "WrongCondition: self.data.owner == sp.sender");
-  match get_entrypoint<unit>("default", (arg[0])) with
+  match get_entrypoint<unit>("default", (x486[0])) with
   | some x449 -> ()
   | none -> (fail (Unit))
   end;

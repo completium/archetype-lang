@@ -55,14 +55,15 @@ entry update_oracle (arg : address) {
   sto_1 := ((arg, x321))
 }
 
-entry withdraw (arg : (address * tez)) {
+entry withdraw (address_ : address, amount : tez) {
   var x346 : contract<unit> = self_contract<unit>;
   var x345 : tez = 0utz;
+  var x425 : ((address * tez)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0utz);
   var x408 : (((address * address) * (date * nat))) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((1970-01-01T00:00:00, 0)));
   var x400 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((caller = x400), "WrongCondition: sp.sender == self.data.admin");
   do_require ((now > (x408[1])[0]), "WrongCondition: sp.now > self.data.time_lock");
-  match get_entrypoint<unit>("default", (arg[0])) with
+  match get_entrypoint<unit>("default", (x425[0])) with
   | some x358 -> (x346 := x358)
   | none -> (fail (65i))
   end;

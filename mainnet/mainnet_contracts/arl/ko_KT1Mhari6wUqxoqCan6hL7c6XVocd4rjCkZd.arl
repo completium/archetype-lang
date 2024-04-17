@@ -4,14 +4,7 @@ sto_1 : (address * big_map<address, (map<address, nat> * nat)>),
 paused : bool,
 totalSupply : nat)
 
-record param_getAllowance  {
-  owner : address;
-  spender : address;
-  x596 : address
-}
-
-
-entry approve (arg : (address * nat)) {
+entry approve (spender : address, value : nat) {
   var x112 : nat = 0;
   var x101 : nat = 0;
   var x104 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
@@ -89,15 +82,14 @@ entry getAdministrator (x515 : unit, x516 : address) {
   operations := prepend (operations, (make_operation (0utz, x491, x499)))
 }
 
-entry getAllowance (arg : param_getAllowance) {
+entry getAllowance (owner : address, spender : address, x596 : address) {
   var x534 : nat = 0;
   var x526 : contract<nat> = self_contract<nat>;
   var x539 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x553 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x554 : map<address, nat> = make_map<address, nat> (([]));
-  var x594 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x509 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
-  match (x509[x594]) with
+  match (x509[owner]) with
   | some (x571, x572) -> (x554 := x571)
   | none -> (fail (63i))
   end;

@@ -3,20 +3,6 @@ archetype my_contract(
 accounts : map<string, tez>,
 admin : address)
 
-record param_tip  {
-  %_from : string;
-  %_to : string;
-  amount : tez
-}
-
-
-record param_transfer  {
-  %_from : string;
-  %_to : address;
-  amount : tez
-}
-
-
 entry add_account (account_name : string, amount : tez) {
   var x96 : tez = 0utz;
   var x99 : string = "";
@@ -64,7 +50,7 @@ entry remove_account (arg : string) {
   then (accounts := update (accounts, arg, (none<tez>)))
 }
 
-entry tip (arg : param_tip) {
+entry tip (%_from : string, %_to : string, amount : tez) {
   var x495 : tez = 0utz;
   var x404 : tez = 0utz;
   var x397 : tez = 0utz;
@@ -84,15 +70,13 @@ entry tip (arg : param_tip) {
   var x801 : map<string, tez> = make_map<string, tez> (([]));
   var x800 : string = "";
   var x832 : tez = 0utz;
-  var x907 : string = "";
-  var x909 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
-  do_require ((x909 >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
-  match (accounts[x907]) with
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
   | some x843 -> (x832 := x843)
   | none -> (fail ("Get-item:80"))
   end;
-  do_require ((x832 - x909 >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
+  do_require ((x832 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
   if contains (x801, x800)
   then (match (x801[x800]) with
   | some x663 -> ()
@@ -130,7 +114,7 @@ entry tip (arg : param_tip) {
   accounts := update (x553, x552, (some(x495))))
 }
 
-entry %transfer (arg : param_transfer) {
+entry %transfer (%_from : string, %_to : address, amount : tez) {
   var x921 : contract<unit> = self_contract<unit>;
   var x920 : tez = 0utz;
   var x1082 : (((string * address) * tez)) = ((("", tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
@@ -143,16 +127,14 @@ entry %transfer (arg : param_transfer) {
   var x1172 : map<string, tez> = make_map<string, tez> (([]));
   var x1171 : string = "";
   var x1203 : tez = 0utz;
-  var x1288 : string = "";
-  var x1290 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
   do_require ((transferred >= 0utz), "WrongCondition: sp.amount >= sp.tez(0)");
-  do_require ((x1290 >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
-  match (accounts[x1288]) with
+  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[%_from]) with
   | some x1214 -> (x1203 := x1214)
   | none -> (fail ("Get-item:69"))
   end;
-  do_require ((x1203 - x1290 >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
+  do_require ((x1203 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from].balance - params.amount) >= sp.tez(0)");
   if contains (x1172, x1171)
   then (match (x1172[x1171]) with
   | some x1028 -> ()

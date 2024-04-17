@@ -5,7 +5,7 @@ sto_1 : (string * bool),
 symbol : string,
 totalSupply : nat)
 
-entry approve (arg : (address * nat)) {
+entry approve (spender : address, value : nat) {
   var x151 : int = 0i;
   var x116 : nat = 0;
   var x110 : nat = 0;
@@ -90,14 +90,15 @@ entry getAdministrator (arg : address) {
   operations := prepend (operations, (make_operation (0utz, x570, x568)))
 }
 
-entry getAllowance (arg : ((address * address) * address)) {
+entry getAllowance (owner : address, spender : address, target : address) {
   var x608 : nat = 0;
   var x642 : contract<nat> = self_contract<nat>;
   var x628 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x629 : map<address, nat> = make_map<address, nat> (([]));
   var x655 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x656 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
-  match get_entrypoint<nat>("default", (arg[1])) with
+  var x693 : (((address * address) * address)) = (((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  match get_entrypoint<nat>("default", (x693[1])) with
   | some x682 -> (x642 := x682)
   | none -> (fail (73i))
   end;
@@ -112,12 +113,13 @@ entry getAllowance (arg : ((address * address) * address)) {
   operations := prepend (operations, (make_operation (0utz, x642, x608)))
 }
 
-entry getBalance (arg : (address * address)) {
+entry getBalance (arg : address, target : address) {
   var x698 : nat = 0;
   var x710 : contract<nat> = self_contract<nat>;
   var x721 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x722 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
-  match get_entrypoint<nat>("default", (arg[1])) with
+  var x754 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
+  match get_entrypoint<nat>("default", (x754[1])) with
   | some x743 -> (x710 := x743)
   | none -> (fail (69i))
   end;
