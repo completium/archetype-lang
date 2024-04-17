@@ -1,3 +1,4 @@
+// KT1C8qi9AhK4QXr5CfxK252vxR3dJPYUnGH6
 archetype my_contract(
 manager : address,
 merkle_hash : string,

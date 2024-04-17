@@ -1,3 +1,4 @@
+// KT1PcPM7WqJbfLwNSxXKaNci9D9Z2t5WVYVg
 archetype my_contract(sto_1 : address)
 
 entry default (arg : key_hash) {

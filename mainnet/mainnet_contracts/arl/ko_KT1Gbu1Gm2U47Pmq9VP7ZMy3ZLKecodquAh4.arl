@@ -1,18 +1,19 @@
+// KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4
 archetype my_contract(
 admin : list<address>,
 hash : string)
 
-entry default (admin_ : option<list<address>>, oldhash : string, newhash : string) {
+entry default (arg : (option<list<address>> * (string * string))) {
   var x81 : bool = false;
   var x108 : string = "";
   x108 := hash;
-  hash := newhash;
-  do_require ((oldhash = x108), Unit);
+  hash := arg;
+  do_require ((arg_2 = x108), Unit);
   for x90 in admin do
     (x81 := x90 = caller or false)
   done;
   do_require (x81, Unit);
-  match admin_ with
+  match arg_3 with
   | some x74 -> (admin := x74)
   | none -> ()
   end

@@ -1,3 +1,4 @@
+// KT18aq2Qfvh7pTudu73DLYEarp8g78T2A9Qk
 archetype my_contract(
 sto_1 : (list<key> * nat),
 txRecords : map<string, ((((tez * bytes) * set<key_hash>) * address) * string)>)

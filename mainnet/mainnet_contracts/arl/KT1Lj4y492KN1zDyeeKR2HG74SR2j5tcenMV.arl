@@ -1,3 +1,4 @@
+// KT1Lj4y492KN1zDyeeKR2HG74SR2j5tcenMV
 archetype my_contract(sto_1 : nat)
 
 entry default (arg : nat) {

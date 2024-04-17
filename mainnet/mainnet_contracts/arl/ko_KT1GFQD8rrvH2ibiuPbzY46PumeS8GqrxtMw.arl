@@ -1,3 +1,4 @@
+// KT1GFQD8rrvH2ibiuPbzY46PumeS8GqrxtMw
 archetype my_contract(
 sto_1 : (address * big_map<address, (tez * nat)>),
 oracle : address)

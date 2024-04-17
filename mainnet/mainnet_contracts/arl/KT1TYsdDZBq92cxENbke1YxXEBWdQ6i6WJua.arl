@@ -1,3 +1,4 @@
+// KT1TYsdDZBq92cxENbke1YxXEBWdQ6i6WJua
 archetype my_contract(sto_1 : int)
 
 entry default () {

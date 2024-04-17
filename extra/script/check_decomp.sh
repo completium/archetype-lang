@@ -232,12 +232,14 @@ compile() {
     if [ $? -eq 0 ]; then
       echo -ne "\033[32m OK \033[0m"
       P=`dirname $1`/../arl/`basename $1 | cut -d'.' -f1`.arl
-      ${BIN} -d $1 > $P 2> /dev/null
+      echo "// $2" > $P
+      ${BIN} -d $1 >> $P 2> /dev/null
       echo -ne $P
     else
       echo -ne "\033[31m KO \033[0m"
       P=`dirname $1`/../arl/ko_`basename $1 | cut -d'.' -f1`.arl
-      ${BIN} -d $1 > $P 2> /dev/null
+      echo "// $2" > $P
+      ${BIN} -d $1 >> $P 2> /dev/null
       RET=1
       R=1
       echo -ne $P
@@ -264,7 +266,7 @@ process_files() {
     process $i -mit
     process $i -dir
     process $i -mdl
-    compile $i
+    compile $i $c
     echo ""
     NB=$((${NB} + 1))
     if [ $R -eq 1 ]; then

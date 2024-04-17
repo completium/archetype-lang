@@ -1,0 +1,7 @@
+// KT1AbjG7vtpV8osdoJXcMRck8eTwst8dWoz4
+archetype my_contract(sto_1 : list<(string * nat)>)
+
+entry default (arg : (string * nat)) {
+  sto_1 := prepend (sto_1, ((arg_2, arg)))
+}
+

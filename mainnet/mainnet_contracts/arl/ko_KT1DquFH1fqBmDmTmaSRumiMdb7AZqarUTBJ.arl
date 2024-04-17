@@ -1,3 +1,4 @@
+// KT1DquFH1fqBmDmTmaSRumiMdb7AZqarUTBJ
 archetype my_contract(
 sto_1 : (set<string> * int),
 proposals : big_map<string, ((address * (set<address> * address)) * (string * (set<address> * bool)))>,

@@ -1,3 +1,4 @@
+// KT1HRTG12Tj2QSjg1HkSVMXS6uoFaDSCy7cs
 archetype my_contract(
 sto_1 : (list<string> * big_map<string, ((nat * date) * (((int * int) * (map<int, nat> * nat)) * ((int * int) * (map<int, nat> * nat))))>),
 numDataPoints : int,

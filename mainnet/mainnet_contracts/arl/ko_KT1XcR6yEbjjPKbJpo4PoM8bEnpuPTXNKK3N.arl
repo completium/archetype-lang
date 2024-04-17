@@ -1,6 +1,14 @@
+// KT1XcR6yEbjjPKbJpo4PoM8bEnpuPTXNKK3N
 archetype my_contract(
 accounts : big_map<string, tez>,
 admin : address)
+
+record param_tip  {
+  %_from : string;
+  %_to : string;
+  amount : tez
+}
+
 
 entry add_account (account_name : string, amount : tez) {
   var x93 : tez = 0utz;
@@ -29,7 +37,7 @@ entry remove_account (arg : string) {
   then (accounts := update (accounts, arg, (none<tez>)))
 }
 
-entry tip (%_from : string, %_to : string, amount : tez) {
+entry tip (arg : param_tip) {
   var x508 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x255 : tez = 0utz;
   var x240 : string = "";
@@ -51,13 +59,15 @@ entry tip (%_from : string, %_to : string, amount : tez) {
   var x564 : big_map<string, tez> = make_big_map<string, tez> (([]));
   var x563 : string = "";
   var x593 : tez = 0utz;
+  var x668 : string = "";
+  var x670 : tez = 0utz;
   do_require ((caller = admin), "WrongCondition: sp.sender == self.data.admin");
-  do_require ((amount >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
-  match (accounts[%_from]) with
+  do_require ((x670 >= 0utz), "WrongCondition: params.amount >= sp.tez(0)");
+  match (accounts[x668]) with
   | some x604 -> (x593 := x604)
   | none -> (fail ("Get-item:50"))
   end;
-  do_require ((x593 - amount >= 0utz), "WrongCondition: (self.data.accounts[params._from] - params.amount) >= sp.tez(0)");
+  do_require ((x593 - x670 >= 0utz), "WrongCondition: (self.data.accounts[params._from] - params.amount) >= sp.tez(0)");
   if contains (x564, x563)
   then (x508 := x578;
   match (x564[x563]) with

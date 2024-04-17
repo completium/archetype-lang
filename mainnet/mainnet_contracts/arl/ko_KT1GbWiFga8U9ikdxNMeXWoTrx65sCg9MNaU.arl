@@ -1,3 +1,4 @@
+// KT1GbWiFga8U9ikdxNMeXWoTrx65sCg9MNaU
 archetype my_contract(
 sto_2 : (address * (big_map<address, (int * (bool * bool))> * int)),
 sto_1 : (address * address),
@@ -48,14 +49,13 @@ entry getAdministrator (arg : address) {
   operations := prepend (operations, (make_operation (0utz, x350, x348)))
 }
 
-entry getBalance (arg : address, target : address) {
+entry getBalance (arg : (address * address)) {
   var x385 : nat = 0;
   var x411 : contract<nat> = self_contract<nat>;
   var x403 : int = 0i;
   var x423 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x424 : map<address, (int * (bool * bool))> = make_map<address, (int * (bool * bool))> (([]));
-  var x456 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
-  match get_entrypoint<nat>("default", (x456[1])) with
+  match get_entrypoint<nat>("default", (arg[1])) with
   | some x445 -> (x411 := x445)
   | none -> (fail (109i))
   end;

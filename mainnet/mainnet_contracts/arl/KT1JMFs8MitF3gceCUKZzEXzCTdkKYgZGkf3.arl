@@ -1,3 +1,4 @@
+// KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3
 archetype my_contract(
 sto_1 : (address * address),
 price : tez)

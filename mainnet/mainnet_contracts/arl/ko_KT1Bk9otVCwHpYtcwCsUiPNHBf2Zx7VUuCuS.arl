@@ -1,3 +1,4 @@
+// KT1Bk9otVCwHpYtcwCsUiPNHBf2Zx7VUuCuS
 archetype my_contract(
 sto_2 : (set<string> * (set<address> * nat)),
 sto_1 : (int * set<address>),

@@ -1,3 +1,4 @@
+// KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C
 archetype my_contract(
 countdown_seconds : int,
 leader : address,

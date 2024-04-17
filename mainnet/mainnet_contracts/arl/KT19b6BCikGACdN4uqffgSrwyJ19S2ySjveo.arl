@@ -1,3 +1,4 @@
+// KT19b6BCikGACdN4uqffgSrwyJ19S2ySjveo
 archetype my_contract(
 admin : address,
 admin_candidate : address,

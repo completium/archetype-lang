@@ -1,3 +1,4 @@
+// KT1CeLuUxpZKNF4tDASWt1BabXWcVSLhQn1C
 archetype my_contract(
 nbVotes : int,
 storedValue : nat)

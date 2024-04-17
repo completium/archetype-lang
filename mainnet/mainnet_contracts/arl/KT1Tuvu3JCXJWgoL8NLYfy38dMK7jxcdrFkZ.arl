@@ -1,3 +1,4 @@
+// KT1Tuvu3JCXJWgoL8NLYfy38dMK7jxcdrFkZ
 archetype my_contract(sto_1 : map<address, tez>)
 
 entry default () {

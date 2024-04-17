@@ -1,3 +1,4 @@
+// KT1PskqjPYaP6M21jYA2bEfUbSyicNLyE43Q
 archetype my_contract(
 sto_1 : (list<address> * address),
 price : tez)

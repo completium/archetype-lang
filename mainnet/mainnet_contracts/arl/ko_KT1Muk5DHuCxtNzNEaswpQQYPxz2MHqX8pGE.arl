@@ -1,3 +1,4 @@
+// KT1Muk5DHuCxtNzNEaswpQQYPxz2MHqX8pGE
 archetype my_contract(
 sto_1 : (set<int> * int),
 myParameter2 : int)

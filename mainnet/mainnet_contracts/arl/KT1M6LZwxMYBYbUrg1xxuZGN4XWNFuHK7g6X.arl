@@ -1,3 +1,4 @@
+// KT1M6LZwxMYBYbUrg1xxuZGN4XWNFuHK7g6X
 archetype my_contract
 
 entry default (arg : key_hash) {

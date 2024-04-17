@@ -1,10 +1,18 @@
+// KT1HLp5stiwTRqpA2kdPACpCxjT9XsegrLk3
 archetype my_contract(
 sto_2 : (address * (big_map<address, (map<address, nat> * nat)> * int)),
 sto_1 : (string * bool),
 symbol : string,
 totalSupply : nat)
 
-entry approve (spender : address, value : nat) {
+record param_getAllowance  {
+  owner : address;
+  spender : address;
+  x678 : address
+}
+
+
+entry approve (arg : (address * nat)) {
   var x151 : int = 0i;
   var x116 : nat = 0;
   var x105 : nat = 0;
@@ -83,14 +91,15 @@ entry getAdministrator (x594 : unit, x595 : address) {
   operations := prepend (operations, (make_operation (0utz, x570, x578)))
 }
 
-entry getAllowance (owner : address, spender : address, x678 : address) {
+entry getAllowance (arg : param_getAllowance) {
   var x613 : nat = 0;
   var x605 : contract<nat> = self_contract<nat>;
   var x618 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x632 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x633 : map<address, nat> = make_map<address, nat> (([]));
+  var x676 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x656 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
-  match (x656[owner]) with
+  match (x656[x676]) with
   | some (x650, x651) -> (x633 := x650)
   | none -> (fail (72i))
   end;

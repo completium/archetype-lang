@@ -1,3 +1,4 @@
+// KT1A37WhddWH3EFFDM1gi124DRgXTzqGYZDL
 archetype my_contract(
 owner : address,
 price : tez)

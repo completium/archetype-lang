@@ -1,3 +1,4 @@
+// KT1HQmKekWoUfA1ZDFmiSB91qxaAM8uoxkX1
 archetype my_contract(
 admin : address,
 admin_candidate : address,

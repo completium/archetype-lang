@@ -1,3 +1,4 @@
+// KT1ATFPkGjCbgN8HtWrsx4sucRR96Cy4Enfg
 archetype my_contract(
 keyToCID : map<string, string>,
 owner : address)
