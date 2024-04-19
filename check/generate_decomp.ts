@@ -335,24 +335,51 @@ ${(items.map(x => x)).join('')}
 //   return filenames
 // }
 
+const generation_interface_contract = (arl_path: string, p : string): string => {
+  const res = compile(['--sandbox-exec-address', 'KT1MS3bjqJHYkg4mEiRgVmfXGoGUHAdXUuLL', '--show-contract-interface', arl_path])
+  if (res.status != 0) {
+    throw new Error(res.stderr.toString())
+  }
+  const content = JSON.parse(res.stdout.toString())
+  const output = JSON.stringify(content, null, 2);
+  const json_path = p + path.basename(arl_path.replace('.arl', '.json'))
+  fs.writeFileSync(json_path, output)
+  return json_path
+}
+
+const write_binding = (json_path: string, p : string, op : string) => {
+  const json = fs.readFileSync(json_path);
+  let rci: RawContractInterface = JSON.parse(json);
+  const settings: BindingSettings = {
+    language: Language.Archetype,
+    target: Target.Experiment,
+    path: p
+  }
+  const output = generate_binding(rci, settings);
+  const out_ts = op + path.basename(json_path.replace('.json', '.ts'));
+  fs.writeFileSync(out_ts, output)
+}
+
 describe('Generate arl', async () => {
 
-  describe('mainnet', async () => {
-    const p = './michelson/mainnet'
-    for (const contract of mainnet_contracts) {
-      it(contract, () => {
-        const tz_path = './michelson/mainnet/' + contract + '.tz'
-        const arl_path = './archetype/mainnet/' + contract + '.arl'
-        generation_arl_file(tz_path, arl_path)
-      });
-    }
-  })
+  // describe('mainnet', async () => {
+  //   const p = './michelson/mainnet'
+  //   for (const contract of mainnet_contracts) {
+  //     it(contract, () => {
+  //       const tz_path = './michelson/mainnet/' + contract + '.tz'
+  //       const arl_path = './archetype/mainnet/' + contract + '.arl'
+  //       generation_arl_file(tz_path, arl_path)
+  //     });
+  //   }
+  // })
 
   describe('other', async () => {
     it("FA1.2", () => {
-      const tz_path = './michelson/other/fa1_2.tz'
-      const arl_path = './archetype/contracts/fa1.2/fa1_2.arl'
+      const tz_path = './michelson/decomp/fa1_2.tz'
+      const arl_path = './archetype/decomp/fa1.2/fa1_2.arl'
       generation_arl_file(tz_path, arl_path)
+      const json_path = generation_interface_contract(arl_path, './json/decomp/fa1.2/')
+      write_binding(json_path, './archetype/contracts/fa1.2/', './bindings/decomp/fa1.2/')
     });
   })
 

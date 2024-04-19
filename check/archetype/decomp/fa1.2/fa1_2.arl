@@ -121,7 +121,7 @@ entry approve (spender : address, value : nat) {
   var x958 : bool = false;
   var x941 : nat = 0;
   match (ledger[caller]) with
-  | some (y0, x996) -> (match ((x996)[spender]) with
+  | some x996 -> (match ((x996[1])[spender]) with
   | some x981 -> (x941 := x981)
   | none -> (x941 := 0)
   end)
