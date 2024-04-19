@@ -362,16 +362,16 @@ const write_binding = (json_path: string, p : string, op : string) => {
 
 describe('Generate arl', async () => {
 
-  // describe('mainnet', async () => {
-  //   const p = './michelson/mainnet'
-  //   for (const contract of mainnet_contracts) {
-  //     it(contract, () => {
-  //       const tz_path = './michelson/mainnet/' + contract + '.tz'
-  //       const arl_path = './archetype/mainnet/' + contract + '.arl'
-  //       generation_arl_file(tz_path, arl_path)
-  //     });
-  //   }
-  // })
+  describe('mainnet', async () => {
+    const p = './michelson/mainnet'
+    for (const contract of mainnet_contracts) {
+      it(contract, () => {
+        const tz_path = './michelson/mainnet/' + contract + '.tz'
+        const arl_path = './archetype/mainnet/' + contract + '.arl'
+        generation_arl_file(tz_path, arl_path)
+      });
+    }
+  })
 
   describe('other', async () => {
     it("FA1.2", () => {
