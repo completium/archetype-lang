@@ -4835,18 +4835,18 @@ and for_gen_matchwith
                         | A.Ttuple tys::tyss -> fold_tuple (List.rev tyss @ tys)
                         | _ -> tys
                         in
-                        let cargs =
+                        (* let cargs =
                           match cargs, fold_tuple cargs with
                           | [A.Ttuple tys], _ when List.length args = List.length tys -> tys
                           | _, tys when List.length args < List.length tys -> let t1, t2 = List.cut (List.length args) tys in [A.Ttuple (t1 @ [A.Ttuple t2])]
                           | _ -> cargs
-                        in
+                        in *)
 
-                        (* let cargs =
+                        let cargs =
                           match cargs with
                           | [A.Ttuple tys] when List.length args = List.length tys -> tys
                           | _ -> cargs
-                        in *)
+                        in
 
                         let ng = List.length args in
                         let ne = List.length cargs in

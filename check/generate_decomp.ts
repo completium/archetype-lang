@@ -346,24 +346,14 @@ describe('Generate arl', async () => {
         generation_arl_file(tz_path, arl_path)
       });
     }
-    // it('Generate decomp-mainnet.spec.ts', async () => {
-    //   generate_spec_decomp_mainnet()
-    // })
   })
 
-  // describe('passed', async () => {
-  //   const p = './michelson/passed/'
-  //   const filenames = extract_file_dir(p, '.tz')
-  //   for (const filename of filenames) {
-  //     it(filename, () => {
-  //       const filepath = p + '/' + filename
-  //       generation_arl_file(filepath, './decomp/contracts/passed/')
-  //       // write_binding(json_path, '../tests/passed/', './bindings/passed/')
-  //     });
-  //   }
-  //   // it('Generate passed.spec.ts', async () => {
-  //   //   generate_spec_passed(filenames)
-  //   // })
-  // })
+  describe('other', async () => {
+    it("FA1.2", () => {
+      const tz_path = './michelson/other/fa1_2.tz'
+      const arl_path = './archetype/contracts/fa1.2/fa1_2.arl'
+      generation_arl_file(tz_path, arl_path)
+    });
+  })
 
 })

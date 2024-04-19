@@ -5,8 +5,8 @@ import assert from 'assert';
 
 /* Contracts */
 
-import { fa1_2 } from './binding/fa1_2';
-import { callback_nat } from './binding/callback_nat';
+import { fa1_2 } from '../../bindings/decomp/fa1.2/fa1_2';
+import { callback_nat } from '../../bindings/decomp/fa1.2/callback_nat';
 
 /* Accounts ----------------------------------------------------------------- */
 

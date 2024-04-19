@@ -1,0 +1,325 @@
+{ storage
+    (pair (big_map %ledger address (pair (nat %tokens) (map %allowance address nat)))
+          (big_map %token_metadata nat (pair (nat %token_id) (map %token_info string bytes)))) ;
+  parameter
+    (or (or (pair %getAllowance
+               (pair (address %owner) (address %spender))
+               (contract %callback nat))
+            (pair %getBalance (address %owner) (contract %callback nat)))
+        (or (or (pair %getTotalSupply unit (contract %callback nat))
+                (pair %set_token_metadata (nat %tid) (map %tdata string bytes)))
+            (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
+                (pair %approve (address %spender) (nat %value))))) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         DIP 1 { UNPAIR } ;
+         IF_LEFT
+           { IF_LEFT
+               { UNPAIR ;
+                 UNPAIR ;
+                 SWAP ;
+                 NIL operation ;
+                 NIL operation ;
+                 DUP 8 ;
+                 ITER { CONS } ;
+                 DUP 5 ;
+                 AMOUNT ;
+                 DUP 8 ;
+                 DUP 7 ;
+                 GET ;
+                 IF_NONE
+                   { PUSH nat 0 }
+                   { DUP ;
+                     GET 2 ;
+                     DUP 7 ;
+                     GET ;
+                     IF_NONE { PUSH nat 0 } {} ;
+                     SWAP ;
+                     DROP 1 } ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 5 ; DROP 1 } ;
+                 DUG 5 ;
+                 DROP 3 ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR }
+               { UNPAIR ;
+                 NIL operation ;
+                 NIL operation ;
+                 DUP 7 ;
+                 ITER { CONS } ;
+                 DUP 4 ;
+                 AMOUNT ;
+                 DUP 7 ;
+                 DUP 6 ;
+                 GET ;
+                 IF_NONE { PUSH nat 0 } { DUP ; GET 1 ; SWAP ; DROP 1 } ;
+                 TRANSFER_TOKENS ;
+                 CONS ;
+                 ITER { CONS } ;
+                 DIP 1 { DIG 4 ; DROP 1 } ;
+                 DUG 4 ;
+                 DROP 2 ;
+                 PAIR ;
+                 SWAP ;
+                 PAIR } }
+           { IF_LEFT
+               { IF_LEFT
+                   { CDR ;
+                     NIL operation ;
+                     NIL operation ;
+                     DUP 6 ;
+                     ITER { CONS } ;
+                     DUP 3 ;
+                     AMOUNT ;
+                     PUSH nat 10000000 ;
+                     TRANSFER_TOKENS ;
+                     CONS ;
+                     ITER { CONS } ;
+                     DIP 1 { DIG 3 ; DROP 1 } ;
+                     DUG 3 ;
+                     DROP 1 ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR }
+                   { UNPAIR ;
+                     SWAP ;
+                     PUSH address "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ;
+                     SENDER ;
+                     COMPARE ;
+                     EQ ;
+                     NOT ;
+                     IF { PUSH string "INVALID_CALLER" ; FAILWITH } {} ;
+                     DUP 4 ;
+                     DUP 2 ;
+                     DUP 4 ;
+                     PAIR ;
+                     SOME ;
+                     DUP 4 ;
+                     UPDATE ;
+                     DIP 1 { DIG 3 ; DROP 1 } ;
+                     DUG 3 ;
+                     DROP 2 ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR } }
+               { IF_LEFT
+                   { UNPAIR ;
+                     SWAP ;
+                     UNPAIR ;
+                     SWAP ;
+                     DUP ;
+                     DUP 5 ;
+                     DUP 5 ;
+                     GET ;
+                     IF_NONE
+                       { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       {} ;
+                     CAR ;
+                     COMPARE ;
+                     GE ;
+                     NOT ;
+                     IF { PUSH string "NotEnoughBalance" ; FAILWITH } {} ;
+                     DUP 3 ;
+                     SENDER ;
+                     COMPARE ;
+                     NEQ ;
+                     IF { DUP 4 ;
+                          DUP 4 ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          CDR ;
+                          SENDER ;
+                          GET ;
+                          IF_NONE { PUSH nat 0 } {} ;
+                          DUP 2 ;
+                          INT ;
+                          DUP 2 ;
+                          INT ;
+                          SUB ;
+                          ISNAT ;
+                          IF_NONE
+                            { DUP ; DUP 3 ; PAIR ; PUSH string "NotEnoughAllowance" ; PAIR ; FAILWITH }
+                            {} ;
+                          DUP 6 ;
+                          DUP 7 ;
+                          DUP 7 ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          UNPAIR ;
+                          SWAP ;
+                          DROP 1 ;
+                          DUP 8 ;
+                          DUP 8 ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          CDR ;
+                          DUP 4 ;
+                          SOME ;
+                          SENDER ;
+                          UPDATE ;
+                          SWAP ;
+                          PAIR ;
+                          SOME ;
+                          DUP 7 ;
+                          UPDATE ;
+                          DIP 1 { DIG 5 ; DROP 1 } ;
+                          DUG 5 ;
+                          DROP 2 }
+                        {} ;
+                     DUP 4 ;
+                     DUP 4 ;
+                     GET ;
+                     IF_NONE
+                       { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       {} ;
+                     DUP 5 ;
+                     DUP 6 ;
+                     DUP 6 ;
+                     GET ;
+                     IF_NONE
+                       { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                       {} ;
+                     CDR ;
+                     PUSH int 0 ;
+                     DUP 5 ;
+                     INT ;
+                     DUP 5 ;
+                     GET 1 ;
+                     SUB ;
+                     COMPARE ;
+                     GE ;
+                     IF { DUP 4 ; INT ; DUP 4 ; GET 1 ; SUB ; ABS }
+                        { PUSH string "NAT_NEG_ASSIGN" ; FAILWITH } ;
+                     PAIR ;
+                     SOME ;
+                     DUP 6 ;
+                     UPDATE ;
+                     DIP 1 { DIG 4 ; DROP 1 } ;
+                     DUG 4 ;
+                     DROP 1 ;
+                     DUP 4 ;
+                     DUP 3 ;
+                     MEM ;
+                     IF { DUP 4 ;
+                          DUP 3 ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          DUP 5 ;
+                          DUP 6 ;
+                          DUP 5 ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          CDR ;
+                          DUP 4 ;
+                          DUP 4 ;
+                          GET 1 ;
+                          ADD ;
+                          PAIR ;
+                          SOME ;
+                          DUP 5 ;
+                          UPDATE ;
+                          DIP 1 { DIG 4 ; DROP 1 } ;
+                          DUG 4 ;
+                          DROP 1 }
+                        { DUP 4 ;
+                          EMPTY_MAP address nat ;
+                          DUP 3 ;
+                          PUSH nat 0 ;
+                          ADD ;
+                          PAIR ;
+                          SOME ;
+                          DUP 4 ;
+                          UPDATE ;
+                          DIP 1 { DIG 3 ; DROP 1 } ;
+                          DUG 3 } ;
+                     DROP 3 ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR }
+                   { UNPAIR ;
+                     SWAP ;
+                     DUP 3 ;
+                     SENDER ;
+                     GET ;
+                     IF_NONE
+                       { PUSH nat 0 }
+                       { DUP ;
+                         GET 2 ;
+                         DUP 4 ;
+                         GET ;
+                         IF_NONE { PUSH nat 0 } {} ;
+                         SWAP ;
+                         DROP 1 } ;
+                     PUSH nat 0 ;
+                     DUP 2 ;
+                     COMPARE ;
+                     GT ;
+                     IF { PUSH nat 0 ;
+                          DUP 3 ;
+                          COMPARE ;
+                          GT ;
+                          IF { PUSH bool True } { PUSH bool False } }
+                        { PUSH bool False } ;
+                     IF { DUP ; PUSH string "UnsafeAllowanceChange" ; PAIR ; FAILWITH } {} ;
+                     DUP 4 ;
+                     SENDER ;
+                     MEM ;
+                     IF { DUP 4 ;
+                          DUP 5 ;
+                          SENDER ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          UNPAIR ;
+                          SWAP ;
+                          DROP 1 ;
+                          DUP 6 ;
+                          SENDER ;
+                          GET ;
+                          IF_NONE
+                            { PUSH string "ledger" ; PUSH string "ASSET_NOT_FOUND" ; PAIR ; FAILWITH }
+                            {} ;
+                          CDR ;
+                          DUP 5 ;
+                          SOME ;
+                          DUP 7 ;
+                          UPDATE ;
+                          SWAP ;
+                          PAIR ;
+                          SOME ;
+                          SENDER ;
+                          UPDATE ;
+                          DIP 1 { DIG 3 ; DROP 1 } ;
+                          DUG 3 }
+                        { DUP 4 ;
+                          EMPTY_MAP address nat ;
+                          DUP 4 ;
+                          SOME ;
+                          DUP 6 ;
+                          UPDATE ;
+                          PUSH nat 0 ;
+                          PAIR ;
+                          SOME ;
+                          SENDER ;
+                          UPDATE ;
+                          DIP 1 { DIG 3 ; DROP 1 } ;
+                          DUG 3 } ;
+                     DROP 3 ;
+                     PAIR ;
+                     SWAP ;
+                     PAIR } } } } }

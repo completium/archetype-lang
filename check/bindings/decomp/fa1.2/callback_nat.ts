@@ -24,7 +24,7 @@ export class Callback_nat {
         throw new Error("Contract not initialised");
     }
     async deploy(params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("./contracts/callback_nat.arl", {}, params)).address;
+        const address = (await ex.deploy("./archetype/decomp/fa1.2/callback_nat.arl", {}, params)).address;
         this.address = address;
     }
     async callback(i: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {

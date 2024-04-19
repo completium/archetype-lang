@@ -81,7 +81,7 @@ export class Fa1_2 {
             ]>
         ]
     ]>, params: Partial<ex.Parameters>) {
-        const address = (await ex.deploy("./contracts/fa1_2.arl", {
+        const address = (await ex.deploy("./archetype/decomp/fa1.2/fa1_2.arl", {
             ledger: att.list_to_mich(ledger, x => {
                 const x_key = x[0];
                 const x_value = x[1];
