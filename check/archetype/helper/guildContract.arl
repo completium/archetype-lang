@@ -1,0 +1,12 @@
+archetype guildContract
+
+entry default() {}
+
+entry reRoll(arg : tez) {
+
+}
+
+
+entry withdraw(arg : tez) {
+
+}
