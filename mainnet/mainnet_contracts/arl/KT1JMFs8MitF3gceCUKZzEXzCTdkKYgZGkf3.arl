@@ -26,7 +26,7 @@ entry updatePrice (arg : tez) {
 }
 
 entry withdraw () {
-  var x352 : contract<unit> = self_contract<unit>;
+  var x352 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x395 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   if source = x395
   then (match get_entrypoint<unit>("default", x395) with

@@ -43,10 +43,10 @@ entry burn (amount : int, fromAddr : address) {
 }
 
 entry claimSale (arg : nat) {
-  var x585 : contract<unit> = self_contract<unit>;
+  var x585 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x576 : nat = 0;
   var x623 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x662 : contract<unit> = self_contract<unit>;
+  var x662 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x653 : nat = 0;
   var x686 : list<operation> = make_list<operation> (([]));
   do_require ((caller = (((sto_3[0])[0])[0])), "WrongCondition: sp.sender == self.data.administrator");
@@ -110,7 +110,7 @@ entry cvrDrop (addresses : list<address>, amount : int) {
 }
 
 entry dispatchRoyalties (addresses : list<address>, amount : nat) {
-  var x1603 : contract<unit> = self_contract<unit>;
+  var x1603 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x1389 : nat = 0;
   var x1519 : nat = 0;
   var x1457 : nat = 0;

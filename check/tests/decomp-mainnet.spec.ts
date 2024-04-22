@@ -77,38 +77,38 @@ function get_contract(input: Buffer): contract {
 }
 
 async function check_prelude(ref: string, act: string) {
-  // if (!fs.existsSync(act)) {
-  //   throw new Error("No Archetype file found: " + act)
-  // }
-  // const res_compile = compile(act);
-  // if (res_compile.status != 0) {
-  //   throw new Error("Archetype file does not compile: " + act)
-  // }
-  // const str = res_compile.output.toString().trim();
-  // const content_act_tz = str.substring(1, str.length - 1);
+  if (!fs.existsSync(act)) {
+    throw new Error("No Archetype file found: " + act)
+  }
+  const res_compile = compile(act);
+  if (res_compile.status != 0) {
+    throw new Error("Archetype file does not compile: " + act)
+  }
+  const str = res_compile.output.toString().trim();
+  const content_act_tz = str.substring(1, str.length - 1);
   // console.log(content_act_tz);
-  // const contract_act = get_contract(content_act_tz)
+  const contract_act = get_contract(content_act_tz)
 
-  // const content_ref_tz = fs.readFileSync(ref);
-  // const contract_ref = get_contract(content_ref_tz)
+  const content_ref_tz = fs.readFileSync(ref);
+  const contract_ref = get_contract(content_ref_tz)
 
-  // const mich_ref_parameter = jsonMichelineToExpr(contract_ref.parameter)
-  // const mich_act_parameter = jsonMichelineToExpr(contract_act.parameter)
+  const mich_ref_parameter = jsonMichelineToExpr(contract_ref.parameter)
+  const mich_act_parameter = jsonMichelineToExpr(contract_act.parameter)
 
-  // const mich_ref_storage = jsonMichelineToExpr(contract_ref.storage)
-  // const mich_act_storage = jsonMichelineToExpr(contract_act.storage)
+  const mich_ref_storage = jsonMichelineToExpr(contract_ref.storage)
+  const mich_act_storage = jsonMichelineToExpr(contract_act.storage)
 
-  // // if (mich_ref_parameter !== mich_act_parameter) {
-  // //   console.error(mich_ref_parameter)
-  // //   console.error(mich_act_parameter)
-  // //   assert(false, "Parameter does not match")
-  // // }
-
-  // if (mich_ref_storage !== mich_act_storage) {
-  //   console.error(mich_ref_storage)
-  //   console.error(mich_act_storage)
-  //   assert(false, "Storage does not match")
+  // if (mich_ref_parameter !== mich_act_parameter) {
+  //   console.error(mich_ref_parameter)
+  //   console.error(mich_act_parameter)
+  //   assert(false, "Parameter does not match")
   // }
+
+  if (mich_ref_storage !== mich_act_storage) {
+    // console.error(mich_ref_storage)
+    // console.error(mich_act_storage)
+    assert(false, "Storage does not match")
+  }
 }
 
 function make_conf(p: string, conf: ConfInput) {
@@ -134,11 +134,11 @@ async function check_transaction(ref: string, act: string, conf: ConfInput) {
   if (fs.existsSync(act)) {
     const conf_act = make_conf(act, conf)
     const res_act = await interp(conf_act)
-    console.log(res_ref)
-    console.log(res_act)
+    // console.log(res_ref)
+    // console.log(res_act)
     assert(JSON.stringify(res_ref) === JSON.stringify(res_act))
   } else {
-    console.log(res_ref)
+    // console.log(res_ref)
   }
 }
 
@@ -147,6 +147,7 @@ setQuiet(true)
 const now = '0'
 const alice = "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
 const bob = "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"
+const carl = "tz1aGDrJ58LbcnD47CkwSk3myfTxJxipYJyk"
 
 /* Tests ------------------------------------------------------------------- */
 
@@ -1041,22 +1042,56 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1Rc4bAFRiDQ1oDMhGTj1yhndZWo89D9GVq.tz"
     const act = "./archetype/mainnet/KT1Rc4bAFRiDQ1oDMhGTj1yhndZWo89D9GVq.arl"
     await check_prelude(ref, act)
-    // assert(false) // TODO
+
+    // joinGame
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"joinGame"})
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"joinGame", amount: "1utz"})
+
+    // payoutToWinners
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"payoutToWinners", parameter: `Pair "${bob}" {}`})
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"payoutToWinners", parameter: `Pair "${bob}" {"${bob}"}`})
   })
 
-  // it('KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3', async () => {
-  //   const ref = "./michelson/mainnet/KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3.tz"
-  //   const act = "./archetype/mainnet/KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3', async () => {
+    const ref = "./michelson/mainnet/KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3.tz"
+    const act = "./archetype/mainnet/KT1JMFs8MitF3gceCUKZzEXzCTdkKYgZGkf3.arl"
+    await check_prelude(ref, act)
 
-  // it('KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW', async () => {
-  //   const ref = "./michelson/mainnet/KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW.tz"
-  //   const act = "./archetype/mainnet/KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+    const [conf, _] = await deploy("./archetype/helper/address_nat.arl");
+    const addr = conf.address;
+
+    // buy
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, caller: bob, entrypoint:"buy", parameter: '2'})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, caller: bob, entrypoint:"buy", parameter: '1'})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${carl}" "${alice}") 1`, caller: bob, entrypoint:"buy", parameter: '1', amount: '1utz'})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, caller: bob, entrypoint:"buy", parameter: '1', amount: '1utz'})
+
+    // updateContract
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: bob, entrypoint:"updateContract", parameter: `"${carl}"`})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: alice, entrypoint:"updateContract", parameter: `"${carl}"`})
+
+    // updatePrice
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: bob, entrypoint:"updatePrice", parameter: `2`})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: alice, entrypoint:"updatePrice", parameter: `2`})
+
+    // withdraw
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: bob, entrypoint:"withdraw"})
+    await check_transaction(ref, act, { storage: `Pair (Pair "${addr}" "${alice}") 1`, source: alice, entrypoint:"withdraw"})
+  })
+
+  it('KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW', async () => {
+    const ref = "./michelson/mainnet/KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW.tz"
+    const act = "./archetype/mainnet/KT1HdMf7N7f6GgMuwieYeixpBwCsfvH6yXfW.arl"
+    await check_prelude(ref, act)
+
+    // joinGame
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"joinGame"})
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"joinGame", amount: "1utz"})
+
+    // payoutToWinners
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"payoutToWinners", parameter: `Pair "${bob}" {}`})
+    await check_transaction(ref, act, { storage: `Pair (Pair (Pair (Pair {} 3) "${alice}") 1) 0`, caller: bob, entrypoint:"payoutToWinners", parameter: `Pair "${bob}" {"${bob}"}`})
+  })
 
   // it('KT1Ms8TbcweqwEkeViAXXMHkR3H9pwgLm6DR', async () => {
   //   const ref = "./michelson/mainnet/KT1Ms8TbcweqwEkeViAXXMHkR3H9pwgLm6DR.tz"
@@ -1128,12 +1163,32 @@ describe('decomp_mainnet', async () => {
   //   assert(false) // TODO
   // })
 
-  // it('KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C', async () => {
-  //   const ref = "./michelson/mainnet/KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C.tz"
-  //   const act = "./archetype/mainnet/KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C', async () => {
+    const ref = "./michelson/mainnet/KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C.tz"
+    const act = "./archetype/mainnet/KT1NjxTshTx299m6toq3AgMwCf8ZdscWhn3C.arl"
+    await check_prelude(ref, act)
+
+    const [conf, _] = await deploy("./archetype/helper/type_simple.arl");
+    const addr = conf.address;
+
+    // default
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100001", caller: bob, entrypoint:"default"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100000", caller: bob, entrypoint:"default", amount: "0.2tz"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100001", caller: bob, entrypoint:"default", amount: "0.2tz"})
+
+    // get_countdown_seconds
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_countdown_seconds", parameter: `"${addr}%callback_int"`})
+
+    // get_leader
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_leader", parameter: `"${addr}%callback_address"`})
+
+    // get_leadership_start_timestamp
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_leadership_start_timestamp", parameter: `"${addr}%callback_date"`})
+
+    // withdraw
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"withdraw"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: alice, entrypoint:"withdraw"})
+  })
 
   // it('KT1XcAi9gaL5MUkFWoQjD7zZAohRSRukra9D', async () => {
   //   const ref = "./michelson/mainnet/KT1XcAi9gaL5MUkFWoQjD7zZAohRSRukra9D.tz"
@@ -1142,13 +1197,32 @@ describe('decomp_mainnet', async () => {
   //   assert(false) // TODO
   // })
 
-  // it('KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd', async () => {
-  //   const ref = "./michelson/mainnet/KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd.tz"
-  //   const act = "./archetype/mainnet/KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd.arl"
-  //   await check_prelude(ref, act)
-  //   await check_transaction(ref, act, {storage: 'Pair 86400000 (Pair "tz1YtuZ4vhzzn7ssCt93Put8U9UJDdvCXci4" 999999999999999)', entrypoint: "default"})
-  //   await check_transaction(ref, act, {storage: 'Pair 86400000 (Pair "tz1YtuZ4vhzzn7ssCt93Put8U9UJDdvCXci4" 999999999999999)', entrypoint: "default", amount:"0.2tz"})
-  // })
+  it('KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd', async () => {
+    const ref = "./michelson/mainnet/KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd.tz"
+    const act = "./archetype/mainnet/KT1L5XZbKeMXFDJuwr1zcFzkamTWf7kk6LRd.arl"
+    await check_prelude(ref, act)
+
+    const [conf, _] = await deploy("./archetype/helper/type_simple.arl");
+    const addr = conf.address;
+
+    // default
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100001", caller: bob, entrypoint:"default"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100000", caller: bob, entrypoint:"default", amount: "0.2tz"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, now: "100001", caller: bob, entrypoint:"default", amount: "0.2tz"})
+
+    // get_countdown_seconds
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_countdown_seconds", parameter: `"${addr}%callback_int"`})
+
+    // get_leader
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_leader", parameter: `"${addr}%callback_address"`})
+
+    // get_leadership_start_timestamp
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"get_leadership_start_timestamp", parameter: `"${addr}%callback_date"`})
+
+    // withdraw
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: bob, entrypoint:"withdraw"})
+    await check_transaction(ref, act, { storage: `Pair 2 "${alice}" 100000`, caller: alice, entrypoint:"withdraw"})
+  })
 
   // it('KT18aq2Qfvh7pTudu73DLYEarp8g78T2A9Qk', async () => {
   //   const ref = "./michelson/mainnet/KT18aq2Qfvh7pTudu73DLYEarp8g78T2A9Qk.tz"
@@ -1238,7 +1312,47 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT19b6BCikGACdN4uqffgSrwyJ19S2ySjveo.tz"
     const act = "./archetype/mainnet/KT19b6BCikGACdN4uqffgSrwyJ19S2ySjveo.arl"
     await check_prelude(ref, act)
-    // TODO
+
+    // addplug
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"addplug", parameter: '3'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"addplug", parameter: '3'})
+
+    // rmplug
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"rmplug", parameter: '3'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"rmplug", parameter: '3'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {3} 0 {} {}`, caller: alice, entrypoint:"rmplug", parameter: '3'})
+
+    // addservice
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"addservice", parameter: 'Pair 4 4'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {Elt 4 4}`, caller: alice, entrypoint:"addservice", parameter: 'Pair 4 4'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"addservice", parameter: 'Pair 4 4'})
+
+    // rmservice
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"rmservice", parameter: '4'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"rmservice", parameter: '4'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {Elt 4 4}`, caller: alice, entrypoint:"rmservice", parameter: '4'})
+
+    // setcurrency
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"setcurrency", parameter: '3'})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"setcurrency", parameter: '3'})
+
+    // adduser
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"adduser", parameter: `"${bob}"`})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {"${bob}"} {}`, caller: alice, entrypoint:"adduser", parameter: `"${bob}"`})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"adduser", parameter: `"${bob}"`})
+
+    // rmuser
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"rmuser", parameter: `"${bob}"`})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {"${bob}"} {}`, caller: alice, entrypoint:"rmuser", parameter: `"${bob}"`})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"rmuser", parameter: `"${bob}"`})
+
+    // transfer_admin
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"transfer_admin", parameter: `"${bob}"`})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${alice}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"transfer_admin", parameter: `"${bob}"`})
+
+    // accept_admin
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${bob}" "gps" 2 {} 0 {} {}`, caller: alice, entrypoint:"accept_admin"})
+    await check_transaction(ref, act, { storage: `Pair "${alice}" "${bob}" "gps" 2 {} 0 {} {}`, caller: bob, entrypoint:"accept_admin"})
   })
 
   // it('KT1LedJHptp1wzu1GCbsu5RttCEBkk7pw7vu', async () => {

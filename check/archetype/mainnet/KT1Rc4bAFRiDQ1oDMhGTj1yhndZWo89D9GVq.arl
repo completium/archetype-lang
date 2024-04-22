@@ -18,7 +18,7 @@ entry joinGame () {
 }
 
 entry payoutToWinners (winner : address, winningVoters : list<address>) {
-  var x216 : contract<unit> = self_contract<unit>;
+  var x216 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x206 : tez = 0utz;
   var x233 : nat = 0;
   var x254 : ((((list<address> * tez) * address) * tez)) = ((((((make_list<address> (([]))), 0utz)), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);

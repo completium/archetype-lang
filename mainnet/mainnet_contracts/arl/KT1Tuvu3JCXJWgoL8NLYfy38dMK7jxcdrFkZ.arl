@@ -2,7 +2,7 @@
 archetype my_contract(sto_1 : map<address, tez>)
 
 entry default () {
-  var x74 : contract<unit> = self_contract<unit>;
+  var x74 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((2utz >= transferred), Unit);
   sto_1 := update (sto_1, caller, (some(transferred)));
   if 0utz = transferred then (())

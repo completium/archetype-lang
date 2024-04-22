@@ -1,7 +1,7 @@
 archetype my_contract(sto_1 : map<address, tez>)
 
 entry default () {
-  var x74 : contract<unit> = self_contract<unit>;
+  var x74 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((2utz >= transferred), Unit);
   match get_entrypoint<unit>("default", caller) with
   | some x83 -> (x74 := x83)

@@ -1,0 +1,6 @@
+archetype type_simple
+
+entry callback_nat(arg : nat) {}
+entry callback_int(arg : int) {}
+entry callback_date(arg : date) {}
+entry callback_address(arg : address) {}

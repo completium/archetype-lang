@@ -101,7 +101,7 @@ entry get_leadership_start_timestamp (arg : contract<date>) {
 }
 
 entry withdraw () {
-  var x475 : contract<unit> = self_contract<unit>;
+  var x475 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x502 : nat = 0;
   var x524 : ((address * date)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 1970-01-01T00:00:00);
   do_require ((caller = (x524[0])), "WrongCondition: self.data.leader == sp.sender");

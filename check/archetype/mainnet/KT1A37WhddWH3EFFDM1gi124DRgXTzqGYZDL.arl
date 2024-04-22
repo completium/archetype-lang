@@ -11,7 +11,7 @@ entry joinGame () {
 }
 
 entry payoutToWinner (arg : address) {
-  var x102 : contract<unit> = self_contract<unit>;
+  var x102 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((owner = caller), "WrongCondition: self.data.owner == sp.sender");
   match get_entrypoint<unit>("default", arg) with
   | some x112 -> (x102 := x112)

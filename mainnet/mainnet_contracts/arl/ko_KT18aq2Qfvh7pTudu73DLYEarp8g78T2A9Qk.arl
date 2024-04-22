@@ -11,7 +11,7 @@ entry default () {
 }
 
 entry withdraw (x548 : ((tez * list<signature>) * address), txId : string) {
-  var x83 : contract<unit> = self_contract<unit>;
+  var x83 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x82 : tez = 0utz;
   var x276 : (((tez * list<signature>) * address)) = (((0utz, (make_list<signature> (([]))))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
   var x144 : nat = 0;

@@ -45,10 +45,10 @@ entry feedUserAccount (arg : key_hash) {
 }
 
 entry sendFunds (x976 : (tez * tez), receiver : address, signedMessage : signature, userPublicKey : key) {
-  var x303 : contract<unit> = self_contract<unit>;
+  var x303 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x302 : tez = 0utz;
   var x320 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x335 : contract<unit> = self_contract<unit>;
+  var x335 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x334 : tez = 0utz;
   var x430 : signature = "edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW";
   var x432 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;

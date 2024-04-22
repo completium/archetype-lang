@@ -1,0 +1,3 @@
+archetype address_nat
+
+entry default(arg : (address * nat)) {}

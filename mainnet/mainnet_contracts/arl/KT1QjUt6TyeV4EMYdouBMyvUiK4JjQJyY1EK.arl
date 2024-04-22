@@ -2,7 +2,7 @@
 archetype my_contract
 
 entry default (arg : string) {
-  var x74 : contract<unit> = self_contract<unit>;
+  var x74 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   if 0utz = transferred then (())
   else (match get_entrypoint<unit>("default", source) with
   | some x83 -> (x74 := x83)

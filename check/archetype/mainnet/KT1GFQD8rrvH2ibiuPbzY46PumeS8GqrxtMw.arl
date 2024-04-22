@@ -56,7 +56,7 @@ entry withdraw () {
 }
 
 entry withdraw_callback (arg : nat) {
-  var x407 : contract<unit> = self_contract<unit>;
+  var x407 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x406 : tez = 0utz;
   var x418 : big_map<address, (tez * nat)> = make_big_map<address, (tez * nat)> (([]));
   var x414 : unit = Unit;

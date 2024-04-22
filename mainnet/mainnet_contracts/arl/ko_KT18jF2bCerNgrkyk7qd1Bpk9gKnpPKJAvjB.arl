@@ -119,7 +119,7 @@ entry tip (%_from : string, %_to : string, amount : tez) {
 }
 
 entry %transfer (%_from : string, %_to : address, amount : tez) {
-  var x984 : contract<unit> = self_contract<unit>;
+  var x984 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x983 : tez = 0utz;
   var x1145 : (((string * address) * tez)) = ((("", tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), 0utz);
   var x1162 : map<string, tez> = make_map<string, tez> (([]));

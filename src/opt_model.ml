@@ -217,6 +217,7 @@ let add_decls_var (_env : Gen_decompile.env) (model : model) : model =
     | Tlambda (ity, oty)         -> mk_lambda ity (mk_mident (dumloc "x_l_0")) oty (f oty)
     | Tunit                      -> unit
     | Toperation                 -> mk_mterm (Mmakeoperation (mk_tez 0, mk_tez 0, unit)) toperation
+    | Tcontract (Tunit, _)       -> mk_address "tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39"
     | Tcontract ty               -> mk_mterm (Mselfcontract (ty, None)) (tcontract ty)
     | Tticket ty                 -> mk_mterm (Mcreateticket (f ty, mk_nat 1)) (tticket ty)
     | Tsapling_state n           -> mk_sapling_state_empty n

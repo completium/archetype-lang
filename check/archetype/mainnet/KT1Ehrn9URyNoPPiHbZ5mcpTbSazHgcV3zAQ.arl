@@ -3,7 +3,7 @@ guildContract : address,
 owner : address)
 
 entry default () {
-  var x82 : contract<unit> = self_contract<unit>;
+  var x82 : contract<unit> = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   if caller <> guildContract
   then (match get_entrypoint<unit>("default", caller) with
   | some x91 -> (x82 := x91)
