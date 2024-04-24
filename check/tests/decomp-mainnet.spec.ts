@@ -77,38 +77,38 @@ function get_contract(input: Buffer): contract {
 }
 
 async function check_prelude(ref: string, act: string) {
-  // if (!fs.existsSync(act)) {
-  //   throw new Error("No Archetype file found: " + act)
+  if (!fs.existsSync(act)) {
+    throw new Error("No Archetype file found: " + act)
+  }
+  const res_compile = compile(act);
+  if (res_compile.status != 0) {
+    throw new Error("Archetype file does not compile: " + act)
+  }
+  const str = res_compile.output.toString().trim();
+  const content_act_tz = str.substring(1, str.length - 1);
+  // console.log(content_act_tz);
+  const contract_act = get_contract(content_act_tz)
+
+  const content_ref_tz = fs.readFileSync(ref);
+  const contract_ref = get_contract(content_ref_tz)
+
+  const mich_ref_parameter = jsonMichelineToExpr(contract_ref.parameter)
+  const mich_act_parameter = jsonMichelineToExpr(contract_act.parameter)
+
+  const mich_ref_storage = jsonMichelineToExpr(contract_ref.storage)
+  const mich_act_storage = jsonMichelineToExpr(contract_act.storage)
+
+  // if (mich_ref_parameter !== mich_act_parameter) {
+  //   console.error(mich_ref_parameter)
+  //   console.error(mich_act_parameter)
+  //   assert(false, "Parameter does not match")
   // }
-  // const res_compile = compile(act);
-  // if (res_compile.status != 0) {
-  //   throw new Error("Archetype file does not compile: " + act)
-  // }
-  // const str = res_compile.output.toString().trim();
-  // const content_act_tz = str.substring(1, str.length - 1);
-  // // console.log(content_act_tz);
-  // const contract_act = get_contract(content_act_tz)
 
-  // const content_ref_tz = fs.readFileSync(ref);
-  // const contract_ref = get_contract(content_ref_tz)
-
-  // const mich_ref_parameter = jsonMichelineToExpr(contract_ref.parameter)
-  // const mich_act_parameter = jsonMichelineToExpr(contract_act.parameter)
-
-  // const mich_ref_storage = jsonMichelineToExpr(contract_ref.storage)
-  // const mich_act_storage = jsonMichelineToExpr(contract_act.storage)
-
-  // // if (mich_ref_parameter !== mich_act_parameter) {
-  // //   console.error(mich_ref_parameter)
-  // //   console.error(mich_act_parameter)
-  // //   assert(false, "Parameter does not match")
-  // // }
-
-  // if (mich_ref_storage !== mich_act_storage) {
-  //   // console.error(mich_ref_storage)
-  //   // console.error(mich_act_storage)
-  //   assert(false, "Storage does not match")
-  // }
+  if (mich_ref_storage !== mich_act_storage) {
+    // console.error(mich_ref_storage)
+    // console.error(mich_act_storage)
+    assert(false, "Storage does not match")
+  }
 }
 
 function make_conf(p: string, conf: ConfInput) {
@@ -132,15 +132,15 @@ async function check_transaction(ref: string, act: string, conf: ConfInput) {
   const res_ref = await interp(conf_ref)
   console.log(res_ref)
 
-  // if (fs.existsSync(act)) {
-  //   const conf_act = make_conf(act, conf)
-  //   const res_act = await interp(conf_act)
-  //   // console.log(res_ref)
-  //   // console.log(res_act)
-  //   assert(JSON.stringify(res_ref) === JSON.stringify(res_act))
-  // } else {
-  //   // console.log(res_ref)
-  // }
+  if (fs.existsSync(act)) {
+    const conf_act = make_conf(act, conf)
+    const res_act = await interp(conf_act)
+    // console.log(res_ref)
+    // console.log(res_act)
+    assert(JSON.stringify(res_ref) === JSON.stringify(res_act))
+  } else {
+    // console.log(res_ref)
+  }
 }
 
 setQuiet(true)
