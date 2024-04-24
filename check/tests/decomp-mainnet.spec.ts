@@ -1407,12 +1407,37 @@ describe('decomp_mainnet', async () => {
   //   assert(false) // TODO
   // })
 
-  // it('KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM', async () => {
-  //   const ref = "./michelson/mainnet/KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM.tz"
-  //   const act = "./archetype/mainnet/KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM.arl"
-  //   await check_prelude(ref, act)
-  //   assert(false) // TODO
-  // })
+  it('KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM', async () => {
+    const ref = "./michelson/mainnet/KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM.tz"
+    const act = "./archetype/mainnet/KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM.arl"
+    const [conf, _] = await deploy("./archetype/helper/callback_nat.arl");
+    const addr = conf.address;
+    await check_prelude(ref, act)
+
+    // getAllowance
+    await check_transaction(ref, act, { storage: `Pair 0 {} {} {}`, entrypoint: "getAllowance", parameter: `Pair (Pair "${alice}" "${bob}") "${addr}%callback"` })
+    await check_transaction(ref, act, { storage: `Pair 0 {Elt (Pair "${alice}" "${bob}") 1} {} {}`, entrypoint: "getAllowance", parameter: `Pair (Pair "${alice}" "${bob}") "${addr}%callback"` })
+
+    // getBalance
+    await check_transaction(ref, act, { storage: `Pair 0 {} {} {}`, entrypoint: "getBalance", parameter: `Pair "${alice}" "${addr}%callback"` })
+    await check_transaction(ref, act, { storage: `Pair 0 {} {Elt "${alice}" 2} {}`, entrypoint: "getBalance", parameter: `Pair "${alice}" "${addr}%callback"` })
+
+    // getTotalSupply
+    await check_transaction(ref, act, { storage: 'Pair 0 {} {} {}', entrypoint: "getTotalSupply", parameter: `Pair Unit "${addr}%callback"` })
+
+    // transfer
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {Elt "${alice}" 0} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {Elt "${alice}" 1} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {Elt "${alice}" 1} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: alice })
+    await check_transaction(ref, act, { storage: `Pair 1000 {Elt (Pair "${alice}" "${bob}") 0} {Elt "${alice}" 1} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {Elt (Pair "${alice}" "${bob}") 1} {Elt "${alice}" 1} {}`, entrypoint: "transfer", parameter: `Pair "${alice}" "${bob}" 1`, caller: bob })
+
+    // approve
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {} {}`, entrypoint: "approve", parameter: `Pair "${alice}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {Elt "${bob}" 0} {}`, entrypoint: "approve", parameter: `Pair "${alice}" 1`, caller: bob })
+    await check_transaction(ref, act, { storage: `Pair 1000 {} {Elt "${bob}" 1} {}`, entrypoint: "approve", parameter: `Pair "${alice}" 1`, caller: bob })
+  })
 
   // it('KT1REHQ183LzfoVoqiDR87mCrt7CLUH1MbcV', async () => {
   //   const ref = "./michelson/mainnet/KT1REHQ183LzfoVoqiDR87mCrt7CLUH1MbcV.tz"

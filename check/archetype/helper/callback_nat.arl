@@ -1,0 +1,11 @@
+archetype callback_nat
+
+variable res : option<nat> = none
+
+entry callback(i : nat) {
+  res := some(i)
+}
+
+entry reset() {
+  res := none
+}
