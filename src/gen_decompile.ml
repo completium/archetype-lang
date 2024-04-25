@@ -1106,6 +1106,13 @@ end = struct
       (uf, d)
 
     | GET ->
+      let tymap = List.nth (fst (Option.get !(i.type_))) 1 in
+
+      let tmap =
+        match tymap.node with
+        | Tbig_map _ -> tbig_map
+        | _ -> tmap in
+
       let l, s = List.pop s in
       let a = fresh_tvar () in
       let b = fresh_tvar () in
