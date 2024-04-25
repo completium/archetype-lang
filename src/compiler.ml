@@ -93,6 +93,8 @@ let main () : unit =
       "-alma", Arg.Set Options.opt_alma, " arl -> low mdl -> arl";
       "-j", Arg.Set Options.opt_json, " Json";
       "--json", Arg.Set Options.opt_json, " Same as -j";
+      "-ij", Arg.Set Options.opt_input_json, " Input Json";
+      "--input-json", Arg.Set Options.opt_input_json, " Same as -ij";
       "-rj", Arg.Set Options.opt_rjson, " Raw Json";
       "--raw-json", Arg.Set Options.opt_rjson, " Same as -rj";
       "--trace", Arg.Set Options.opt_trace, " Activate trace";

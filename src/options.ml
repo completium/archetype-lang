@@ -34,6 +34,7 @@ let quiet = ref false
 let with_init_caller = ref true
 
 let opt_json    = ref false
+let opt_input_json = ref false
 let opt_rjson   = ref false
 let opt_pt      = ref false
 let opt_extpt   = ref false

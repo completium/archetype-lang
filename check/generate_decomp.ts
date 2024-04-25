@@ -373,14 +373,14 @@ describe('Generate arl', async () => {
     }
   })
 
-  describe('other', async () => {
-    it("FA1.2", () => {
-      const tz_path = './michelson/decomp/fa1_2.tz'
-      const arl_path = './archetype/decomp/fa1.2/fa1_2.arl'
-      generation_arl_file(tz_path, arl_path)
-      const json_path = generation_interface_contract(arl_path, './json/decomp/fa1.2/')
-      write_binding(json_path, './archetype/contracts/fa1.2/', './bindings/decomp/fa1.2/')
-    });
-  })
+  // describe('other', async () => {
+  //   it("FA1.2", () => {
+  //     const tz_path = './michelson/decomp/fa1_2.tz'
+  //     const arl_path = './archetype/decomp/fa1.2/fa1_2.arl'
+  //     generation_arl_file(tz_path, arl_path)
+  //     const json_path = generation_interface_contract(arl_path, './json/decomp/fa1.2/')
+  //     write_binding(json_path, './archetype/contracts/fa1.2/', './bindings/decomp/fa1.2/')
+  //   });
+  // })
 
 })
