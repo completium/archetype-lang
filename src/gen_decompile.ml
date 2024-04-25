@@ -50,7 +50,7 @@ let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let env = mk_env ~name:name () in
 
   let input =
-    if match ijson with | Some v -> v | _ -> !Options.opt_input_json  then
+    if match ijson with | Some v -> v | _ -> (!Options.opt_json || !Options.opt_input_json)  then
       let open Yojson.Safe in
 
       let is_tag s l = List.exists (fun x -> String.equal s (fst x)) l in

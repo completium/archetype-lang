@@ -13,9 +13,9 @@ entry accept (arg : string) {
   var x135 : ((address * set<address>)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_set<address> (([]))));
   var x145 : ((int * (set<address> * address))) = (0i, (((make_set<address> (([]))), tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)));
   var x160 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
-  var x243 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
-  var x287 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
-  var x324 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x243 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x287 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x324 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
   var x345 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x537 : ((nat * int)) = (0, 0i);
   var x392 : set<address> = make_set<address> (([]));
@@ -25,7 +25,7 @@ entry accept (arg : string) {
   var x476 : int = 0i;
   var x501 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
   var x553 : set<address> = make_set<address> (([]));
-  var x577 : map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
+  var x577 : big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> = make_big_map<string, ((int * (set<address> * address)) * ((address * set<address>) * (bool * address)))> (([]));
   var x593 : bool = false;
   do_require ((contains (signers, caller)), "01");
   do_require ((contains (proposals, arg)), "03");

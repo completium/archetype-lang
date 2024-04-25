@@ -53,7 +53,7 @@ entry getBalance (arg : address, target : address) {
   var x411 : contract<nat> = self_contract<nat>;
   var x403 : int = 0i;
   var x423 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x424 : map<address, (int * (bool * bool))> = make_map<address, (int * (bool * bool))> (([]));
+  var x424 : big_map<address, (int * (bool * bool))> = make_big_map<address, (int * (bool * bool))> (([]));
   var x456 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
   match get_entrypoint<nat>("default", (x456[1])) with
   | some x445 -> (x411 := x445)
@@ -239,22 +239,22 @@ entry %transfer (amount : int, f : address, t : address) {
   var x1699 : int = 0i;
   var x1790 : bool = false;
   var x1793 : int = 0i;
-  var x1812 : map<address, (int * (bool * bool))> = make_map<address, (int * (bool * bool))> (([]));
+  var x1812 : big_map<address, (int * (bool * bool))> = make_big_map<address, (int * (bool * bool))> (([]));
   var x1818 : int = 0i;
   var x1811 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x1976 : bool = false;
   var x1980 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x1816 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x2000 : ((address * (map<address, (int * (bool * bool))> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_map<address, (int * (bool * bool))> (([]))), 0i)));
+  var x2000 : ((address * (big_map<address, (int * (bool * bool))> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_big_map<address, (int * (bool * bool))> (([]))), 0i)));
   var x2020 : bool = false;
   var x2035 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x2036 : map<address, (int * (bool * bool))> = make_map<address, (int * (bool * bool))> (([]));
+  var x2036 : big_map<address, (int * (bool * bool))> = make_big_map<address, (int * (bool * bool))> (([]));
   var x2059 : bool = false;
-  var x2079 : map<address, (int * (bool * bool))> = make_map<address, (int * (bool * bool))> (([]));
+  var x2079 : big_map<address, (int * (bool * bool))> = make_big_map<address, (int * (bool * bool))> (([]));
   var x2102 : bool = false;
   var x2106 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x2078 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x2126 : ((address * (map<address, (int * (bool * bool))> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_map<address, (int * (bool * bool))> (([]))), 0i)));
+  var x2126 : ((address * (big_map<address, (int * (bool * bool))> * int))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (((make_big_map<address, (int * (bool * bool))> (([]))), 0i)));
   var x2149 : bool = false;
   var x2190 : big_map<address, (int * (bool * bool))> = make_big_map<address, (int * (bool * bool))> (([]));
   var x2189 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;

@@ -24,7 +24,7 @@ entry changeOwner (newOwnerKey : address, signedMessage : signature) {
 entry feedUserAccount (arg : key_hash) {
   var x174 : nat = 0;
   var x164 : tez = 0utz;
-  var x192 : map<key_hash, (tez * unit)> = make_map<key_hash, (tez * unit)> (([]));
+  var x192 : big_map<key_hash, (tez * unit)> = make_big_map<key_hash, (tez * unit)> (([]));
   var x206 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
   var x349 : list<operation> = make_list<operation> (([]));
   for x72 in x349 do
@@ -55,21 +55,21 @@ entry sendFunds (x976 : (tez * tez), receiver : address, signedMessage : signatu
   var x432 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x434 : ((tez * tez)) = (0utz, 0utz);
   var x427 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
-  var x424 : map<key_hash, (unit * nat)> = make_map<key_hash, (unit * nat)> (([]));
+  var x424 : big_map<key_hash, (unit * nat)> = make_big_map<key_hash, (unit * nat)> (([]));
   var x467 : key = "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8";
   var x523 : nat = 0;
   var x566 : tez = 0utz;
   var x588 : tez = 0utz;
   var x513 : tez = 0utz;
   var x590 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));
-  var x546 : map<key_hash, (tez * unit)> = make_map<key_hash, (tez * unit)> (([]));
+  var x546 : big_map<key_hash, (tez * unit)> = make_big_map<key_hash, (tez * unit)> (([]));
   var x678 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));
   var x605 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
   var x676 : tez = 0utz;
   var x671 : tez = 0utz;
   var x840 : tez = 0utz;
   var x711 : tez = 0utz;
-  var x730 : map<key_hash, (tez * nat)> = make_map<key_hash, (tez * nat)> (([]));
+  var x730 : big_map<key_hash, (tez * nat)> = make_big_map<key_hash, (tez * nat)> (([]));
   var x858 : nat = 0;
   var x836 : tez = 0utz;
   var x842 : ((address * (signature * key))) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (("edsigu41hG2o5Db6ss1o6pi7wWYoNQuee5o44VjAKhGP2qQ8zvY2y4Q1G7Bp6XC4dg44BzKjngGwK4V6BP8Zbz6itXo4dBQQntW", "edpku6Pc31JWM3RXfym4pG5RzoKkyNCxQzakzsfQiG1aKXP1J651n8")));

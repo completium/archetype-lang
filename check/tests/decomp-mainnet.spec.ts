@@ -130,7 +130,7 @@ function make_conf(p: string, conf: ConfInput) {
 async function check_transaction(ref: string, act: string, conf: ConfInput) {
   const conf_ref = make_conf(ref, conf)
   const res_ref = await interp(conf_ref)
-  console.log(res_ref)
+  // console.log(res_ref)
 
   if (fs.existsSync(act)) {
     const conf_act = make_conf(act, conf)
@@ -769,12 +769,12 @@ describe('decomp_mainnet', async () => {
     const ref = "./michelson/mainnet/KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4.tz"
     const act = "./archetype/mainnet/KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4.arl"
     await check_prelude(ref, act)
-    await check_transaction(ref, act, { storage: 'Pair {} "old_hash"', parameter: 'Pair None "old_hash" "new_hash"' })
-    await check_transaction(ref, act, { storage: 'Pair {"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"} "old_hash"', parameter: 'Pair None "bad_hash" "new_hash"', caller: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_transaction(ref, act, { storage: 'Pair {"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"} "old_hash"', parameter: 'Pair None "old_hash" "new_hash"', caller: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_transaction(ref, act, { storage: 'Pair {"tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6" ; "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"} "old_hash"', parameter: 'Pair None "old_hash" "new_hash"', caller: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_transaction(ref, act, { storage: 'Pair {"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" ; "tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6"} "old_hash"', parameter: 'Pair None "old_hash" "new_hash"', caller: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
-    await check_transaction(ref, act, { storage: 'Pair {"tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"} "old_hash"', parameter: 'Pair (Some {}) "old_hash" "new_hash"', caller: "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb" })
+    await check_transaction(ref, act, { storage: `Pair {} "old_hash"`, parameter: 'Pair None "old_hash" "new_hash"' })
+    await check_transaction(ref, act, { storage: `Pair {"${alice}"} "old_hash"`, parameter: 'Pair None "bad_hash" "new_hash"', caller: alice })
+    await check_transaction(ref, act, { storage: `Pair {"${alice}"} "old_hash"`, parameter: 'Pair None "old_hash" "new_hash"', caller: alice })
+    await check_transaction(ref, act, { storage: `Pair {"${bob}"; "${alice}"} "old_hash"`, parameter: 'Pair None "old_hash" "new_hash"', caller: alice })
+    await check_transaction(ref, act, { storage: `Pair {"${alice}"; "${bob}"} "old_hash"`, parameter: 'Pair None "old_hash" "new_hash"', caller: alice })
+    await check_transaction(ref, act, { storage: `Pair {"${alice}"} "old_hash"', parameter: 'Pair (Some {}) "old_hash" "new_hash"`, caller: alice })
   })
 
   it('KT1TUx83WuwtA2Ku1pi6A9AZqov7CZfYtLUS', async () => {

@@ -66,7 +66,7 @@ entry %transfer (%from : address, %to : address, value : nat) {
 
 entry approve (spender : address, value : nat) {
   var x693 : nat = 0;
-  var x729 : map<(address * address), nat> = make_map<(address * address), nat> (([]));
+  var x729 : big_map<(address * address), nat> = make_big_map<(address * address), nat> (([]));
   var x770 : nat = 0;
   match (ledger[caller]) with
   | some x785 -> (x770 := x785)

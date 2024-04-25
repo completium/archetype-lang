@@ -17,7 +17,7 @@ entry burn (amount : int, fromAddr : address) {
   var x296 : int = 0i;
   var x397 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x357 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x336 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x336 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x386 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x368 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x451 : int = 0i;
@@ -83,7 +83,7 @@ entry cvrDrop (addresses : list<address>, amount : int) {
   var x904 : bool = false;
   var x903 : int = 0i;
   var x894 : int = 0i;
-  var x937 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x937 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x964 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   do_require ((caller = (((sto_3[0])[0])[0])), "WrongCondition: sp.sender == self.data.administrator");
   do_require (((amount * length (addresses) + ((sto_2[0])[0] - (sto_2[1])[1])) + ((sto_3[0])[1])[0] <= sto_1[0]), "WrongCondition: (((params.amount * (sp.to_int(sp.len(params.addresses)))) + (self.data.saleLimit - self.data.soldToken)) + self.data.circulatingSupply) <= self.data.supplyLimit");
@@ -117,7 +117,7 @@ entry dispatchRoyalties (addresses : list<address>, amount : nat) {
   var x1457 : nat = 0;
   var x1421 : nat = 0;
   var x1450 : int = 0i;
-  var x1480 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x1480 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x1600 : nat = 0;
   var x1559 : nat = 0;
   var x1552 : nat = 0;
@@ -127,7 +127,7 @@ entry dispatchRoyalties (addresses : list<address>, amount : nat) {
   var x1681 : nat = 0;
   var x1652 : nat = 0;
   var x1674 : int = 0i;
-  var x1698 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x1698 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x1765 : nat = 0;
   var x1758 : nat = 0;
   var x1782 : int = 0i;
@@ -222,7 +222,7 @@ entry getBalance (owner : address, target : address) {
   var x1977 : contract<nat> = self_contract<nat>;
   var x1969 : int = 0i;
   var x1991 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x1992 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x1992 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x2079 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   if contains (x2079, owner)
   then (match get_entrypoint<nat>("default", target) with
@@ -415,7 +415,7 @@ entry mint (amount : int, toAddr : address) {
   var x3229 : int = 0i;
   var x3220 : int = 0i;
   var x3281 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x3260 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x3260 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x3292 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x3645 : (((int * address) * (address * int))) = (((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)));
   var x3643 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
@@ -452,7 +452,7 @@ entry offchainSale (address_ : address, amount : int) {
   var x3903 : int = 0i;
   var x3894 : int = 0i;
   var x3955 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x3934 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x3934 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x3966 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x4214 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
   var x4164 : int = 0i;
@@ -555,7 +555,7 @@ entry sale () {
   var x4795 : int = 0i;
   var x4824 : bool = false;
   var x4860 : ((int * address)) = (0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
-  var x5113 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x5113 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x5186 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x5379 : ((((address * big_map<address, (int * bool)>) * (int * address)) * ((int * address) * (address * int)))) = (((((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, (make_big_map<address, (int * bool)> (([]))))), ((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)))), ((((0i, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39)), ((tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0i)))));
   var x5414 : int = 0i;
@@ -665,13 +665,13 @@ entry %transfer (amount : int, fromAddr : address, toAddr : address) {
   var x6069 : int = 0i;
   var x6686 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x6135 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
-  var x6111 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x6111 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x6168 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x6254 : bool = false;
   var x6253 : int = 0i;
   var x6244 : int = 0i;
   var x6310 : ((address * address)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39);
-  var x6286 : map<address, (int * bool)> = make_map<address, (int * bool)> (([]));
+  var x6286 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x6325 : big_map<address, (int * bool)> = make_big_map<address, (int * bool)> (([]));
   var x6553 : bool = false;
   var x6556 : int = 0i;

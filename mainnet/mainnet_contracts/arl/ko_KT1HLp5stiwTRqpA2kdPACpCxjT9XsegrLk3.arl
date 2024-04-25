@@ -18,7 +18,7 @@ entry approve (spender : address, value : nat) {
   var x202 : nat = 0;
   var x211 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x212 : map<address, nat> = make_map<address, nat> (([]));
-  var x233 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  var x233 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   if (sto_1[1]) then ((fail ("WrongCondition: ~ self.data.paused")));
   match (x233[caller]) with
   | some (x227, x228) -> (x212 := x227)
@@ -44,11 +44,11 @@ entry burn (address_ : address, value : nat) {
   var x376 : nat = 0;
   var x367 : nat = 0;
   var x414 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x400 : map<address, (unit * nat)> = make_map<address, (unit * nat)> (([]));
+  var x400 : big_map<address, (unit * nat)> = make_big_map<address, (unit * nat)> (([]));
   var x440 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x425 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   var x490 : nat = 0;
-  var x543 : ((map<address, (map<address, nat> * nat)> * int)) = ((make_map<address, (map<address, nat> * nat)> (([]))), 0i);
+  var x543 : ((big_map<address, (map<address, nat> * nat)> * int)) = ((make_big_map<address, (map<address, nat> * nat)> (([]))), 0i);
   var x539 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   do_require ((caller = x539), "WrongCondition: sp.sender == self.data.administrator");
   match ((x543[0])[address_]) with
@@ -90,7 +90,7 @@ entry getAllowance (owner : address, spender : address, x678 : address) {
   var x618 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x632 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x633 : map<address, nat> = make_map<address, nat> (([]));
-  var x656 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  var x656 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   match (x656[owner]) with
   | some (x650, x651) -> (x633 := x650)
   | none -> (fail (72i))
@@ -110,7 +110,7 @@ entry getBalance (x733 : address, x734 : address) {
   var x693 : nat = 0;
   var x685 : contract<nat> = self_contract<nat>;
   var x698 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x656 : map<address, (map<address, nat> * nat)> = make_map<address, (map<address, nat> * nat)> (([]));
+  var x656 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   match (x656[x733]) with
   | some (x709, x710) -> (x693 := x710)
   | none -> (fail (68i))
@@ -188,7 +188,7 @@ entry %transfer (%from : address, %to : address, value : nat) {
   var x1209 : nat = 0;
   var x1240 : map<address, nat> = make_map<address, nat> (([]));
   var x1285 : unit = Unit;
-  var x1271 : map<unit, (map<address, nat> * unit)> = make_map<unit, (map<address, nat> * unit)> (([]));
+  var x1271 : big_map<unit, (map<address, nat> * unit)> = make_big_map<unit, (map<address, nat> * unit)> (([]));
   var x1304 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   var x1365 : bool = false;
   var x1639 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
@@ -203,7 +203,7 @@ entry %transfer (%from : address, %to : address, value : nat) {
   var x1553 : nat = 0;
   var x1544 : nat = 0;
   var x1592 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
-  var x1576 : map<address, (unit * nat)> = make_map<address, (unit * nat)> (([]));
+  var x1576 : big_map<address, (unit * nat)> = make_big_map<address, (unit * nat)> (([]));
   var x1620 : address = tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39;
   var x1605 : big_map<address, (map<address, nat> * nat)> = make_big_map<address, (map<address, nat> * nat)> (([]));
   var x1693 : ((address * nat)) = (tz1XvkuUNDk8j2tG3RJaRUo4Xppcjc6FvK39, 0);
