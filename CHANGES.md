@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - new features
+  - beta version of Michelson decompiler
 
 ## [1.5.1] - 2024-01-15
 ### Added
