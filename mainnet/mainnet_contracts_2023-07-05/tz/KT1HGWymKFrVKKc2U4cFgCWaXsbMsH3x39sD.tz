@@ -1,3 +1,0 @@
-{ parameter address ;
-  storage address ;
-  code { CAR ; NIL operation ; PAIR } }

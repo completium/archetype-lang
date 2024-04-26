@@ -1,7 +1,0 @@
-{
-  storage string;
-  parameter unit;
-  code { CDR;
-         NIL operation;
-         PAIR };
-}

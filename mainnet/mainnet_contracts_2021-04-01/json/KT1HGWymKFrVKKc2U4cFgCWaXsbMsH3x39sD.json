@@ -1,1 +1,0 @@
-{"code":[{"prim":"parameter","args":[{"prim":"address"}]},{"prim":"storage","args":[{"prim":"address"}]},{"prim":"code","args":[[{"prim":"CAR"},{"prim":"NIL","args":[{"prim":"operation"}]},{"prim":"PAIR"}]]}],"storage":{"bytes":"00007646a40538f8f398af90592be682a66612f5292d"}}

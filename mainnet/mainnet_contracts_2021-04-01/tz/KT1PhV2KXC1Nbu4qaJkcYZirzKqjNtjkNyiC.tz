@@ -1,7 +1,0 @@
-{
-  storage unit;
-  parameter (list (pair (pair %request (nat %token_id) (address %owner)) (nat %balance)));
-  code { CDR;
-         NIL operation;
-         PAIR };
-}

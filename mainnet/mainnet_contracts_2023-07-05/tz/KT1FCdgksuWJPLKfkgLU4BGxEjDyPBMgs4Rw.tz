@@ -1,3 +1,0 @@
-{ parameter (list (pair nat (pair string (pair string (pair nat (map string string)))))) ;
-  storage (list (pair nat (pair string (pair string (pair nat (map string string)))))) ;
-  code { CAR ; NIL operation ; PAIR } }

@@ -1,1 +1,0 @@
-{"code":[{"prim":"parameter","args":[{"prim":"or","args":[{"prim":"nat","annots":["%viewNat"]},{"prim":"or","args":[{"prim":"string","annots":["%viewString"]},{"prim":"address","annots":["%viewAddress"]}]}]}]},{"prim":"storage","args":[{"prim":"unit"}]},{"prim":"code","args":[[{"prim":"FAILWITH"}]]}],"storage":{"prim":"Unit"}}

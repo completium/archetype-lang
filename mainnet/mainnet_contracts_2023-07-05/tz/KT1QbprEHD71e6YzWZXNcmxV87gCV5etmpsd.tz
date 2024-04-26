@@ -1,1 +1,0 @@
-{ parameter unit ; storage unit ; code { PUSH string "test" ; FAILWITH } }

@@ -20,7 +20,7 @@
     "test:proposal-type-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/proposal-type-errors.spec.ts",
     "test:proposal-model-errors": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/proposal-model-errors.spec.ts",
     "test:contracts": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/contracts/*.spec.ts",
-    "test:decomp:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mainnet.spec.ts -g KT1CSYNJ6dFcnsV4QJ6HnBFtdif8LJGPQiDM",
+    "test:decomp:mainnet": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp-mainnet.spec.ts",
     "test:decomp:contracts": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/decomp/*.spec.ts",
     "generate": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate.ts",
     "generate:decomp": "ts-mocha --timeout 0 --slow 99999999999999999 ./generate_decomp.ts",

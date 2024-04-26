@@ -1,6 +1,0 @@
-{ parameter unit ;
-  storage unit ;
-  code { {} ;
-         { DUP ; CDR ; DIP { CAR } } ;
-         { PUSH unit Unit ; NIL operation ; PAIR } ;
-         DIP { DROP 2 } } }

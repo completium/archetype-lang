@@ -29,6 +29,7 @@ let set_options settings =
   Archetype.Options.target               := process_target ();
   Archetype.Options.with_init_caller     := process_boolean true "with_init_caller";
   Archetype.Options.opt_json             := process_boolean_false "json";
+  Archetype.Options.opt_input_json       := process_boolean_false "ijson";
   Archetype.Options.opt_rjson            := process_boolean_false "rjson";
   Archetype.Options.opt_pt               := process_boolean_false "pt";
   Archetype.Options.opt_extpt            := process_boolean_false "extpt";
