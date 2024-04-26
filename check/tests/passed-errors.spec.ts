@@ -6,7 +6,12 @@ import assert from 'assert'
 const compile = (p : string) => {
   const spawn = require('cross-spawn');
   const bin = '../_build/default/src/compiler.exe'
-  const res = spawn.sync(bin, [p], { });
+
+  const args = []
+  args.push("--sandbox-exec-address")
+  args.push("KT18uEMteX7SHuAnZhbxGDG6YN3VtJSHi3vY")
+  args.push(p)
+  const res = spawn.sync(bin, args, { });
   return res
 }
 
@@ -5178,4 +5183,3 @@ describe('passed-errors', async () => {
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")
   })
 })
-  

@@ -4830,11 +4830,11 @@ and for_gen_matchwith
                         let _, cargs =
                           List.find (fun (ct, _) -> unloc ct = pid) ctors in
 
-                        let rec fold_tuple tys =
+                        (* let rec fold_tuple tys =
                         match List.rev tys with
                         | A.Ttuple tys::tyss -> fold_tuple (List.rev tyss @ tys)
                         | _ -> tys
-                        in
+                        in *)
                         (* let cargs =
                           match cargs, fold_tuple cargs with
                           | [A.Ttuple tys], _ when List.length args = List.length tys -> tys

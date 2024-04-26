@@ -596,7 +596,7 @@ end = struct
 
     and type_ = ty_propagate uf e.type_
 
-    in { e with node; type_ }
+    in { node; type_ }
 
   and var_propagate (uf : uf) (x : dvar) =
     match x with
