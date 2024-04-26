@@ -240,7 +240,7 @@ k=0
 echo -n "" > $CSV
 for c in $CONTRACTS; do
   k=$((${k} + 1))
-  i=./mainnet/mainnet_contracts/tz/$c.tz
+  i=./mainnet/tz/$c.tz
   echo -n $c
   process $i $c
 done

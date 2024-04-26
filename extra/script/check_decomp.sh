@@ -254,11 +254,11 @@ compile() {
 
 process_files() {
   k=0
-  rm -f ./mainnet/mainnet_contracts/arl/*.arl
+  rm -f ./mainnet/arl/*.arl
   for c in $CONTRACTS; do
     k=$((${k} + 1))
     R=0
-    i=./mainnet/mainnet_contracts/tz/$c.tz
+    i=./mainnet/tz/$c.tz
     printf '%-3i ' $k
     printf '%-90s' $i
     process $i -mici
