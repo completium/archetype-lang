@@ -6,13 +6,13 @@ import assert from 'assert'
 const compile = (p : string) => {
   const spawn = require('cross-spawn');
   const bin = '../_build/default/src/compiler.exe'
-  const res = spawn.sync(bin, [p], { });
+  const res = spawn.sync(bin, ['-d', '-ama', p], { });
   return res
 }
 
 /* Tests ------------------------------------------------------------------- */
 
-describe('passed-errors', async () => {
+describe('decomp-ama-passed', async () => {
   it('add_update_record', async () => {
     const stat = compile("../tests/passed/add_update_record.arl")
     assert(stat.status == 0, "Invalid status code, actual: " + stat.status + ", expected: 0")

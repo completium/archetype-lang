@@ -77,6 +77,14 @@ describe('proposal-type-errors', async () => {
     const stat = compile("../tests/proposal-type-errors/neg_literal_tez.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
   })
+  it('no_fun_lambda_read_storage', async () => {
+    const stat = compile("../tests/proposal-type-errors/no_fun_lambda_read_storage.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
+  it('no_fun_lambda_side_effect', async () => {
+    const stat = compile("../tests/proposal-type-errors/no_fun_lambda_side_effect.arl")
+    assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")
+  })
   it('no_return', async () => {
     const stat = compile("../tests/proposal-type-errors/no_return.arl")
     assert(stat.status == 3, "Invalid status code, actual: " + stat.status + ", expected: 3")

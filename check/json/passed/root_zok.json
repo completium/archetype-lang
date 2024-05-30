@@ -1,0 +1,91 @@
+{
+  "name": "root_zok",
+  "parameters": [],
+  "types": {
+    "assets": [],
+    "enums": [],
+    "records": [],
+    "events": []
+  },
+  "storage": [
+    {
+      "name": "res",
+      "type": {
+        "node": "bool",
+        "name": null,
+        "int_value": null,
+        "args": []
+      },
+      "const": false
+    }
+  ],
+  "storage_type": {
+    "value": {
+      "prim": "bool",
+      "int": null,
+      "bytes": null,
+      "string": null,
+      "args": [],
+      "annots": [],
+      "array": [],
+      "var_id": null,
+      "var_type": null
+    },
+    "is_storable": true
+  },
+  "entrypoints": [
+    {
+      "name": "exec",
+      "args": [
+        {
+          "name": "input_x",
+          "type": {
+            "node": "bls12_381_fr",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "input_y",
+          "type": {
+            "node": "bls12_381_fr",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "proof_a",
+          "type": {
+            "node": "bls12_381_g1",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "proof_b",
+          "type": {
+            "node": "bls12_381_g2",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        },
+        {
+          "name": "proof_c",
+          "type": {
+            "node": "bls12_381_g1",
+            "name": null,
+            "int_value": null,
+            "args": []
+          }
+        }
+      ]
+    }
+  ],
+  "getters": [],
+  "views": [],
+  "errors": []
+}

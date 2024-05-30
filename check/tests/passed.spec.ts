@@ -1,6 +1,6 @@
 /* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Bls12_381_fr, Bls12_381_g1, Bls12_381_g2, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -910,6 +910,7 @@ import * as reverse_otherwise from '../bindings/passed/reverse_otherwise'
 import * as reverse_with_enum from '../bindings/passed/reverse_with_enum'
 import * as rf_failif_with from '../bindings/passed/rf_failif_with'
 import * as rf_require_otherwise from '../bindings/passed/rf_require_otherwise'
+import * as root_zok from '../bindings/passed/root_zok'
 import * as same_varname_in_two_distinct_scope from '../bindings/passed/same_varname_in_two_distinct_scope'
 import * as sample_asset_view from '../bindings/passed/sample_asset_view'
 import * as sample_make_sandbox_exec_operation from '../bindings/passed/sample_make_sandbox_exec_operation'
@@ -16359,6 +16360,24 @@ describe('passed', async () => {
     await rf_require_otherwise.rf_require_otherwise.deploy({ as: alice })
 
     await rf_require_otherwise.rf_require_otherwise.exec({ as: alice })
+  })
+
+  it('root_zok', async () => {
+    await root_zok.root_zok.deploy({ as: alice })
+
+    const res_before = await root_zok.root_zok.get_res();
+    assert(res_before == false)
+
+    const input_x = new Bls12_381_fr("a1bb010000000000000000000000000000000000000000000000000000000000");
+    const input_y = new Bls12_381_fr("0100000000000000000000000000000000000000000000000000000000000000");
+    const proof_a = new Bls12_381_g1("0be7a1f93063b64f1c4fe808f270fd6c8308308ece32e008210f74eb86528763134fc88a712c5451fe8ceef98284206f1940743c0c34528170e0f5c1c65cd6d60a0ea8697d95ebd8dc0a878e9443bc32f3388c47f596cfc6574b2c3a4c362b1b");
+    const proof_b = new Bls12_381_g2("0308a50cce70539b2770a3aa721134800236f8f7b26d76dccf8c367f29b6f5c423555b1b98441a7e795d696e6d23e4c20cca39682acbf7fa4ec06de7c8cf0054bdd7905ac84d4828152f8aa041162d97c6437f414577b5cdd2c11fbfc4aa098909c9678e63994ce7846898f592c1f51c8f164e5f1f299050dc0f6e656692f1e3d10e63ce24ab46045e4c9b7727d12df20e6bbc8cf1f6a0516cd52c322a336a28de8b86a1d15ed3c8d727245991b145d2cb3ac69043a8619832319e533c49455a");
+    const proof_c = new Bls12_381_g1("09323a4fd658ab2e113dd6a2b79a8afb68ee2172a19da27c6d5fd2b165fbc5c6cb22a3e109095105917775ba152c3b96138b65ff88e08a00e7cbe3180a132b5248d2593ace21babd1c063ddf0634d637c087b786b8cfce5d7bb6d30f1147cdeb");
+
+    await root_zok.root_zok.exec(input_x, input_y, proof_a, proof_b, proof_c, { as: alice })
+
+    const res_after = await root_zok.root_zok.get_res();
+    assert(res_after == true)
   })
 
   it('same_varname_in_two_distinct_scope', async () => {

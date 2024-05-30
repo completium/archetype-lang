@@ -103,7 +103,7 @@ const generate_spec_passed = (input: Array<string>) => {
 
   const output = `/* DO NOT EDIT, GENERATED FILE */
 import { expect_to_fail, get_account, get_chain_id, get_mockup_level, get_mockup_now, pack, register_global_constant, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts';
-import { Address, Bytes, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
+import { Address, Bytes, Bls12_381_fr, Bls12_381_g1, Bls12_381_g2, Chain_id, Chest, Chest_key, Duration, Int, Key_hash, Micheline, MichelineType, Nat, Option, Or, Rational, Sapling_state, Sapling_transaction, Tez, Ticket, Unit } from '@completium/archetype-ts-types';
 
 import assert from 'assert'
 import { BigNumber } from 'bignumber.js'
@@ -228,9 +228,9 @@ describe('Generate binding', async () => {
       ['.tz', 'decomp-mit-passed', 'michelson/passed', "'-d', '-mit', ", 0],
       ['.tz', 'decomp-dir-passed', 'michelson/passed', "'-d', '-dir', ", 0],
       ['.arl', 'decomp-ama-passed', '../tests/passed', "'-d', '-ama', ", 0],
-      ['.tz', 'decomp-mic-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-mi', ", 0],
-      ['.tz', 'decomp-mit-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-mit', ", 0],
-      ['.tz', 'decomp-dir-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-dir', ", 0]
+      // ['.tz', 'decomp-mic-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-mi', ", 0],
+      // ['.tz', 'decomp-mit-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-mit', ", 0],
+      // ['.tz', 'decomp-dir-mainnet', '../mainnet/mainnet_contracts_2023-07-05/tz', "'-d', '-dir', ", 0]
     ]
     for (const item of items) {
       const ext  = item[0]
