@@ -585,7 +585,7 @@ type transaction = {
   failif          : label_term list option;
   transition      : transition option;
   functions       : function_ list;
-  effect          : instruction option;
+  effect_          : instruction option;
   loc             : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -745,8 +745,8 @@ let mk_function_struct ?(args = []) ?(loc = Location.dummy) name kind body retur
 let mk_transition ?(trs = []) from =
   { from; trs }
 
-let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?(functions = []) ?effect ?(loc = Location.dummy) kind name =
-  { kind; name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; functions; effect; loc }
+let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?(functions = []) ?effect_ ?(loc = Location.dummy) kind name =
+  { kind; name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; functions; effect_; loc }
 
 let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : enum_item_struct =
   { name; initial; args; invariants; loc }

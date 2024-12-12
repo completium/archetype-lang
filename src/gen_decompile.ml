@@ -426,7 +426,7 @@ end = struct
     let compare = (compare : t -> t -> int)
   end
 
-  type effect = [
+  type effect_ = [
     | `DvarUnify of dvar * dvar
     | `ExprUnify of dexpr * dexpr
     | `TyUnify   of type_ * type_
@@ -438,12 +438,12 @@ end = struct
   }
 
   module Data : Ufind.Data
-    with type effects = effect list
+    with type effects = effect_ list
      and type data    = ufdata
   = struct
     type data = ufdata
 
-    type effects = effect list
+    type effects = effect_ list
 
     let noeffects : effects = []
 
@@ -471,12 +471,12 @@ end = struct
   module UFE = Ufind.Make(Item)(Data)
 
   module TData : Ufind.Data
-    with type effects = effect list
+    with type effects = effect_ list
      and type data    = type_ option
   = struct
     type data = type_ option
 
-    type effects = effect list
+    type effects = effect_ list
 
     let noeffects : effects = []
 
@@ -644,16 +644,16 @@ end = struct
     | _ ->
       ty
 
-  let rec unify (uf : uf) (effect : effect) : uf =
+  let rec unify (uf : uf) (effect : effect_) : uf =
     pump (unify_r uf effect)
 
-  and pump ((uf, effects) : uf * effect list) : uf =
+  and pump ((uf, effects) : uf * effect_ list) : uf =
     unify_all uf effects
 
-  and unify_all (uf : uf) (effects : effect list) : uf =
+  and unify_all (uf : uf) (effects : effect_ list) : uf =
     List.fold_left unify uf effects
 
-  and unify_r (uf : uf) (effect : effect) : uf * effect list =
+  and unify_r (uf : uf) (effect : effect_) : uf * effect_ list =
     match effect with
     | `TyUnify (ty1, ty2) ->
       unify_type_r uf ty1 ty2

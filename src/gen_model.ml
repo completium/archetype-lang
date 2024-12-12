@@ -1490,7 +1490,7 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       let args  = List.map (fun (x : A.lident A.decl_gen) -> (M.mk_mident x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
       let env   = {env with function_p = Some (M.mk_mident transaction.name, args); } in
       let empty : M.mterm = M.mk_mterm (M.Mseq []) M.tunit in
-      match transaction.transition, transaction.effect with
+      match transaction.transition, transaction.effect_ with
       | None, None ->
         let body = empty in
         args, body, env
@@ -1500,13 +1500,13 @@ let rec to_model ((_tenv, ast) : Typing.env * A.ast) : M.model =
       | Some t, None ->
         let env = {env with function_p = Some (M.mk_mident transaction.name, args); } in
         let build_code (body : M.mterm) : M.mterm =
-          (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
+          (List.fold_right (fun ((id, cond, effect_) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  let v : M.mterm = M.mk_mterm (Menumval (M.mk_mident id, [], M.mk_mident (dumloc "state"))) (M.tenum (M.mk_mident (dumloc "state"))) ~loc:(Location.loc id) in
                  M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
-                 match effect with
+                 match effect_ with
                  | Some e -> M.mk_mterm (M.Mseq [to_instruction env e; tre]) M.tunit
                  | None -> tre
                in

@@ -7329,7 +7329,7 @@ let transentrys_of_tdecls tdecls =
 
       | _ -> None in
 
-    let effect =
+    let effect_ =
       match tdecl.ad_effect with
       | Some (`Raw x) -> Some x | _ -> None in
 
@@ -7350,7 +7350,7 @@ let transentrys_of_tdecls tdecls =
         failif          = Some (List.map mkl tdecl.ad_fais);
         transition      = transition;
         functions       = functions_of_fdecls tdecl.ad_funs;
-        effect          = effect;
+        effect_         = effect_;
         loc             = tdecl.ad_loc; }
 
   in
