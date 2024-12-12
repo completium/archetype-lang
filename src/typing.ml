@@ -6229,9 +6229,9 @@ and for_instruction ~(ret : A.type_ option) (kind : ekind) (env : env) (i : PT.e
   Env.inscope env (fun env -> for_instruction_r ~ret kind env i)
 
 (* -------------------------------------------------------------------- *)
-let for_effect ~(ret : A.type_ option) (kind : ekind) (env : env) (effect : PT.expr) =
+let for_effect ~(ret : A.type_ option) (kind : ekind) (env : env) (effect_ : PT.expr) =
   Env.inscope env (fun env ->
-      let env, i = for_instruction kind env effect ~ret in (env, (env, i)))
+      let env, i = for_instruction kind env effect_ ~ret in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
 let for_named_state (locc : Location.t) ?enum (env : env) (x : PT.lident) =
@@ -6346,16 +6346,16 @@ let for_entry (env : env) (act : PT.entry_properties) i (ret : PT.type_t option)
   let env, fai  = Option.foldmap (for_rfs `Entry) env act.failif in
   let ret = Option.bind (for_type env) ret in
   let env, poeffect = Option.foldmap (for_effect ~ret:ret (if Option.is_some ret then `Entry else `Getter)) env i in
-  let effect = Option.map snd poeffect in
+  let effect_ = Option.map snd poeffect in
   let env, funs = List.fold_left_map for_function env act.functions in
-  (env, (ret, sourcedby, calledby, stateis, actfs, cst, req, fai, funs, effect))
+  (env, (ret, sourcedby, calledby, stateis, actfs, cst, req, fai, funs, effect_))
 
 (* -------------------------------------------------------------------- *)
-let for_transition ?enum (env : env) (state, when_, effect) =
+let for_transition ?enum (env : env) (state, when_, effect_) =
   let tx_state  = for_named_state Location.dummy ?enum env state in
   let tx_when   = Option.map (for_expr ~ety:(A.Tbuiltin A.VTbool) `Function env) when_ in
   let env, tx_effect = snd_map (Option.map snd)
-      (Option.foldmap (for_effect ~ret:None `Entry) env effect) in
+      (Option.foldmap (for_effect ~ret:None `Entry) env effect_) in
 
   env, { tx_state; tx_when; tx_effect; }
 
@@ -7009,7 +7009,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
-            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
+            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect_) =
               for_entry env pt i None in
 
             let decl =
@@ -7020,7 +7020,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_srcby  = for_csby srcby;
                 ad_callby = for_csby callby;
                 ad_stateis= stateis;
-                ad_effect = Option.map (fun x -> `Raw x) effect;
+                ad_effect = Option.map (fun x -> `Raw x) effect_;
                 ad_funs   = funs;
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;
@@ -7041,7 +7041,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
-            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect) =
+            let env, (ret, srcby, callby, stateis, actfs, csts, reqs, fais, funs, effect_) =
               for_entry env entry_properties (Some body) (Some ret_t) in
 
             let decl =
@@ -7052,7 +7052,7 @@ let for_acttx_decl (env : env) (decl : acttx loced)
                 ad_srcby  = for_csby srcby;
                 ad_callby = for_csby callby;
                 ad_stateis= stateis;
-                ad_effect = Option.map (fun x -> `Raw x) effect;
+                ad_effect = Option.map (fun x -> `Raw x) effect_;
                 ad_funs   = funs;
                 ad_csts   = Option.get_dfl [] csts;
                 ad_reqs   = Option.get_dfl [] reqs;

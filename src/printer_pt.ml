@@ -932,11 +932,11 @@ and pp_field fmt { pldesc = f; _ } =
 and pp_simple_expr fmt e = (pp_expr e_simple PNone) fmt e
 
 (* -------------------------------------------------------------------------- *)
-let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
+let pp_to fmt ((to_, when_, effect_) : (lident * expr option * expr option)) =
   Format.fprintf fmt " to %a@\n%a%a"
     pp_id to_
     (pp_option (pp_enclose " when {" "}@\n" (pp_expr e_default PNone))) when_
-    (pp_option (pp_enclose " with effect {" "}@\n" (pp_expr e_default PNone))) effect
+    (pp_option (pp_enclose " with effect {" "}@\n" (pp_expr e_default PNone))) effect_
 
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
   match sv with
@@ -1104,7 +1104,7 @@ let pp_entry_properties fmt (props : entry_properties) =
   pp_option (pp_rf "fail if" "with") fmt props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
-let pp_transition fmt (to_, conditions, effect) =
+let pp_transition fmt (to_, conditions, effect_) =
   Format.fprintf fmt "to %a%a%a@\n"
     pp_id to_
     (pp_option (
@@ -1112,8 +1112,8 @@ let pp_transition fmt (to_, conditions, effect) =
           Format.fprintf fmt " when { %a }"
             (pp_expr e_default PNone) e)) conditions
     (pp_option (fun fmt e ->
-         Format.fprintf fmt "@\nwith effect {@\n  @[%a@]@\n}"
-           pp_simple_expr e)) effect
+         Format.fprintf fmt "@\nwith effect_ {@\n  @[%a@]@\n}"
+           pp_simple_expr e)) effect_
 
 let pp_parameter fmt (id, ty, dv, c) =
   Format.fprintf fmt "%a%a : %a%a"

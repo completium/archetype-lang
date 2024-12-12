@@ -4193,7 +4193,7 @@ let extract_list (mt : mterm) (e : mterm) =
 
 (* -------------------------------------------------------------------- *)
 
-type effect = Eadded of ident | Eremoved of ident | Eupdated of ident
+type effect_ = Eadded of ident | Eremoved of ident | Eupdated of ident
 [@@deriving show {with_path = false}]
 module Utils : sig
 

@@ -644,8 +644,8 @@ end = struct
     | _ ->
       ty
 
-  let rec unify (uf : uf) (effect : effect_) : uf =
-    pump (unify_r uf effect)
+  let rec unify (uf : uf) (effect_ : effect_) : uf =
+    pump (unify_r uf effect_)
 
   and pump ((uf, effects) : uf * effect_ list) : uf =
     unify_all uf effects
@@ -653,8 +653,8 @@ end = struct
   and unify_all (uf : uf) (effects : effect_ list) : uf =
     List.fold_left unify uf effects
 
-  and unify_r (uf : uf) (effect : effect_) : uf * effect_ list =
-    match effect with
+  and unify_r (uf : uf) (effect_ : effect_) : uf * effect_ list =
+    match effect_ with
     | `TyUnify (ty1, ty2) ->
       unify_type_r uf ty1 ty2
 
